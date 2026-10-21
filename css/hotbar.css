@@ -188,3 +188,6 @@
 #lvp { left: 8px; color: #ffd890; }
 #lva { right: 8px; color: #a8d4ff; }
 @media (max-width: 520px) { #deck .lv { font-size: 9px; bottom: 9px; } #lvp { left: 4px; } #lva { right: 4px; } }
+
+/* Painéis nascem do convés: os diamantes da hotbar ficam por cima das laterais */
+#hb { z-index: 5; }

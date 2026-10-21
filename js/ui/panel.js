@@ -126,8 +126,13 @@ export function fitPanel() {
     el.style.overflowY = 'visible';
     el.style.transform = 'translateX(-50%)';
     // espaço livre: acima da hotbar (que também pode estar reduzida) e dentro da largura da tela
-    const hb = $('hb').getBoundingClientRect();
-    const avail = hb.top - 12 - 8;
+    // o painel nasce do topo do convés da hotbar, centralizado entre os diamantes, e cresce para cima
+    const hb = $('deck').getBoundingClientRect();
+    const avail = hb.top + 2 - 8 - 6;
+    el.style.top = 'auto';
+    el.style.bottom = (innerHeight - hb.top - 2) + 'px';
+    el.style.transformOrigin = '50% 100%';
+    el.style.left = (hb.left + hb.width / 2) + 'px';
     let k = Math.min(1, avail / el.offsetHeight, (innerWidth - 4) / el.offsetWidth);
     if (k < PANEL_MIN) {
       // tela muito baixa: tamanho mínimo e, só nesse caso, rolagem interna para nada ser cortado
