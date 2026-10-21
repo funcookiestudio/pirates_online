@@ -65,7 +65,7 @@ export function initInput() {
   cv.addEventListener('pointerdown', e => {
     if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX }; return; }
     pts.set(e.pointerId, e);
-    if (pts.size === 2) { clearTimeout(wait); down = false; gest = pair(); return; } // segundo dedo: vira gesto, cancela o toque
+    if (pts.size === 2) { clearTimeout(wait); down = false; gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
     if (e.pointerType === 'touch') {
       // espera um instante: se um segundo dedo chegar, era o início de um gesto e o personagem não anda
       wait = setTimeout(() => { if (pts.size === 1) { down = true; pick(e.clientX, e.clientY); } }, 70);
@@ -76,10 +76,15 @@ export function initInput() {
     if (orbit) { if (e.buttons & 6) { rotateBy(-(e.clientX - orbit.x) * .008); orbit.x = e.clientX; } return; }
     if (pts.has(e.pointerId)) pts.set(e.pointerId, e);
     if (pts.size === 2 && gest) {
-      const n = pair();
-      if (gest.d > 0 && n.d > 0) zoomBy(gest.d / n.d);                              // pinça
-      rotateBy(Math.atan2(Math.sin(n.a - gest.a), Math.cos(n.a - gest.a)));          // giro dos dois dedos
-      gest = n;
+      const n = pair(), da = Math.atan2(Math.sin(n.a - gest.a), Math.cos(n.a - gest.a));
+      gest.ca += da;
+      // dois dedos: ou é pinça (zoom) ou é giro; escolhe pelo movimento dominante e trava até soltar
+      if (!gest.mode) {
+        const pinchPx = Math.abs(n.d - gest.sd), arcPx = Math.abs(gest.ca) * n.d / 2;
+        if (Math.max(pinchPx, arcPx) > 14) gest.mode = pinchPx > arcPx ? 'zoom' : 'rot';
+      } else if (gest.mode === 'zoom') { if (gest.d > 0 && n.d > 0) zoomBy(gest.d / n.d); }
+      else rotateBy(da);
+      gest.d = n.d; gest.a = n.a;
       return;
     }
     if (down && !P.tgt && pts.size === 1) pick(e.clientX, e.clientY);
