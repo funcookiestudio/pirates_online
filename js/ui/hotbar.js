@@ -7,7 +7,9 @@ const HB_MIN = .5;
 export function fitHotbar() {
   const hb = $('hb');
   hb.style.transform = 'translateX(-50%)';
-  const k = Math.max(HB_MIN, Math.min(1, (innerWidth - 8) / hb.offsetWidth));
+  // retrato no celular: o barco ocupa toda a largura da tela, com 4 px de folga em cada ponta
+  const portrait = innerHeight > innerWidth && innerWidth <= 700;
+  const k = portrait ? Math.min(2.6, (innerWidth - 8) / hb.offsetWidth) : Math.max(HB_MIN, Math.min(1, (innerWidth - 8) / hb.offsetWidth));
   hb.style.transform = 'translateX(-50%) scale(' + k.toFixed(3) + ')';
 }
 
