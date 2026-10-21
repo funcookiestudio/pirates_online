@@ -1,0 +1,190 @@
+/* Hotbar em forma de navio: popa (esq.) · convés com habilidades · proa (dir.)
+   Nas pontas, dois diamantes lapidados: vida do jogador e vida do companheiro. */
+
+#hb {
+  --pad: 10px;      /* folga lateral do convés */
+  --gw: 112px;      /* largura de cada diamante */
+  --ov: calc(var(--gw) / 2 + var(--pad) + 26px); /* quanto o diamante avança sobre a popa/proa */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  width: max-content;
+  transform-origin: 50% 100%;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+  filter: drop-shadow(0 -2px 10px #000a);
+}
+
+/* Popa e proa (SVG) */
+#hb .end { flex: none; width: 100px; height: 120px; display: block; }
+
+/* Convés */
+#deck {
+  flex: none;
+  height: 96px;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 var(--pad) 27px;
+  pointer-events: auto;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 13px, #0007 13px 14px),
+    linear-gradient(#5e3d1d, #3c2510 45%, #20130a);
+  border-top: 3px solid #a07a3a;
+  box-shadow: inset 0 2px 0 #e0c27a55, inset 0 -8px 14px #000a;
+}
+
+/* ---------- Diamantes (orbes de vida) ---------- */
+#hb .gw {
+  position: relative;
+  flex: none;
+  width: var(--gw);
+  height: 108px;
+  filter: drop-shadow(0 4px 6px #000c);
+}
+#gwl { transform: rotate(12deg);  transform-origin: 50% 90%; margin-left: calc(-1 * var(--ov)); }
+#gwr { transform: rotate(-12deg); transform-origin: 50% 90%; margin-right: calc(-1 * var(--ov)); }
+
+#hb .gem {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 30%, 50% 100%, 0 30%);
+  background: linear-gradient(135deg, #f6dc8c, #a07a3a 45%, #4e320f 55%, #e0bb62);
+}
+
+#hb .gem .orb {
+  position: absolute;
+  inset: 6px;
+  overflow: hidden;
+  clip-path: polygon(25% 0, 75% 0, 100% 30%, 50% 100%, 0 30%);
+  background: linear-gradient(#1a1a1a, #030303);
+}
+.orb i { position: absolute; bottom: 0; left: 0; right: 0; }
+#ohp i { background: linear-gradient(#ff6a58, #d01818 55%, #6a0606); }
+#omp i { background: linear-gradient(#6aaaff, #1a50d0 55%, #08216a); }
+
+/* Facetas do diamante */
+#hb .gem .orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpolygon points='25,0 50,30 0,30' fill='white' fill-opacity='.20'/%3E%3Cpolygon points='25,0 75,0 50,30' fill='white' fill-opacity='.38'/%3E%3Cpolygon points='75,0 100,30 50,30' fill='black' fill-opacity='.14'/%3E%3Cpolygon points='0,30 50,30 50,100' fill='white' fill-opacity='.10'/%3E%3Cpolygon points='50,30 100,30 50,100' fill='black' fill-opacity='.28'/%3E%3Cpolygon points='25,30 50,30 50,100' fill='white' fill-opacity='.12'/%3E%3Cg stroke='white' stroke-opacity='.45' stroke-width='.8' fill='none'%3E%3Cpath d='M0 30H100M25 0L25 30M75 0L75 30M25 30L50 100M75 30L50 100M50 30V100'/%3E%3C/g%3E%3Cpolygon points='33,6 44,6 38,22' fill='white' fill-opacity='.55'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
+}
+
+/* Texto do orbe (desinclinado para ficar reto) */
+.orb span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 16%;
+  box-sizing: border-box;
+  font-size: 13px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px #000;
+  z-index: 2;
+}
+#gwl .orb span { transform: rotate(-12deg); }
+#gwr .orb span { transform: rotate(12deg); }
+
+#hp, #mp { transition: height .25s ease-out; }
+
+/* ---------- Barras de XP dentro do convés ----------
+   Cada uma nasce embaixo da ponta do seu diamante e vai até o centro da hotbar.
+   Jogador: enche da esquerda p/ direita · Companheiro: da direita p/ esquerda. */
+#deck .xp {
+  position: absolute;
+  bottom: 3px;
+  height: 7px;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: none;
+  background: #000c;
+  border: 1px solid #a07a3a;
+  box-shadow: inset 0 1px 2px #000;
+}
+#xpp { left: 0; right: calc(50% + 1px); }
+#xpa { right: 0; left: calc(50% + 1px); }
+#deck .xp i { position: absolute; top: 0; bottom: 0; width: 0; transition: width .3s; }
+#xpb { left: 0;  background: linear-gradient(#f0c870, #a06a1a); }
+#pxh { right: 0; background: linear-gradient(#9fd2ff, #2f78c8); }
+
+/* ---------- Barra de habilidades ---------- */
+#sk {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  margin: 0 14px 4px;
+}
+#sk div, #sa {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  overflow: hidden;
+  border: 2px solid #a07a3a;
+  background: radial-gradient(#3a2a1a, #0a0604);
+  box-shadow: inset 0 0 8px #000, 0 2px 0 #0009;
+}
+#sk div.on, #sa.on {
+  border-color: #ff7a3a;
+  box-shadow: inset 0 0 8px #000, 0 0 10px #ff7a3a;
+}
+#sk small, #sa > small { position: absolute; left: 3px; bottom: 1px; font-size: 10px; color: #e0c890; }
+#sk em, #sa > em { position: absolute; right: 3px; top: 1px; font-size: 11px; font-style: normal; color: #fff; }
+#sk .cd { position: absolute; left: 0; right: 0; bottom: 0; background: #000b; }
+
+/* Anel de fôlego em volta do botão de auto combate: esvazia no sentido anti-horário a partir do topo */
+#sa .ring { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+#sa .ring path { fill: none; stroke-width: 7; stroke-linecap: butt; }
+#sa .trk { stroke: #000b; }
+#sa .val { stroke: #5fd068; stroke-dasharray: 100 100; transition: stroke .3s; }
+#sa .val.mid { stroke: #f0c040; }
+#sa .val.low { stroke: #e0483a; }
+#sa .val.rec { stroke: #5aa8ff; }
+#sa > span, #sa > small, #sa > em { position: relative; z-index: 1; }
+#sa > small, #sa > em { position: absolute; }
+#sa em { right: 3px; top: 1px; }
+
+/* ---------- Celular ---------- */
+@media (max-width: 520px) {
+  #hb { --pad: 3px; --gw: 50px; --ov: calc(var(--gw) / 2 + var(--pad) + 10px); }
+  #hb .end { width: 24px; height: 100px; }
+  #deck { height: 78px; gap: 2px; padding: 0 var(--pad) 22px; }
+  #hb .gw { width: var(--gw); height: 72px; }
+  #deck .xp { height: 6px; bottom: 2px; }
+  #hb .gem .orb { inset: 4px; }
+  .orb span { font-size: 10px; }
+  #sk { gap: 2px; margin: 0 2px 4px; }
+  #sk div, #sa { width: 30px; height: 30px; font-size: 14px; }
+  #sk small, #sa > small { font-size: 8px; }
+  #sk em, #sa > em { font-size: 9px; }
+}
+
+
+/* Auto combate: centro esquerdo da tela */
+#sawrap { position: absolute; left: calc(env(safe-area-inset-left, 0px) + 10px); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+#sa { position: relative; filter: drop-shadow(0 2px 6px #000a); }
+#at { font-style: normal; font-size: 12px; font-weight: bold; color: #fff; text-shadow: 0 1px 3px #000, 0 0 5px #000; min-height: 14px; }
+#hb .gw { cursor: pointer; }
+#hb .gw:hover { filter: drop-shadow(0 4px 6px #000c) brightness(1.15); }
+#hpt, #mpt { display: none; }
+
+/* Nível do jogador e do companheiro: logo acima das barras de XP, ao lado dos diamantes */
+#deck .lv { position: absolute; bottom: 12px; font-size: 11px; line-height: 1; color: #fff; text-shadow: 0 1px 2px #000, 0 0 4px #000; pointer-events: none; z-index: 2; }
+#lvp { left: 8px; color: #ffd890; }
+#lva { right: 8px; color: #a8d4ff; }
+@media (max-width: 520px) { #deck .lv { font-size: 9px; bottom: 9px; } #lvp { left: 4px; } #lva { right: 4px; } }

@@ -1,0 +1,12 @@
+{
+  "name": "pirata-arpg",
+  "version": "1.0.0",
+  "description": "ARPG 3D de pirata em Three.js",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

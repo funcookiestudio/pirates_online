@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pirata ARPG</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/hud.css">
+<link rel="stylesheet" href="css/hotbar.css">
+<link rel="stylesheet" href="css/panels.css">
+</head>
+<body>
+
+<!-- ===== HUD ===== -->
+<div id="st"></div>
+<div id="ehud"><div id="en"></div><div id="ebar"><i id="ebi"></i></div></div>
+<div id="mini"><canvas id="mm" width="140" height="140"></canvas></div>
+<div id="quest"><b>Missão</b><div id="qt"></div></div>
+<div id="menu"><button id="bg" title="Ajustes do modo auto">⚙</button></div>
+<div id="log"></div>
+
+<!-- auto combate: centro esquerdo da tela -->
+<div id="sawrap"><div id="sa" title="Auto combate (T)"><svg class="ring" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="trk" d="M50 4H96V96H4V4H50" pathLength="100"/><path class="val" id="sar" d="M50 4H96V96H4V4H50" pathLength="100"/></svg><span id="ai">🤖</span><small>T</small></div><em id="at"></em></div>
+
+<!-- ===== Hotbar em forma de navio ===== -->
+<div id="hb">
+  <!-- popa -->
+  <svg class="end" viewBox="0 0 100 120" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="gws" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4522"/><stop offset=".5" stop-color="#3f2812"/><stop offset="1" stop-color="#1e1208"/></linearGradient></defs>
+    <path d="M100 36 L100 120 L28 120 C15 102 8 76 6 48 C5 32 8 22 15 18 C22 14 30 18 34 25 C40 32 56 35 100 36 Z" fill="url(#gws)" stroke="#a07a3a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M12 60 C20 70 24 90 32 112 M12 82 C18 92 22 104 28 116" stroke="#1a0e06" stroke-opacity=".6" stroke-width="1.5" fill="none"/>
+    <rect x="30" y="56" width="17" height="17" rx="3" fill="#f0c870" stroke="#a07a3a" stroke-width="2"/><rect x="54" y="56" width="17" height="17" rx="3" fill="#f0c870" stroke="#a07a3a" stroke-width="2"/>
+    <path d="M38.5 56V73M30 64.5H47M62.5 56V73M54 64.5H71" stroke="#3a2410" stroke-width="1.5"/>
+    <path d="M10 90 H98" stroke="#a07a3a" stroke-width="2.5"/><path d="M12 100 H98" stroke="#1a0e06" stroke-opacity=".5" stroke-width="1.5"/>
+    <rect x="9" y="3" width="12" height="15" rx="2" fill="#ffd070" stroke="#a07a3a" stroke-width="2"/><path d="M15 3V18M9 10.5H21" stroke="#3a2410" stroke-width="1.2"/><path d="M11 3 L15 -0.5 L19 3" fill="#a07a3a"/>
+    <circle cx="15" cy="30" r="3" fill="#c9a050" stroke="#6b4a1a"/></svg>
+
+  <!-- convés: vida do jogador · habilidades · vida do companheiro -->
+  <div id="deck">
+    <div class="xp" id="xpp" title="XP do jogador"><i id="xpb"></i></div>
+    <div class="xp" id="xpa" title="XP do companheiro"><i id="pxh"></i></div>
+    <b class="lv" id="lvp" title="Nível do jogador"></b><b class="lv" id="lva" title="Nível do companheiro"></b>
+    <div class="gw" id="gwl" title="Personagem (I)"><div class="gem"><div class="orb" id="ohp"><i id="hp"></i><span id="hpt"></span></div></div></div>
+    <div id="sk">
+      <div id="s1" title="Trocar de arma (X)"><span id="s1i">⚔</span><small>X</small></div>
+      <div id="s2">🌀<small>Q</small><b class="cd" id="c2"></b></div>
+      <div id="s3">💣<small>W</small><b class="cd" id="c3"></b></div>
+      <div id="sr" title="Esquiva (Espaço)">💨<small>Esp</small><b class="cd" id="c6"></b></div>
+      <div id="s4">🧪<small>E</small><em id="pc"></em></div>
+      <div id="s5" class="on" title="Companheiro (R): coletar / atacar e coletar"><span id="pi">🦜</span><small>R</small><em id="pm">⚔</em></div>
+    </div>
+    <div class="gw" id="gwr" title="Companheiro (P)"><div class="gem"><div class="orb" id="omp" title="Vida do companheiro"><i id="mp"></i><span id="mpt"></span></div></div></div>
+  </div>
+
+  <!-- proa -->
+  <svg class="end" viewBox="0 0 100 120" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="gwb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4522"/><stop offset=".5" stop-color="#3f2812"/><stop offset="1" stop-color="#1e1208"/></linearGradient></defs>
+    <path d="M0 36 C30 35 58 30 76 20 L100 3 L96 27 C94 62 80 100 50 120 L0 120 Z" fill="url(#gwb)" stroke="#a07a3a" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M88 40 C84 70 70 96 50 112 M70 44 C66 70 56 92 40 106" stroke="#1a0e06" stroke-opacity=".6" stroke-width="1.5" fill="none"/>
+    <circle cx="84" cy="30" r="6" fill="#c9a050" stroke="#6b4a1a" stroke-width="1.5"/><circle cx="84" cy="30" r="2.2" fill="#3a2410"/>
+    <g stroke="#c9a050" stroke-width="2.5" fill="none" stroke-linecap="round"><circle cx="38" cy="58" r="3"/><path d="M38 61V92M31 68H45M28 84C30 94 46 94 48 84M28 84L26 87M48 84L50 87"/></g>
+    <path d="M2 90 H60" stroke="#a07a3a" stroke-width="2.5"/></svg>
+</div>
+
+<!-- ===== Painel do personagem ===== -->
+<div id="acfg">
+  <h3>AJUSTES DO AUTO</h3>
+  <label><input type="checkbox" id="ac-loot"> 💰 Coletar loot</label>
+  <label><input type="checkbox" id="ac-equip"> 🛡 Equipar itens melhores</label>
+  <label><input type="checkbox" id="ac-swap"> 🔫 Trocar de arma automaticamente</label>
+  <h3 style="margin-top:12px">PROGRESSO</h3>
+  <div class="pact"><div id="rst">Apagar progresso salvo</div></div>
+</div>
+<div id="pnl">
+  <div class="ptabs">
+    <span id="tb-char" class="on">PERSONAGEM</span><span id="tb-skills">HABILIDADES</span><span id="tb-tal">TALENTOS</span>
+    <b id="pcl" title="Fechar (Esc)">✕</b>
+  </div>
+
+  <!-- personagem: equipamento ao redor do retrato · cartão de nível e atributos · mochila -->
+  <div id="pg-char" class="pg">
+    <div class="ptop">
+      <div class="pframe">
+        <div class="pcol" id="eqL"></div>
+        <div class="ppor">
+          <div class="pot" id="potb" title="Poções (E)">🧪<b id="potn"></b></div>
+          <canvas class="pcv" id="cvP"></canvas>
+        </div>
+        <div class="pcol" id="eqR"></div>
+        <div class="pbot" id="eqW"></div>
+        <div class="pattr" id="attr"></div>
+        <div class="pbot" id="eqG"></div>
+      </div>
+      <div class="pside">
+        <div class="pcard"><div class="pcl2" id="pcl2"></div><div class="pnm2">Capitão</div><div class="pcls">PIRATA</div><div class="pxp2"><i id="pxp2"></i></div></div>
+        <div id="stt"></div>
+        <div class="st gold"><i>💰</i><span>OURO</span><b id="gld"></b></div>
+      </div>
+    </div>
+
+    <div class="bwrap">
+      <div class="btabs" id="btabs">
+        <span data-b="eq" class="on">Equipamento</span><span data-b="cons">Consumíveis</span><span data-b="quest">Missão</span><span data-b="mat">Materiais</span>
+        <em id="bsort" title="Organizar mochila">⇅</em>
+      </div>
+      <div class="bbody">
+        <div class="bhead"><small id="bcnt"></small></div>
+        <div id="bag"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- habilidades e talentos: espaços reservados para as próximas funções -->
+  <div id="pg-skills" class="pg" hidden>
+    <div class="soon">⚔ Habilidades ativas e passivas do personagem</div>
+    <div class="sgrid" id="sgrid"></div>
+    <div class="rb" id="rpl">Resetar personagem</div>
+  </div>
+  <div id="pg-tal" class="pg" hidden>
+    <div class="soon">✦ Talentos: pontos ganhos ao subir de nível</div>
+    <div class="sgrid" id="tgrid"></div>
+  </div>
+</div>
+
+<!-- ===== Painel do companheiro (diamante azul): ficha, habilidades e talentos ===== -->
+<div id="pnl2" class="panel">
+  <div class="ptabs">
+    <span id="pt-main" class="on">COMPANHEIRO</span><span id="pt-skills">HABILIDADES</span><span id="pt-tal">TALENTOS</span>
+    <b id="pcl2x" title="Fechar (Esc)">✕</b>
+  </div>
+  <div id="pg-pmain" class="pg">
+    <div class="ptop">
+      <div class="pframe">
+        <div class="pcol" id="peL"></div>
+        <div class="ppor"><canvas class="pcv" id="cvA"></canvas>
+          <div class="ppn2" id="ppn2"></div>
+          <div class="parr"><button id="pprev" title="Companheiro anterior">◀</button><span id="pdots"></span><button id="pnext" title="Próximo companheiro">▶</button></div>
+        </div>
+        <div class="pcol" id="peR"></div>
+        <div class="pbot" id="peW"></div>
+        <div class="pattr" id="pattr"></div>
+        <div class="pbot" id="peG"></div>
+      </div>
+      <div class="pside">
+        <div class="pcard"><div class="pcl2" id="ppl"></div><div class="pnm2" id="ppn"></div><div class="pcls">COMPANHEIRO</div><div class="pxp2"><i id="pxb"></i></div></div>
+        <div id="pstt"></div>
+        <div class="st gold"><span class="use" id="usep"></span><span class="rb" id="rpp" style="margin:0"></span></div>
+      </div>
+    </div>
+    <div class="bwrap">
+      <div class="btabs"><span class="on">Equipamento</span><span>Consumíveis</span><span>Missão</span><span>Materiais</span></div>
+      <div class="bbody"><div class="bhead"><small>0 / 24</small></div><div id="pbag"></div></div>
+    </div>
+    </div>
+  <div id="pg-pskills" class="pg" hidden><div id="tree"></div></div>
+  <div id="pg-ptal" class="pg" hidden>
+    <div class="soon">✦ Talentos do companheiro</div>
+    <div class="sgrid" id="ptgrid"></div>
+  </div>
+</div>
+
+<div id="banner"></div>
+<div id="msg"></div>
+
+<!-- Diálogo e loja dos NPCs -->
+<div id="dlg">
+  <div class="dh"><i id="dic"></i><div><b id="dnm"></b><small id="dtt"></small></div><button id="dx">✕</button></div>
+  <p id="dtx"></p>
+  <div id="dbt"></div>
+</div>
+<div id="shop">
+  <div class="dh"><div><b id="shic"></b></div><span id="shgd"></span><button id="shx">✕</button></div>
+  <div class="shtabs"><span id="shb">COMPRAR</span><span id="shs">VENDER</span></div>
+  <div id="shl"></div>
+</div>
+
+<!-- Three.js (global THREE) e depois o jogo como módulos ES -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
