@@ -13,6 +13,13 @@ export const BAG_MAX = 24, CHEST_MAX = 48;
 export const chest = [];
 export const bagFull = () => bag.length >= BAG_MAX;
 
+/** Itens de consumo empilham até o limite: 5 poções e 3 bombas */
+export const POT_MAX = 5, BOMB_MAX = 3;
+/** Preços fixos: poção na taverna / com a mercadora, bomba com a mercadora */
+export const PRICE = { potTavern: 25, potTrader: 32, bomb: 45 };
+/** O item caído `l` não pode ser coletado agora (mochila cheia ou poções no limite)? */
+export const lootBlocked = l => ((l.ty === 'wpn' || l.ty === 'arm') && bagFull()) || (l.ty === 'pot' && P.pot >= POT_MAX);
+
 /** Equipamento atual: arma corpo a corpo (wpn), arma de fogo (gun) e armadura (arm). Uma arma fica na mão, a outra no coldre. */
 export const eq = { wpn: null, gun: null, arm: null };
 

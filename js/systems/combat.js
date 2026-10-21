@@ -81,7 +81,8 @@ export function spin() {
 
 /** Lança uma bomba até o ponto apontado (tecla W) */
 export function bomb() {
-  if (P.cds[1] > 0 || P.dead) return;
+  if (P.cds[1] > 0 || P.dead || P.bmb <= 0) return;
+  P.bmb--;
   P.cds[1] = 5;
   const m = new THREE.Mesh(new THREE.SphereGeometry(.22, 6, 5), M(0x111111));
   m.position.set(P.x, 1.4, P.z);

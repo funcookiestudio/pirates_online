@@ -46,6 +46,7 @@ export function updateOverlays(now) {
   } else eh.style.display = 'none';
 
   $('pc').textContent = P.pot;
+  $('bc').textContent = P.bmb;
   const bossAlive = enemies.some(z => z.t.boss && !z.dead);
   const np = nearestPost(P.x, P.z, 26);
   $('qt').textContent = P.dead ? '' : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : '');

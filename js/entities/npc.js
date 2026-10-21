@@ -12,6 +12,8 @@ import { $ } from '../core/utils.js';
 
 const list = [];
 export const npcList = list;
+/** NPC (cidadão) que mantém a loja `kind` */
+export const npcByShop = kind => list.find(n => n.info && n.info.shop === kind && n.g.visible !== false);
 const turn = (a, b, k) => { let d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); };
 
 /** Peças do chapéu em g.head.children: 5 aba · 6 copa · 7 caveira · 8 pena */

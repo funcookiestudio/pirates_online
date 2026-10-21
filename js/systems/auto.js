@@ -3,7 +3,8 @@
 import { state, aim } from '../core/state.js';
 import { enemies, loot, respawns, bombs } from '../core/registry.js';
 import { P } from '../entities/player.js';
-import { bag, eq, equip, slotOf, bagFull } from './inventory.js';
+import { bag, eq, equip, slotOf, lootBlocked } from './inventory.js';
+import { refillStep } from './refill.js';
 import { autoWeapon } from './swap.js';
 import { spin, bomb, potion } from './combat.js';
 import { dodge } from './dodge.js';
@@ -36,6 +37,9 @@ export function autoThink(dt) {
       if (!c || it.v > c.v) { equip(i); break; }
     }
   }
+
+  // sem poções/bombas: vai até o NPC comprar (auto refil)
+  if (refillStep()) return;
 
   // indo para a fogueira com caminho livre: o movimento é decidido em updateStamina
   if (state.seek && !danger()) return;
@@ -118,7 +122,7 @@ export function autoThink(dt) {
       P.tgt = null;
       let bl = null, bd = 18;
       if (state.autoCfg.loot) loot.forEach(x => {
-        if (x.dropped || ((x.ty === 'wpn' || x.ty === 'arm') && bagFull())) return;
+        if (x.dropped || lootBlocked(x)) return;
         const d = Math.hypot(x.m.position.x - P.x, x.m.position.z - P.z);
         if (d < bd) { bd = d; bl = x; }
       });

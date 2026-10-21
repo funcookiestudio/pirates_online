@@ -183,11 +183,11 @@ export function initPanel() {
   // ajustes do auto (botão ⚙)
   Object.keys(state.autoCfg).forEach(k => {
     const c = $('ac-' + k);
-    c.onchange = () => { state.autoCfg[k] = c.checked; };
+    c.onchange = () => { state.autoCfg[k] = c.type === 'checkbox' ? c.checked : +c.value; };
   });
   $('bg').onclick = () => {
     const a = $('acfg');
-    Object.keys(state.autoCfg).forEach(k => { $('ac-' + k).checked = state.autoCfg[k]; });
+    Object.keys(state.autoCfg).forEach(k => { const c = $('ac-' + k); if (c.type === 'checkbox') c.checked = state.autoCfg[k]; else c.value = state.autoCfg[k]; });
     a.style.display = a.style.display === 'block' ? 'none' : 'block';
   };
   on('inventory:changed', () => { if ($('pnl').style.display === 'block') renderPanel(); });

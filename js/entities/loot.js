@@ -4,7 +4,7 @@ import { loot } from '../core/registry.js';
 import { M } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from './player.js';
-import { addItem, bagFull } from '../systems/inventory.js';
+import { addItem, bagFull, lootBlocked, POT_MAX } from '../systems/inventory.js';
 import { lootText, log } from '../ui/notify.js';
 
 /** Modelo de uma arma caída: arma deitada + anel e feixe de luz da raridade */
@@ -84,8 +84,7 @@ export function applyLoot(l, tag) {
     P.gold += g;
     lootText(p + '+' + g + ' ouro');
   } else if (l.ty === 'pot') {
-    P.pot++;
-    lootText(p + '+ poção');
+    if (P.pot < POT_MAX) { P.pot++; lootText(p + '+ poção'); }
   } else if (bagFull()) {
     // chegou com a mochila cheia (ex.: o companheiro trazia na boca): solta no chão, sem ninguém pegar sozinho
     dropItem(l.it || { ty: l.ty, q: l.q, w: l.wi, v: 0, n: '' }, l);
@@ -97,11 +96,12 @@ export function applyLoot(l, tag) {
 
 let fullT = 0;
 /** Aviso (no máximo a cada 3 s) de mochila cheia */
-function notifyFull() {
+function notifyFull(pot) {
   const n = performance.now();
   if (n - fullT < 3000) return;
   fullT = n;
-  lootText('🎒 Mochila cheia!');
+  lootText(pot ? '🧪 Poções no limite (5)' : '🎒 Mochila cheia!');
+  if (pot) return;
 }
 
 /** Gira os itens no chão e deixa o jogador coletar os que estão perto */
@@ -115,8 +115,7 @@ export function updateLoot(dt, now) {
     l.m.visible = l.life < LOOT_LIFE - 10 || Math.floor(l.life * 5) % 2 === 0; // pisca nos últimos 10 s
     const d = Math.hypot(P.x - l.m.position.x, P.z - l.m.position.z);
     if (l.dropped && !l.armed && d > 2.6) l.armed = true;
-    const isEq = l.ty === 'wpn' || l.ty === 'arm';
-    if (d < 1.3 && isEq && bagFull()) { notifyFull(); continue; }
+    if (d < 1.3 && lootBlocked(l)) { notifyFull(l.ty === 'pot'); continue; }
     if (d < 1.3 && (!l.dropped || l.armed)) {
       applyLoot(l);
       scene.remove(l.m);

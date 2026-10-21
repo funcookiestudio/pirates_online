@@ -2,13 +2,13 @@
 import { $ } from '../core/utils.js';
 import { P } from '../entities/player.js';
 import { WEAPONS, RN, AN } from '../data/weapons.js';
-import { bag, chest, addItem, bagFull, BAG_MAX, CHEST_MAX } from '../systems/inventory.js';
+import { bag, chest, addItem, bagFull, BAG_MAX, CHEST_MAX, POT_MAX, BOMB_MAX, PRICE } from '../systems/inventory.js';
 import { emit } from '../core/events.js';
 import { lootText, log } from './notify.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
 
-const icon = it => it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
+const icon = it => it.bomb ? '💣' : it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
 const val = (ty, q, wi) => Math.round((ty === 'wpn' ? WEAPONS[wi].b : 8) * q * (1 + (P.lv - 1) * .25));
 const BUY = 9, SELL = { smith: 4, tavern: 3, trader: 6 };
 
@@ -19,7 +19,9 @@ function makeStock(kind) {
     [1, 2, 3].forEach(q => s.push({ ty: 'arm', q, wi: 0, price: val('arm', q, 0) * BUY }));
     return s;
   }
-  return [{ pot: 1, n: 'Poção de vida', price: kind === 'tavern' ? 25 : 32, desc: 'Recupera vida (tecla E)' }];
+  const s = [{ pot: 1, n: 'Poção de vida', price: kind === 'tavern' ? PRICE.potTavern : PRICE.potTrader, desc: 'Recupera vida (tecla E) · leva até ' + POT_MAX }];
+  if (kind === 'trader') s.push({ pot: 1, bomb: 1, n: 'Bomba', price: PRICE.bomb, desc: 'Explosão em área (tecla W) · leva até ' + BOMB_MAX });
+  return s;
 }
 
 const itemName = it => it.pot ? it.n : it.ty === 'wpn' ? WEAPONS[it.wi].n : AN[it.q - 1];
@@ -66,12 +68,14 @@ function renderShop() {
       r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (it.pot ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
       const b = document.createElement('button');
       b.textContent = '💰 ' + it.price;
-      b.disabled = P.gold < it.price || (!it.pot && bagFull());
-      if (!it.pot && bagFull()) b.title = 'Mochila cheia';
+      const full = it.bomb ? P.bmb >= BOMB_MAX : it.pot ? P.pot >= POT_MAX : bagFull();
+      b.disabled = P.gold < it.price || full;
+      if (full) b.title = it.pot ? 'Você já leva o máximo' : 'Mochila cheia';
       b.onclick = () => {
-        if (P.gold < it.price || (!it.pot && bagFull())) return;
+        if (P.gold < it.price || full) return;
         P.gold -= it.price;
-        if (it.pot) { P.pot++; lootText('+ poção'); } else addItem({ ty: it.ty, q: it.q, wi: it.wi });
+        if (it.bomb) { P.bmb++; lootText('+ bomba'); }
+        else if (it.pot) { P.pot++; lootText('+ poção'); } else addItem({ ty: it.ty, q: it.q, wi: it.wi });
         renderShop();
       };
       r.append(b);

@@ -7,12 +7,13 @@ export const state = {
   autoOn: false,    // auto combate ligado?
   stam: 1,          // fôlego do auto combate (0..1): gasta ligado, recupera desligado ou descansando
   autoRest: false,  // auto ligado mas parado, sentado descansando
+  trip: null,       // indo comprar poções/bombas
   seek: null,       // ponto de descanso (fogueira) para onde o auto está indo
   clearing: false,  // limpando inimigos da fogueira antes de descansar
   cp: -1,           // posto de renascimento atual (-1 = vila)
   deaths: {},       // mortes por posto
   autoHold: 0,      // segundos em que o jogador assume o controle do auto combate
-  autoCfg: { loot: true, equip: true, swap: true }, // ajustes do auto combate
+  autoCfg: { loot: true, equip: true, swap: true, refill: true, buyQty: 5 }, // ajustes do auto combate
   pet: PETLIST[0],  // companheiro ativo
   petHappy: 0,      // tempo restante (s) da animação feliz ao equipar um companheiro
   petAttack: true,  // companheiro ataca? (tecla R)
