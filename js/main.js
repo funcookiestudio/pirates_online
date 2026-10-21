@@ -24,6 +24,7 @@ import { initPanel } from './ui/panel.js';
 import { updateStatusBars, updateOverlays } from './ui/hud.js';
 import { log } from './ui/notify.js';
 import './systems/death.js';
+import { initFullscreen } from './ui/fullscreen.js';
 import { VILLAGE_SEAT } from './data/posts.js';
 import { P, hurtP } from './entities/player.js';
 import { enemies, props, loot } from './core/registry.js';
@@ -65,6 +66,7 @@ function frame(now) {
 buildWorld();
 buildVillage();
 initInput();
+initFullscreen();
 initPanel();
 initDialog();
 setWeapon();
