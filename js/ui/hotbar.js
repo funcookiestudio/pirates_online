@@ -12,6 +12,9 @@ export function fitHotbar() {
   const landscapePhone = innerWidth > innerHeight && innerHeight <= 500; // celular deitado: barco menor, sobra mais tela
   const k = landscapePhone ? Math.min(.62, (innerWidth - 8) / hb.offsetWidth) : portrait ? Math.min(2.6, (innerWidth - 8) / hb.offsetWidth) : Math.max(HB_MIN, Math.min(1, (innerWidth - 8) / hb.offsetWidth));
   hb.style.transform = 'translateX(-50%) scale(' + k.toFixed(3) + ')';
+  // altura ocupada pela hotbar (do topo dos diamantes/convés até a borda): diálogos e lojas ficam acima disso
+  const top = Math.min($('deck').getBoundingClientRect().top, $('gwl').getBoundingClientRect().top);
+  document.documentElement.style.setProperty('--hbh', Math.ceil(innerHeight - top) + 'px');
 }
 
 export function initHotbarFit() {

@@ -4,6 +4,7 @@ import { enemies } from '../core/registry.js';
 import { $, isPanelOpen } from '../core/utils.js';
 import { pxn } from '../data/pets.js';
 import { P } from '../entities/player.js';
+import { dialogOpen } from './dialog.js';
 import { nearestPost } from '../data/posts.js';
 import { updateLootTexts } from './notify.js';
 import { ROLL_CD } from '../systems/dodge.js';
@@ -35,6 +36,7 @@ let lastStatsRefresh = 0;
 /** Barra do inimigo, missão, XP do companheiro, atributos do painel e minimapa */
 export function updateOverlays(now) {
   updateLootTexts(P.x, P.z, performance.now());
+  document.body.classList.toggle('ui-open', isPanelOpen() || dialogOpen()); // painel/diálogo aberto: esconde minimapa e avisos que ficariam por baixo
   // barra de vida do último inimigo atingido (some após 4 s)
   const e = P.tgt && !P.tgt.dead ? P.tgt : (state.lastE && now - state.lastT < 4000 ? state.lastE : null), eh = $('ehud');
   if (e && !e.dead) {
