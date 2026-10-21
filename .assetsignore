@@ -1,0 +1,10 @@
+node_modules
+tools
+preview
+package.json
+package-lock.json
+README.md
+wrangler.jsonc
+.assetsignore
+.gitignore
+.git
