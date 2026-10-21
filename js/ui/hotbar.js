@@ -9,7 +9,8 @@ export function fitHotbar() {
   hb.style.transform = 'translateX(-50%)';
   // retrato no celular: o barco ocupa toda a largura da tela, com 4 px de folga em cada ponta
   const portrait = innerHeight > innerWidth && innerWidth <= 700;
-  const k = portrait ? Math.min(2.6, (innerWidth - 8) / hb.offsetWidth) : Math.max(HB_MIN, Math.min(1, (innerWidth - 8) / hb.offsetWidth));
+  const landscapePhone = innerWidth > innerHeight && innerHeight <= 500; // celular deitado: barco menor, sobra mais tela
+  const k = landscapePhone ? Math.min(.62, (innerWidth - 8) / hb.offsetWidth) : portrait ? Math.min(2.6, (innerWidth - 8) / hb.offsetWidth) : Math.max(HB_MIN, Math.min(1, (innerWidth - 8) / hb.offsetWidth));
   hb.style.transform = 'translateX(-50%) scale(' + k.toFixed(3) + ')';
 }
 
@@ -17,6 +18,7 @@ export function initHotbarFit() {
   fitHotbar();
   addEventListener('resize', fitHotbar);
   addEventListener('orientationchange', fitHotbar);
+  addEventListener('orientationchange', () => setTimeout(fitHotbar, 250));
 }
 
 /** Sincroniza ícone, modo (ataca / coleta) e destaque do botão com o companheiro ativo */

@@ -190,3 +190,10 @@
 /* Chefe: borda dourada */
 #ehud.boss #ebar { height: 18px; border: 3px solid #f0c040; box-shadow: 0 0 10px #f0c04099, inset 0 0 0 1px #7a5a10, 0 0 8px #000; }
 #ehud.boss #en { color: #f0c870; font-size: 17px; letter-spacing: 1px; text-shadow: 0 0 8px #f0c04088, 0 1px 3px #000; }
+
+/* Celular deitado: minimapa e botão auto menores */
+@media (orientation: landscape) and (max-height: 500px) {
+  #mini { width: 78px; height: 78px; right: calc(env(safe-area-inset-right, 0px) + 8px); }
+  #quest { top: 90px; width: 120px; font-size: 11px; }
+  #sawrap { transform: translateY(-50%) scale(.72); transform-origin: left center; }
+}
