@@ -1,5 +1,5 @@
 /* Avisos na tela: log, banner de nível, números de dano e fim de jogo. */
-import { cam } from '../core/engine.js';
+import { cam, ren } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { $ } from '../core/utils.js';
 
@@ -19,7 +19,7 @@ export function lootText(t) {
   const el = document.createElement('div');
   el.className = 'lt';
   el.textContent = t;
-  document.body.append(el);
+  ren.domElement.after(el);
   lootTexts.push({ el, t0: performance.now() });
   if (lootTexts.length > 5) lootTexts.shift().el.remove();
 }
@@ -56,7 +56,7 @@ export function dmgNum(e, d, cr) {
   x.textContent = d;
   x.style.left = ((v.x * .5 + .5) * innerWidth + Math.random() * 20 - 10) + 'px';
   x.style.top = ((-v.y * .5 + .5) * innerHeight) + 'px';
-  document.body.append(x);
+  ren.domElement.after(x);
   setTimeout(() => x.remove(), 1000);
   state.lastE = e;
   state.lastT = performance.now();

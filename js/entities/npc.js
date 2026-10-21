@@ -1,6 +1,6 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
-import { scene } from '../core/engine.js';
+import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
 import { P } from './player.js';
 import { person, bend } from './character.js';
@@ -79,7 +79,7 @@ export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
   dress(g, role, v);
   scene.add(g);
   let lab = null;
-  if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; document.body.appendChild(lab); }
+  if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }
   const n = { info, lab, g, role, hx: x, hz: z, ry, ph: Math.random() * 6, t: 2 + Math.random() * 4, tx: x, tz: z, vx: 0, vz: 0, sm: { side: 0 } };
   if (work && work.kind === 'smith') initSmith(n, work.at, work.th);
   list.push(n);
@@ -160,7 +160,7 @@ export function makeChest(x, z, ry, info) {
   const lab = document.createElement('div');
   lab.className = 'npcl';
   lab.textContent = info.ic + ' ' + info.name;
-  document.body.appendChild(lab);
+  ren.domElement.after(lab);
   list.push({ info, lab, g, role: 'chest', ly: 1.7, lid: lidP, open: 0 });
 }
 
@@ -182,7 +182,7 @@ export function makeBoard(x, z, ry, info) {
   const lab = document.createElement('div');
   lab.className = 'npcl';
   lab.textContent = info.ic + ' ' + info.name;
-  document.body.appendChild(lab);
+  ren.domElement.after(lab);
   list.push({ info, lab, g, role: 'chest', ly: 3.1 });
 }
 
