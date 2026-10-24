@@ -50,10 +50,18 @@ export function pickSlot(it, better) {
 }
 
 /** Equipa o item `i` da mochila; o item antigo do mesmo espaço volta para a mochila */
-export function equip(i) {
+/** O item `it` pode ir para o espaço `slot` (arrastar e soltar)? A mão 2 aceita o mesmo tipo da principal, exceto armas grandes. */
+export function canEquipTo(it, slot) {
+  const s = slotOf(it);
+  if (slot === s) return true;
+  if (slot === 'off') return s !== 'arm' && !WEAPONS[it.w].big && !!eq[s] && !WEAPONS[eq[s].w].big;
+  return false;
+}
+
+export function equip(i, forced) {
   const it = bag[i];
   if (!it) return;
-  const slot = pickSlot(it, false), old = eq[slot];
+  const slot = forced && canEquipTo(it, forced) ? forced : pickSlot(it, false), old = eq[slot];
   bag.splice(i, 1);
   if (old) {
     if (slot === 'arm') { P.max -= old.v; P.hp = Math.min(P.hp, P.max); }

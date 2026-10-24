@@ -5,7 +5,7 @@ import { $, isPanelOpen } from '../core/utils.js';
 import { WEAPONS, RN } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { dropItem } from '../entities/loot.js';
-import { slotOf, unequip, pickSlot, POT_MAX, BOMB_MAX } from '../systems/inventory.js';
+import { slotOf, unequip, pickSlot, canEquipTo, POT_MAX, BOMB_MAX } from '../systems/inventory.js';
 import { bag, eq, equip, BAG_MAX } from '../systems/inventory.js';
 import { PST } from '../pets/stats.js';
 import { renderPets, initPetPanel } from './pet-panel.js';
@@ -37,6 +37,65 @@ const RIGHT = [['gloves', 'LUVAS', '🧤'], ['legs', 'CALÇAS', '👖'], ['boots
 
 function stat(ic, name, val, sub, tip) {
   return '<div class="st" title="' + (tip || '') + '"><i>' + ic + '</i><span>' + name + (sub ? '<small>' + sub + '</small>' : '') + '</span><b>' + val + '</b></div>';
+}
+
+/** Marca um espaço de equipamento: aceita soltar itens (data-drop) e, com item, pode ser arrastado de volta (data-drag) */
+function mark(d, k, it) { d.dataset.drop = k; if (it) d.dataset.drag = 'eq:' + k; }
+
+/* ---------- Arrastar e soltar (mouse e toque): mochila → espaço equipa · espaço → mochila desequipa ---------- */
+function initDrag() {
+  const root = $('pnl');
+  let st = null, ghost = null, hover = null;
+  const okFor = (src, tgt) => {
+    if (!tgt) return false;
+    const k = tgt.dataset.drop || (tgt.closest('#bag') ? 'bag' : '');
+    if (src.t === 'bag') { const it = bag[src.i]; return !!it && !!k && k !== 'bag' && canEquipTo(it, k); }
+    return k === 'bag' && !!eq[src.i];
+  };
+  const target = (x, y) => { const e = document.elementFromPoint(x, y); return e && (e.closest('[data-drop]') || e.closest('#bag')); };
+  root.addEventListener('pointerdown', e => {
+    const d = e.target.closest('[data-drag]');
+    if (!d || e.button > 0) return;
+    const [t, i] = d.dataset.drag.split(':');
+    st = { t, i: t === 'bag' ? +i : i, el: d, x: e.clientX, y: e.clientY, on: false };
+  });
+  addEventListener('pointermove', e => {
+    if (!st) return;
+    if (!st.on) {
+      if (Math.hypot(e.clientX - st.x, e.clientY - st.y) < 8) return;
+      st.on = true;
+      ghost = st.el.cloneNode(true);
+      ghost.className += ' dragghost';
+      ghost.style.width = st.el.offsetWidth + 'px'; ghost.style.height = st.el.offsetHeight + 'px';
+      document.body.append(ghost);
+      st.el.classList.add('dragsrc');
+      root.classList.add('dragging');
+    }
+    ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
+    const t = target(e.clientX, e.clientY);
+    if (hover && hover !== t) hover.classList.remove('dropok', 'dropno');
+    hover = t;
+    if (t) { const ok = okFor(st, t); t.classList.toggle('dropok', ok); t.classList.toggle('dropno', !ok); }
+  });
+  const end = e => {
+    if (!st) return;
+    const s = st; st = null;
+    if (hover) hover.classList.remove('dropok', 'dropno');
+    hover = null;
+    if (!s.on) return;
+    if (ghost) ghost.remove(); ghost = null;
+    root.classList.remove('dragging');
+    s.el.classList.remove('dragsrc');
+    const eat = ev => ev.stopPropagation();
+    s.el.addEventListener('click', eat, true);           // o soltar não conta como clique
+    setTimeout(() => s.el.removeEventListener('click', eat, true), 60);
+    const t = e.type === 'pointerup' ? target(e.clientX, e.clientY) : null;
+    if (!okFor(s, t)) return;
+    sel = -1; selE = '';
+    if (s.t === 'bag') equip(s.i, t.dataset.drop); else unequip(s.i);
+  };
+  addEventListener('pointerup', end);
+  addEventListener('pointercancel', end);
 }
 
 /** Seleciona (ou fecha) a prévia de um item equipado */
@@ -84,7 +143,7 @@ function renderQuick() {
   const cons = (ic, n, lb, tip) => { const d = slot(null, null, lb, ic); d.className = 'sl ' + (n > 0 ? 'r1' : 'ph'); d.innerHTML = '<em>' + ic + '</em><small>x' + n + '</small><u>' + lb + '</u>'; d.title = tip; return d; };
   el.append(cons('🧪', P.pot, 'POÇÃO', 'Poção de vida (tecla E) · leva até ' + POT_MAX));
   el.append(cons('💣', P.bmb, 'BOMBA', 'Bomba (tecla W) · leva até ' + BOMB_MAX));
-  const g = slot(eq.gun, eq.gun ? () => pickE('gun') : null, 'FOGO', '🔫');
+  const g = slot(eq.gun, eq.gun ? () => pickE('gun') : null, 'FOGO', '🔫'); mark(g, 'gun', eq.gun);
   if (P.act === 'gun') g.classList.add('act');
   if (selE === 'gun') g.classList.add('sel');
   el.append(g);
@@ -102,7 +161,7 @@ function renderPanel() {
 
   const fill = (el, list) => {
     el.innerHTML = '';
-    list.forEach(([id, lb, ic]) => { const d = slot(id === 'arm' ? eq.arm : null, id === 'arm' && eq.arm ? () => pickE('arm') : null, lb, ic); if (selE === id) d.classList.add('sel'); el.append(d); });
+    list.forEach(([id, lb, ic]) => { const d = slot(id === 'arm' ? eq.arm : null, id === 'arm' && eq.arm ? () => pickE('arm') : null, lb, ic); if (selE === id) d.classList.add('sel'); if (id === 'arm') mark(d, 'arm', eq.arm); el.append(d); });
   };
   if (selE && !eq[selE]) selE = '';
   const shown = sel >= 0 && bag[sel] ? bag[sel] : selE ? eq[selE] : null;
@@ -110,7 +169,7 @@ function renderPanel() {
   fill($('eqL'), LEFT);
   fill($('eqR'), RIGHT);
   const w = slot(eq.wpn, eq.wpn ? () => pickE('wpn') : null, 'MÃO 1', '⚔');
-  const o = slot(eq.off, eq.off ? () => pickE('off') : null, 'MÃO 2', '✋');
+  const o = slot(eq.off, eq.off ? () => pickE('off') : null, 'MÃO 2', '✋'); mark(o, 'off', eq.off); mark(w, 'wpn', eq.wpn);
   o.title = eq.off ? o.title : 'Mão 2 livre: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas)';
   if (P.act === 'wpn') w.classList.add('act');
   if (selE === 'wpn') w.classList.add('sel'); if (selE === 'off') o.classList.add('sel');
@@ -123,7 +182,7 @@ function renderPanel() {
   const b = $('bag');
   b.innerHTML = '';
   if (btab === 'eq') {
-    for (let i = 0; i < BAG_MAX; i++) b.append(slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; selE = ''; renderPanel(); fitPanel(); } : null));
+    for (let i = 0; i < BAG_MAX; i++) { const d = slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; selE = ''; renderPanel(); fitPanel(); } : null); if (bag[i]) d.dataset.drag = 'bag:' + i; b.append(d); }
     if (sel >= 0) b.children[sel] && b.children[sel].classList.add('sel');
     $('bcnt').textContent = bag.length + ' / ' + BAG_MAX + (bag.length >= BAG_MAX ? ' · CHEIA' : '');
     $('bcnt').style.color = bag.length >= BAG_MAX ? '#ff8a6a' : '';
@@ -235,6 +294,7 @@ export function initPanel() {
     sync();
     a.style.display = a.style.display === 'block' ? 'none' : 'block';
   };
+  initDrag();
   on('inventory:changed', () => { if ($('pnl').style.display === 'block') renderPanel(); });
   on('pets:changed', () => { if ($('pnl2').style.display === 'block') renderPets(); });
 }

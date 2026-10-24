@@ -266,3 +266,11 @@
 
 .sl { position: relative; }
 .hand2 { position: absolute; left: 2px; top: 2px; font-size: 9px; line-height: 1; padding: 1px 3px; border-radius: 3px; background: #a03020; color: #fff; pointer-events: none; }
+
+/* Arrastar e soltar itens */
+[data-drag] { touch-action: none; cursor: grab; }
+.dragghost { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -50%) scale(1.1); opacity: .9; box-shadow: 0 6px 18px #000; margin: 0; }
+.dragsrc { opacity: .35; }
+#pnl.dragging [data-drop], #pnl.dragging #bag { transition: box-shadow .1s; }
+.dropok { box-shadow: 0 0 0 3px #6bd36b, 0 0 12px #6bd36b !important; }
+.dropno { box-shadow: 0 0 0 2px #a05040 !important; }
