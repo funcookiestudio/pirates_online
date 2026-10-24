@@ -32,15 +32,15 @@ export function initTerrain(posts = [], seed = SEED) {
 
   // postos: entre todos os pontos de terra firme, o que melhor combina com o anel (distância da vila) e a direção desejados
   const cands = [];
-  for (let z = -95; z <= 95; z += 3) for (let x = -95; x <= 95; x += 3) {
+  for (let z = -95; z <= 95; z += 2) for (let x = -95; x <= 95; x += 2) {
     const d = Math.hypot(x, z);
-    if (d > 44 && d < 92 && roomy(x, z, 7)) cands.push([x, z, d, Math.atan2(z, x)]);
+    if (d > 44 && d < 92 && roomy(x, z, 6)) cands.push([x, z, d, Math.atan2(z, x)]);
   }
   // espalha os postos por pontos bem distantes entre si (e da vila), depois ordena pela distância: quanto mais longe, mais perigoso
   const chosen = [];
   for (let n = 0; n < posts.length && cands.length; n++) {
     let best = null;
-    for (const sep of [26, 22, 18, 16]) {          // separação mínima entre postos: relaxa só se a ilha não comportar
+    for (const sep of [26, 22, 18, 15]) {          // separação mínima entre postos: relaxa só se a ilha não comportar
       let bs = -1;
       for (const c of cands) {
         if (chosen.some(q => Math.hypot(q[0] - c[0], q[1] - c[1]) < sep)) continue;
@@ -65,6 +65,7 @@ export function initTerrain(posts = [], seed = SEED) {
 
 /** Ponto em terra firme, sem água, ladeira nem rio num raio r */
 function roomy(x, z, r) {
+  if (onRoad(x, z, 3)) return false;                       // posto nunca em cima de estrada
   for (let a = 0; a < 6.283; a += .6) for (const d of [r * .5, r]) {
     const px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d;
     if (!walkable(px, pz) || heightAt(px, pz) < SEA + 1.1 || Math.abs(heightAt(px, pz) - heightAt(x, z)) > 2.6) return false;
@@ -84,6 +85,17 @@ function flatten(x, z, r0, r1, h) {
       H[k] = H[k] * (1 - w) + h * w;
       if (w > .5) { isl.nav[k] = 0; isl.W[k] = -99; }
     }
+}
+
+/** Há estrada (ou seu acostamento) a até `m` metros de (x,z)? Vegetação, pedras e postos ficam longe delas. */
+export function onRoad(x, z, m = 2) {
+  if (!isl) return false;
+  const cx = Math.round(x + VX + E), cz = Math.round(z + VZ + E), r = Math.ceil(m);
+  for (let j = cz - r; j <= cz + r; j++) for (let i = cx - r; i <= cx + r; i++) {
+    if (i < 0 || j < 0 || i > N || j > N) continue;
+    if (isl.pm[j * V + i] && (i - cx) ** 2 + (j - cz) ** 2 <= m * m) return true;
+  }
+  return false;
 }
 
 /** Altura do relevo (bilinear) */
