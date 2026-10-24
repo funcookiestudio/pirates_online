@@ -150,8 +150,12 @@ export function generateDungeon(seed, theme, opts = {}) {
       if (grid[k] === 1 && n < 4 && r() < .3) g2[k] = 0;
       else if (!grid[k] && n >= 2 && r() < .35) g2[k] = 1;
     }
-    grid = g2;
-    rooms.forEach(o => grid[o.cy * W + o.cx] = 1);
+    rooms.forEach(o => g2[o.cy * W + o.cx] = 1);
+    // a erosão não pode isolar a saída (nem deixar pouco mapa): se isolar, mantém a cripta intacta
+    const d2 = bfs(g2, s0).d;
+    let n2 = 0, n1 = 0;
+    for (let k = 0; k < W * H; k++) { if (g2[k] && d2[k] >= 0) n2++; if (grid[k]) n1++; }
+    if (d2[e0] >= 0 && n2 > n1 * .6) grid = g2;
   }
   const reach = bfs(grid, s0).d;
   let floor = 0;
