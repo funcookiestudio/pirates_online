@@ -1,6 +1,7 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
-import { steer, navTarget, freePoint } from './steer.js';
+import { steer, navTarget, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
+import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
 import { props } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
@@ -19,6 +20,7 @@ import { rollMove, updateDodgeTimers, animateRoll } from './dodge.js';
 const AXIS_X = new THREE.Vector3(1, 0, 0);
 
 export function updatePlayer(dt) {
+  updateSwimState(dt);
   if (!P.dead) {
     updateStamina(dt);
     updateSwap(dt);
@@ -42,6 +44,7 @@ export function updatePlayer(dt) {
 
   animate(dt);
   applyAim();
+  swimPose(dt);
   placeWeapons();
 }
 
@@ -94,12 +97,14 @@ function moveAndAct(dt) {
 
   // aceleração suave em direção ao destino
   // recarregando (mosquete): fica parado até terminar, mesmo que o alvo se afaste
-  const want = d > rng && !reloading() && !swapping() ? Math.min(P.sp, Math.max((d - rng) * 4, .7)) : 0;
+  const want = d > rng && !reloading() && !swapping() ? Math.min(P.sp * P.swimK, Math.max((d - rng) * 4, .7)) : 0;
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
+    setSwim(true);
     const [nx, nz] = navTarget(STEER, P.x, P.z, tx, tz, .5);
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
     [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, .5, STEER, Math.min(nd, d - rng));
+    setSwim(false);
   }
   const k = 1 - Math.exp(-dt * (want > Math.hypot(P.vx, P.vz) ? 6 : 9));
   P.vx += (wx - P.vx) * k;
@@ -131,7 +136,7 @@ function moveAndAct(dt) {
   }
 
   // arma de fogo só dispara depois de mirar
-  if (d <= rng && P.tgt && P.cd <= 0 && !P.swap && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
+  if (d <= rng && P.tgt && P.cd <= 0 && !P.swap && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
 
   clampToWorld();
 
@@ -152,7 +157,7 @@ function clampToWorld() {
     }
   });
   // mar e paredões: desliza pela margem ou volta ao último ponto firme
-  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z);
+  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z, true);
   lastX = P.x; lastZ = P.z;
 }
 

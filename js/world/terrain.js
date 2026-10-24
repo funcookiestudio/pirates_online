@@ -106,12 +106,46 @@ export function walkable(x, z) {
   return H[k] > SEA + .45 && isl.nav[k] === 0 && !blockedByObstacle(x, z);
 }
 
+/** Chão real sob (x,z): relevo ou convés de ponte, sem o "piso" do mar */
+export function floorY(x, z) {
+  if (!H) return 0;
+  const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+  let y = heightAt(x, z);
+  if (gx >= 0 && gz >= 0 && gx <= N && gz <= N) { const d = isl.deck[gz * V + gx]; if (d > -90 && d > y) y = d; }
+  return y;
+}
+
+/** Altura da superfície da água em (x,z): rio/lago (nível próprio) ou mar */
+export function waterLevel(x, z) {
+  const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+  if (gx >= 0 && gz >= 0 && gx <= N && gz <= N) { const w = isl.W[gz * V + gx]; if (w > -90) return w; }
+  return SEA;
+}
+
+/** Profundidade da água sobre o chão em (x,z) (≤ 0 = seco). Em cima de ponte conta como seco. */
+export function waterDepth(x, z) {
+  const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+  if (gx >= 0 && gz >= 0 && gx <= N && gz <= N && isl.deck[gz * V + gx] > -90) return 0;
+  return waterLevel(x, z) - heightAt(x, z);
+}
+
+/** Dá para nadar aqui? (terra firme ou água de até 3,6 m de fundura, sem obstáculos) */
+export function swimmable(x, z) {
+  if (!H) return true;
+  if (walkable(x, z)) return true;
+  const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+  if (gx < 1 || gz < 1 || gx >= N || gz >= N || blockedByObstacle(x, z)) return false;
+  const d = waterDepth(x, z);
+  return d > -.6 && d < 3.6;   // -0,6: faixa de praia entre a terra firme e a água
+}
+
 /** Corrige uma posição que entrou no mar/paredão: tenta deslizar em um eixo, senão volta para a anterior. Devolve [x,z]. */
-export function slideTo(px, pz, x, z) {
-  if (!walkable(px, pz)) return [x, z];            // já está preso num obstáculo: deixa sair
-  if (walkable(x, z)) return [x, z];
-  if (walkable(x, pz)) return [x, pz];
-  if (walkable(px, z)) return [px, z];
+export function slideTo(px, pz, x, z, swim = false) {
+  const ok = swim ? swimmable : walkable;
+  if (!ok(px, pz)) return [x, z];                  // já está preso num obstáculo: deixa sair
+  if (ok(x, z)) return [x, z];
+  if (ok(x, pz)) return [x, pz];
+  if (ok(px, z)) return [px, z];
   return [px, pz];
 }
 

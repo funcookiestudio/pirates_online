@@ -2,14 +2,18 @@
    steer() gira a direção desejada para o ângulo livre mais próximo; collide() empurra para fora dos obstáculos. */
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
-import { walkable } from '../world/terrain.js';
+import { walkable, swimmable } from '../world/terrain.js';
+
+/** O jogador pode passar por água (nadar); inimigos e pets não */
+let SW = false;
+export const setSwim = v => { SW = v; };
 
 const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 
 /** O caminho reto de (x,z) na direção `a` por `len` metros está livre para um corpo de raio `r`? */
 function clear(x, z, a, len, r) {
   const dx = Math.sin(a), dz = Math.cos(a);
-  for (let t = 1.2; t < len + 1.2; t += 1.2) if (!walkable(x + dx * Math.min(t, len), z + dz * Math.min(t, len))) return false;
+  for (let t = 1.2; t < len + 1.2; t += 1.2) if (!(SW ? swimmable : walkable)(x + dx * Math.min(t, len), z + dz * Math.min(t, len))) return false;
   for (let i = 0; i < props.length; i++) {
     const p = props[i], px = p.position.x - x, pz = p.position.z - z;
     const t = Math.max(0, Math.min(len, px * dx + pz * dz));
@@ -152,7 +156,7 @@ export function navTarget(mem, x, z, gx, gz, r, now) {
 /** Leva um ponto clicado para o ponto livre mais próximo (fora de paredes, casas e árvores), para o destino ser alcançável */
 export function freePoint(x, z, r = .6) {
   const inside = Math.hypot(x, z) < VILLAGE_R; // clicou dentro da vila: o ponto livre também fica dentro da muralha
-  const free = (px, pz) => walkable(px, pz) && (!inside || Math.hypot(px, pz) < VILLAGE_R - 1.7) && props.every(p => Math.hypot(px - p.position.x, pz - p.position.z) >= p.r + r);
+  const free = (px, pz) => swimmable(px, pz) && (!inside || Math.hypot(px, pz) < VILLAGE_R - 1.7) && props.every(p => Math.hypot(px - p.position.x, pz - p.position.z) >= p.r + r);
   if (free(x, z)) return { x, z };
   for (let rad = .5; rad <= 8; rad += .5) {
     for (let k = 0; k < 16; k++) {
