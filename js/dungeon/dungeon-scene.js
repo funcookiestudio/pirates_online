@@ -18,10 +18,10 @@ import { levelUp } from '../entities/player.js';
 import { buildGimmicks, updateGimmicks, gimmickMarks } from './dungeon-gimmicks.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
-const LOOK = {
-  cripta:  { floor: 0x3c3844, wall: 0x5e5868, bg: 0x07060a },
-  ruinas:  { floor: 0x484436, wall: 0x6c6652, bg: 0x08080a },
-  caverna: { floor: 0x38322c, wall: 0x56493c, bg: 0x070605 },
+const LOOK = {   // piso (xadrez de 2 tons), parede, topo da parede, detalhe e cor da névoa de cada tema
+  cripta:  { floor: 0x4a4658, floor2: 0x3e3a4c, wall: 0x6e6882, cap: 0x8a84a0, deco: 0x8a8a96, glow: 0xff9030, bg: 0x0a0812 },
+  ruinas:  { floor: 0x5c5440, floor2: 0x4c4636, wall: 0x7c7458, cap: 0xa09870, deco: 0x6a7a48, glow: 0xffb040, bg: 0x0c0c0a },
+  caverna: { floor: 0x4a3e34, floor2: 0x3c322a, wall: 0x6a5846, cap: 0x8a7458, deco: 0x7a6a58, glow: 0x60c0ff, bg: 0x0a0806 },
 };
 const MOBS = { cripta: [KIND.SKELETON, KIND.GUERREIRO, KIND.GHOST, KIND.SOMBRA], ruinas: [KIND.GRUMETE, KIND.SKELETON, KIND.CORSARIO, KIND.GUERREIRO], caverna: [KIND.CONTRA, KIND.GRUMETE, KIND.BRUTO, KIND.CORSARIO] };
 const M = c => xray(M0(c));
@@ -86,8 +86,11 @@ export function enterDungeon(D, gen) {
     im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
     g.add(im); return im;
   };
-  mkInst(new THREE.BoxGeometry(C, .3, C), M(look.floor), fl, -.15, 1);
+  mkInst(new THREE.BoxGeometry(C * .97, .3, C * .97), M(look.floor), fl.filter(([i, j]) => (i + j) % 2 === 0), -.15, 1);
+  mkInst(new THREE.BoxGeometry(C * .97, .3, C * .97), M(look.floor2), fl.filter(([i, j]) => (i + j) % 2 === 1), -.15, 1);
+  mkInst(new THREE.BoxGeometry(C, .3, C), M(0x0a0a0c), fl, -.32, 0);   // junta escura entre as lajotas
   mkInst(new THREE.BoxGeometry(C, WH, C), M(look.wall), wl, WH / 2, 1.2);
+  mkInst(new THREE.BoxGeometry(C * 1.04, .22, C * 1.04), M(look.cap), wl, WH + .1, .6);   // beiral claro: dá volume às paredes
 
   // salas: brasas nos cantos para dar vida à penumbra
   const ember = new THREE.MeshBasicMaterial({ color: 0xff9030 }), post = M(0x2a2420);
@@ -97,6 +100,40 @@ export function enterDungeon(D, gen) {
       if (!grid[cy * W + cx]) continue;
       const p = new THREE.Mesh(new THREE.CylinderGeometry(.18, .22, 1.1, 6), post); p.position.set(wx(cx), .55, wz(cy)); g.add(p);
       const f = new THREE.Mesh(new THREE.ConeGeometry(.22, .5, 5), ember); f.position.set(wx(cx), 1.4, wz(cy)); g.add(f);
+    }
+  });
+
+  // decoração: entulho, ossos/ervas e colunas em salões; estalagmites na caverna; tochas de parede com chama
+  const decoMat = M(look.deco), flame = new THREE.MeshBasicMaterial({ color: look.glow });
+  fl.forEach(([i, j]) => {
+    const k = R();
+    if (k > .055) return;
+    const x = wx(i) + (R() - .5) * 1.1, z = wz(j) + (R() - .5) * 1.1;
+    if (D.theme === 'caverna') {
+      const h = .5 + R() * 1.1, m = new THREE.Mesh(new THREE.ConeGeometry(.2 + R() * .2, h, 5), decoMat);
+      m.position.set(x, h / 2, z); g.add(m);
+    } else {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(.2 + R() * .35, .12 + R() * .2, .2 + R() * .35), decoMat);
+      m.position.set(x, .08, z); m.rotation.y = R() * 3; g.add(m);
+    }
+  });
+  gen.rooms.forEach(r => {
+    if (!r.big) return;
+    for (const [a, b] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) {
+      const cx = r.cx + a, cy = r.cy + b; if (!grid[cy * W + cx]) continue;
+      grid[cy * W + cx] = 0;   // a coluna é sólida
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, WH, 7), M(look.cap)); c.position.set(wx(cx), WH / 2, wz(cy)); g.add(c);
+    }
+  });
+  let tn = 0;
+  wl.forEach(([i, j]) => {   // tocha de parede em parede que dá para um piso, espaçadas
+    if ((i * 7 + j * 13) % 11 !== 0 || tn > 60) return;
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x = i + dx, y = j + dz;
+      if (x < 0 || y < 0 || x >= W || y >= H || !grid[y * W + x]) continue;
+      const f = new THREE.Mesh(new THREE.ConeGeometry(.2, .55, 5), flame); f.position.set(wx(i) + dx * (C / 2 + .02), 2, wz(j) + dz * (C / 2 + .02)); g.add(f);
+      const br = new THREE.Mesh(new THREE.BoxGeometry(.14, .5, .14), post); br.position.set(f.position.x, 1.55, f.position.z); g.add(br);
+      tn++; break;
     }
   });
 
@@ -142,9 +179,9 @@ export function enterDungeon(D, gen) {
     saved: { bg: scene.background, fog: scene.fog, hemi: null, torch: torch.intensity },
   };
   const hemi = scene.children.find(o => o.isHemisphereLight);
-  if (hemi) { cur.saved.hemi = hemi.intensity; hemi.intensity = .32; }
+  if (hemi) { cur.saved.hemi = hemi.intensity; hemi.intensity = .5; }
   scene.background = new THREE.Color(look.bg);
-  scene.fog = new THREE.Fog(look.bg, 12, 34);
+  scene.fog = new THREE.Fog(look.bg, 16, 44);
   refreshTorch();
 
   setAuto(false);
