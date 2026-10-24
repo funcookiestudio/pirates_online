@@ -15,7 +15,7 @@ const smooth = x => x * x * (3 - 2 * x);
 /** Giro extra do corpo ao mirar: arma pequena fica à direita (gira um pouco p/ a esquerda); arma grande gira p/ a direita */
 export function aimOffset(d) {
   const W = WEAPONS[P.wid];
-  if (!W.gun) return 0;
+  if (!W.gun || W.thrown) return 0;
   return W.big ? -BIG.beta * smooth(P.aimv) : Math.atan(.2 / Math.max(d, 3));
 }
 

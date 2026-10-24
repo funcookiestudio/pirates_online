@@ -71,7 +71,7 @@ function swapping() {
 
 /** Cabeça inclina para a direita do personagem e o olho esquerdo fecha conforme a mira */
 function applyAim() {
-  const a = P.aimv, e = a * a * (3 - 2 * a);
+  const a = WEAPONS[P.wid].thrown ? 0 : P.aimv, e = a * a * (3 - 2 * a);
   P.g.head.rotation.z = .16 * e;          // +z inclina o topo para -x = direita do personagem
   P.g.head.rotation.x = -.04 * e + (.3 * reloadWeight(WEAPONS[P.wid])); // na recarga olha para o cano
   P.g.head.rotation.y = WEAPONS[P.wid].big ? .6 * (BIG.beta + BIG.gamma) * e : 0; // olha para o alvo
@@ -170,7 +170,7 @@ function animate(dt) {
   P.rum += ((P.rumOn ? 1 : 0) - P.rum) * (1 - Math.exp(-dt * 6));
   if (P.rum < .01) { if (P.rum) { P.rum = 0; P.g.head.rotation.x = 0; P.g.armL.rotation.set(0, 0, 0); } }
   else if (P.rumOn || P.rum > .02) { animateRummage(dt); return; }
-  const W = WEAPONS[P.wid], gn = W.gun;
+  const W = WEAPONS[P.wid], gn = W.gun && !W.thrown;   // arma de arremesso usa o braço de golpe (arremessa por cima), não a pose de mira
 
   // passos
   P.ph = P.g.gs ? P.g.gs.ph : P.ph;   // fase do passo (a marcha nova mantém a própria)
