@@ -57,4 +57,4 @@ export const dealtMult = df => df <= 2 ? 1 : Math.max(.15, 1 - (df - 2) * .09);
 export const takenMult = df => df > 0 ? 1 + Math.min(df, 16) * .06 : Math.max(.5, 1 + df * .04);
 
 /** Nível mínimo para usar um item: o nível dele menos 2 de folga (itens sem nível, de saves antigos, não têm requisito) */
-export const itemReq = it => it && it.il ? Math.max(1, it.il - 2) : 1;
+export const itemReq = it => it && it.il && it.n !== 'Tocha' ? Math.max(1, it.il - 2) : 1;
