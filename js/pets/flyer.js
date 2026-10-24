@@ -262,11 +262,14 @@ function animateBird(dt, t, g, pos, flying) {
   PAR.ph += dt * fr;
   const f = glide ? .15 : Math.sin(PAR.ph) * (.5 + Math.min(.5, spd * .08));
 
-  const wt = flying ? -f : 1.25; // asas fechadas quando pousado
-  PAR.wa = PAR.wa === undefined ? wt : PAR.wa;
-  PAR.wa += (wt - PAR.wa) * Math.min(1, dt * (flying ? 30 : 10));
-  PAR.wl.rotation.z = PAR.wa;
-  PAR.wr.rotation.z = -PAR.wa;
+  if (g.rich) richParrot(dt, t, g, flying, glide, spd);
+  else {
+    const wt = flying ? -f : 1.25; // asas fechadas quando pousado
+    PAR.wa = PAR.wa === undefined ? wt : PAR.wa;
+    PAR.wa += (wt - PAR.wa) * Math.min(1, dt * (flying ? 30 : 10));
+    PAR.wl.rotation.z = PAR.wa;
+    PAR.wr.rotation.z = -PAR.wa;
+  }
 
   const rx = flying ? pitch + .1 : Math.sin(t * 3) * .05, rz = flying ? roll : 0;
   PAR.rx = (PAR.rx || 0) + (rx - (PAR.rx || 0)) * Math.min(1, dt * 8);
@@ -282,4 +285,43 @@ function animateBird(dt, t, g, pos, flying) {
   }
 
   if (flying && !glide) pos.y += Math.sin(PAR.ph) * .008;
+}
+
+/** Poses do papagaio articulado (da prévia): asa em duas partes que bate com atraso, pernas recolhidas no voo,
+    rasante com asas coladas ao corpo, preparo (cabeça baixa, pernas à frente), bicar o loot e aparar o pouso. */
+function richParrot(dt, t, g, flying, glide, spd) {
+  const lp = (a, b, k) => a + (b - a) * k;
+  let T;
+  const att = PAR.s === 'attack' ? PAR.ap : null;
+  if (!flying) {
+    // pousado no ombro: asas dobradas junto ao corpo, olha em volta, bate as asas de vez em quando
+    const c = t % 5, fl = c > 3.6 && c < 4.4;
+    T = { fold: fl ? .85 : 1.3, sh: fl ? .5 + Math.sin(t * 34) * .1 : .45, tip: fl ? .3 : .2, legL: 0, legR: 0, tail: fl ? .2 : 0, tailY: Math.sin(t * 1.2) * .1,
+      hp: Math.sin(t * 1.3) * .15, hy: Math.sin(t * .8) * .5, hr: Math.sin(t * .7) * .12 };
+  } else if (att === 'dash') {
+    // mergulho: asas coladas ao corpo, pernas esticadas para trás, bico para o alvo
+    T = { fold: 1.25, sh: .15, tip: 0, legL: -.9, legR: -.9, tail: .1, tailY: 0, hp: .2, hy: 0, hr: 0 };
+  } else if (att === 'wind') {
+    // preparo: bate devagar, cabeça baixa e pernas à frente
+    const w = PAR.ph * .55;
+    T = { fold: .12, sh: Math.sin(w) * .45, tip: Math.sin(w - .8) * .55, legL: .2, legR: .2, tail: -.1, tailY: 0, hp: .45, hy: 0, hr: 0 };
+  } else if (att === 'recover') {
+    // aparar: asas abertas e abaixadas, depois volta a bater
+    const k = Math.min(1, PAR.tm / .3);
+    T = { fold: lp(.1, .12, k), sh: lp(-.6, Math.sin(PAR.ph) * .6, k), tip: lp(-.4, Math.sin(PAR.ph - 1) * .7, k), legL: lp(-.2, 1.25, k), legR: lp(-.2, 1.25, k), tail: .25, tailY: 0, hp: -.1, hy: 0, hr: 0 };
+  } else if (PAR.s === 'peck') {
+    // bica o loot: cabeça mergulha, pernas à frente, asas semiabertas
+    T = { fold: .9, sh: .5 - Math.abs(Math.sin(t * 12)) * .4, tip: .2, legL: -.35, legR: -.35, tail: .2, tailY: 0, hp: .5 + Math.abs(Math.sin(t * 12)) * .5, hy: 0, hr: 0 };
+  } else if (glide) {
+    T = { fold: .12, sh: -.1, tip: -.05, legL: 1.25, legR: 1.25, tail: -.1, tailY: 0, hp: -.05, hy: 0, hr: 0 };
+  } else {
+    const amp = .5 + Math.min(.5, spd * .08) * .5 + .25, w = PAR.ph;
+    T = { fold: .12, sh: Math.sin(w) * amp, tip: Math.sin(w - 1) * amp * 1.2, legL: 1.25, legR: 1.25, tail: -.1, tailY: Math.sin(t * 1.5) * .06, hp: -.05, hy: 0, hr: 0 };
+  }
+  const q = PAR.pose || (PAR.pose = Object.assign({}, T)), k = Math.min(1, dt * (flying && !att ? 30 : 14));
+  for (const n in T) q[n] += (T[n] - q[n]) * k;
+  g.pw.forEach(w => { w.sh.rotation.set(0, w.s * q.fold, -w.s * q.sh); w.tip.rotation.set(0, w.s * q.fold * .5, -w.s * q.tip); });
+  g.pl[0].rotation.x = q.legL; g.pl[1].rotation.x = q.legR;
+  g.pt.rotation.set(q.tail, q.tailY, 0);
+  g.ph.rotation.set(q.hp, q.hy, q.hr);
 }

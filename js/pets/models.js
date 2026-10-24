@@ -9,38 +9,45 @@ function carryMarker(radius, y, z) {
   return cm;
 }
 
-/** Papagaio. Expõe: g.wl, g.wr (asas), g.cm (item carregado) */
+/** Papagaio (modelo articulado da prévia "Papagaio — Animações"). Expõe: g.cm (item carregado), g.rich (articulado),
+ *  g.pb (corpo), g.ph (cabeça), g.pt (cauda), g.pl[2] (pernas), g.pw[2] ({sh, tip, s}) e, por compatibilidade, g.wl/g.wr (ombros das asas).
+ *  Origem do grupo = centro do corpo; poses vêm de animateBird (flyer.js). */
 export function mkParrot() {
-  const g = new THREE.Group(), c = 0xd63a2a;
+  const g = new THREE.Group(), c = 0xd63a2a, body = new THREE.Group();
   g.rotation.order = 'YXZ';
-  g.add(
-    wb(.28, .34, .4, c, 0, 0, 0),
-    wb(.22, .22, .22, c, 0, .28, .16),
-    wb(.08, .1, .14, 0xf0b030, 0, .24, .32),
-    wb(.07, .06, .1, 0x222222, 0, .17, .3),
-    wb(.02, .06, .06, 0xffffff, .12, .31, .22),
-    wb(.02, .06, .06, 0xffffff, -.12, .31, .22),
-    wb(.02, .03, .03, 0x111111, .13, .31, .24),
-    wb(.02, .03, .03, 0x111111, -.13, .31, .24),
-    wb(.1, .04, .5, 0x2a6ad0, 0, -.1, -.42),
-    wb(.05, .04, .4, 0xf0c030, .07, -.1, -.36),
-    wb(.05, .04, .4, 0x2ab050, -.07, -.1, -.36),
-    wb(.04, .1, .04, 0xf0a030, .07, -.22, .02),
-    wb(.04, .1, .04, 0xf0a030, -.07, -.22, .02)
-  );
-  const wing = s => {
-    const w = new THREE.Group();
-    w.position.set(s * .15, .08, 0);
-    w.add(
-      wb(.5, .04, .3, 0x2a8ad0, s * .25, 0, -.04),
-      wb(.3, .045, .14, 0xf0c030, s * .22, .01, -.04),
-      wb(.2, .045, .12, 0xd63a2a, s * .1, .02, .06)
-    );
-    g.add(w);
-    return w;
-  };
-  g.wl = wing(-1);
-  g.wr = wing(1);
+  g.add(body);
+  body.add(wb(.28, .34, .4, c, 0, 0, 0), wb(.2, .2, .04, 0xf0c030, 0, -.02, .21));
+  const head = new THREE.Group();
+  head.position.set(0, .2, .12);
+  head.add(wb(.22, .22, .22, c, 0, .08, .04), wb(.08, .1, .14, 0xf0b030, 0, .04, .2), wb(.07, .06, .1, 0x222222, 0, -.03, .18),
+    wb(.02, .06, .06, 0xffffff, .12, .11, .1), wb(.02, .06, .06, 0xffffff, -.12, .11, .1),
+    wb(.02, .03, .03, 0x111111, .13, .11, .12), wb(.02, .03, .03, 0x111111, -.13, .11, .12));
+  body.add(head);
+  const tail = new THREE.Group();
+  tail.position.set(0, -.1, -.2);
+  tail.add(wb(.1, .04, .5, 0x2a6ad0, 0, 0, -.22), wb(.05, .04, .4, 0xf0c030, .07, 0, -.16), wb(.05, .04, .4, 0x2ab050, -.07, 0, -.16));
+  body.add(tail);
+  const legs = [-1, 1].map(s => {
+    const l = new THREE.Group();
+    l.position.set(s * .07, -.17, .02);
+    l.add(wb(.04, .1, .04, 0xf0a030, 0, -.05, 0), wb(.07, .02, .1, 0xf0a030, 0, -.1, .03));
+    body.add(l);
+    return l;
+  });
+  const wings = [-1, 1].map(s => {
+    const sh = new THREE.Group();
+    sh.position.set(s * .14, .08, 0);
+    sh.add(wb(.3, .04, .3, 0x2a8ad0, s * .15, 0, -.04), wb(.2, .045, .12, 0xd63a2a, s * .1, .02, .06));
+    const tip = new THREE.Group();
+    tip.position.set(s * .3, 0, 0);
+    tip.add(wb(.24, .04, .28, 0x2a8ad0, s * .12, 0, -.06), wb(.2, .045, .14, 0xf0c030, s * .1, .01, -.1));
+    sh.add(tip);
+    body.add(sh);
+    return { sh, tip, s };
+  });
+  g.rich = true;
+  g.pb = body; g.ph = head; g.pt = tail; g.pl = legs; g.pw = wings;
+  g.wl = wings[0].sh; g.wr = wings[1].sh;
   g.cm = carryMarker(.12, -.34, .04);
   g.add(g.cm);
   g.scale.setScalar(1.1);
