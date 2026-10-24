@@ -165,3 +165,13 @@ export function mountWeapons(ids, act) {
     if (c && !Object.values(P.models).includes(c)) c.visible = false;
   });
 }
+
+/** Tocha na mão livre (braço esquerdo): monta/remove o modelo e aumenta o alcance da luz que acompanha o jogador */
+export function mountTorch(wi) {
+  const fa = P.g.armL.fa;
+  if (P.torchM) { fa.remove(P.torchM); P.torchM = null; }
+  if (wi == null) return;
+  const m = WEAPONS[wi].build();
+  m.position.set(0, -.28, .12); m.rotation.x = -.5;
+  fa.add(m); P.torchM = m;
+}

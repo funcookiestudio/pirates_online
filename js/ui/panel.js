@@ -20,8 +20,8 @@ function slot(it, fn, label, ph) {
   const d = document.createElement('div');
   d.className = 'sl' + (it ? ' r' + it.q : ph ? ' ph' : '');
   if (it) {
-    d.innerHTML = (it.ty === 'wpn' ? (WEAPONS[it.w].gun ? '🔫' : '⚔') : '🛡') + '<small>+' + it.v + '</small>';
-    d.title = it.n + ' (' + RN[it.q] + (it.il ? ', Nv ' + it.il : '') + ') +' + it.v + (it.ty === 'wpn' ? ' dano · ' + (WEAPONS[it.w].big ? '2 mãos' : '1 mão') : ' vida');
+    d.innerHTML = (it.ty === 'wpn' ? (WEAPONS[it.w].torch ? '🔥' : WEAPONS[it.w].gun ? '🔫' : '⚔') : '🛡') + '<small>+' + it.v + '</small>';
+    d.title = it.n + ' (' + RN[it.q] + (it.il ? ', Nv ' + it.il : '') + ') +' + it.v + (it.ty === 'wpn' ? ' dano · ' + (WEAPONS[it.w].torch ? 'mão 2, com arma de 1 mão' : WEAPONS[it.w].big ? '2 mãos' : '1 mão') : ' vida');
     if (it.ty === 'wpn' && WEAPONS[it.w].big) d.insertAdjacentHTML('beforeend', '<b class="hand2">2M</b>');
   } else if (ph) d.innerHTML = '<em>' + ph + '</em>';
   if (label) d.insertAdjacentHTML('beforeend', '<u>' + label + '</u>');
@@ -106,7 +106,7 @@ function pickE(k) { selE = selE === k ? '' : k; sel = -1; renderPanel(); fitPane
 function itemCard(it, worn) {
   const isW = it.ty === 'wpn', W = isW ? WEAPONS[it.w] : null, old = worn ? null : eq[pickSlot(it, false)];
   const diff = worn ? 0 : old ? it.v - old.v : it.v, df = diff ? ' <small>(' + (diff > 0 ? '+' : '') + diff + ' vs. equipado)</small>' : '';
-  return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (it.il ? ' · Nv ' + it.il : '') + (isW ? (W.gun ? ' · arma de fogo' : ' · corpo a corpo') + (W.big ? ' · 2 MÃOS' : ' · 1 mão') : ' · armadura') + '</small></span></div>' +
+  return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (it.il ? ' · Nv ' + it.il : '') + (isW ? (W.torch ? ' · segunda mão (ilumina)' : W.gun ? ' · arma de fogo' : ' · corpo a corpo') + (W.big ? ' · 2 MÃOS' : W.torch ? '' : ' · 1 mão') : ' · armadura') + '</small></span></div>' +
     stat(isW ? '⚔' : '🛡', isW ? 'ATAQUE' : 'DEFESA / VIDA', '+' + it.v, df.replace(/<\/?small>/g, '')) +
     (isW ? stat('⏱', 'VELOCIDADE', (1 / (W.cd || 1)).toFixed(1) + '/s', 'Recarga ' + (W.cd || 1) + 's') : '') +
     (worn ? '<div class="iact"><button id="ieq">DESEQUIPAR</button><button id="idr">FECHAR</button></div>' : (P.lv < itemReq(it) ? stat('🔒', 'EXIGE NÍVEL', itemReq(it), 'Você está no nível ' + P.lv) : '') + '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>');

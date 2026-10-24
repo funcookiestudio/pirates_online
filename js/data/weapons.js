@@ -78,6 +78,18 @@ export const WEAPONS = [
     reload: 1, big: 1, sb: .3, fs: .26, ml: 1.15,
     build: gunBuilder(1, .05, .32, 0, 1),
   },
+  {
+    // item de segunda mão: só com armas de 1 mão; acende o caminho e queima um pouco (bônus de ataque menor)
+    n: 'Tocha', b: 1, torch: 1, rng: 0, cd: 1, mul: 0, arc: 0,
+    build: () => {
+      const g = grp(wb(.07, .62, .07, WD, 0, -.2, 0), wb(.11, .1, .11, LT, 0, .13, 0));
+      const f = new THREE.Mesh(new THREE.ConeGeometry(.12, .34, 5), new THREE.MeshBasicMaterial({ color: 0xff9a28 }));
+      f.position.y = .33; g.add(f);
+      const c = new THREE.Mesh(new THREE.ConeGeometry(.06, .2, 5), new THREE.MeshBasicMaterial({ color: 0xffe070 }));
+      c.position.y = .3; g.add(c);
+      return g;
+    },
+  },
 ];
 
 /** Nomes das raridades (índice = qualidade 1..3) */
