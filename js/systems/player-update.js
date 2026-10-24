@@ -77,7 +77,7 @@ function applyAim() {
   P.g.eyeL.scale.y = 1 - .88 * e;
 }
 
-const STEER = { side: 0 };
+const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
 
 /** Anda até o destino/alvo, ataca ao chegar no alcance, colide com árvores/pedras e regenera */
 function moveAndAct(dt) {

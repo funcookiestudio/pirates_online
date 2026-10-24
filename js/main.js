@@ -1,4 +1,5 @@
 /* Ponto de entrada: monta o mundo, liga os sistemas e roda o loop do jogo. */
+import * as terrainDbg from './world/terrain.js';
 import { scene, cam, ren } from './core/engine.js';
 import { state } from './core/state.js';
 import { buildWorld } from './world/world.js';
@@ -6,6 +7,7 @@ import { buildVillage } from './world/village.js';
 import { initDialog } from './ui/dialog.js';
 import { updateNpcs, npcList } from './entities/npc.js';
 import { updatePerf } from './systems/perf.js';
+import { pathTo } from './systems/steer.js';
 import { mergeStatics } from './world/merge.js';
 import { buildOutposts, updateOutposts } from './world/outposts.js';
 import { buildPois, updatePois } from './world/pois.js';
@@ -91,5 +93,5 @@ P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.
 initSave();
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

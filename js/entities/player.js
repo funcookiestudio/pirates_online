@@ -16,7 +16,7 @@ import { emit } from '../core/events.js';
 export const P = {
   g: person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a),
   x: 0, z: 5, hp: 100, max: 100, mp: 60, mmax: 60, lv: 1, xp: 0, nxt: 60, dmg: 12,
-  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: 5, gold: 0, pot: 3, bmb: 3, dead: false,
+  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: 3.2, gold: 0, pot: 3, bmb: 3, dead: false,
   walk: 0, wid: 0, cds: [0, 0], vx: 0, vz: 0, ph: 0,
   // animação e combo
   aa: -.4, af: -.3, lean: 0, dr: 0, cb: 0, cbt: 0, imp: 0, ay: 0,

@@ -2,7 +2,7 @@
    steer() gira a direção desejada para o ângulo livre mais próximo; collide() empurra para fora dos obstáculos. */
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
-import { walkable, swimmable } from '../world/terrain.js';
+import { walkable, swimmable, nearObstacle, roadAt, heightAt } from '../world/terrain.js';
 
 /** O jogador pode passar por água (nadar); inimigos e pets não */
 let SW = false;
@@ -13,7 +13,11 @@ const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 /** O caminho reto de (x,z) na direção `a` por `len` metros está livre para um corpo de raio `r`? */
 function clear(x, z, a, len, r) {
   const dx = Math.sin(a), dz = Math.cos(a);
-  for (let t = 1.2; t < len + 1.2; t += 1.2) if (!(SW ? swimmable : walkable)(x + dx * Math.min(t, len), z + dz * Math.min(t, len))) return false;
+  // relevo, mar e vegetação (com o raio do corpo) ao longo do caminho, de meio em meio metro
+  for (let t = .5; t < len + .5; t += .5) {
+    const px = x + dx * Math.min(t, len), pz = z + dz * Math.min(t, len);
+    if (!(SW ? swimmable : walkable)(px, pz) || nearObstacle(px, pz, r)) return false;
+  }
   for (let i = 0; i < props.length; i++) {
     const p = props[i], px = p.position.x - x, pz = p.position.z - z;
     const t = Math.max(0, Math.min(len, px * dx + pz * dz));
@@ -58,15 +62,23 @@ export function collide(q, r) {
 
 // ---------- caminho (A*) em grade, para contornar construções, muralha e aglomerados ----------
 const N = 288, ORG = -144;
-let grid = null, gridN = -1;
+let grid = null, gridN = -1, cost = null, hgt = null;
 const cell = v => Math.floor(v - ORG);
 
 function buildGrid() {
   grid = new Uint8Array(N * N);
+  cost = new Uint8Array(N * N).fill(10);          // custo por célula (décimos): estrada barata, perto de obstáculo caro
+  hgt = new Float32Array(N * N);
   gridN = props.length;
-  for (let cz = 0; cz < N; cz++) for (let cx = 0; cx < N; cx++) if (!walkable(cx + ORG + .5, cz + ORG + .5)) grid[cz * N + cx] = 1;
+  for (let cz = 0; cz < N; cz++) for (let cx = 0; cx < N; cx++) {
+    const x = cx + ORG + .5, z = cz + ORG + .5, k = cz * N + cx;
+    hgt[k] = heightAt(x, z);
+    if (!walkable(x, z) || nearObstacle(x, z, .5)) grid[k] = 1;      // vegetação com folga para o corpo
+    else if (roadAt(x, z)) cost[k] = 4;
+    else if (nearObstacle(x, z, 1.6)) cost[k] = 16;
+  }
   props.forEach(p => {
-    const R = p.r + .65;
+    const R = p.r + .5;
     for (let cx = cell(p.position.x - R); cx <= cell(p.position.x + R); cx++) {
       for (let cz = cell(p.position.z - R); cz <= cell(p.position.z + R); cz++) {
         if (cx < 0 || cz < 0 || cx >= N || cz >= N) continue;
@@ -87,6 +99,9 @@ function nearestFree(cx, cz) {
   return -1;
 }
 
+/** (teste) caminho calculado */
+export const pathTo = (sx, sz, gx, gz, r = .5) => findPath(sx, sz, gx, gz, r);
+
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
 function findPath(sx, sz, gx, gz, r) {
   if (!grid || gridN !== props.length) buildGrid();
@@ -99,7 +114,7 @@ function findPath(sx, sz, gx, gz, r) {
   const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
   const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (l + 1 < heap.length && heap[l + 1][0] < heap[m][0]) m = l + 1; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
   let it = 0, found = false;
-  while (heap.length && it++ < 40000) {
+  while (heap.length && it++ < 120000) {
     const [, c] = pop();
     if (closed[c]) continue;
     closed[c] = 1;
@@ -109,12 +124,12 @@ function findPath(sx, sz, gx, gz, r) {
       if (!dx && !dz) continue;
       const x = cx + dx, z = cz + dz;
       if (x < 0 || z < 0 || x >= N || z >= N || grid[z * N + x]) continue;
-      if (dx && dz && (grid[cz * N + x] || grid[z * N + cx])) continue; // não corta quina
-      const n = z * N + x, ng = gS[c] + (dx && dz ? 1.414 : 1);
-      if (ng < gS[n]) { gS[n] = ng; from[n] = c; const h = Math.max(Math.abs(x - gxc), Math.abs(z - gzc)) + .414 * Math.min(Math.abs(x - gxc), Math.abs(z - gzc)); push([ng + h, n]); }
+      // diagonais livres: o corpo cabe em quinas de 1 célula
+      const n = z * N + x, ng = gS[c] + (dx && dz ? 1.414 : 1) * cost[n] / 10 + Math.abs(hgt[n] - hgt[c]) * 1.2;
+      if (ng < gS[n]) { gS[n] = ng; from[n] = c; const h = Math.max(Math.abs(x - gxc), Math.abs(z - gzc)) + .414 * Math.min(Math.abs(x - gxc), Math.abs(z - gzc)); push([ng + h * .55, n]); }
     }
   }
-  if (!found) return null;
+  if (!found) { return null; }
   const pts = [];
   for (let c = g; c !== -1; c = from[c]) pts.push([c % N + ORG + .5, ((c / N) | 0) + ORG + .5]);
   pts.reverse();
@@ -126,6 +141,7 @@ function findPath(sx, sz, gx, gz, r) {
     let j = pts.length - 1;
     for (; j > i; j--) {
       const dx = pts[j][0] - cur[0], dz = pts[j][1] - cur[1];
+      if (Math.hypot(dx, dz) > 7 && j > i + 1) continue;    // atalhos curtos: não corta o traçado das estradas
       if (clear(cur[0], cur[1], Math.atan2(dx, dz), Math.hypot(dx, dz), r)) break;
     }
     out.push(pts[j]);
@@ -142,9 +158,9 @@ function findPath(sx, sz, gx, gz, r) {
  */
 export function navTarget(mem, x, z, gx, gz, r, now) {
   const d = Math.hypot(gx - x, gz - z);
-  if (d < .5 || clear(x, z, Math.atan2(gx - x, gz - z), d, r)) { mem.path = null; return [gx, gz]; }
+  if (d < .5 || (!(mem.road && d > 14) && clear(x, z, Math.atan2(gx - x, gz - z), d, r))) { mem.path = null; return [gx, gz]; }
   const t = now || performance.now();
-  if (!mem.path || Math.hypot(mem.gx - gx, mem.gz - gz) > 2.5 || t - mem.pt > 1200) {
+  if (!mem.path || Math.hypot(mem.gx - gx, mem.gz - gz) > 2.5 || (!mem.road && t - mem.pt > 1200)) {
     mem.path = findPath(x, z, gx, gz, r);
     mem.gx = gx; mem.gz = gz; mem.pt = t;
   }

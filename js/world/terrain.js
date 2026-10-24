@@ -10,6 +10,7 @@ export let H = null;       // alturas (já relativas à vila: vila = 0)
 export let VX = 0, VZ = 0; // posição da vila na grade do gerador (m, centro = 0)
 export let SEA = -3;       // nível do mar (relativo à vila)
 export const VS = 2;       // esticamento vertical do relevo
+export let REACH = null;   // células alcançáveis a pé desde a vila
 export let HV = 0;         // altura original da vila no gerador (para cores por altitude)
 const E = N / 2;
 
@@ -30,11 +31,27 @@ export function initTerrain(posts = [], seed = SEED) {
 
   flatten(0, 0, VILLAGE_R + 5, VILLAGE_R + 17, 0);
 
+  // área alcançável a pé a partir da vila (platôs isolados por paredões ficam de fora): postos só nascem nela
+  REACH = new Uint8Array(V * V);
+  {
+    const start = Math.round(VZ + E) * V + Math.round(VX + E);   // célula da vila no gerador
+    const st = [start]; REACH[start] = 1;
+    while (st.length) {
+      const c = st.pop(), cx = c % V, cz = (c / V) | 0;
+      for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const i = cx + a, j = cz + b;
+        if (i < 1 || j < 1 || i >= N || j >= N) continue;
+        const k = j * V + i;
+        if (!REACH[k] && H[k] > SEA + .45 && isl.nav[k] === 0) { REACH[k] = 1; st.push(k); }
+      }
+    }
+  }
+
   // postos: entre todos os pontos de terra firme, o que melhor combina com o anel (distância da vila) e a direção desejados
   const cands = [];
   for (let z = -95; z <= 95; z += 2) for (let x = -95; x <= 95; x += 2) {
     const d = Math.hypot(x, z);
-    if (d > 44 && d < 92 && roomy(x, z, 6)) cands.push([x, z, d, Math.atan2(z, x)]);
+    if (d > 44 && d < 92 && reach(x, z) && roomy(x, z, 6)) cands.push([x, z, d, Math.atan2(z, x)]);
   }
   // espalha os postos por pontos bem distantes entre si (e da vila), depois ordena pela distância: quanto mais longe, mais perigoso
   const chosen = [];
@@ -61,6 +78,11 @@ export function initTerrain(posts = [], seed = SEED) {
     flatten(p.x, p.z, 7, 15, heightAt(p.x, p.z));
   });
   return isl;
+}
+
+function reach(x, z) {
+  const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+  return gx > 0 && gz > 0 && gx < N && gz < N && REACH[gz * V + gx] === 1;
 }
 
 /** Ponto em terra firme, sem água, ladeira nem rio num raio r */
@@ -182,4 +204,20 @@ function blockedByObstacle(x, z) {
     if (l) for (const c of l) if ((c[0] - x) ** 2 + (c[1] - z) ** 2 < (c[2] + .3) ** 2) return true;
   }
   return false;
+}
+
+/** Algum obstáculo de vegetação a menos de `r` m (além do raio dele) de (x,z)? */
+export function nearObstacle(x, z, r) {
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+    const l = OB.get(okey(x + a * 4, z + b * 4));
+    if (l) for (const c of l) if ((c[0] - x) ** 2 + (c[1] - z) ** 2 < (c[2] + r) ** 2) return true;
+  }
+  return false;
+}
+
+/** Tem estrada (centro ou acostamento) exatamente na célula de (x,z)? */
+export function roadAt(x, z) {
+  if (!isl) return false;
+  const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+  return gx >= 0 && gz >= 0 && gx <= N && gz <= N && isl.pm[gz * V + gx] > 0;
 }
