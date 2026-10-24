@@ -5,6 +5,7 @@ import { WEAPONS, RN, AN } from '../data/weapons.js';
 import { bag, chest, addItem, bagFull, BAG_MAX, CHEST_MAX, POT_MAX, BOMB_MAX, PRICE } from '../systems/inventory.js';
 import { emit } from '../core/events.js';
 import { lootText, log } from './notify.js';
+import { tierBonus } from '../data/scaling.js';
 import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
 import { saveGame } from '../systems/save.js';
@@ -123,7 +124,7 @@ function buttons() {
   if (cur.shop === 'tavern') add('🍺 Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('🍺 Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });
   if (cur.ferry) ISLANDS.forEach(i => {
     if (i.seed === SEED) return;
-    add('⛵ ' + i.name + (i.cost ? ' (' + i.cost + ' ouro)' : ''), () => {
+    add('⛵ ' + i.name + ' · Nv ' + (1 + tierBonus(i.tier)) + '+' + (i.cost ? ' · ' + i.cost + ' ouro' : ''), () => {
       if (P.gold < i.cost) { say('Sem ouro, sem viagem, marujo! Volte com ' + i.cost + ' moedas.'); return; }
       P.gold -= i.cost;
       try { localStorage.setItem('pirata-ilha', i.seed); localStorage.setItem('pirata-chegada', '1'); } catch (e) { /* sem armazenamento */ }

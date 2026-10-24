@@ -13,22 +13,24 @@ import { puff } from '../systems/effects.js';
 import { petPos, petPerched, hurtPet } from '../pets/manager.js';
 import { log } from '../ui/notify.js';
 import { groundY, slideTo } from '../world/terrain.js';
+import { enemyStats, ELITE } from '../data/scaling.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
 
 /* ---------- Criação ---------- */
 
-/** Cria um inimigo do tipo `k` (índice de ENEMY_KINDS) na posição (x,z) */
-export function spawn(k, x, z, pat) {
-  const t = ENEMY_KINDS[k];
+/** Cria um inimigo do tipo `k` (índice de ENEMY_KINDS) na posição (x,z).
+    `o` = { lv (nível; padrão = o do arquétipo), elite }: vida, dano e XP vêm do nível (scaling.js) */
+export function spawn(k, x, z, pat, o = {}) {
+  const t = ENEMY_KINDS[k], lv = o.lv || t.lv, elite = !!o.elite && !t.boss, st = enemyStats(t, lv, elite);
   const g = person(...t.c);
-  if (t.boss) g.scale.setScalar(1.7); else if (t.sc) g.scale.setScalar(t.sc);
+  if (t.boss) g.scale.setScalar(1.7); else g.scale.setScalar((t.sc || 1) * (elite ? ELITE.scale : 1));
   g.position.set(x, groundY(x, z), z);
   scene.add(g);
 
   // barra de vida sobre a cabeça
-  const hb = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .12), new THREE.MeshBasicMaterial({ color: 0xc0302c }));
+  const hb = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .12), new THREE.MeshBasicMaterial({ color: elite ? 0xe8b020 : 0xc0302c }));
   hb.position.y = t.boss ? 4.2 : 2.6 + (t.sc ? (t.sc - 1) * 1.6 : 0);
   hb.visible = false;
   g.add(hb);
@@ -37,9 +39,10 @@ export function spawn(k, x, z, pat) {
   const ms = [];
   g.traverse(m => { if (m.material && m.material.emissive) ms.push(m.material); });
 
-  const hp = t.hp;
+  const hp = st.hp;
   enemies.push({
     g, hb, t, k, ms, pat,
+    lv, elite, dmg: st.d, xpv: st.xp,   // nível e estatísticas desta instância
     hp, max: hp,
     x, z, hx: x, hz: z,           // posição e "casa" (ponto de origem)
     vx: 0, vz: 0, kx: 0, kz: 0,   // velocidade e empurrão
@@ -140,7 +143,7 @@ function think(e, dt, c) {
       e.cd = bo ? 1.2 : .8;
       e.kx += Math.sin(aim) * 3;
       e.kz += Math.cos(aim) * 3;
-      const dm = T.d;
+      const dm = e.dmg;
 
       const pp = petPos();
       if (!petPerched() && pp.y < 2 && Math.hypot(pp.x - e.x, pp.z - e.z) <= (e.slam ? 4.6 : reach + .5)) {
@@ -277,7 +280,7 @@ export function updateEnemies(dt) {
   enemies.forEach(e => updateEnemy(e, dt));
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].dead > 1.2) {
-      respawns.push({ k: enemies[i].k, x: enemies[i].hx, z: enemies[i].hz, t: RESPAWN_TIME, pat: enemies[i].pat });
+      respawns.push({ k: enemies[i].k, x: enemies[i].hx, z: enemies[i].hz, t: RESPAWN_TIME, pat: enemies[i].pat, lv: enemies[i].lv, ep: enemies[i].elite ? 1 : 0 });
       scene.remove(enemies[i].g);
       enemies.splice(i, 1);
     }
@@ -293,7 +296,7 @@ export function updateRespawns(dt) {
     if (q.t <= 0) {
       if (Math.hypot(q.x - P.x, q.z - P.z) < 9) { q.t = 3; continue; }
       respawns.splice(i, 1);
-      spawn(q.k, q.x, q.z, q.pat);
+      spawn(q.k, q.x, q.z, q.pat, { lv: q.lv, elite: q.ep ? Math.random() < .5 : Math.random() < .06 && !ENEMY_KINDS[q.k].boss });   // elite pode voltar comum e vice-versa
       if (q.k === KIND.BOSS) log('⚠ O Capitão Maldito ressurgiu!');
     }
   }

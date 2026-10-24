@@ -49,7 +49,7 @@ export function autoThink(dt) {
   // esquiva (rolamento para trás): golpe pesado/especial sendo preparado perto, ou vida abaixo de 20% com inimigo colado
   if (state.autoCfg.dodge && P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) {
     const heavy = alive.find(e => e.st === 'wind' && dist(e) < (e.slam ? 5.6 : 3.6) &&
-      (e.slam || e.t.boss || e.t.d >= P.max * .2));
+      (e.slam || e.t.boss || e.dmg >= P.max * .2));
     const near = P.hp < P.max * .2 ? alive.find(e => e.ag && dist(e) < 3.6) : null;
     const from = heavy || near;
     if (from) {

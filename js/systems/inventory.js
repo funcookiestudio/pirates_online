@@ -30,7 +30,7 @@ export const slotOf = it => it.ty === 'arm' ? 'arm' : (WEAPONS[it.w].gun ? 'gun'
 export function addItem(l) {
   if (l.it) { bag.push(l.it); lootText('Item: ' + l.it.n); emit('inventory:changed'); return; }
   const v = Math.round((l.ty === 'wpn' ? WEAPONS[l.wi].b : 8) * l.q * (1 + ((l.il || 1) - 1) * .2));
-  const it = { ty: l.ty, q: l.q, v, w: l.wi, n: l.ty === 'wpn' ? WEAPONS[l.wi].n : AN[l.q - 1] };
+  const it = { ty: l.ty, q: l.q, v, il: l.il || 1, w: l.wi, n: l.ty === 'wpn' ? WEAPONS[l.wi].n : AN[l.q - 1] };
   bag.push(it);
   lootText('Item: ' + it.n + ' (' + RN[l.q] + ')');
   emit('inventory:changed');

@@ -1,5 +1,6 @@
 /* Salvamento local (localStorage): nível, itens, equipamento e companheiros.
    Salva sozinho a cada 10 s, ao esconder a aba e ao fechar a página. Não salva com o jogador morto. */
+import { xpToNext } from '../data/scaling.js';
 import { state } from '../core/state.js';
 import { P } from '../entities/player.js';
 import { bag, chest, eq, setWeapon } from './inventory.js';
@@ -42,6 +43,8 @@ export function loadGame() {
     if (!s || s.v !== 1) return false;
 
     PLAYER_FIELDS.forEach(f => { if (Number.isFinite(s.player[f])) P[f] = s.player[f]; });
+    P.nxt = xpToNext(P.lv);               // curva de XP nova: recalcula a partir do nível salvo
+    P.xp = Math.min(P.xp, P.nxt - 1);
     P.hp = P.max;
     P.mp = P.mmax;
     P.tx = P.x;

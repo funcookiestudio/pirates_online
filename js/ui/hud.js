@@ -42,8 +42,8 @@ export function updateOverlays(now) {
   if (e && !e.dead) {
     eh.classList.toggle('boss', !!e.t.boss);
     eh.style.display = 'block';
-    const df = e.t.lv - P.lv, col = df >= 5 ? '#ff4040' : df >= 3 ? '#ff9030' : df >= -2 ? '#f0e050' : df >= -4 ? '#60d060' : '#a0a0a0';
-    $('en').innerHTML = (df >= 5 ? '☠ ' : '') + e.t.n + ' <b style="color:' + col + '">Nv ' + e.t.lv + '</b>';
+    const df = e.lv - P.lv, col = df >= 5 ? '#ff4040' : df >= 3 ? '#ff9030' : df >= -2 ? '#f0e050' : df >= -4 ? '#60d060' : '#a0a0a0';
+    $('en').innerHTML = (df >= 5 ? '☠ ' : '') + (e.elite ? '⭐ Elite ' : '') + e.t.n + ' <b style="color:' + col + '">Nv ' + e.lv + '</b>';
     $('ebi').style.width = Math.max(0, e.hp / e.max * 100) + '%';
   } else eh.style.display = 'none';
 

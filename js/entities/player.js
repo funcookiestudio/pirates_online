@@ -1,4 +1,5 @@
 /* O jogador: dados, marcador de destino, dano recebido e subida de nível. */
+import { xpToNext } from '../data/scaling.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { person } from './character.js';
@@ -66,7 +67,7 @@ export function levelUp() {
   while (P.xp >= P.nxt) {
     P.xp -= P.nxt;
     P.lv++;
-    P.nxt = Math.round(P.nxt * 1.4) + 30;
+    P.nxt = xpToNext(P.lv);
     P.max += 15;
     P.mmax += 8;
     P.dmg += 3;

@@ -33,8 +33,8 @@ export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic
   lines: ['Ahoy! Meu barco leva marujo a qualquer ilha do arquipélago... por uma moedinha.', 'O mar está calmo. Diga o destino e eu iço a vela!', 'Cada ilha tem seus perigos e seus tesouros. Boa viagem, marujo!'] };
 
 export const ISLANDS = [
-  { seed: 'pirata', name: 'Ilha Natal', cost: 0 },
-  { seed: 'corvo', name: 'Ilha do Corvo', cost: 25 },
-  { seed: 'tormenta', name: 'Ilha da Tormenta', cost: 25 },
-  { seed: 'caveira', name: 'Ilha da Caveira', cost: 25 },
+  { seed: 'pirata', name: 'Ilha Natal', cost: 0, tier: 0 },
+  { seed: 'corvo', name: 'Ilha do Corvo', cost: 25, tier: 1 },
+  { seed: 'tormenta', name: 'Ilha da Tormenta', cost: 25, tier: 2 },
+  { seed: 'caveira', name: 'Ilha da Caveira', cost: 25, tier: 3 },
 ];

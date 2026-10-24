@@ -3,6 +3,7 @@ import { scene } from '../core/engine.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { loot } from '../core/registry.js';
 import { M } from '../core/utils.js';
+import { goldAt, rollQuality } from '../data/scaling.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from './player.js';
 import { addItem, bagFull, lootBlocked, POT_MAX } from '../systems/inventory.js';
@@ -45,17 +46,16 @@ function lootModel(ty, q, wi) {
   return new THREE.Mesh(geo, M(color));
 }
 
-/** Sorteia e solta os itens do inimigo morto `e` */
+/** Sorteia e solta os itens do inimigo morto `e`. Quantidade, qualidade, ouro e nível do item vêm do nível do inimigo;
+    elite e boss soltam mais e melhor. */
 export function dropLoot(e) {
-  const il = e.t.lv, boss = e.t.boss;
-  // a maioria dos inimigos não deixa nada; o boss sempre solta vários itens
-  const n = boss ? 4 : Math.random() < .5 ? 1 + (Math.random() < .12 ? 1 : 0) : 0;
+  const il = e.lv, boss = e.t.boss, elite = e.elite;
+  // a maioria dos inimigos comuns não deixa nada; elite sempre solta 2+; o boss sempre solta vários itens
+  const n = boss ? 4 : elite ? 2 + (Math.random() < .35 ? 1 : 0) : Math.random() < .5 ? 1 + (Math.random() < .12 ? 1 : 0) : 0;
   for (let i = 0; i < n; i++) {
     const r = Math.random();
-    const ty = boss && i < 2 ? (i ? 'arm' : 'wpn') : r < .6 ? 'gold' : r < .8 ? 'pot' : r < .93 ? 'wpn' : 'arm';
-    // qualidade: comum na maioria; raro/épico só com sorte (chances sobem um pouco com o nível do inimigo)
-    const q = boss ? (Math.random() < .3 ? 3 : 2)
-      : Math.random() < .004 + il * .0006 ? 3 : Math.random() < .03 + il * .006 ? 2 : 1;
+    const ty = boss && i < 2 ? (i ? 'arm' : 'wpn') : elite && i === 0 ? (Math.random() < .5 ? 'wpn' : 'arm') : r < .6 ? 'gold' : r < .8 ? 'pot' : r < .93 ? 'wpn' : 'arm';
+    const q = boss ? (Math.random() < .3 ? 3 : 2) : rollQuality(il, elite ? 1 : 0);
     const wi = Math.floor(Math.random() * WEAPONS.length);
     const m = lootModel(ty, q, wi);
     m.position.set(e.x + (Math.random() - .5) * 2, .3, e.z + (Math.random() - .5) * 2);
@@ -83,7 +83,7 @@ export function dropItem(it, from) {
 export function applyLoot(l, tag) {
   const p = tag ? tag + ' ' : '';
   if (l.ty === 'gold') {
-    const g = 2 + (l.il || 1) * 2;
+    const g = goldAt(l.il || 1);
     P.gold += g;
     lootText(p + '+' + g + ' ouro');
   } else if (l.ty === 'pot') {

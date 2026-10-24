@@ -1,4 +1,5 @@
 /* Combate do jogador: golpes, balas, giro, bomba, poção e o cálculo de dano (hit). */
+import { xpMult } from '../data/scaling.js';
 import { scene } from '../core/engine.js';
 import { state, aim } from '../core/state.js';
 import { enemies, particles, bombs, shots } from '../core/registry.js';
@@ -57,12 +58,13 @@ export function hit(e, d, o) {
 function onKill(e) {
   e.dead = .01;
   // XP depende da diferença de nível: inimigos muito fracos quase não dão XP, mais fortes dão bônus
-  const df = e.t.lv - P.lv, xm = df <= -5 ? .05 : df < 0 ? 1 + df * .2 : 1 + Math.min(df, 4) * .15, xp = Math.max(1, Math.round(e.t.xp * xm));
+  const xp = Math.max(1, Math.round(e.xpv * xpMult(e.lv - P.lv)));
   P.xp += xp;
   if (e.pa) petXp(e.pa, xp * .6);
   dropLoot(e);
   levelUp();
   if (e.t.boss) log('O Capitão Maldito caiu! Ele voltará em 45s.');
+  else if (e.elite) log('⭐ Elite derrotado! +' + xp + ' XP');
 }
 
 /* ---------- Habilidades ---------- */

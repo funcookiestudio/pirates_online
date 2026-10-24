@@ -9,6 +9,9 @@ import { pois } from '../world/pois.js';
 import { POST_DATA } from '../data/posts.js';
 import { freePoint } from '../systems/steer.js';
 import { standUp } from '../systems/rest.js';
+import { ISLANDS } from '../data/npcs.js';
+import { SEED } from '../world/terrain.js';
+import { ISLAND_LV } from '../world/outposts.js';
 
 let wrap, cv, IMG, open = false, raf = 0, S = 1, OX = 0, OY = 0;
 const E = N / 2;
@@ -55,6 +58,7 @@ export function toggleWorldMap(on = !open) {
   if (on === open) return;
   open = on;
   wrap.style.display = on ? 'flex' : 'none';
+  if (on) wrap.querySelector('#wmhead b').textContent = (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name + ' · Nv ' + ISLAND_LV().join('–');
   if (on) { if (!IMG) IMG = terrainImage(); layout(); draw(); } else cancelAnimationFrame(raf);
 }
 export const worldMapOpen = () => open;
@@ -62,7 +66,7 @@ export const worldMapOpen = () => open;
 export function initWorldMap() {
   wrap = document.createElement('div');
   wrap.id = 'wmap';
-  wrap.innerHTML = '<div id="wmhead"><b>Mapa da Ilha</b><span>Toque num ponto para ir até lá · M ou ✕ fecha</span><button id="wmx">✕</button></div><canvas id="wmc"></canvas>';
+  wrap.innerHTML = '<div id="wmhead"><b>' + ((ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name) + ' · Nv ' + ISLAND_LV().join('–') + '</b><span>Toque num ponto para ir até lá · M ou ✕ fecha</span><button id="wmx">✕</button></div><canvas id="wmc"></canvas>';
   document.body.appendChild(wrap);
   cv = wrap.querySelector('#wmc');
   $('wmx').onclick = () => toggleWorldMap(false);
