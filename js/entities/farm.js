@@ -1,5 +1,6 @@
 /* Animais de fazenda (ambientação): galo, galinha, pato, peru, pavão, porco, ovelha, vaca, boi e cavalo.
    Só enfeite: não têm colisão, não são alvo e não entram em combate. Ficam em currais perto da vila e só animam quando o jogador está perto. */
+import { pois } from '../world/pois.js';
 import { wb } from '../core/utils.js';
 import { groundY, walkable, nearObstacle, onRoad } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
@@ -674,6 +675,7 @@ export function buildFarm() {
     }
     if (!spot) return;
     used.push(spot);
+    pois.push({ n: 'Fazenda', x: spot.x, z: spot.z, c: '#9ad060', ic: '🐄' });
     herd.forEach((kind, i) => {
       const a = i / herd.length * 6.283 + h, r = 1.2 + (i % 3) * 1.1;
       const x = spot.x + Math.cos(a) * r, z = spot.z + Math.sin(a) * r;
