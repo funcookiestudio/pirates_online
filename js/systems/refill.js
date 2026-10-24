@@ -6,6 +6,7 @@ import { npcByShop } from '../entities/npc.js';
 import { POT_MAX, BOMB_MAX, PRICE } from './inventory.js';
 import { danger } from './stamina.js';
 import { freePoint } from './steer.js';
+import { dwell } from './dwell.js';
 import { lootText, log } from '../ui/notify.js';
 
 /** Qual compra falta fazer? { kind: 'tavern' | 'trader', pot, bomb } ou null */
@@ -29,6 +30,9 @@ export function refillStep() {
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
   if (!state.trip) { state.trip = pl.kind; log('🛒 Sem ' + (pl.pot ? 'poções' : 'bombas') + ': indo até ' + n.info.name); }
   if (d < 3.2) {
+    P.tgt = null; P.tx = P.x; P.tz = P.z; P.g.rotation.y = Math.atan2(nx - P.x, nz - P.z);
+    if (!dwell('buy-' + pl.kind, 2.5)) return true;           // negocia alguns segundos
+    dwell(null);
     if (pl.pot) { P.pot += pl.pot; P.gold -= pl.pot * PRICE.potTavern; lootText('+' + pl.pot + ' poção(ões)'); }
     if (pl.bomb) { P.bmb += pl.bomb; P.gold -= pl.bomb * PRICE.bomb; lootText('+' + pl.bomb + ' bomba(s)'); }
     state.trip = null;

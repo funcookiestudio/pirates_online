@@ -212,7 +212,7 @@ export function updateNpcs(dt, now) {
       if (vis) { n.lab.style.left = (v3.x * .5 + .5) * innerWidth + 'px'; n.lab.style.top = (-v3.y * .5 + .5) * innerHeight + 'px'; }
     }
     if (n.lid) {
-      const on = talking === n ? 1 : 0;
+      const on = talking === n || n.forceOpen ? 1 : 0;
       n.open += (on - n.open) * (1 - Math.exp(-dt * (on ? 5 : 7)));
       const o = n.open, back = o > .5 ? 1 + Math.sin((o - .5) * 9) * .0 : 1;
       n.lid.rotation.x = -(o * 1.95 + Math.sin(o * Math.PI) * .12 * 0) * back;

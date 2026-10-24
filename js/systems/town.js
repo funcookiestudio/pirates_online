@@ -7,6 +7,7 @@ import { npcByShop, npcChest } from '../entities/npc.js';
 import { danger } from './stamina.js';
 import { freePoint } from './steer.js';
 import { emit } from '../core/events.js';
+import { dwell } from './dwell.js';
 import { lootText, log } from '../ui/notify.js';
 
 const SELL_MUL = 4; // preço de venda no ferreiro = valor × 4 (igual ao diálogo)
@@ -37,6 +38,9 @@ export function townStep() {
     const n = npcByShop('smith');
     if (!n) { active = false; return false; }
     if (!goTo(n, 'sell')) return true;
+    P.g.rotation.y = Math.atan2(n.g.position.x - P.x, n.g.position.z - P.z);
+    if (!dwell('sell', 3)) { P.tx = P.x; P.tz = P.z; return true; }
+    dwell(null);
     let gold = 0;
     sell.forEach(it => { gold += Math.max(1, Math.round(it.v * SELL_MUL)); bag.splice(bag.indexOf(it), 1); });
     P.gold += gold; emit('inventory:changed');
@@ -47,6 +51,11 @@ export function townStep() {
   const n = npcChest();
   if (!n) { active = false; return false; }
   if (!goTo(n, 'chest')) return true;
+  n.forceOpen = true;                              // abre o baú (animação da tampa), sem painel
+  P.g.rotation.y = Math.atan2(n.g.position.x - P.x, n.g.position.z - P.z);
+  if (!dwell('chest', 3.5)) { P.tx = P.x; P.tz = P.z; return true; }
+  dwell(null);
+  setTimeout(() => { n.forceOpen = false; }, 900);  // fecha logo depois de guardar
   store.forEach(it => { bag.splice(bag.indexOf(it), 1); chest.push(it); });
   emit('inventory:changed');
   lootText(store.length + ' itens no baú'); log('📦 Guardou ' + store.length + ' item(ns) no baú');
