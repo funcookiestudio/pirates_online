@@ -9,6 +9,7 @@ import { freePoint } from './steer.js';
 import { setAuto } from './stamina.js';
 import { standUp } from './rest.js';
 import { log } from '../ui/notify.js';
+import { leaveDungeon } from '../dungeon/dungeon-scene.js';
 
 const nameOf = id => id < 0 ? 'a Vila' : POST_DATA[id].name;
 
@@ -36,6 +37,7 @@ on('player:died', () => {
 });
 
 function revive() {
+  leaveDungeon();
   const [sx, sz] = postSpot(state.cp);
   const { x, z } = freePoint(sx, sz, .8);
   if (state.cp < 0) { P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw; P.sit = P.sitT = 1; }

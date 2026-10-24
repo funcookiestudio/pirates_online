@@ -2,6 +2,7 @@
    steer() gira a direção desejada para o ângulo livre mais próximo; collide() empurra para fora dos obstáculos. */
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
+import { dIn, dPath } from '../dungeon/dgrid.js';
 import { walkable, swimmable, nearObstacle, roadAt, heightAt } from '../world/terrain.js';
 
 /** O jogador pode passar por água (nadar); inimigos e pets não */
@@ -104,6 +105,7 @@ export const pathTo = (sx, sz, gx, gz, r = .5) => findPath(sx, sz, gx, gz, r);
 
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
 function findPath(sx, sz, gx, gz, r) {
+  if (dIn(sx, sz)) return dPath(sx, sz, gx, gz);      // dentro da dungeon: caminho pela grade
   if (!grid || gridN !== props.length) buildGrid();
   const s = nearestFree(cell(sx), cell(sz)), g = nearestFree(Math.max(0, Math.min(N - 1, cell(gx))), Math.max(0, Math.min(N - 1, cell(gz))));
   if (s < 0 || g < 0) return null;

@@ -1,4 +1,5 @@
 /* Mapa completo da ilha: abre ao clicar no minimapa (ou tecla M). Clicar num ponto leva o jogador até lá. */
+import { inDungeon } from '../dungeon/dungeon-scene.js';
 import { $ } from '../core/utils.js';
 import { state } from '../core/state.js';
 import { P, mark } from '../entities/player.js';
@@ -64,7 +65,7 @@ function draw() {
 }
 
 export function toggleWorldMap(on = !open) {
-  if (on === open) return;
+  if (on === open || (on && inDungeon())) return;
   open = on;
   wrap.style.display = on ? 'flex' : 'none';
   if (on) wrap.querySelector('#wmhead b').textContent = (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name + ' · Nv ' + ISLAND_LV().join('–');

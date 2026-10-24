@@ -280,7 +280,7 @@ export function updateEnemies(dt) {
   enemies.forEach(e => updateEnemy(e, dt));
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].dead > 1.2) {
-      respawns.push({ k: enemies[i].k, x: enemies[i].hx, z: enemies[i].hz, t: RESPAWN_TIME, pat: enemies[i].pat, lv: enemies[i].lv, ep: enemies[i].elite ? 1 : 0 });
+      if (!enemies[i].dun) respawns.push({ k: enemies[i].k, x: enemies[i].hx, z: enemies[i].hz, t: RESPAWN_TIME, pat: enemies[i].pat, lv: enemies[i].lv, ep: enemies[i].elite ? 1 : 0 });
       scene.remove(enemies[i].g);
       enemies.splice(i, 1);
     }

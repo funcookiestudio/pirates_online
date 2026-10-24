@@ -11,6 +11,7 @@ import { log } from '../ui/notify.js';
 import { pois } from './pois.js';
 import { generateDungeon, THEMES, hash } from '../dungeon/dungeongen.js';
 import { tierOf, tierBonus } from '../data/scaling.js';
+import { enterDungeon } from '../dungeon/dungeon-scene.js';
 
 const M = c => xray(M0(c));
 const NAMES = {
@@ -88,7 +89,7 @@ export function initCaves() {
   $('cvgo').onclick = () => {
     const D = prompting;
     closeCavePrompt();
-    if (D) log('🕳 ' + D.name + ': a descida para a dungeon será liberada na próxima atualização');
+    if (D) enterDungeon(D, info(D));
   };
 }
 

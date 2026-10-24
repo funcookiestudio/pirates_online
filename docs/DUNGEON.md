@@ -30,3 +30,6 @@ Fonte: `Dungeon_low_poly_v2.html` (gerador procedural 64×64, 3 temas).
 
 ## Nível da dungeon
 `Nv = bônus da ilha + 3 + (distância da vila − 34) / 10` (arredondado); o chefe tem +4.
+
+## Fase 2 (feita)
+`dungeon/dgrid.js` guarda a grade ativa (colisão, chão e BFS); `terrain.js` e `steer.js` consultam quando o jogador está dentro. `dungeon/dungeon-scene.js` constrói piso/paredes (instâncias, célula 2 m, paredes com raio-X) em (3000,3000), nasce inimigos por sala (nível da dungeon, 12% elites), chefe (+4) no fim, baús nos becos e do chefe, portal de entrada e portal de saída (abre ao matar o chefe). Morrer dentro devolve ao último posto.

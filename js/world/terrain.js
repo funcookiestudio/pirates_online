@@ -1,5 +1,6 @@
 /* Terreno do jogo: usa o gerador procedural de ilhas e o ajusta ao mundo (vila plana na origem, postos inimigos em platôs).
    Coordenadas do jogo: a praça da vila é (0,0) e y=0 é o chão da vila. Módulo puro (sem THREE) para poder ser testado em Node. */
+import { dIn, dWalk } from '../dungeon/dgrid.js';
 import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
 
@@ -166,6 +167,7 @@ export function onRoad(x, z, m = 2) {
 
 /** Altura do relevo (bilinear) */
 export function heightAt(x, z) {
+  if (dIn(x, z)) return 0;
   const gx = x + VX + E, gz = z + VZ + E;
   if (gx < 0 || gz < 0 || gx >= N || gz >= N) return -9;
   const i = gx | 0, j = gz | 0, fx = gx - i, fz = gz - j;
@@ -175,7 +177,7 @@ export function heightAt(x, z) {
 
 /** Chão onde se pisa: relevo ou convés de ponte (nunca abaixo do mar) */
 export function groundY(x, z) {
-  if (!H) return 0;
+  if (!H || dIn(x, z)) return 0;
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
   let y = heightAt(x, z);
   if (gx >= 0 && gz >= 0 && gx <= N && gz <= N) { const d = isl.deck[gz * V + gx]; if (d > -90 && d > y) y = d; }
@@ -184,6 +186,7 @@ export function groundY(x, z) {
 
 /** Pode andar aqui? (terra firme, sem água funda nem paredão) */
 export function walkable(x, z) {
+  if (dIn(x, z)) return dWalk(x, z);
   if (!H) return true;
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
   if (gx < 1 || gz < 1 || gx >= N || gz >= N) return false;
@@ -194,7 +197,7 @@ export function walkable(x, z) {
 
 /** Chão real sob (x,z): relevo ou convés de ponte, sem o "piso" do mar */
 export function floorY(x, z) {
-  if (!H) return 0;
+  if (!H || dIn(x, z)) return 0;
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
   let y = heightAt(x, z);
   if (gx >= 0 && gz >= 0 && gx <= N && gz <= N) { const d = isl.deck[gz * V + gx]; if (d > -90 && d > y) y = d; }
@@ -203,6 +206,7 @@ export function floorY(x, z) {
 
 /** Altura da superfície da água em (x,z): rio/lago (nível próprio) ou mar */
 export function waterLevel(x, z) {
+  if (dIn(x, z)) return -99;
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
   if (gx >= 0 && gz >= 0 && gx <= N && gz <= N) { const w = isl.W[gz * V + gx]; if (w > -90) return w; }
   return SEA;
@@ -210,6 +214,7 @@ export function waterLevel(x, z) {
 
 /** Profundidade da água sobre o chão em (x,z) (≤ 0 = seco). Em cima de ponte conta como seco. */
 export function waterDepth(x, z) {
+  if (dIn(x, z)) return -99;
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
   if (gx >= 0 && gz >= 0 && gx <= N && gz <= N && isl.deck[gz * V + gx] > -90) return 0;
   return waterLevel(x, z) - heightAt(x, z);
@@ -217,6 +222,7 @@ export function waterDepth(x, z) {
 
 /** Dá para nadar aqui? (terra firme ou água de até 3,6 m de fundura, sem obstáculos) */
 export function swimmable(x, z) {
+  if (dIn(x, z)) return dWalk(x, z);
   if (!H) return true;
   if (walkable(x, z)) return true;
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
@@ -252,6 +258,7 @@ function blockedByObstacle(x, z) {
 
 /** Algum obstáculo de vegetação a menos de `r` m (além do raio dele) de (x,z)? */
 export function nearObstacle(x, z, r) {
+  if (dIn(x, z)) return false;
   for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
     const l = OB.get(okey(x + a * 4, z + b * 4));
     if (l) for (const c of l) if ((c[0] - x) ** 2 + (c[1] - z) ** 2 < (c[2] + r) ** 2) return true;
