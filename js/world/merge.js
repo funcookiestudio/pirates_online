@@ -45,6 +45,6 @@ export function mergeStatics(before, skip) {
     after3++;
   });
   // grupos que ficaram sem nada dentro saem da cena; os que sobraram (peças animadas) não precisam recalcular
-  roots.forEach(r => { if (!r.children.length && r.parent) r.parent.remove(r); });
+  roots.forEach(r => { if (!r.isMesh && !r.children.length && r.parent) r.parent.remove(r); });
   return { from: before3, to: after3 };
 }

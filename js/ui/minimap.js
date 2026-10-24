@@ -5,6 +5,7 @@ import { P } from '../entities/player.js';
 import { terrainImage } from '../world/terrain-mesh.js';
 import { VX, VZ } from '../world/terrain.js';
 import { N } from '../world/islandgen.js';
+import { pois } from '../world/pois.js';
 
 let IMG = null;
 const SIZE = 140, C = SIZE / 2, S = 2.6; // tamanho do canvas, centro e escala (px por metro)
@@ -39,6 +40,9 @@ export function drawMinimap() {
     g.fillStyle = '#2e5a3a';
     g.fillRect(q[0] - 1.5, q[1] - 1.5, 3, 3);
   });
+
+  // porto, caverna, tesouro
+  pois.forEach(p => { const q = pt(p.x, p.z); g.fillStyle = p.c; g.fillRect(q[0] - 3, q[1] - 3, 6, 6); });
 
   // loot
   g.fillStyle = '#ffd040';

@@ -8,6 +8,7 @@ import { updateNpcs, npcList } from './entities/npc.js';
 import { updatePerf } from './systems/perf.js';
 import { mergeStatics } from './world/merge.js';
 import { buildOutposts, updateOutposts } from './world/outposts.js';
+import { buildPois, updatePois } from './world/pois.js';
 import { updateEnemies, updateRespawns } from './entities/enemies.js';
 import { updateLoot } from './entities/loot.js';
 import { setWeapon, eq, bag, chest } from './systems/inventory.js';
@@ -54,6 +55,7 @@ function frame(now) {
   updateParticles(dt);
   updateRespawns(dt);
   updateOutposts(now / 1000);
+  updatePois();
   updateCamera(dt);
 
   // 2) interface e companheiros
@@ -79,6 +81,7 @@ refreshPetButton();
 initHotbarFit();
 const loaded = loadGame(); // antes de povoar a ilha: a vida dos inimigos depende do nível
 buildOutposts();
+buildPois();
 // desempenho: funde o cenário estático (fora NPCs, inimigos e peças animadas)
 const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
 const mr = mergeStatics(worldBefore, dyn);

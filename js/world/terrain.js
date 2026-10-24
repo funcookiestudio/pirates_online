@@ -102,13 +102,29 @@ export function walkable(x, z) {
   if (gx < 1 || gz < 1 || gx >= N || gz >= N) return false;
   const k = gz * V + gx;
   if (isl.deck[k] > -90) return true;
-  return H[k] > SEA + .45 && isl.nav[k] === 0;
+  return H[k] > SEA + .45 && isl.nav[k] === 0 && !blockedByObstacle(x, z);
 }
 
 /** Corrige uma posição que entrou no mar/paredão: tenta deslizar em um eixo, senão volta para a anterior. Devolve [x,z]. */
 export function slideTo(px, pz, x, z) {
+  if (!walkable(px, pz)) return [x, z];            // já está preso num obstáculo: deixa sair
   if (walkable(x, z)) return [x, z];
   if (walkable(x, pz)) return [x, pz];
   if (walkable(px, z)) return [px, z];
   return [px, pz];
+}
+
+// ---------- obstáculos de vegetação (círculos em grade de 4 m) ----------
+const OB = new Map();
+const okey = (x, z) => Math.floor(x / 4) * 4096 + Math.floor(z / 4);
+/** Registra troncos/pedras [x,z,raio] (coordenadas do jogo) que bloqueiam o passo */
+export function addObstacles(list) {
+  list.forEach(c => { const k = okey(c[0], c[1]); (OB.get(k) || OB.set(k, []).get(k)).push(c); });
+}
+function blockedByObstacle(x, z) {
+  for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+    const l = OB.get(okey(x + a * 4, z + b * 4));
+    if (l) for (const c of l) if ((c[0] - x) ** 2 + (c[1] - z) ** 2 < (c[2] + .3) ** 2) return true;
+  }
+  return false;
 }

@@ -3,7 +3,7 @@
 import { scene } from '../core/engine.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { N, V, ss, rngf, hash, RD } from './islandgen.js';
-import { isl, H, VX, VZ, HV, SEA, groundY } from './terrain.js';
+import { isl, H, VX, VZ, HV, SEA, groundY, addObstacles } from './terrain.js';
 
 const E = N / 2;
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -34,16 +34,27 @@ function terrain() {
     const cc = col(H[k] + HV, ny, Math.min(1, rw / 9 * 1.6), .97 + r() * .06, mo[k], W[k] > -90 ? Math.max(0, W[k] - H[k]) : 0);
     cl[k * 3] = cc[0]; cl[k * 3 + 1] = cc[1]; cl[k * 3 + 2] = cc[2];
   }
-  const idx = new Uint32Array(N * N * 6); let p = 0;
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+  // blocos de 25×25 m com vértices compartilhados: cada bloco é cortado pela câmera/neblina separadamente
+  const g0 = new THREE.BufferGeometry();
+  const posA = new THREE.BufferAttribute(pos, 3), colA = new THREE.BufferAttribute(cl, 3);
+  g0.setAttribute('position', posA);
+  const full = new Uint32Array(N * N * 6); let q = 0;
+  const quad = (i, j) => {
     const a = j * V + i, b = a + 1, c = a + V, d = c + 1;
-    if ((i + j) & 1) { idx[p++] = a; idx[p++] = c; idx[p++] = b; idx[p++] = b; idx[p++] = c; idx[p++] = d; }
-    else { idx[p++] = a; idx[p++] = c; idx[p++] = d; idx[p++] = a; idx[p++] = d; idx[p++] = b; }
+    return (i + j) & 1 ? [a, c, b, b, c, d] : [a, c, d, a, d, b];
+  };
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) for (const v of quad(i, j)) full[q++] = v;
+  g0.setIndex(new THREE.BufferAttribute(full, 1)); g0.computeVertexNormals();
+  const norA = g0.getAttribute('normal'), mt = new THREE.MeshLambertMaterial({ vertexColors: true }), root = new THREE.Group(), CH = 25;
+  for (let cj = 0; cj < N; cj += CH) for (let ci = 0; ci < N; ci += CH) {
+    const ix = [];
+    for (let j = cj; j < Math.min(N, cj + CH); j++) for (let i = ci; i < Math.min(N, ci + CH); i++) ix.push(...quad(i, j));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', posA); g.setAttribute('color', colA); g.setAttribute('normal', norA);
+    g.setIndex(ix); g.computeBoundingSphere();
+    root.add(new THREE.Mesh(g, mt));
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(cl, 3));
-  g.setIndex(new THREE.BufferAttribute(idx, 1)); g.computeVertexNormals(); g.computeBoundingSphere();
-  return dyn(new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  return dyn(root);
 }
 
 function water() {
@@ -94,6 +105,7 @@ function vegetation(posts) {
   const f = (a, k) => { const x = a[0] - VX, z = a[1] - VZ; return ok(x, z) ? [x, z, groundY(x, z), a] : false; };
   const L = list => list.map(a => ({ x: a[0] - VX, z: a[1] - VZ, a })).filter(q => ok(q.x, q.z)).map(q => { const w = q.a.slice(); w[0] = q.x; w[1] = q.z; return w; });
   const pl = L(palms), pi = L(pines), ro = L(rocks), bu = L(bushes), Y = a => groundY(a[0], a[1]);
+  addObstacles([...pl.map(a => [a[0], a[1], .2 * a[2]]), ...pi.map(a => [a[0], a[1], .25 * a[2]]), ...ro.map(a => [a[0], a[1], .5 * a[2]])]);
   g.add(
     inst(trunk, pl, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], a[3]); o.scale.set(a[2], 1.5 * a[2], a[2]); }, 0x7a5a34, .1, rr),
     inst(new THREE.ConeGeometry(.8, .4, 6), pl, (o, a) => { o.position.set(a[0] - Math.sin(a[3]) * 1.5 * a[2], Y(a) + 1.5 * a[2] * Math.cos(a[3]) + .1, a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x3d9a3a, .12, rr),
