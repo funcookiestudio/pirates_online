@@ -6,7 +6,8 @@ import { enemies, respawns } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
 import { ENEMY_KINDS, KIND } from '../data/enemies.js';
 import { P, hurtP } from './player.js';
-import { person, bend } from './character.js';
+import { person } from './character.js';
+import { gait, gaitSpeed } from './gait.js';
 import { hit } from '../systems/combat.js';
 import { puff } from '../systems/effects.js';
 import { petPos, petPerched, hurtPet } from '../pets/manager.js';
@@ -197,12 +198,6 @@ function animate(e, c, dt) {
   else if (e.st === 'chase' && Math.hypot(e.vx, e.vz) > .3) turnTo(e.g, Math.atan2(e.vx, e.vz), 6, dt);
 
   const mv = Math.min(1, Math.hypot(e.vx, e.vz) / T.s);
-  e.ph += dt * (3 + mv * 7);
-  const w = Math.sin(e.ph) * .8 * mv;
-  e.g.legL.rotation.x = w;
-  e.g.legR.rotation.x = -w;
-  e.g.armL.rotation.x = -w * .6;
-  bend(e.g, e.ph, mv);
 
   let ta = -.4, tf = -.3, tl = mv * .08;
   if (e.st === 'wind') {
@@ -220,7 +215,9 @@ function animate(e, c, dt) {
   e.g.arm.rotation.x = e.ar;
   e.g.arm.fa.rotation.x = e.af;
   e.g.rotation.x = e.ln;
-  e.g.position.set(e.x, Math.abs(Math.sin(e.ph)) * .06 * mv, e.z);
+  e.g.position.set(e.x, 0, e.z);
+  e.g.up.rotation.set(0, 0, 0);
+  gait(e.g, dt, gaitSpeed(Math.hypot(e.vx, e.vz)), { twist: e.st === 'wind' || e.st === 'rec' ? 0 : 1, sword: false });
 
   e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
   e.hb.scale.x = Math.max(.01, e.hs);

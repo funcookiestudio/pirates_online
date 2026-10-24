@@ -2,6 +2,7 @@
    A direção é sempre oposta à que o personagem está olhando. */
 import { P } from '../entities/player.js';
 import { puff } from './effects.js';
+import { gaitReset } from '../entities/gait.js';
 
 export const ROLL_TIME = .5; // duração da rolada (s)
 export const ROLL_CD = 3.5;  // recarga (s)
@@ -43,30 +44,30 @@ export function updateDodgeTimers(dt) {
   P.rcd = Math.max(0, P.rcd - dt);
 }
 
-/**
- * Pose da rolada: o corpo gira 360° para trás em volta do centro (não dos pés),
- * pula um pouco e encolhe pernas e braços.
- */
+/* Cambalhota (da prévia "Anim_Pirata"): agacha → gira o corpo todo em volta do centro do tronco → levanta.
+   Como a rolada do jogo é sempre para trás, usa a versão "rolar trás": o ombro vai para trás antes do giro. */
+const ease = t => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
+const kf = (a, p) => { for (let i = 1; i < p.length; i++) if (a <= p[i][0]) { const [t0, v0] = p[i - 1], [t1, v1] = p[i]; return v0 + (v1 - v0) * ease((a - t0) / (t1 - t0)); } return p[p.length - 1][1]; };
+
 export function animateRoll() {
-  const u = 1 - P.roll / ROLL_TIME;
-  const e = .5 * u + .5 * u * u * (3 - 2 * u);   // leve aceleração no meio
-  const th = -Math.PI * 2 * e;                    // negativo = cabeça vai para trás
-  const h = 1.2;                                  // altura do centro de giro (tronco)
-  const f = -h * Math.sin(th), yaw = P.g.rotation.y;
+  const g = P.g, r = Math.min(1, 1 - P.roll / ROLL_TIME);
+  gaitReset(g);
+  const prog = kf(r, [[0, 0], [.15, 0], [.65, 1], [1, 1]]);
+  const th = -Math.PI * 2 * prog;                                     // negativo = cabeça vai para trás
+  const ch = kf(r, [[0, .8], [.15, .66], [.25, .55], [.6, .55], [.82, .72], [1, .8]]);   // altura do centro de giro
+  const f = -.8 * Math.sin(th), yaw = g.rotation.y;
+  g.rotation.x = th;
+  g.position.set(P.x + Math.sin(yaw) * f, ch - .8 * Math.cos(th), P.z + Math.cos(yaw) * f);
 
-  P.g.rotation.x = th;
-  P.g.position.set(
-    P.x + Math.sin(yaw) * f,
-    h * (1 - Math.cos(th)) + .55 * Math.sin(Math.PI * u),
-    P.z + Math.cos(yaw) * f
-  );
-
-  // encolhe (tk: 0 em pé → 1 totalmente agachado)
-  const tk = Math.min(1, Math.sin(Math.PI * u) * 1.8);
-  P.g.legL.rotation.x = P.g.legR.rotation.x = -1.5 * tk;
-  P.g.legL.knee.rotation.x = P.g.legR.knee.rotation.x = 1.7 * tk;
-  P.g.arm.rotation.set(P.aa * (1 - tk) - 1.3 * tk, 0, (P.az || 0) * (1 - tk));
-  P.g.arm.fa.rotation.x = P.af * (1 - tk) - 1.7 * tk;
-  P.g.armL.rotation.set(-1.3 * tk, 0, 0);
-  P.g.armL.fa.rotation.x = -1.7 * tk;
+  // encolhe (tw: 0 em pé → 1 totalmente agachado)
+  const tw = kf(r, [[0, 0], [.15, .6], [.25, 1], [.6, 1], [.82, .25], [1, 0]]), L = (a, b) => a + (b - a) * tw;
+  g.legL.rotation.x = g.legR.rotation.x = L(0, -1.5);
+  g.legL.knee.rotation.x = g.legR.knee.rotation.x = L(0, 2.2);
+  g.arm.rotation.set(L(P.aa || 0, -1.1), 0, L(P.az || 0, 0));
+  g.arm.fa.rotation.x = L(P.af || 0, -1.7);
+  g.armL.rotation.set(L(0, -1.1), 0, 0);
+  g.armL.fa.rotation.x = L(0, -1.9);
+  const shoulder = kf(r, [[0, 0], [.14, .4], [.3, 0], [1, 0]]);        // ombro esquerdo para trás antes do giro
+  g.up.rotation.set(L(0, .9), shoulder, 0);
+  g.head.rotation.set(tw * .5, 0, 0);
 }

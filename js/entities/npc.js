@@ -3,7 +3,8 @@
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
 import { P } from './player.js';
-import { person, bend } from './character.js';
+import { person } from './character.js';
+import { gait, gaitSpeed } from './gait.js';
 import { collide, steer, navTarget } from '../systems/steer.js';
 import { initSmith, updateSmith, updateSparks } from './npc-work.js';
 import { cam } from '../core/engine.js';
@@ -16,9 +17,9 @@ export const npcList = list;
 export const npcByShop = kind => list.find(n => n.info && n.info.shop === kind && n.g.visible !== false);
 const turn = (a, b, k) => { let d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); };
 
-/** Peças do chapéu em g.head.children: 0 rosto (fundido) · 1 olho · 2 aba · 3 copa · 4 caveira · 5 pena */
+/** Peças do chapéu em g.head.children: 0 rosto (fundido) · 1-2 olhos · 3 aba · 4 copa · 5 caveira · 6 pena */
 function hatStyle(g, kind, col) {
-  const [, , brim, top, skull, plume] = g.head.children;
+  const [, , , brim, top, skull, plume] = g.head.children;
   const set = (m, c) => m.material.color.set(c);
   if (kind === 'pirate') return; // mantém o chapéu do personagem
   skull.visible = plume.visible = false;
@@ -239,14 +240,12 @@ export function updateNpcs(dt, now) {
       const sp = Math.hypot(n.vx, n.vz), mv = Math.min(1, sp / 1.1);
       if (sp > .2) g.rotation.y = turn(g.rotation.y, Math.atan2(n.vx, n.vz), dt * 8);
       else if (near) g.rotation.y = turn(g.rotation.y, Math.atan2(P.x - g.position.x, P.z - g.position.z), dt * 3);
-      n.ph2 = (n.ph2 || 0) + dt * (3 + mv * 4);
-      const w = Math.sin(n.ph2) * .7 * mv;
-      g.legL.rotation.x = w; g.legR.rotation.x = -w;
-      bend(g, n.ph2, mv);
-      g.arm.rotation.x = -w * .5;
+      n.spd = sp;
     }
-    // respiração e olhar (como o idle do personagem)
-    g.up.position.y = .72 + Math.sin(t * 1.6) * .012;
-    g.head.rotation.y = n.role === 'guard' ? Math.sin(t * .4) * .5 : Math.sin(t * .6) * .3;
+    // marcha, respiração, olhar e piscar (a mesma do personagem)
+    g.up.rotation.set(0, 0, 0);
+    const gr = gait(g, dt, gaitSpeed(n.spd || 0), { sword: false });
+    if (n.role === 'citizen') g.arm.rotation.x = -gr.w * gr.sw * .8;
+    if (n.role === 'guard') g.head.rotation.y += Math.sin(t * .4) * .5;   // sentinela varre o olhar
   });
 }

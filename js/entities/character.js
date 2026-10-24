@@ -32,6 +32,7 @@ export function person(skin, shirt, pants, hat) {
   hd.position.y = 1.6;
   const eyeR = box(.07, .07, .02, 0x111111, -.1, 1.85, .215);
   const eyeL = box(.07, .07, .02, 0x111111, .1, 1.85, .215);
+  const plume = box(.06, .3, .06, 0xc02020, .22, 2.25, 0);
   [
     box(.42, .42, .42, skin, 0, 1.8, 0), eyeR, eyeL,
     box(.3, .16, .08, bc, 0, 1.63, .2),
@@ -39,11 +40,13 @@ export function person(skin, shirt, pants, hat) {
     brim,
     box(.38, .2, .38, hat, 0, 2.15, 0),
     box(.1, .1, .02, 0xf0f0f0, 0, 2.15, .2),
-    box(.06, .3, .06, 0xc02020, .22, 2.25, 0)
+    plume
   ].forEach(m => { m.position.y -= 1.6; hd.add(m); });
   g.add(hd);
   g.head = hd;
   g.eyeL = eyeL;
+  g.eyeR = eyeR;
+  g.feather = plume;
 
   // pernas (coxa + joelho/canela)
   const leg = x => {
@@ -51,9 +54,13 @@ export function person(skin, shirt, pants, hat) {
     l.position.set(x, .72, 0);
     const k = new THREE.Group();
     k.position.y = -.25;
-    k.add(box(.21, .25, .23, pants, 0, -.125, 0), box(.25, .22, .32, 0x2a1a10, 0, -.37, .03));
+    const f = new THREE.Group();          // pé: pivô no tornozelo (rola na marcha)
+    f.position.y = -.26;
+    f.add(box(.25, .22, .32, 0x2a1a10, 0, -.11, .03));
+    k.add(box(.21, .25, .23, pants, 0, -.125, 0), f);
     l.add(box(.21, .25, .23, pants, 0, -.125, 0), k);
     l.knee = k;
+    l.foot = f;
     g.add(l);
     return l;
   };
@@ -97,7 +104,7 @@ export function person(skin, shirt, pants, hat) {
   g.up = up;
 
   // desempenho: funde as caixas de cada segmento rígido em uma malha só (cores nos vértices) = menos chamadas de desenho
-  const keep = new Set([g.eyeL, ...a.fa.children, ...hd.children.slice(5)]);   // olho (pisca), braço da espada e peças do chapéu: ficam soltos (o NPC altera o chapéu)
+  const keep = new Set([g.eyeL, g.eyeR, ...a.fa.children, ...hd.children.slice(5)]);   // olho (pisca), braço da espada e peças do chapéu: ficam soltos (o NPC altera o chapéu)
   g.traverse(n => { if (n.isGroup && n !== g) fuse(n, keep); });
 
   return g;

@@ -5,7 +5,7 @@ import { props } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
-import { bend } from '../entities/character.js';
+import { gait, gaitSpeed, gaitReset } from '../entities/gait.js';
 import { gunPose, aimOffset, reloadWeight, BIG } from '../entities/player-weapon.js';
 import { attack, impact } from './combat.js';
 import { autoThink } from './auto.js';
@@ -164,13 +164,8 @@ function animate(dt) {
   const W = WEAPONS[P.wid], gn = W.gun;
 
   // passos
-  P.ph += dt * (5 + P.walk * 7);
-  const w = Math.sin(P.ph) * .85 * P.walk;
-  P.g.legL.rotation.x = w;
-  P.g.legR.rotation.x = -w;
-  P.g.armL.rotation.x = -w * .6;
-  bend(P.g, P.ph, P.walk);
-  P.g.position.set(P.x, Math.abs(Math.cos(P.ph)) * .07 * P.walk, P.z);
+  P.ph = P.g.gs ? P.g.gs.ph : P.ph;   // fase do passo (a marcha nova mantém a própria)
+  P.g.position.set(P.x, 0, P.z);
 
   // inclinação do corpo
   const leanTarget = P.walk * .09
@@ -217,10 +212,15 @@ function animate(dt) {
 
   // giro de espada (Q)
   if (P.cds[0] > 2.5) P.g.rotation.y += dt * 30;
+
+  // marcha: pés rolando, quadril, braço livre, cabeça, pena do chapéu (golpe/mira têm as próprias poses)
+  const busy = gn || P.sw > 0 || P.swap;
+  gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap, head: !W.big, gun: gn, sword: !busy });
 }
 
 /** Vasculhar o baú: encara o baú, inclina o tronco e revira com os dois braços, alternando */
 function animateRummage(dt) {
+  gaitReset(P.g);
   const g = P.g, r = P.rum, t = (P.rt = (P.rt || 0) + dt);
   let dy = (P.rumYaw ?? g.rotation.y) - g.rotation.y;
   dy = Math.atan2(Math.sin(dy), Math.cos(dy));

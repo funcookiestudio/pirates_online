@@ -3,6 +3,7 @@
    Subir: faz o caminho inverso (empurra com as mãos, pega a arma do chão, levanta). A arma fica sempre visível.
    P.sit vai de 0 (em pé) a 1 (sentado) em direção a P.sitT; trocar P.sitT no meio inverte suavemente. */
 import { P } from '../entities/player.js';
+import { gaitReset } from '../entities/gait.js';
 
 export const SIT_DOWN = 3;   // duração (s) de em pé → sentado
 export const SIT_UP = 2.6;   // duração (s) de sentado → em pé
@@ -76,6 +77,7 @@ const ia = new THREE.Matrix4();
 /** Aplica a pose ao modelo; o corpo desce sozinho até as pernas tocarem o chão */
 export function animateSit(dt) {
   const g = P.g, p = sitPose(P.sit);
+  gaitReset(g);
   P.walk = 0;
   P.lean = 0;
   g.rotation.x = 0;
