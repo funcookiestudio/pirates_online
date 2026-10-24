@@ -24,6 +24,7 @@ import { separate } from './systems/separation.js';
 import { updateXray } from './world/xray.js';
 import { initInput } from './systems/input.js';
 import { loadGame, initSave } from './systems/save.js';
+import { buildFarmSite } from './entities/farm-site.js';
 import { buildFarm, updateFarm, FARM } from './entities/farm.js';
 import { updatePets, setPet } from './pets/manager.js';
 import { DOG } from './pets/dog.js';
@@ -94,6 +95,7 @@ initHotbarFit();
 const loaded = loadGame(); // antes de povoar a ilha: a vida dos inimigos depende do nível
 buildOutposts();
 buildPois();
+buildFarmSite();   // fazenda de verdade (celeiro, casa, pasto, plantação)
 // desempenho: funde o cenário estático (fora NPCs, inimigos e peças animadas)
 const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
 const mr = mergeStatics(worldBefore, dyn);

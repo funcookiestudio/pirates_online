@@ -1,6 +1,6 @@
 /* Animais de fazenda (ambientação): galo, galinha, pato, peru, pavão, porco, ovelha, vaca, boi e cavalo.
    Só enfeite: não têm colisão, não são alvo e não entram em combate. Ficam em currais perto da vila e só animam quando o jogador está perto. */
-import { pois } from '../world/pois.js';
+import { FARMSITE } from './farm-site.js';
 import { wb } from '../core/utils.js';
 import { groundY, walkable, nearObstacle, onRoad } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
@@ -665,6 +665,16 @@ const HERDS = [
 export function buildFarm() {
   const MK = { rooster: mkRooster, hen: mkHen, duck: mkDuck, turkey: mkTurkey, peacock: mkPeacock, pig: mkPig, sheep: mkSheep, cow: mkCow, ox: mkOx, horse: mkHorse };
   const SCALE = { rooster: .9, hen: .9, duck: .9, turkey: 1, peacock: 1, pig: 1, sheep: 1, cow: 1, ox: 1, horse: 1 };
+  if (FARMSITE.ok) {
+    let n = 0;
+    HERDS.forEach(herd => herd.forEach(kind => {
+      const w = FARMSITE.pen[n++ % FARMSITE.pen.length], g = MK[kind](), root = new THREE.Group();
+      g.scale.setScalar(SCALE[kind]); root.add(g);
+      root.position.set(w.x, groundY(w.x, w.z), w.z); root.visible = false; scene.add(root);
+      FARM.push({ root, a: createAnimator(root, g, kind), ox: w.x, oz: w.z });
+    }));
+    return;
+  }
   const used = [];
   HERDS.forEach((herd, h) => {
     let spot = null;
@@ -675,7 +685,6 @@ export function buildFarm() {
     }
     if (!spot) return;
     used.push(spot);
-    pois.push({ n: 'Fazenda', x: spot.x, z: spot.z, c: '#9ad060', ic: '🐄' });
     herd.forEach((kind, i) => {
       const a = i / herd.length * 6.283 + h, r = 1.2 + (i % 3) * 1.1;
       const x = spot.x + Math.cos(a) * r, z = spot.z + Math.sin(a) * r;
