@@ -28,3 +28,13 @@ export const BOARD = { name: 'Mural de Missões', title: 'Cartazes de procurados
     'SERVIÇO: A taverna paga bem por quem limpar a mata de esqueletos. Falar com Madame Rum.',
     'AVISO: Mortos-vivos rondam a ilha. Não saia da vila sem arma e poções, marujos!',
     'PROCURA-SE: Tripulantes corajosos para expedições. Falar com o Velho Astrolábio.'] };
+
+export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic: '⛵', ferry: true,
+  lines: ['Ahoy! Meu barco leva marujo a qualquer ilha do arquipélago... por uma moedinha.', 'O mar está calmo. Diga o destino e eu iço a vela!', 'Cada ilha tem seus perigos e seus tesouros. Boa viagem, marujo!'] };
+
+export const ISLANDS = [
+  { seed: 'pirata', name: 'Ilha Natal', cost: 0 },
+  { seed: 'corvo', name: 'Ilha do Corvo', cost: 25 },
+  { seed: 'tormenta', name: 'Ilha da Tormenta', cost: 25 },
+  { seed: 'caveira', name: 'Ilha da Caveira', cost: 25 },
+];

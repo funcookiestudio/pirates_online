@@ -5,6 +5,9 @@ import { WEAPONS, RN, AN } from '../data/weapons.js';
 import { bag, chest, addItem, bagFull, BAG_MAX, CHEST_MAX, POT_MAX, BOMB_MAX, PRICE } from '../systems/inventory.js';
 import { emit } from '../core/events.js';
 import { lootText, log } from './notify.js';
+import { ISLANDS } from '../data/npcs.js';
+import { SEED } from '../world/terrain.js';
+import { saveGame } from '../systems/save.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
 
@@ -118,6 +121,17 @@ function buttons() {
   if (cur.chest) add('📦 Abrir baú', openShop);
   if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : '🛒 Ver mercadoria', openShop);
   if (cur.shop === 'tavern') add('🍺 Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('🍺 Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });
+  if (cur.ferry) ISLANDS.forEach(i => {
+    if (i.seed === SEED) return;
+    add('⛵ ' + i.name + (i.cost ? ' (' + i.cost + ' ouro)' : ''), () => {
+      if (P.gold < i.cost) { say('Sem ouro, sem viagem, marujo! Volte com ' + i.cost + ' moedas.'); return; }
+      P.gold -= i.cost;
+      try { localStorage.setItem('pirata-ilha', i.seed); localStorage.setItem('pirata-chegada', '1'); } catch (e) { /* sem armazenamento */ }
+      saveGame();
+      say('Icem a vela! Rumo à ' + i.name + '...');
+      setTimeout(() => location.reload(), 900);
+    });
+  });
   add(cur.board ? '📜 Próximo cartaz' : '💬 Conversar', () => { li = (li + 1) % cur.lines.length; say(cur.lines[li]); });
   add('Até logo', closeDialog);
 }

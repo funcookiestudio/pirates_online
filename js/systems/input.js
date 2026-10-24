@@ -12,6 +12,7 @@ import { zoomBy, rotateBy } from './camera.js';
 import { toggleSit, standUp } from './rest.js';
 import { togglePet } from '../pets/manager.js';
 import { freePoint } from './steer.js';
+import { groundY } from '../world/terrain.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
 
@@ -27,6 +28,17 @@ function pick(cx, cy) {
   pointer.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(pointer, cam);
   ray.ray.intersectPlane(ground, aim);
+  // relevo: avança pelo raio até o chão real (morros e cais), em vez do plano y=0
+  { const o = ray.ray.origin, d = ray.ray.direction; let hit = false;
+    for (let t = 0; t < 400; t += 1) {
+      const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
+      if (y <= groundY(x, z)) {
+        let lo = t - 1, hi = t;
+        for (let i = 0; i < 8; i++) { const m = (lo + hi) / 2; (o.y + d.y * m <= groundY(o.x + d.x * m, o.z + d.z * m)) ? hi = m : lo = m; }
+        aim.set(o.x + d.x * hi, 0, o.z + d.z * hi); hit = true; break;
+      }
+    }
+    void hit; }
 
   const n = npcAt(aim.x, aim.z);
   if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, .05, n.g.position.z); return; }
