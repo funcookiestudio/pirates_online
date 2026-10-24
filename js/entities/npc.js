@@ -10,6 +10,7 @@ import { initSmith, updateSmith, updateSparks } from './npc-work.js';
 import { cam } from '../core/engine.js';
 import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
 import { $ } from '../core/utils.js';
+import { groundY } from '../world/terrain.js';
 
 const list = [];
 export const npcList = list;
@@ -244,6 +245,7 @@ export function updateNpcs(dt, now) {
     }
     // marcha, respiração, olhar e piscar (a mesma do personagem)
     g.up.rotation.set(0, 0, 0);
+    g.position.y = groundY(g.position.x, g.position.z);   // a marcha desce o corpo a cada passo: parte sempre do chão (senão acumula e afunda)
     const gr = gait(g, dt, gaitSpeed(n.spd || 0), { sword: false });
     if (n.role === 'citizen') g.arm.rotation.x = -gr.w * gr.sw * .8;
     if (n.role === 'guard') g.head.rotation.y += Math.sin(t * .4) * .5;   // sentinela varre o olhar
