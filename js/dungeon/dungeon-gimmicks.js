@@ -91,13 +91,15 @@ export function buildGimmicks(ctx) {
     if (gm.door && Math.hypot(x - gm.door.mid.x, z - gm.door.mid.z) < 4) continue;
     cand.push({ x, z });
   }
-  const mp = new THREE.MeshBasicMaterial({ color: 0x5a2a2a }), ms = new THREE.MeshBasicMaterial({ color: 0xc0c8d0 });
+  const mp = new THREE.MeshBasicMaterial({ color: 0x9a3a22 }), ms = new THREE.MeshBasicMaterial({ color: 0xc0c8d0 });
+  const mp2 = new THREE.MeshBasicMaterial({ color: 0x120a0a });
   const cg = new THREE.ConeGeometry(.09, .7, 4);
   for (let i = 0; i < n && cand.length; i++) {
     const c = cand.splice(Math.floor(R() * cand.length), 1)[0];
     if (traps(gm).some(t => Math.hypot(t.x - c.x, t.z - c.z) < 5)) { i--; if (cand.length < 5) break; continue; }
     const t = new THREE.Group(), pl = new THREE.Mesh(new THREE.BoxGeometry(1.5, .06, 1.5), mp);
     pl.position.y = .02; t.add(pl);
+    for (const rz of [Math.PI / 4, -Math.PI / 4]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(1.9, .02, .16), mp2); bar.position.y = .07; bar.rotation.y = rz; t.add(bar); }   // X escuro sobre a placa
     const sp = new THREE.Group();
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const q = new THREE.Mesh(cg, ms); q.position.set(a * .42, .35, b * .42); sp.add(q); }
     sp.scale.y = .01; t.add(sp);
@@ -121,7 +123,7 @@ export function updateGimmicks(gm, dt, t, D) {
     else if (u >= 2.4 && u < 3.1) h = 1;
     else if (u >= 3.1) h = Math.max(0, 1 - (u - 3.1) / .3);
     tr.sp.scale.y = Math.max(.01, h);
-    tr.pl.material.color.setHex(warn ? 0xff5020 : 0x5a2a2a);
+    tr.pl.material.color.setHex(warn ? 0xff7030 : 0x9a3a22);
     if (u >= 2.4 && u < 3.1) {
       if (!tr.hit && Math.hypot(P.x - tr.x, P.z - tr.z) < .95) {
         tr.hit = true;
