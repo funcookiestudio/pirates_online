@@ -5,6 +5,8 @@ import { buildWorld } from './world/world.js';
 import { buildVillage } from './world/village.js';
 import { initDialog } from './ui/dialog.js';
 import { updateNpcs, npcList } from './entities/npc.js';
+import { updatePerf } from './systems/perf.js';
+import { mergeStatics } from './world/merge.js';
 import { buildOutposts, updateOutposts } from './world/outposts.js';
 import { updateEnemies, updateRespawns } from './entities/enemies.js';
 import { updateLoot } from './entities/loot.js';
@@ -42,6 +44,7 @@ function frame(now) {
   if (state.HS > 0) { state.HS -= dt; dt *= .12; }
 
   // 1) jogo
+  updatePerf(realDt);
   updatePlayer(dt);
   updateEnemies(dt);
   updateNpcs(realDt, now);
@@ -63,6 +66,7 @@ function frame(now) {
   ren.render(scene, cam);
 }
 
+const worldBefore = new Set(scene.children);
 buildWorld();
 buildVillage();
 initInput();
@@ -75,10 +79,14 @@ refreshPetButton();
 initHotbarFit();
 const loaded = loadGame(); // antes de povoar a ilha: a vida dos inimigos depende do nível
 buildOutposts();
+// desempenho: funde o cenário estático (fora NPCs, inimigos e peças animadas)
+const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
+const mr = mergeStatics(worldBefore, dyn);
+if (location.hash === '#dev') console.log('merge', mr);
 // o jogo sempre começa na vila, com o personagem sentado descansando (clicar no mundo o levanta)
 P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw;
 initSave();
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

@@ -99,6 +99,7 @@ export function initSmith(n, at, th) {
   scene.add(fire);
   const glowL = new THREE.PointLight(0xff7a20, 0, 5);
   scene.add(glowL);
+  [hm, tongs, mug, anvilSword, handSword, fire].forEach(o => { if (o) o.userData.dyn = 1; }); // animados: ficam fora da fusão do cenário
   const [bx0, bz0] = at(2.45, 2.6);
   n.job = {
     at, th, hm, tongs, mug, anvilSword, handSword, fire, glowL, heat: 1, hit: -1, flash: 0, dip: 0,

@@ -96,7 +96,35 @@ export function person(skin, shirt, pants, hat) {
   g.add(up);
   g.up = up;
 
+  // desempenho: funde as caixas de cada segmento rígido em uma malha só (cores nos vértices) = menos chamadas de desenho
+  const keep = new Set([g.eyeL, ...a.fa.children, ...hd.children.slice(5)]);   // olho (pisca), braço da espada e peças do chapéu: ficam soltos (o NPC altera o chapéu)
+  g.traverse(n => { if (n.isGroup && n !== g) fuse(n, keep); });
+
   return g;
+}
+
+/** Funde as malhas diretas de `grp` (menos as de `keep`) em uma só, usando cor por vértice */
+function fuse(grp, keep) {
+  const meshes = grp.children.filter(c => c.isMesh && !keep.has(c));
+  if (meshes.length < 2) return;
+  const pos = [], nor = [], col = [];
+  meshes.forEach(m => {
+    m.updateMatrix();
+    const geo = m.geometry.clone().toNonIndexed().applyMatrix4(m.matrix), n = geo.attributes.position.count, c = m.material.color;
+    pos.push(...geo.attributes.position.array);
+    nor.push(...geo.attributes.normal.array);
+    for (let i = 0; i < n; i++) col.push(c.r, c.g, c.b);
+    geo.dispose();
+    grp.remove(m);
+    m.geometry.dispose();
+  });
+  const bg = new THREE.BufferGeometry();
+  bg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  bg.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  bg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  bg.parameters = {};
+  grp.add(new THREE.Mesh(bg, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  grp.children.unshift(grp.children.pop()); // fica no índice 0: os índices das peças soltas só deslocam o rosto
 }
 
 /** Dobra os joelhos e o braço livre conforme a fase do passo (ph) e a intensidade (m) */

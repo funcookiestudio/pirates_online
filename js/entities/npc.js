@@ -16,9 +16,9 @@ export const npcList = list;
 export const npcByShop = kind => list.find(n => n.info && n.info.shop === kind && n.g.visible !== false);
 const turn = (a, b, k) => { let d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); };
 
-/** Peças do chapéu em g.head.children: 5 aba · 6 copa · 7 caveira · 8 pena */
+/** Peças do chapéu em g.head.children: 0 rosto (fundido) · 1 olho · 2 aba · 3 copa · 4 caveira · 5 pena */
 function hatStyle(g, kind, col) {
-  const [, , , , , brim, top, skull, plume] = g.head.children;
+  const [, , brim, top, skull, plume] = g.head.children;
   const set = (m, c) => m.material.color.set(c);
   if (kind === 'pirate') return; // mantém o chapéu do personagem
   skull.visible = plume.visible = false;
@@ -213,6 +213,9 @@ export function updateNpcs(dt, now) {
       const o = n.open, back = o > .5 ? 1 + Math.sin((o - .5) * 9) * .0 : 1;
       n.lid.rotation.x = -(o * 1.95 + Math.sin(o * Math.PI) * .12 * 0) * back;
     }
+    // longe do jogador: não desenha nem processa (o ferreiro controla a própria visibilidade)
+    if (Math.hypot(P.x - g.position.x, P.z - g.position.z) > 66) { if (!n.job) g.visible = false; return; }
+    if (!n.job) g.visible = true;
     if (n.role === 'chest') return;
     if (n.job) {
       updateSmith(n, dt, now, [P.x, P.z], talking === n);

@@ -20,10 +20,11 @@ export function campfire(x, z, sc = 1) {
   const fl = [];
   [[.34, 1.1, 0xff6a1a], [.24, .9, 0xffa020], [.14, .65, 0xffe060]].forEach(([r, h, c], i) => {
     const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 6), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .92 }));
-    m.position.set(i ? (i - 1.5) * .12 : 0, h / 2 + .1, 0); g.add(m); fl.push([m, h, i]);
+    m.position.set(i ? (i - 1.5) * .12 : 0, h / 2 + .1, 0); g.add(m); fl.push([m, h, i]); m.userData.dyn = 1;
   });
   const glow = new THREE.Mesh(new THREE.CircleGeometry(2.4, 16), new THREE.MeshBasicMaterial({ color: 0xff8030, transparent: true, opacity: .16, depthWrite: false }));
   glow.rotation.x = -Math.PI / 2; glow.position.y = .05; g.add(glow);
+  glow.userData.dyn = 1;
   scene.add(g);
   props.push({ position: { x, z, y: 0 }, r: .95 * sc });
   fires.push({ fl, glow, ph: Math.random() * 6 });

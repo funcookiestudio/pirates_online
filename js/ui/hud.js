@@ -31,7 +31,7 @@ export function updateStatusBars() {
   updateStaminaRing();
 }
 
-let lastStatsRefresh = 0;
+let lastStatsRefresh = 0, mmTick = 0;
 
 /** Barra do inimigo, missão, XP do companheiro, atributos do painel e minimapa */
 export function updateOverlays(now) {
@@ -65,7 +65,7 @@ export function updateOverlays(now) {
     renderStats();
   }
 
-  drawMinimap();
+  if ((mmTick = (mmTick + 1) % 3) === 0) drawMinimap(); // minimapa a ~20 fps
 }
 
 const mmss = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');

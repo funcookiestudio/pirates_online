@@ -11,6 +11,7 @@ const U = {
 
 /** Aplica o buraco redondo ao material (retorna o próprio material) */
 export function xray(mat) {
+  mat.userData.xr = 1;
   mat.onBeforeCompile = sh => {
     sh.uniforms.uPS = U.uPS;
     sh.uniforms.uPD = U.uPD;

@@ -230,6 +230,9 @@ function animate(e, c, dt) {
 
 function updateEnemy(e, dt) {
   if (e.dead) { animateDeath(e, dt); return; }
+  // longe do jogador (e já perdido no nevoeiro) e sem perseguir: não desenha nem processa
+  if (!e.ag && Math.hypot(P.x - e.x, P.z - e.z) > 66) { e.g.visible = false; return; }
+  e.g.visible = true;
 
   const bo = e.t.boss;
   e.fl = Math.max(0, e.fl - dt);
