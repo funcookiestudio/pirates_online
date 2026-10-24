@@ -78,13 +78,6 @@ export function buildVillage() {
   const ground = new THREE.Mesh(new THREE.CircleGeometry(VILLAGE_R + 3, 24).rotateX(-Math.PI / 2), M(0x9a8a62));
   ground.position.y = .012;
   scene.add(ground);
-  // caminhos até os portões
-  for (let k = 0; k < 4; k++) {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(4, 20).rotateX(-Math.PI / 2), M(0x8a7a52));
-    p.position.set(Math.cos(k * Math.PI / 2) * (VILLAGE_R + 3), .02, Math.sin(k * Math.PI / 2) * (VILLAGE_R + 3));
-    p.rotation.y = k * Math.PI / 2 + Math.PI / 2;
-    scene.add(p);
-  }
   buildWall();
   for (let k = 0; k < 4; k++) buildGate(k * Math.PI / 2);
 
