@@ -47,3 +47,14 @@ export function rollQuality(L, bonus = 0) {
   if (r < .004 + L * .0006 + bonus * .03) return 3;
   return Math.random() < .03 + L * .004 + bonus * .12 ? 2 : 1;
 }
+
+/* ---- Diferença de nível (df = nível do inimigo − nível do jogador) ---- */
+
+/** Dano que o jogador causa: até +2 níveis acima não muda; depois cai 9% por nível (mínimo 15%) */
+export const dealtMult = df => df <= 2 ? 1 : Math.max(.15, 1 - (df - 2) * .09);
+
+/** Dano que o jogador recebe: inimigo mais forte bate mais (até +6% por nível, até +16 níveis); mais fraco bate menos (até −50%) */
+export const takenMult = df => df > 0 ? 1 + Math.min(df, 16) * .06 : Math.max(.5, 1 + df * .04);
+
+/** Nível mínimo para usar um item: o nível dele menos 2 de folga (itens sem nível, de saves antigos, não têm requisito) */
+export const itemReq = it => it && it.il ? Math.max(1, it.il - 2) : 1;

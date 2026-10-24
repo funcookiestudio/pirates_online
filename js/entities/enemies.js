@@ -13,7 +13,7 @@ import { puff } from '../systems/effects.js';
 import { petPos, petPerched, hurtPet } from '../pets/manager.js';
 import { log } from '../ui/notify.js';
 import { groundY, slideTo } from '../world/terrain.js';
-import { enemyStats, ELITE } from '../data/scaling.js';
+import { enemyStats, ELITE, takenMult } from '../data/scaling.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
@@ -143,7 +143,7 @@ function think(e, dt, c) {
       e.cd = bo ? 1.2 : .8;
       e.kx += Math.sin(aim) * 3;
       e.kz += Math.cos(aim) * 3;
-      const dm = e.dmg;
+      const dm = e.dmg * takenMult(e.lv - P.lv);
 
       const pp = petPos();
       if (!petPerched() && pp.y < 2 && Math.hypot(pp.x - e.x, pp.z - e.z) <= (e.slam ? 4.6 : reach + .5)) {

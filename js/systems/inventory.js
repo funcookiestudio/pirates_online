@@ -3,6 +3,7 @@ import { P } from '../entities/player.js';
 import { mountWeapons } from '../entities/player-weapon.js';
 import { WEAPONS, RN, AN } from '../data/weapons.js';
 import { emit } from '../core/events.js';
+import { itemReq } from '../data/scaling.js';
 import { log, lootText } from '../ui/notify.js';
 
 /** Itens guardados na mochila */
@@ -39,6 +40,7 @@ export function addItem(l) {
 /** Em que espaço o item entra? 'wpn' | 'gun' | 'arm' | 'off' (segunda mão). Com `better`, devolve null se não melhora nada.
     Mão 2: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas); armas grandes (mosquete) ocupam as duas mãos. */
 export function pickSlot(it, better) {
+  if (better && P.lv < itemReq(it)) return null;      // auto-equipar só itens que o nível permite
   const s = slotOf(it);
   if (s === 'arm') return !eq.arm || !better || it.v > eq.arm.v ? 'arm' : null;
   const main = eq[s];
@@ -61,6 +63,7 @@ export function canEquipTo(it, slot) {
 export function equip(i, forced) {
   const it = bag[i];
   if (!it) return;
+  if (P.lv < itemReq(it)) { log('🔒 ' + it.n + ' exige nível ' + itemReq(it)); return; }
   const slot = forced && canEquipTo(it, forced) ? forced : pickSlot(it, false), old = eq[slot];
   bag.splice(i, 1);
   if (old) {

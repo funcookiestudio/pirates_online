@@ -12,6 +12,7 @@ import { SEED } from './terrain.js';
 const E = N / 2;
 import { P } from '../entities/player.js';
 import { log } from '../ui/notify.js';
+import { buildCaves, updateCaves, DUNGEONS } from './caves.js';
 import { cullTerrain } from './terrain-mesh.js';
 
 export const pois = [];   // { n, x, z, c } em coordenadas do jogo (c = cor no minimapa)
@@ -24,10 +25,10 @@ const bx = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxG
 const solid = (x, z, r) => props.push({ position: { x, z, y: 0 }, r });
 
 export function buildPois() {
-  const [po, , ca, tr] = isl.pois;
+  const [po, , , tr] = isl.pois;
   const at = p => ({ x: p.x - VX, z: p.z - VZ });
-  const port = at(po), cave = at(ca), tre = at(tr);
-  pois.push({ n: 'Porto', ...port, c: '#4ad0e8' }, { n: 'Caverna', ...cave, c: '#a070ff' }, { n: 'Tesouro', ...tre, c: '#ffd840' });
+  const port = at(po), tre = at(tr);
+  pois.push({ n: 'Porto', ...port, c: '#4ad0e8' }, { n: 'Tesouro', ...tre, c: '#ffd840' });
 
   // cais: convés acima da água, estacas até o fundo, barqueiro na ponta (o convés vira chão pisável)
   const g = new THREE.Group(), yaw = Math.atan2(isl.port.dx, isl.port.dz), pdx = isl.port.dx, pdz = isl.port.dz;
@@ -58,27 +59,22 @@ export function buildPois() {
   const fer = makeNpc('guard', port.x + pdx * 12, port.z + pdz * 12, Math.atan2(-pdx, -pdz), [0xd8a880, 0x2a5a7a, 0x2a2a30, 0xc8b070], 5, FERRYMAN);
   fer.g.position.y = deckY;
   solid(port.x + pdx * 12, port.z + pdz * 12, .55);
-  // entrada da caverna
-  const cy = groundY(cave.x, cave.z), cg = new THREE.Group();
-  cg.position.set(cave.x, cy - .2, cave.z); cg.rotation.y = Math.atan2(isl.cave.dx, isl.cave.dz);
-  bx(cg, .6, 2.4, .6, 0x5a5560, -.9, 1.1, 0); bx(cg, .6, 2.4, .6, 0x5a5560, .9, 1.1, 0);
-  bx(cg, 2.4, .6, .8, 0x4a4650, 0, 2.3, 0); bx(cg, 1.3, 1.9, .2, 0x050408, 0, .95, -.1);
-  const cr = Math.cos(cg.rotation.y), sr = Math.sin(cg.rotation.y);
-  for (const s of [-.9, .9]) solid(cave.x + s * cr, cave.z - s * sr, .45);
   // tesouro: baú pequeno + X vermelho + feixe de luz (animado: não é fundido)
   const ty = groundY(tre.x, tre.z);
   bx(g, .7, .45, .5, 0x7a4a20, tre.x, ty + .22, tre.z); bx(g, .72, .15, .52, 0xe0b030, tre.x, ty + .5, tre.z);
   for (const s of [.785, -.785]) { const m = bx(g, 2, .04, .3, 0xc02020, tre.x, ty + .05, tre.z + 1.4); m.rotation.y = s; }
   solid(tre.x, tre.z, .5);
-  scene.add(g, cg);
+  scene.add(g);
   treasure = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, 9, 6), new THREE.MeshBasicMaterial({ color: 0xffd840, transparent: true, opacity: .35 }));
   treasure.position.set(tre.x, ty + 4.5, tre.z); treasure.userData.dyn = 1; treasure.visible = !got;
   scene.add(treasure);
-  log('🗺 Porto, caverna e tesouro marcados no minimapa');
+  buildCaves();
+  log('🗺 Porto, ' + DUNGEONS.length + ' cavernas e tesouro marcados no minimapa');
 }
 
 /** Avisos de proximidade e coleta do tesouro (uma vez) */
 export function updatePois() {
+  updateCaves();
   if (arrive && pois[0]) { arrive = false; try { localStorage.removeItem('pirata-chegada'); } catch (e) { /* ok */ } P.x = P.tx = pois[0].x - isl.port.dx * 3; P.z = P.tz = pois[0].z - isl.port.dz * 3; P.vx = P.vz = 0; }
   cullTerrain(P.x, P.z);
   let n = '';
@@ -86,7 +82,6 @@ export function updatePois() {
   if (n === near) return;
   near = n;
   if (n === 'Porto') log('⚓ Porto: de onde o barco parte (em breve)');
-  else if (n === 'Caverna') log('🕳 Entrada da caverna (dungeon em breve)');
   else if (n === 'Tesouro' && !got) {
     got = true; treasure.visible = false;
     const g = 150 + 25 * P.lv; P.gold += g;

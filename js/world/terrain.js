@@ -12,6 +12,7 @@ export let VX = 0, VZ = 0; // posição da vila na grade do gerador (m, centro =
 export let SEA = -3;       // nível do mar (relativo à vila)
 export const VS = 2;       // esticamento vertical do relevo
 export let REACH = null;   // células alcançáveis a pé desde a vila
+export let CAVES = [];     // entradas de caverna nas encostas { x, z, y, dx, dz (para onde a encosta desce), d }
 export let HV = 0;         // altura original da vila no gerador (para cores por altitude)
 const E = N / 2;
 
@@ -78,7 +79,41 @@ export function initTerrain(posts = [], seed = SEED) {
     p.x = c[0]; p.z = c[1];
     flatten(p.x, p.z, 7, 15, heightAt(p.x, p.z));
   });
+  CAVES = pickCaves(posts);
   return isl;
+}
+
+/** Inclinação do relevo em (x,z): [gx, gz, módulo] (m de altura por m de distância) */
+function slopeAt(x, z) {
+  const gx = (heightAt(x + 1.5, z) - heightAt(x - 1.5, z)) / 3, gz = (heightAt(x, z + 1.5) - heightAt(x, z - 1.5)) / 3;
+  return [gx, gz, Math.hypot(gx, gz)];
+}
+
+/** Entradas de caverna: no máximo uma por faixa de distância (perto / meio / borda), sempre numa ENCOSTA que sobe atrás
+    e com um terreno plano à frente, longe de estradas, vila e postos. */
+function pickCaves(posts) {
+  const bands = [[34, 58], [58, 76], [76, 95]], out = [];
+  bands.forEach(([lo, hi]) => {
+    let best = null, bs = -1;
+    for (let z = -95; z <= 95; z += 2) for (let x = -95; x <= 95; x += 2) {
+      const d = Math.hypot(x, z);
+      if (d < lo || d >= hi || heightAt(x, z) < SEA + 3) continue;
+      const [gx, gz, sl] = slopeAt(x, z);
+      if (sl < .5 || sl > 1.2) continue;
+      const dx = -gx / sl, dz = -gz / sl, fx = x + dx * 3, fz = z + dz * 3, h = heightAt(x, z);
+      if (!walkable(x, z) || !walkable(fx, fz) || !reach(fx, fz) || slopeAt(fx, fz)[2] > .45) continue;
+      if (heightAt(x - dx * 3, z - dz * 3) < h + 1) continue;                      // a montanha precisa subir atrás da boca
+      if (!walkable(fx - dz * 1.5, fz + dx * 1.5) || !walkable(fx + dz * 1.5, fz - dx * 1.5)) continue;   // espaço à frente
+      if (onRoad(x, z, 3) || onRoad(fx, fz, 2) || posts.some(p => Math.hypot(p.x - x, p.z - z) < 18)) continue;
+      let m = 99;
+      for (const c of out) m = Math.min(m, Math.hypot(c.x - x, c.z - z));
+      if (m < 26) continue;
+      const sc = m + sl * 4 + (Math.sin(x * 12.9 + z * 78.2) * 3);            // espalha; leve desempate pseudo-aleatório (estável)
+      if (sc > bs) { bs = sc; best = { x, z, y: h, dx, dz, d }; }
+    }
+    if (best) out.push(best);
+  });
+  return out;
 }
 
 function reach(x, z) {

@@ -1,5 +1,5 @@
 /* Combate do jogador: golpes, balas, giro, bomba, poção e o cálculo de dano (hit). */
-import { xpMult } from '../data/scaling.js';
+import { xpMult, dealtMult } from '../data/scaling.js';
 import { scene } from '../core/engine.js';
 import { state, aim } from '../core/state.js';
 import { enemies, particles, bombs, shots } from '../core/registry.js';
@@ -25,6 +25,7 @@ export function hit(e, d, o) {
   e.ag = true;
   if (e.mk > 0) d *= 1 + e.mkv;
   if (o.pet && e.hp < e.max * .35) d *= 1 + PV('exec');
+  d *= dealtMult(e.lv - P.lv);                      // inimigo muito acima do seu nível: seus golpes quase não fazem cócegas
 
   const cr = o.cr !== undefined ? o.cr : Math.random() < .15;
   d = Math.round(d * (.85 + Math.random() * .3) * (cr ? 2 : 1));

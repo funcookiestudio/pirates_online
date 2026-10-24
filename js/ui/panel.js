@@ -5,6 +5,7 @@ import { $, isPanelOpen } from '../core/utils.js';
 import { WEAPONS, RN } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { dropItem } from '../entities/loot.js';
+import { itemReq } from '../data/scaling.js';
 import { slotOf, unequip, pickSlot, canEquipTo, POT_MAX, BOMB_MAX } from '../systems/inventory.js';
 import { bag, eq, equip, BAG_MAX } from '../systems/inventory.js';
 import { PST } from '../pets/stats.js';
@@ -108,7 +109,7 @@ function itemCard(it, worn) {
   return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (it.il ? ' · Nv ' + it.il : '') + (isW ? (W.gun ? ' · arma de fogo' : ' · corpo a corpo') + (W.big ? ' · 2 MÃOS' : ' · 1 mão') : ' · armadura') + '</small></span></div>' +
     stat(isW ? '⚔' : '🛡', isW ? 'ATAQUE' : 'DEFESA / VIDA', '+' + it.v, df.replace(/<\/?small>/g, '')) +
     (isW ? stat('⏱', 'VELOCIDADE', (1 / (W.cd || 1)).toFixed(1) + '/s', 'Recarga ' + (W.cd || 1) + 's') : '') +
-    (worn ? '<div class="iact"><button id="ieq">DESEQUIPAR</button><button id="idr">FECHAR</button></div>' : '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>');
+    (worn ? '<div class="iact"><button id="ieq">DESEQUIPAR</button><button id="idr">FECHAR</button></div>' : (P.lv < itemReq(it) ? stat('🔒', 'EXIGE NÍVEL', itemReq(it), 'Você está no nível ' + P.lv) : '') + '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>');
 }
 
 export function renderStats() {
