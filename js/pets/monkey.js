@@ -7,7 +7,7 @@ import { enemies, loot } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
 import { P } from '../entities/player.js';
 import { applyLoot } from '../entities/loot.js';
-import { puff } from '../systems/effects.js';
+import { puff, whirl } from '../systems/effects.js';
 import { mkMonkey } from './models.js';
 import { PV, PCD } from './stats.js';
 import { petStrike } from './strike.js';
@@ -50,6 +50,8 @@ const MATK = {
   bite: { d: .55, f: u => { const wu = env(u, 0, .3) * (1 - env(u, .3, .4)), st = env(u, .3, .4) * (1 - env(u, .65, 1)); return { hd: -.6 * wu + .7 * st, ln: .3 * st - .1 * wu, ar: -.6 * st, al: -.6 * st, hy: Math.sin(u * 45) * .3 * st }; } },
   smash: { d: .7, f: u => { const ra = env(u, 0, .4) * (1 - env(u, .45, .55)), im = env(u, .45, .55) * (1 - env(u, .7, 1)); return { ar: -2.85 * ra, al: -2.85 * ra, fr: -.2 * ra, ln: -.45 * ra + .35 * im, hd: -.3 * ra + .3 * im }; } },
 };
+MATK.kick = { d: .65, f: u => { const cr = env(u, 0, .25) * (1 - env(u, .25, .3)), kk = env(u, .25, .38) * (1 - env(u, .8, .9)); return { ln: .3 * cr - .7 * kk, ll: -.77 * cr - .85 * kk, lr: -.77 * cr - .7 * kk, kl: 1.05 * cr - .25 * kk, kr: 1.05 * cr - .25 * kk, ar: -.3 * cr + kk, al: -.3 * cr + kk }; } };   // voadora
+MATK.sonic = { d: .8, f: u => { const rs = env(u, 0, .35), rl = env(u, .6, .9), k = rs * (1 - rl), cl = env(u, .4, .5) * (1 - rl); return { ar: -.95 * k, al: -.95 * k, fr: -.65 * k, az: .5 * cl, fx: u > .45 }; } };   // prato sonoro: bate palmas e solta uma onda
 const MATK_KEYS = Object.keys(MATK);
 
 /** Posição do ombro do jogador */
@@ -322,11 +324,15 @@ function animateMonkey(dt, t, g, pos) {
       g.rotation.x += f.ln || 0;
       g.head.rotation.x += f.hd || 0;
       g.head.rotation.y += f.hy || 0;
+      g.legL.rotation.x += f.ll || 0; g.legR.rotation.x += f.lr || 0;
+      g.legL.knee.rotation.x += f.kl || 0; g.legR.knee.rotation.x += f.kr || 0;
+      if (f.az) { g.arm.rotation.z = -f.az; g.armL.rotation.z = f.az; }
+      if (f.fx && !am.fx) { am.fx = 1; whirl(pos.x, .3, pos.z); }   // onda sonora uma vez por golpe
     }
   }
   // comemoração com pratos: bate palmas com os pratos de bronze
   const cym = sit && MON.cel > 0;
-  g.cym[0].visible = g.cym[1].visible = cym;
+  g.cym[0].visible = g.cym[1].visible = cym || (!!MON.am && MON.am.k === 'sonic');
   if (cym) {
     const sn = Math.sin(t * 13), hit = (.5 + .5 * sn) ** 2;
     g.arm.rotation.x = g.armL.rotation.x = -1.35;
@@ -334,7 +340,7 @@ function animateMonkey(dt, t, g, pos) {
     g.arm.rotation.z = -(.1 + .42 * hit);
     g.armL.rotation.z = .1 + .42 * hit;
     g.head.rotation.z = sn * .1;
-  } else { g.arm.rotation.z = 0; g.armL.rotation.z = 0; }
+  } else if (!MON.am) { g.arm.rotation.z = 0; g.armL.rotation.z = 0; }
 
   const ta = mv ? .4 : .22;
   g.tail.forEach((p, j) => { p.rotation.y = Math.sin(t * (mv ? 6 : 2) + j * .7) * ta; });
