@@ -3,7 +3,7 @@
 import { groundY, walkable } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
-import { enemies, loot } from '../core/registry.js';
+import { enemies, loot, particles } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
 import { P } from '../entities/player.js';
 import { applyLoot } from '../entities/loot.js';
@@ -52,6 +52,9 @@ const MATK = {
 };
 MATK.kick = { d: .65, f: u => { const cr = env(u, 0, .25) * (1 - env(u, .25, .3)), kk = env(u, .25, .38) * (1 - env(u, .8, .9)); return { ln: .3 * cr - .7 * kk, ll: -.77 * cr - .85 * kk, lr: -.77 * cr - .7 * kk, kl: 1.05 * cr - .25 * kk, kr: 1.05 * cr - .25 * kk, ar: -.3 * cr + kk, al: -.3 * cr + kk }; } };   // voadora
 MATK.sonic = { d: .8, f: u => { const rs = env(u, 0, .35), rl = env(u, .6, .9), k = rs * (1 - rl), cl = env(u, .4, .5) * (1 - rl); return { ar: -.95 * k, al: -.95 * k, fr: -.65 * k, az: .5 * cl, fx: u > .45 }; } };   // prato sonoro: bate palmas e solta uma onda
+MATK.tailwhip = { d: .7, f: u => { const sp = env(u, .15, .3) * (1 - env(u, .8, 1)); return { ry: Math.PI * 2 * env(u, .2, .8), ln: .15 * sp, ar: -.2 * sp, al: -.2 * sp, kl: .5 * sp, kr: .5 * sp }; } };   // rabada: giro completo
+MATK.throw = { d: .8, f: u => { const wu = env(u, 0, .35) * (1 - env(u, .35, .5)), st = env(u, .35, .5) * (1 - env(u, .7, 1)); return { ar: 1.2 * wu - 2 * st, fr: -1.2 * wu, al: -.8 * wu, ln: -.25 * wu + .2 * st, rock: u > .4 }; } };   // arremesso de pedra
+MATK.stomp = { d: .8, f: u => { const up = Math.sin(Math.PI * Math.min(1, u / .6)), im = env(u, .6, .7) * (1 - env(u, .8, 1)); return { ar: -2.4 * up, al: -2.4 * up, ll: -.6 * up, lr: -.6 * up, kl: .8 * up, kr: .8 * up, ln: -.15 * up + .3 * im, py: .5 * up, ring: u > .6 }; } };   // pulo esmagador
 const MATK_KEYS = Object.keys(MATK);
 
 /** Posição do ombro do jogador */
@@ -315,7 +318,7 @@ function animateMonkey(dt, t, g, pos) {
   if (am) {
     am.t += dt;
     const A = MATK[am.k], u = am.t / A.d;
-    if (u >= 1 || MON.s !== 'attack') MON.am = null;
+    if (u >= 1 || MON.s !== 'attack') { MON.am = null; g.rotation.y -= MON.ryo || 0; MON.ryo = 0; }
     else {
       const f = A.f(u);
       g.arm.rotation.x += f.ar || 0;
@@ -324,6 +327,15 @@ function animateMonkey(dt, t, g, pos) {
       g.rotation.x += f.ln || 0;
       g.head.rotation.x += f.hd || 0;
       g.head.rotation.y += f.hy || 0;
+      g.rotation.y += (f.ry || 0) - (MON.ryo || 0); MON.ryo = f.ry || 0;
+      if (f.py) g.position.y += f.py;
+      if (f.rock && !am.rock && MON.at && !MON.at.dead) {   // pedra voando até o inimigo
+        am.rock = 1;
+        const r = new THREE.Mesh(new THREE.SphereGeometry(.14, 5, 4), new THREE.MeshBasicMaterial({ color: 0x8a8a84, transparent: true }));
+        r.position.set(pos.x, pos.y + 1, pos.z); scene.add(r);
+        particles.push({ m: r, v: new THREE.Vector3((MON.at.x - pos.x) / .35, (1.2 - pos.y - 1) / .35 + 1.5, (MON.at.z - pos.z) / .35), t: .7 });
+      }
+      if (f.ring && !am.ring) { am.ring = 1; whirl(pos.x, .1, pos.z); }
       g.legL.rotation.x += f.ll || 0; g.legR.rotation.x += f.lr || 0;
       g.legL.knee.rotation.x += f.kl || 0; g.legR.knee.rotation.x += f.kr || 0;
       if (f.az) { g.arm.rotation.z = -f.az; g.armL.rotation.z = f.az; }
