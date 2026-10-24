@@ -51,7 +51,8 @@ function terrain() {
     for (let j = cj; j < Math.min(N, cj + CH); j++) for (let i = ci; i < Math.min(N, ci + CH); i++) ix.push(...quad(i, j));
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', posA); g.setAttribute('color', colA); g.setAttribute('normal', norA);
-    g.setIndex(ix); g.computeBoundingSphere();
+    g.setIndex(ix);
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(ci + CH / 2 - E - VX, SEA + 4, cj + CH / 2 - E - VZ), 28);   // esfera do bloco (o cálculo automático ignora o índice)
     root.add(new THREE.Mesh(g, mt));
   }
   return dyn(root);
@@ -106,21 +107,42 @@ function vegetation(posts) {
   const L = list => list.map(a => ({ x: a[0] - VX, z: a[1] - VZ, a })).filter(q => ok(q.x, q.z)).map(q => { const w = q.a.slice(); w[0] = q.x; w[1] = q.z; return w; });
   const pl = L(palms), pi = L(pines), ro = L(rocks), bu = L(bushes), Y = a => groundY(a[0], a[1]);
   addObstacles([...pl.map(a => [a[0], a[1], .2 * a[2]]), ...pi.map(a => [a[0], a[1], .25 * a[2]]), ...ro.map(a => [a[0], a[1], .5 * a[2]])]);
-  g.add(
-    inst(trunk, pl, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], a[3]); o.scale.set(a[2], 1.5 * a[2], a[2]); }, 0x7a5a34, .1, rr),
-    inst(new THREE.ConeGeometry(.8, .4, 6), pl, (o, a) => { o.position.set(a[0] - Math.sin(a[3]) * 1.5 * a[2], Y(a) + 1.5 * a[2] * Math.cos(a[3]) + .1, a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x3d9a3a, .12, rr),
-    inst(trunk, pi, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2], .8 * a[2], a[2]); }, 0x5a3e22, .08, rr),
-    inst(new THREE.ConeGeometry(.62, 1.3, 6), pi, (o, a) => { o.position.set(a[0], Y(a) + 1.35 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x2a6a34, .14, rr),
-    inst(new THREE.ConeGeometry(.42, .9, 6), pi, (o, a) => { o.position.set(a[0], Y(a) + 2.05 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x2f7438, .14, rr),
-    inst(new THREE.IcosahedronGeometry(.5, 0), ro, (o, a) => { o.position.set(a[0], Y(a) + .1, a[1]); o.rotation.set(a[4], a[4] * 2, 0); o.scale.set(a[2], a[2] * .7, a[2] * 1.1); }, 0x7a7672, .14, rr),
-    inst(new THREE.IcosahedronGeometry(.5, 0), bu, (o, a) => { o.position.set(a[0], Y(a) + .12 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2] * 1.1, a[2] * .7, a[2] * 1.1); }, null, .12, rr),
-  );
+  // uma vegetação por quadra de 32 m: some inteira quando longe do jogador (as instâncias não têm corte próprio)
+  const cells = new Map(), CELL = 32, put = (k, a, key) => {
+    const ck = Math.floor(a[0] / CELL) + ',' + Math.floor(a[1] / CELL);
+    let c = cells.get(ck); if (!c) cells.set(ck, c = { x: (Math.floor(a[0] / CELL) + .5) * CELL, z: (Math.floor(a[1] / CELL) + .5) * CELL, pl: [], pi: [], ro: [], bu: [] });
+    c[key].push(a);
+  };
+  pl.forEach(a => put(0, a, 'pl')); pi.forEach(a => put(0, a, 'pi')); ro.forEach(a => put(0, a, 'ro')); bu.forEach(a => put(0, a, 'bu'));
+  const cone = (r, h, n) => new THREE.ConeGeometry(r, h, n), ico = () => new THREE.IcosahedronGeometry(.5, 0);
+  cells.forEach(c => {
+    const q = new THREE.Group(); q.userData.c = [c.x, c.z];
+    q.add(
+      inst(trunk, c.pl, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], a[3]); o.scale.set(a[2], 1.5 * a[2], a[2]); }, 0x7a5a34, .1, rr),
+      inst(cone(.8, .4, 6), c.pl, (o, a) => { o.position.set(a[0] - Math.sin(a[3]) * 1.5 * a[2], Y(a) + 1.5 * a[2] * Math.cos(a[3]) + .1, a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x3d9a3a, .12, rr),
+      inst(trunk, c.pi, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2], .8 * a[2], a[2]); }, 0x5a3e22, .08, rr),
+      inst(cone(.62, 1.3, 6), c.pi, (o, a) => { o.position.set(a[0], Y(a) + 1.35 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x2a6a34, .14, rr),
+      inst(cone(.42, .9, 6), c.pi, (o, a) => { o.position.set(a[0], Y(a) + 2.05 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x2f7438, .14, rr),
+      inst(ico(), c.ro, (o, a) => { o.position.set(a[0], Y(a) + .1, a[1]); o.rotation.set(a[4], a[4] * 2, 0); o.scale.set(a[2], a[2] * .7, a[2] * 1.1); }, 0x7a7672, .14, rr),
+      inst(ico(), c.bu, (o, a) => { o.position.set(a[0], Y(a) + .12 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2] * 1.1, a[2] * .7, a[2] * 1.1); }, null, .12, rr),
+    );
+    g.add(q);
+  });
+  vegGroup = g;
   return dyn(g);
+}
+
+let vegGroup = null, terrGroup = null;
+/** Corte por distância: quadras de vegetação e blocos de terreno longe do jogador não são desenhados */
+export function cullTerrain(x, z) {
+  if (vegGroup) vegGroup.children.forEach(q => { q.visible = Math.hypot(q.userData.c[0] - x, q.userData.c[1] - z) < 76; });
+  if (terrGroup) terrGroup.children.forEach(m => { const s = m.geometry.boundingSphere; m.visible = Math.hypot(s.center.x - x, s.center.z - z) - s.radius < 74; });
 }
 
 /** Cria chão, mar, água doce, pontes e vegetação */
 export function buildTerrainMesh(posts) {
-  scene.add(terrain());
+  terrGroup = terrain();
+  scene.add(terrGroup);
   const w = water(); if (w) scene.add(w);
   scene.add(bridges(), vegetation(posts));
   const sea = dyn(new THREE.Mesh(new THREE.PlaneGeometry(900, 900).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x2f93bd, transparent: true, opacity: .58, depthWrite: false })));

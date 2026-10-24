@@ -3,7 +3,8 @@
 import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
 
-export const SEED = 'pirata';
+/** Semente da ilha: padrão 'pirata'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
+export const SEED = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('seed')) || 'pirata';
 export let isl = null;     // dados crus do gerador
 export let H = null;       // alturas (já relativas à vila: vila = 0)
 export let VX = 0, VZ = 0; // posição da vila na grade do gerador (m, centro = 0)

@@ -5,6 +5,7 @@ import { M } from '../core/utils.js';
 import { isl, VX, VZ, groundY } from './terrain.js';
 import { P } from '../entities/player.js';
 import { log } from '../ui/notify.js';
+import { cullTerrain } from './terrain-mesh.js';
 
 export const pois = [];   // { n, x, z, c } em coordenadas do jogo (c = cor no minimapa)
 const KEY = 'pirata-tesouro-' + 'v1';
@@ -48,6 +49,7 @@ export function buildPois() {
 
 /** Avisos de proximidade e coleta do tesouro (uma vez) */
 export function updatePois() {
+  cullTerrain(P.x, P.z);
   let n = '';
   for (const p of pois) if (Math.hypot(p.x - P.x, p.z - P.z) < 3.2) n = p.n;
   if (n === near) return;
