@@ -26,7 +26,7 @@ const ringOf = i => i >> 2;
 export const POST_DATA = KEEP.map((ri, i) => {
   const [deg, r, name, crew] = RAW[ri];
   const a = deg * Math.PI / 180, lvs = crew.map(c => ENEMY_KINDS[c[0]].lv);
-  return { id: i, ring: ringOf(ri), deg, r, name, crew, x: Math.cos(a) * r, z: Math.sin(a) * r, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };
+  return { id: i, ring: ringOf(ri), deg, r, name, crew, x: Math.cos(a) * r * 1.5, z: Math.sin(a) * r * 1.5, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };
 });
 // ao morrer 2x num posto, volta para um posto do anel anterior (ou a vila, no anel 1)
 POST_DATA.forEach((p, i) => {

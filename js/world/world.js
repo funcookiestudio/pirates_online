@@ -16,8 +16,8 @@ export function buildWorld() {
   chooseFarmSite([...POST_DATA, ...CAVES]);   // reserva o terreno da fazenda antes de nascer a vegetação
   buildTerrainMesh(POST_DATA);
 
-  for (let i = 0, tries = 0; i < 40 && tries < 2000; tries++) {
-    const x = (Math.random() * 2 - 1) * 100, z = (Math.random() * 2 - 1) * 100;
+  for (let i = 0, tries = 0; i < 70 && tries < 3000; tries++) {
+    const x = (Math.random() * 2 - 1) * 150, z = (Math.random() * 2 - 1) * 150;
     if (reserved(x, z, 3)) continue;
     const y = groundY(x, z);
     if (Math.hypot(x, z) < VILLAGE_R + 6 || onRoad(x, z, 3) || y < SEA + 1.2 || POST_DATA.some(p => Math.hypot(p.x - x, p.z - z) < 10) || CAVES.some(c => Math.hypot(c.x + c.dx * 3 - x, c.z + c.dz * 3 - z) < 8)) continue;

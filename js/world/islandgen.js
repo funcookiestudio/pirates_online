@@ -1,6 +1,6 @@
 /* Gerador procedural de ilhas low poly (puro: sem THREE nem DOM). Terraços, rios, lagos, pontes, estradas, biomas e vegetação por semente.
    Portado do sistema de ilhas do Cristiano. Célula da grade = 1 m. */
-export const N=200,V=N+1,RD={half:2,sh:6,slope:.12};
+export const N=300,V=N+1,RD={half:2,sh:6,slope:.12};
 export function rngf(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 export function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
 function mkNoise(r){const G=new Float32Array(4096);for(let i=0;i<4096;i++)G[i]=r();
