@@ -4,7 +4,7 @@ import { scene } from '../core/engine.js';
 import { xray } from './xray.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { N, V, ss, rngf, hash, RD } from './islandgen.js';
-import { isl, H, VX, VZ, HV, VS, SEA, groundY, addObstacles, walkable, onRoad } from './terrain.js';
+import { CAVES, isl, H, VX, VZ, HV, VS, SEA, groundY, addObstacles, walkable, onRoad } from './terrain.js';
 
 const E = N / 2;
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -103,7 +103,7 @@ function inst(geo, list, fn, base, vr, rr) {
 function vegetation(posts) {
   const { palms, pines, rocks, bushes } = isl.veg, rr = rngf(hash(isl.seed + 'v')), g = new THREE.Group();
   const trunk = new THREE.CylinderGeometry(.07, .11, 1, 5); trunk.translate(0, .5, 0);
-  const ok = (x, z) => Math.hypot(x, z) > VILLAGE_R + 8 && !onRoad(x, z, 2.5) && posts.every(p => Math.hypot(p.x - x, p.z - z) > 10);
+  const ok = (x, z) => Math.hypot(x, z) > VILLAGE_R + 8 && !onRoad(x, z, 2.5) && posts.every(p => Math.hypot(p.x - x, p.z - z) > 10) && CAVES.every(c => Math.hypot(c.x + c.dx * 3 - x, c.z + c.dz * 3 - z) > 8 && Math.hypot(c.x - x, c.z - z) > 5);
   const f = (a, k) => { const x = a[0] - VX, z = a[1] - VZ; return ok(x, z) ? [x, z, groundY(x, z), a] : false; };
   // árvores e pedras maiores (o personagem tem ~2 m) e mais densas: pinheiros e arbustos ganham um vizinho
   const SC = { pl: 2.1, pi: 2.4, ro: 2.2, bu: 1.8 };

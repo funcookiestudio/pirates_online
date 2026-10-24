@@ -28,7 +28,7 @@ export function buildPois() {
   const [po, , , tr] = isl.pois;
   const at = p => ({ x: p.x - VX, z: p.z - VZ });
   const port = at(po), tre = at(tr);
-  pois.push({ n: 'Porto', ...port, c: '#4ad0e8' }, { n: 'Tesouro', ...tre, c: '#ffd840' });
+  pois.push({ n: 'Porto', ...port, c: '#4ad0e8', ic: '⚓' }, { n: 'Tesouro', ...tre, c: '#ffd840', ic: '💰' });
 
   // cais: convés acima da água, estacas até o fundo, barqueiro na ponta (o convés vira chão pisável)
   const g = new THREE.Group(), yaw = Math.atan2(isl.port.dx, isl.port.dz), pdx = isl.port.dx, pdz = isl.port.dz;

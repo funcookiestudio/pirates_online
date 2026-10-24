@@ -104,6 +104,7 @@ function pickCaves(posts) {
       if (!walkable(x, z) || !walkable(fx, fz) || !reach(fx, fz) || slopeAt(fx, fz)[2] > .45) continue;
       if (heightAt(x - dx * 3, z - dz * 3) < h + 1) continue;                      // a montanha precisa subir atrás da boca
       if (!walkable(fx - dz * 1.5, fz + dx * 1.5) || !walkable(fx + dz * 1.5, fz - dx * 1.5)) continue;   // espaço à frente
+      if (!openAt(fx, fz, 2.6) || !openAt(x + dx * 7, z + dz * 7, 2)) continue;          // corredor largo à frente (senão o A* não passa)
       if (onRoad(x, z, 3) || onRoad(fx, fz, 2) || posts.some(p => Math.hypot(p.x - x, p.z - z) < 18)) continue;
       let m = 99;
       for (const c of out) m = Math.min(m, Math.hypot(c.x - x, c.z - z));
@@ -114,6 +115,13 @@ function pickCaves(posts) {
     if (best) out.push(best);
   });
   return out;
+}
+
+/** Disco de raio r todo andável e conectado (corpo cabe com folga) */
+function openAt(x, z, r) {
+  if (!walkable(x, z) || !reach(x, z)) return false;
+  for (let a = 0; a < 6.283; a += .52) { const px = x + Math.cos(a) * r, pz = z + Math.sin(a) * r; if (!walkable(px, pz) || !reach(px, pz)) return false; }
+  return true;
 }
 
 function reach(x, z) {

@@ -33,15 +33,24 @@ function draw() {
   g.drawImage(IMG, OX, OY, N * S, N * S);
   g.strokeStyle = '#a07a3a'; g.lineWidth = 3 * d; g.strokeRect(OX, OY, N * S, N * S);
   g.font = `bold ${fs}px sans-serif`; g.textAlign = 'center';
-  const tag = (x, z, col, txt, sq) => {
-    const [px, py] = toMap(x, z), r = (sq ? 4 : 3) * d;
-    g.fillStyle = col; g.strokeStyle = '#000'; g.lineWidth = 1.5 * d;
-    g.beginPath(); sq ? g.rect(px - r, py - r, 2 * r, 2 * r) : g.arc(px, py, r, 0, 6.28); g.fill(); g.stroke();
-    if (txt) { g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(txt, px, py - r - 4 * d); g.fillStyle = '#fff'; g.fillText(txt, px, py - r - 4 * d); }
+  // marcadores com ícone: disco colorido + emoji + nome
+  const tag = (x, z, col, txt, ic) => {
+    const [px, py] = toMap(x, z), r = 11 * d;
+    g.fillStyle = col; g.strokeStyle = '#000'; g.lineWidth = 2 * d;
+    g.beginPath(); g.arc(px, py, r, 0, 6.28); g.fill(); g.stroke();
+    g.font = `${15 * d}px sans-serif`; g.textBaseline = 'middle';
+    g.fillStyle = '#fff'; g.fillText(ic, px, py + d);
+    g.font = `bold ${fs}px sans-serif`; g.textBaseline = 'alphabetic';
+    if (txt) { g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(txt, px, py + r + 13 * d); g.fillStyle = '#fff'; g.fillText(txt, px, py + r + 13 * d); }
   };
-  tag(0, 0, '#ffd070', 'Vila', true);
-  POST_DATA.forEach(p => tag(p.x, p.z, '#e03030', p.name, false));
-  pois.forEach(p => tag(p.x, p.z, p.c, p.n, true));
+  tag(0, 0, '#c8962e', 'Vila', '🏘');
+  POST_DATA.forEach(p => tag(p.x, p.z, '#b02828', p.name, '⛺'));
+  pois.forEach(p => tag(p.x, p.z, p.c, p.n, p.ic || '📍'));
+  // legenda
+  const leg = [['🏘', 'Vila'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['⚓', 'Porto'], ['💰', 'Tesouro']];
+  g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
+  leg.forEach(([ic, t], i) => { const y = 16 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(8 * d, y - 10 * d, 150 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 14 * d, y); });
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   // jogador (seta pulsante)
   const [qx, qy] = toMap(P.x, P.z), pulse = 1 + .25 * Math.sin(performance.now() / 250);
   g.fillStyle = '#fff'; g.strokeStyle = '#1a6bff'; g.lineWidth = 3 * d;

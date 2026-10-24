@@ -31,7 +31,7 @@ export function buildCaves() {
     const lv = tb + 3 + Math.round((c.d - 34) / 10);           // nível pela ilha (tier) e pela distância da vila
     const D = { id: i, name, theme, seed: SEED + ':' + i, lv, x: c.x, z: c.z, dx: c.dx, dz: c.dz, info: null };
     DUNGEONS.push(D);
-    pois.push({ n: name, x: c.x, z: c.z, c: '#a070ff' });
+    pois.push({ n: name, x: c.x, z: c.z, c: '#a070ff', ic: '🕳' });
 
     // boca: moldura de pedra (pilares + viga) cravada na encosta, abertura escura e rochas em volta; olha para baixo da encosta
     const g = new THREE.Group(), y = groundY(c.x, c.z);
@@ -96,7 +96,7 @@ export function initCaves() {
 export function updateCaves() {
   if (!DUNGEONS.length || P.dead) return;
   let near = -1;
-  DUNGEONS.forEach(D => { if (Math.hypot(P.x - D.fx, P.z - D.fz) < 2.6) near = D.id; });
+  DUNGEONS.forEach(D => { if (Math.hypot(P.x - D.fx, P.z - D.fz) < 4.2) near = D.id; });
   if (near < 0) {
     if (asked >= 0 && DUNGEONS.every(D => Math.hypot(P.x - D.fx, P.z - D.fz) > 7)) asked = -1;
     if (prompting && Math.hypot(P.x - prompting.fx, P.z - prompting.fz) > 6) closeCavePrompt();   // afastou-se: fecha
