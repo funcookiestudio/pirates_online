@@ -4,6 +4,7 @@ import { mountWeapons, mountTorch } from '../entities/player-weapon.js';
 import { WEAPONS, RN, AN } from '../data/weapons.js';
 import { emit } from '../core/events.js';
 import { itemReq } from '../data/scaling.js';
+import { DG } from '../dungeon/dgrid.js';
 import { torch as torchLight } from '../core/engine.js';
 import { log, lootText } from '../ui/notify.js';
 
@@ -119,7 +120,8 @@ export function applyWeaponBonus() {
 export function refreshTorch() {
   const on = isTorch(eq.off);
   mountTorch(on ? eq.off.w : null);
-  torchLight.distance = on ? 34 : 22;
+  torchLight.distance = on ? 44 : 22;
+  torchLight.intensity = (DG.on ? 1.8 : 1.2) * (on ? 1.5 : 1);     // com tocha: luz mais forte e que alcança mais longe
 }
 
 export function setWeapon(prefer) {

@@ -8,7 +8,7 @@ import { turnTo } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { gait, gaitSpeed, gaitReset } from '../entities/gait.js';
-import { gunPose, aimOffset, reloadWeight, BIG } from '../entities/player-weapon.js';
+import { gunPose, aimOffset, reloadWeight, BIG, TORCH_ARM } from '../entities/player-weapon.js';
 import { attack, impact } from './combat.js';
 import { autoThink } from './auto.js';
 import { updateSit, animateSit } from './rest.js';
@@ -223,7 +223,12 @@ function animate(dt) {
 
   // marcha: pés rolando, quadril, braço livre, cabeça, pena do chapéu (golpe/mira têm as próprias poses)
   const busy = gn || P.sw > 0 || P.swap;
-  gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap, head: !W.big, gun: gn, sword: !busy });
+  gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap && !P.torchM, head: !W.big, gun: gn, sword: !busy });
+  if (P.torchM && !P.swap) {   // braço da tocha: erguido, balança pouco
+    const sw = Math.sin(performance.now() / 170) * Math.min(1, P.walk || 0) * .05;
+    P.g.armL.rotation.set(TORCH_ARM.x + sw, 0, TORCH_ARM.z);
+    P.g.armL.fa.rotation.x = TORCH_ARM.fa;
+  }
 }
 
 /** Vasculhar o baú: encara o baú, inclina o tronco e revira com os dois braços, alternando */

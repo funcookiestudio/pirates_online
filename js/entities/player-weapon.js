@@ -60,7 +60,7 @@ function smallGunPose(W) {
   // cotovelos levantados e abertos: os braços "abraçam" o corpo em vez de ficarem retos
   const ey = -.55 + .4 * e;
   ik(P.g.arm,  L(-.17 + sway, y, rz), new V(-1, ey, -.15));
-  ik(P.g.armL, L(-.07 + sway, y - .03, lz), new V(1, ey, -.15));
+  if (!P.torchM) ik(P.g.armL, L(-.07 + sway, y - .03, lz), new V(1, ey, -.15));
   {
     const q = P.g.arm.quaternion.clone().multiply(P.g.arm.fa.quaternion).conjugate();
     P.hl.p.set(0, -.32 - h[0], 0);
@@ -166,12 +166,20 @@ export function mountWeapons(ids, act) {
   });
 }
 
-/** Tocha na mão livre (braço esquerdo): monta/remove o modelo e aumenta o alcance da luz que acompanha o jogador */
+/** Pose do braço da tocha: erguido à frente (ilumina adiante), balança pouco; a tocha fica em pé, levemente inclinada */
+export const TORCH_ARM = { x: -.78, fa: -.62, z: .1 };
+
+/** Tocha na mão livre (braço esquerdo): monta/remove o modelo */
 export function mountTorch(wi) {
   const fa = P.g.armL.fa;
   if (P.torchM) { fa.remove(P.torchM); P.torchM = null; }
   if (wi == null) return;
   const m = WEAPONS[wi].build();
-  m.position.set(0, -.28, .12); m.rotation.x = -.5;
-  fa.add(m); P.torchM = m;
+  m.position.y = .12;                                   // o cabo fica na palma
+  const w = new THREE.Group();
+  w.position.set(0, -.32, 0);
+  w.rotation.set(-(TORCH_ARM.x + TORCH_ARM.fa), 0, 0);    // desfaz a inclinação do braço: fica em pé
+  w.rotation.z = .13;                                   // leve inclinação para a direita do personagem
+  w.add(m);
+  fa.add(w); P.torchM = w;
 }

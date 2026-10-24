@@ -13,7 +13,7 @@ import { setAuto } from '../systems/stamina.js';
 import { log } from '../ui/notify.js';
 import { setDun, dSee, DG, dCell } from './dgrid.js';
 import { goldAt, xpToNext } from '../data/scaling.js';
-import { addItem } from '../systems/inventory.js';
+import { addItem, refreshTorch } from '../systems/inventory.js';
 import { levelUp } from '../entities/player.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
@@ -139,7 +139,7 @@ export function enterDungeon(D, gen) {
   if (hemi) { cur.saved.hemi = hemi.intensity; hemi.intensity = .32; }
   scene.background = new THREE.Color(look.bg);
   scene.fog = new THREE.Fog(look.bg, 12, 34);
-  torch.intensity = 1.8;
+  refreshTorch();
 
   setAuto(false);
   // jogador perto do portal, olhando para dentro
@@ -157,10 +157,11 @@ export function leaveDungeon(msg) {
   g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dun) { scene.remove(enemies[i].g); enemies.splice(i, 1); }
   for (let i = loot.length - 1; i >= 0; i--) if (loot[i].m.position.x > 2000) { scene.remove(loot[i].m); loot.splice(i, 1); }
-  scene.background = saved.bg; scene.fog = saved.fog; torch.intensity = saved.torch;
+  scene.background = saved.bg; scene.fog = saved.fog;
   const hemi = scene.children.find(o => o.isHemisphereLight); if (hemi && saved.hemi != null) hemi.intensity = saved.hemi;
   setDun(null);
   cur = null;
+  refreshTorch();
   P.x = P.tx = D.fx; P.z = P.tz = D.fz; P.vx = P.vz = 0; P.tgt = null;
   if (msg) log(msg);
 }
