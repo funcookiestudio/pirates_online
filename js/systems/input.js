@@ -12,6 +12,7 @@ import { zoomBy, rotateBy } from './camera.js';
 import { toggleSit, standUp } from './rest.js';
 import { togglePet } from '../pets/manager.js';
 import { freePoint } from './steer.js';
+import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
@@ -40,6 +41,7 @@ function pick(cx, cy) {
     }
     void hit; }
 
+  if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, .05, aim.z); return; }
   const n = npcAt(aim.x, aim.z);
   if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, .05, n.g.position.z); return; }
   cancelTalk();

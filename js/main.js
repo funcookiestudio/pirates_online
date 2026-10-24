@@ -27,7 +27,7 @@ import { updatePets } from './pets/manager.js';
 import { refreshPetButton, initHotbarFit } from './ui/hotbar.js';
 import { initPanel } from './ui/panel.js';
 import { initWorldMap } from './ui/worldmap.js';
-import { initCaves, DUNGEONS } from './world/caves.js';
+import { initCaves, clickCave, DUNGEONS } from './world/caves.js';
 import { updateStatusBars, updateOverlays } from './ui/hud.js';
 import { log } from './ui/notify.js';
 import './systems/death.js';
@@ -97,5 +97,5 @@ P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.
 initSave();
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

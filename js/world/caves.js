@@ -20,7 +20,7 @@ const NAMES = {
 };
 const TYPE = { cripta: 'Cripta · salas e corredores', ruinas: 'Ruínas · salas desgastadas e passagens abertas', caverna: 'Caverna natural · túneis tortuosos' };
 export const DUNGEONS = [];       // { id, name, theme, seed, lv, x, z, ... }
-let asked = -1, prompting = null, cooldown = 0;
+let prompting = null, cooldown = 0;
 
 const bx = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); return m; };
 
@@ -92,18 +92,21 @@ export function initCaves() {
   };
 }
 
-/** Chegou na entrada? Pergunta uma vez; só volta a perguntar depois de o jogador se afastar */
+let want = null;
+/** Clique na boca da caverna: anda até a entrada e, ao chegar, mostra o card. Devolve true se o clique foi na caverna */
+export function clickCave(x, z) {
+  want = null;
+  const D = DUNGEONS.find(d => Math.hypot(x - d.x, z - d.z) < 3.2);
+  if (!D) return false;
+  if (prompting === D) return true;
+  closeCavePrompt();
+  want = D; P.tgt = null; P.tx = D.fx; P.tz = D.fz;
+  return true;
+}
+
+/** Mostra o card quando o jogador (que clicou na entrada) chega nela; fecha ao se afastar */
 export function updateCaves() {
   if (!DUNGEONS.length || P.dead) return;
-  let near = -1;
-  DUNGEONS.forEach(D => { if (Math.hypot(P.x - D.fx, P.z - D.fz) < 4.2) near = D.id; });
-  if (near < 0) {
-    if (asked >= 0 && DUNGEONS.every(D => Math.hypot(P.x - D.fx, P.z - D.fz) > 7)) asked = -1;
-    if (prompting && Math.hypot(P.x - prompting.fx, P.z - prompting.fz) > 6) closeCavePrompt();   // afastou-se: fecha
-    return;
-  }
-  if (near === asked || prompting || state.autoOn) return;     // autoplay não para para perguntar
-  asked = near;
-  P.tx = P.x; P.tz = P.z; P.tgt = null;                         // para o personagem
-  show(DUNGEONS[near]);
+  if (want && Math.hypot(P.x - want.fx, P.z - want.fz) < 2.4) { const D = want; want = null; P.tx = P.x; P.tz = P.z; show(D); return; }
+  if (prompting && Math.hypot(P.x - prompting.fx, P.z - prompting.fz) > 6) closeCavePrompt();
 }
