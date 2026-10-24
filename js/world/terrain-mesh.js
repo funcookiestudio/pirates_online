@@ -3,7 +3,7 @@
 import { scene } from '../core/engine.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { N, V, ss, rngf, hash, RD } from './islandgen.js';
-import { isl, H, VX, VZ, HV, SEA, groundY, addObstacles } from './terrain.js';
+import { isl, H, VX, VZ, HV, VS, SEA, groundY, addObstacles, walkable } from './terrain.js';
 
 const E = N / 2;
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -31,7 +31,7 @@ function terrain() {
     pos[k * 3] = i - E - VX + (r() - .5) * jj; pos[k * 3 + 1] = H[k]; pos[k * 3 + 2] = j - E - VZ + (r() - .5) * jj;
     const gx = (hh(i + 1, j) - hh(i - 1, j)) / 2, gz = (hh(i, j + 1) - hh(i, j - 1)) / 2, ny = 1 / Math.hypot(1, gx, gz);
     let rw = 0; for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { const x = i + a, y = j + b; if (x >= 0 && y >= 0 && x <= N && y <= N && pm[y * V + x] === 1) rw++; }
-    const cc = col(H[k] + HV, ny, Math.min(1, rw / 9 * 1.6), .97 + r() * .06, mo[k], W[k] > -90 ? Math.max(0, W[k] - H[k]) : 0);
+    const cc = col(H[k] / VS + HV, ny, Math.min(1, rw / 9 * 1.6), .97 + r() * .06, mo[k], W[k] > -90 ? Math.max(0, W[k] - H[k]) / VS : 0);
     cl[k * 3] = cc[0]; cl[k * 3 + 1] = cc[1]; cl[k * 3 + 2] = cc[2];
   }
   // blocos de 25×25 m com vértices compartilhados: cada bloco é cortado pela câmera/neblina separadamente
@@ -104,8 +104,21 @@ function vegetation(posts) {
   const trunk = new THREE.CylinderGeometry(.07, .11, 1, 5); trunk.translate(0, .5, 0);
   const ok = (x, z) => Math.hypot(x, z) > VILLAGE_R + 8 && posts.every(p => Math.hypot(p.x - x, p.z - z) > 10);
   const f = (a, k) => { const x = a[0] - VX, z = a[1] - VZ; return ok(x, z) ? [x, z, groundY(x, z), a] : false; };
-  const L = list => list.map(a => ({ x: a[0] - VX, z: a[1] - VZ, a })).filter(q => ok(q.x, q.z)).map(q => { const w = q.a.slice(); w[0] = q.x; w[1] = q.z; return w; });
-  const pl = L(palms), pi = L(pines), ro = L(rocks), bu = L(bushes), Y = a => groundY(a[0], a[1]);
+  // árvores e pedras maiores (o personagem tem ~2 m) e mais densas: pinheiros e arbustos ganham um vizinho
+  const SC = { pl: 2.1, pi: 2.4, ro: 2.2, bu: 1.8 };
+  const L = (list, key, dup) => {
+    const out = [];
+    list.forEach(a => {
+      const x = a[0] - VX, z = a[1] - VZ;
+      if (ok(x, z)) { const w = a.slice(); w[0] = x; w[1] = z; w[2] *= SC[key]; out.push(w); }
+      if (dup) {
+        const x2 = x + (rr() - .5) * 7, z2 = z + (rr() - .5) * 7;
+        if (ok(x2, z2) && walkable(x2, z2)) { const w = a.slice(); w[0] = x2; w[1] = z2; w[2] *= SC[key] * (.75 + rr() * .5); w[4] = rr() * 6; out.push(w); }
+      }
+    });
+    return out;
+  };
+  const pl = L(palms, 'pl', true), pi = L(pines, 'pi', true), ro = L(rocks, 'ro', false), bu = L(bushes, 'bu', true), Y = a => groundY(a[0], a[1]);
   addObstacles([...pl.map(a => [a[0], a[1], .2 * a[2]]), ...pi.map(a => [a[0], a[1], .25 * a[2]]), ...ro.map(a => [a[0], a[1], .5 * a[2]])]);
   // uma vegetação por quadra de 32 m: some inteira quando longe do jogador (as instâncias não têm corte próprio)
   const cells = new Map(), CELL = 32, put = (k, a, key) => {

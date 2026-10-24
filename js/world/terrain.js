@@ -9,6 +9,7 @@ export let isl = null;     // dados crus do gerador
 export let H = null;       // alturas (já relativas à vila: vila = 0)
 export let VX = 0, VZ = 0; // posição da vila na grade do gerador (m, centro = 0)
 export let SEA = -3;       // nível do mar (relativo à vila)
+export const VS = 2;       // esticamento vertical do relevo
 export let HV = 0;         // altura original da vila no gerador (para cores por altitude)
 const E = N / 2;
 
@@ -20,11 +21,12 @@ export function initTerrain(posts = [], seed = SEED) {
   const c = Math.round(VZ + E) * V + Math.round(VX + E);
   const hv = isl.H[c]; HV = hv;
   H = isl.H;                                   // alterações abaixo valem para o gerador também (colisão/minimapa)
-  for (let k = 0; k < H.length; k++) H[k] -= hv;
-  for (let k = 0; k < isl.W.length; k++) if (isl.W[k] > -90) isl.W[k] -= hv;
-  for (let k = 0; k < isl.deck.length; k++) if (isl.deck[k] > -90) isl.deck[k] -= hv;
-  isl.bridges.forEach(b => { b[2] -= hv; });
-  SEA = -hv - .05;
+  // relevo vertical esticado (VS×) em torno da vila: montanhas altas de verdade, com o mesmo formato; tudo no mesmo fator (mar, rios, pontes)
+  for (let k = 0; k < H.length; k++) H[k] = (H[k] - hv) * VS;
+  for (let k = 0; k < isl.W.length; k++) if (isl.W[k] > -90) isl.W[k] = (isl.W[k] - hv) * VS;
+  for (let k = 0; k < isl.deck.length; k++) if (isl.deck[k] > -90) isl.deck[k] = (isl.deck[k] - hv) * VS;
+  isl.bridges.forEach(b => { b[2] = (b[2] - hv) * VS; });
+  SEA = (-.05 - hv) * VS;
 
   flatten(0, 0, VILLAGE_R + 5, VILLAGE_R + 17, 0);
 
@@ -136,7 +138,7 @@ export function swimmable(x, z) {
   const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
   if (gx < 1 || gz < 1 || gx >= N || gz >= N || blockedByObstacle(x, z)) return false;
   const d = waterDepth(x, z);
-  return d > -.6 && d < 3.6;   // -0,6: faixa de praia entre a terra firme e a água
+  return d > -.9 * VS && d < 3.6 * VS;   // -0,6: faixa de praia entre a terra firme e a água
 }
 
 /** Corrige uma posição que entrou no mar/paredão: tenta deslizar em um eixo, senão volta para a anterior. Devolve [x,z]. */
