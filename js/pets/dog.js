@@ -1,5 +1,6 @@
 /* Cachorro: segue o jogador, senta quando ele para e ataca (corre, agacha, salta e morde).
    Estados de DOG.s: none · run · wind (agacha) · lunge (salto) · rec (recuo) */
+import { groundY } from '../world/terrain.js';
 import { steer, navTarget } from '../systems/steer.js';
 import { enemies, props } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
@@ -194,7 +195,7 @@ function animateDog(dt, t, g, pos, c) {
   DOG.jy += (c.ju - DOG.jy) * Math.min(1, dt * 20);
   g.rotation.x = -.55 * sm + OV.bx * ow + DOG.v * .008 + Math.sin(ph * 2) * .05 * gp;
   g.rotation.z = DOG.roll;
-  pos.y = Math.abs(Math.sin(ph)) * .04 * amp - .105 * sm - .03 * ow + DOG.jy + (DOG.v === 0 && !sm ? Math.sin(t * 2) * .008 : 0);
+  pos.y = groundY(pos.x, pos.z) + Math.abs(Math.sin(ph)) * .04 * amp - .105 * sm - .03 * ow + DOG.jy + (DOG.v === 0 && !sm ? Math.sin(t * 2) * .008 : 0);
 
   DOG.mu = Math.max(0, DOG.mu - dt);
   g.head.rotation.x = .5 * sm + OV.hd * ow + Math.sin(t * 1.3) * .06 + Math.sin(ph * 2) * .05 * amp + (DOG.mu > 0 ? .5 * DOG.mu / .25 : 0);

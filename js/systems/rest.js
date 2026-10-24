@@ -3,6 +3,7 @@
    Subir: faz o caminho inverso (empurra com as mãos, pega a arma do chão, levanta). A arma fica sempre visível.
    P.sit vai de 0 (em pé) a 1 (sentado) em direção a P.sitT; trocar P.sitT no meio inverte suavemente. */
 import { P } from '../entities/player.js';
+import { groundY, slideTo } from '../world/terrain.js';
 import { gaitReset } from '../entities/gait.js';
 
 export const SIT_DOWN = 3;   // duração (s) de em pé → sentado
@@ -66,7 +67,7 @@ function placeWeapon() {
   fa.updateMatrixWorld(true);
   M.compose(P.hl.p, P.hl.q, ONE).premultiply(fa.matrixWorld).decompose(wp, wq, ws); // pose se estivesse na mão
   gp.copy(GROUND).applyMatrix4(P.g.matrixWorld);
-  gp.y = GROUND.y;
+  gp.y = GROUND.y + groundY(P.x, P.z);
   gq.copy(P.g.quaternion).multiply(Q_LAY);
   wp.lerp(gp, b);
   wq.slerp(gq, b);
@@ -103,7 +104,7 @@ export function animateSit(dt) {
   g.updateMatrixWorld(true);
   box.setFromObject(g.legL);
   box.union(tmp.setFromObject(g.legR));
-  g.position.y = -box.min.y - .02;
+  g.position.y = groundY(P.x, P.z) - box.min.y - .02;
   g.updateMatrixWorld(true);
   placeWeapon();
 
@@ -115,5 +116,5 @@ function endSit() {
   g.up.rotation.x = 0;
   g.legL.rotation.z = g.legR.rotation.z = 0;
   g.armL.rotation.set(0, 0, 0);
-  g.position.y = 0;
+  g.position.y = groundY(P.x, P.z);
 }

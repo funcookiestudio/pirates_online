@@ -1,5 +1,6 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
 import { steer, navTarget, freePoint } from './steer.js';
+import { groundY, slideTo } from '../world/terrain.js';
 import { state } from '../core/state.js';
 import { props } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
@@ -141,6 +142,7 @@ function moveAndAct(dt) {
 }
 
 /** Colisão com árvores e pedras e limite da ilha */
+let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
   props.forEach(p => {
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
@@ -149,8 +151,9 @@ function clampToWorld() {
       P.z = p.position.z + ez / dd * (p.r + .5);
     }
   });
-  const rr = Math.hypot(P.x, P.z);
-  if (rr > 57) { P.x *= 57 / rr; P.z *= 57 / rr; }
+  // mar e paredões: desliza pela margem ou volta ao último ponto firme
+  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z);
+  lastX = P.x; lastZ = P.z;
 }
 
 /** Pernas, balanço, inclinação do corpo e pose dos braços (golpe ou mira) */
@@ -165,7 +168,7 @@ function animate(dt) {
 
   // passos
   P.ph = P.g.gs ? P.g.gs.ph : P.ph;   // fase do passo (a marcha nova mantém a própria)
-  P.g.position.set(P.x, 0, P.z);
+  P.g.position.set(P.x, groundY(P.x, P.z), P.z);
 
   // inclinação do corpo
   const leanTarget = P.walk * .09
@@ -227,7 +230,7 @@ function animateRummage(dt) {
   g.rotation.y += dy * (1 - Math.exp(-dt * 10));
   P.walk = 0; P.lean = 0;
   g.rotation.x = 0;
-  g.position.set(P.x, 0, P.z);
+  g.position.set(P.x, groundY(P.x, P.z), P.z);
   g.legL.rotation.x = g.legR.rotation.x = 0;
   const a = Math.sin(t * 4.2), b = Math.sin(t * 4.2 + Math.PI), dig = .5 + .5 * Math.sin(t * 1.3);
   g.up.rotation.set(r * (.55 + dig * .12 + Math.sin(t * 2.1) * .04), r * Math.sin(t * 1.3) * .12, 0);

@@ -2,7 +2,11 @@
 import { enemies, loot, props } from '../core/registry.js';
 import { $ } from '../core/utils.js';
 import { P } from '../entities/player.js';
+import { terrainImage } from '../world/terrain-mesh.js';
+import { VX, VZ } from '../world/terrain.js';
+import { N } from '../world/islandgen.js';
 
+let IMG = null;
 const SIZE = 140, C = SIZE / 2, S = 2.6; // tamanho do canvas, centro e escala (px por metro)
 
 /** Converte posição do mundo (x,z) em ponto do minimapa */
@@ -21,12 +25,13 @@ export function drawMinimap() {
   g.fillStyle = '#0a1014';
   g.fillRect(0, 0, SIZE, SIZE);
 
-  // ilha
-  const o = pt(0, 0);
-  g.fillStyle = '#1c3a26';
-  g.beginPath();
-  g.arc(o[0], o[1], 60 * S, 0, 6.28);
-  g.fill();
+  // ilha: relevo do gerador (1 px = 1 m) girado para a visão isométrica do minimapa
+  if (!IMG) IMG = terrainImage();
+  const k = .7071 * S, E = N / 2, ox = -E - VX - P.x, oz = -E - VZ - P.z;
+  g.save();
+  g.transform(k, k, -k, k, C + (ox - oz) * k, C + (ox + oz) * k);
+  g.drawImage(IMG, 0, 0);
+  g.restore();
 
   // árvores e pedras
   props.forEach(p => {

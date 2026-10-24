@@ -1,5 +1,6 @@
 /* Companheiros voadores (papagaio e corvo): pousam no ombro, coletam loot e atacam em rasante.
    Estados de PAR.s: perch (no ombro) · orbit · return · goto/peck/carry (coleta) · attack (circle → wind → dash → recover) */
+import { groundY } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { loot, enemies } from '../core/registry.js';
@@ -223,7 +224,7 @@ function updateAttack(dt, t, pos, FL, mv) {
     V.y += (D.y * DS - V.y) * k;
     V.z += (D.z * DS - V.z) * k;
     pos.addScaledVector(V, dt);
-    if (pos.y < .8) { pos.y = .8; V.y = Math.max(0, V.y); }
+    if (pos.y < groundY(pos.x, pos.z) + .8) { pos.y = groundY(pos.x, pos.z) + .8; V.y = Math.max(0, V.y); }
     if (!PAR.hd && Math.hypot(e.x - pos.x, e.z - pos.z) < 1.3 && pos.y < 2.6) {
       PAR.hd = true;
       if (petStrike(e, 1, { ang: Math.atan2(PAR.dd.x, PAR.dd.z) })) PAR.mu = 1;
@@ -244,7 +245,7 @@ function updateAttack(dt, t, pos, FL, mv) {
 
 /** Inclinação, direção, bater de asas e cabeça */
 function animateBird(dt, t, g, pos, flying) {
-  if (flying && pos.y < .6) { pos.y = .6; if (PAR.v.y < 0) PAR.v.y = 0; }
+  if (flying && pos.y < groundY(pos.x, pos.z) + .6) { pos.y = groundY(pos.x, pos.z) + .6; if (PAR.v.y < 0) PAR.v.y = 0; }
 
   let roll = 0, pitch = 0;
   const V = PAR.v, hs = Math.hypot(V.x, V.z), spd = Math.hypot(V.x, V.y, V.z);

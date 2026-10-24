@@ -2,12 +2,14 @@
    steer() gira a direção desejada para o ângulo livre mais próximo; collide() empurra para fora dos obstáculos. */
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
+import { walkable } from '../world/terrain.js';
 
 const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 
 /** O caminho reto de (x,z) na direção `a` por `len` metros está livre para um corpo de raio `r`? */
 function clear(x, z, a, len, r) {
   const dx = Math.sin(a), dz = Math.cos(a);
+  for (let t = 1.2; t < len + 1.2; t += 1.2) if (!walkable(x + dx * Math.min(t, len), z + dz * Math.min(t, len))) return false;
   for (let i = 0; i < props.length; i++) {
     const p = props[i], px = p.position.x - x, pz = p.position.z - z;
     const t = Math.max(0, Math.min(len, px * dx + pz * dz));
@@ -51,13 +53,14 @@ export function collide(q, r) {
 }
 
 // ---------- caminho (A*) em grade, para contornar construções, muralha e aglomerados ----------
-const N = 128, ORG = -64;
+const N = 288, ORG = -144;
 let grid = null, gridN = -1;
 const cell = v => Math.floor(v - ORG);
 
 function buildGrid() {
   grid = new Uint8Array(N * N);
   gridN = props.length;
+  for (let cz = 0; cz < N; cz++) for (let cx = 0; cx < N; cx++) if (!walkable(cx + ORG + .5, cz + ORG + .5)) grid[cz * N + cx] = 1;
   props.forEach(p => {
     const R = p.r + .65;
     for (let cx = cell(p.position.x - R); cx <= cell(p.position.x + R); cx++) {
@@ -92,7 +95,7 @@ function findPath(sx, sz, gx, gz, r) {
   const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
   const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (l + 1 < heap.length && heap[l + 1][0] < heap[m][0]) m = l + 1; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
   let it = 0, found = false;
-  while (heap.length && it++ < 9000) {
+  while (heap.length && it++ < 40000) {
     const [, c] = pop();
     if (closed[c]) continue;
     closed[c] = 1;
@@ -149,7 +152,7 @@ export function navTarget(mem, x, z, gx, gz, r, now) {
 /** Leva um ponto clicado para o ponto livre mais próximo (fora de paredes, casas e árvores), para o destino ser alcançável */
 export function freePoint(x, z, r = .6) {
   const inside = Math.hypot(x, z) < VILLAGE_R; // clicou dentro da vila: o ponto livre também fica dentro da muralha
-  const free = (px, pz) => (!inside || Math.hypot(px, pz) < VILLAGE_R - 1.7) && props.every(p => Math.hypot(px - p.position.x, pz - p.position.z) >= p.r + r);
+  const free = (px, pz) => walkable(px, pz) && (!inside || Math.hypot(px, pz) < VILLAGE_R - 1.7) && props.every(p => Math.hypot(px - p.position.x, pz - p.position.z) >= p.r + r);
   if (free(x, z)) return { x, z };
   for (let rad = .5; rad <= 8; rad += .5) {
     for (let k = 0; k < 16; k++) {

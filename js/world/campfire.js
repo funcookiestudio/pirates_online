@@ -2,12 +2,13 @@
 import { scene } from '../core/engine.js';
 import { M } from '../core/utils.js';
 import { props } from '../core/registry.js';
+import { groundY } from './terrain.js';
 
 const fires = [];
 
 export function campfire(x, z, sc = 1) {
   const g = new THREE.Group();
-  g.position.set(x, 0, z); g.scale.setScalar(sc);
+  g.position.set(x, groundY(x, z), z); g.scale.setScalar(sc);
   for (let i = 0; i < 8; i++) {
     const a = i / 8 * Math.PI * 2, s = new THREE.Mesh(new THREE.BoxGeometry(.45, .28, .38), M(i % 2 ? 0x6a6a6a : 0x808080));
     s.position.set(Math.cos(a) * .95, .14, Math.sin(a) * .95); s.rotation.y = -a; g.add(s);

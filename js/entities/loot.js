@@ -1,5 +1,6 @@
 /* Itens no chão: queda ao matar inimigos, coleta pelo jogador ou pelo companheiro. */
 import { scene } from '../core/engine.js';
+import { groundY, slideTo } from '../world/terrain.js';
 import { loot } from '../core/registry.js';
 import { M } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
@@ -58,6 +59,7 @@ export function dropLoot(e) {
     const wi = Math.floor(Math.random() * WEAPONS.length);
     const m = lootModel(ty, q, wi);
     m.position.set(e.x + (Math.random() - .5) * 2, .3, e.z + (Math.random() - .5) * 2);
+    m.position.y += groundY(m.position.x, m.position.z);
     scene.add(m);
     loot.push({ m, ty, q, wi, il, life: 0 });
   }
@@ -72,6 +74,7 @@ export function dropItem(it, from) {
   const m = lootModel(ty, it.q, wi);
   const a = Math.random() * 6.28;
   m.position.set(P.x + Math.cos(a) * 1.8, .3, P.z + Math.sin(a) * 1.8);
+  m.position.y += groundY(m.position.x, m.position.z);
   scene.add(m);
   loot.push({ m, ty, q: it.q, wi, it: it.n ? it : null, life: 0, dropped: true, armed: false });
 }
@@ -109,7 +112,7 @@ export function updateLoot(dt, now) {
   for (let i = loot.length - 1; i >= 0; i--) {
     const l = loot[i];
     l.m.rotation.y += dt * 2;
-    l.m.position.y = .4 + Math.sin(now / 300) * .1;
+    l.m.position.y = groundY(l.m.position.x, l.m.position.z) + .4 + Math.sin(now / 300) * .1;
     l.life += dt;
     if (l.life > LOOT_LIFE) { scene.remove(l.m); loot.splice(i, 1); continue; }
     l.m.visible = l.life < LOOT_LIFE - 10 || Math.floor(l.life * 5) % 2 === 0; // pisca nos últimos 10 s

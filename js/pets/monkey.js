@@ -1,5 +1,6 @@
 /* Macaco: senta no ombro, desce para pegar loot e pula nos inimigos.
    Estados de MON.s: perch · hop (pulo) · goto/grab/carry (coleta) · return · attack */
+import { groundY } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { enemies, loot } from '../core/registry.js';
@@ -236,7 +237,7 @@ function animateMonkey(dt, t, g, pos) {
 
   MON.ph += dt * (mv ? MON.sp * 1.3 : 0);
   const ph = MON.ph, w = Math.sin(ph), k = Math.min(1, dt * 14);
-  if (!sit && !hh) pos.y += ((mv ? Math.abs(w) * .1 : 0) - pos.y) * Math.min(1, dt * 14);
+  if (!sit && !hh) pos.y += (groundY(pos.x, pos.z) + (mv ? Math.abs(w) * .1 : 0) - pos.y) * Math.min(1, dt * 14);
 
   const s = Math.sin(t * 1.8);
   let T;

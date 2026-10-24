@@ -5,11 +5,9 @@ import { POST_DATA } from '../data/posts.js';
 import { spawn } from '../entities/enemies.js';
 import { log } from '../ui/notify.js';
 
-const POSTS = POST_DATA.map(p => [p.deg, p.r, p.name, p.crew]);
 
 export function buildOutposts() {
-  POSTS.forEach(([deg, r, , crew]) => {
-    const a = deg * Math.PI / 180, cx = Math.cos(a) * r, cz = Math.sin(a) * r;
+  POST_DATA.forEach(({ x: cx, z: cz, crew }) => {   // x,z já foram ajustados ao relevo (terrain.js)
     campfire(cx, cz);
     crew.forEach(([k, mode, rr], i) => {
       const ang = (i / crew.length) * Math.PI * 2 + Math.random() * .6;
@@ -17,7 +15,7 @@ export function buildOutposts() {
       spawn(k, x, z, mode === 'p' ? { cx, cz, r: rr, dir: i % 2 ? 1 : -1 } : undefined);
     });
   });
-  log('A ilha tem ' + POSTS.length + ' postos inimigos: quanto mais longe da vila, mais perigosos');
+  log('A ilha tem ' + POST_DATA.length + ' postos inimigos: quanto mais longe da vila, mais perigosos');
 }
 
 export { updateFires as updateOutposts } from './campfire.js';

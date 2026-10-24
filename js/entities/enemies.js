@@ -12,6 +12,7 @@ import { hit } from '../systems/combat.js';
 import { puff } from '../systems/effects.js';
 import { petPos, petPerched, hurtPet } from '../pets/manager.js';
 import { log } from '../ui/notify.js';
+import { groundY, slideTo } from '../world/terrain.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
@@ -23,7 +24,7 @@ export function spawn(k, x, z, pat) {
   const t = ENEMY_KINDS[k];
   const g = person(...t.c);
   if (t.boss) g.scale.setScalar(1.7); else if (t.sc) g.scale.setScalar(t.sc);
-  g.position.set(x, 0, z);
+  g.position.set(x, groundY(x, z), z);
   scene.add(g);
 
   // barra de vida sobre a cabeça
@@ -62,7 +63,7 @@ function animateDeath(e, dt) {
   e.kx *= f;
   e.kz *= f;
   e.g.rotation.x = 1.55 * (1 - Math.pow(1 - u, 3));
-  e.g.position.set(e.x, -.12 * u, e.z);
+  e.g.position.set(e.x, groundY(e.x, e.z) - .12 * u, e.z);
 }
 
 /**
@@ -127,7 +128,7 @@ function think(e, dt, c) {
           new THREE.RingGeometry(4.3, 4.6, 24).rotateX(-Math.PI / 2),
           new THREE.MeshBasicMaterial({ color: 0xff3020, transparent: true, opacity: .55 })
         );
-        e.ring.position.set(e.x, .12, e.z);
+        e.ring.position.set(e.x, groundY(e.x, e.z) + .12, e.z);
         scene.add(e.ring);
       }
     }
@@ -183,8 +184,7 @@ function move(e, wx, wz, dt) {
   const ka = 1 - Math.exp(-dt * 7), kk = Math.exp(-dt * 7);
   e.vx += (wx - e.vx) * ka;
   e.vz += (wz - e.vz) * ka;
-  e.x += (e.vx + e.kx) * dt;
-  e.z += (e.vz + e.kz) * dt;
+  [e.x, e.z] = slideTo(e.x, e.z, e.x + (e.vx + e.kx) * dt, e.z + (e.vz + e.kz) * dt);
   e.kx *= kk;
   e.kz *= kk;
   collide(e, e.t.boss ? 1.1 : .6);
@@ -215,7 +215,7 @@ function animate(e, c, dt) {
   e.g.arm.rotation.x = e.ar;
   e.g.arm.fa.rotation.x = e.af;
   e.g.rotation.x = e.ln;
-  e.g.position.set(e.x, 0, e.z);
+  e.g.position.set(e.x, groundY(e.x, e.z), e.z);
   e.g.up.rotation.set(0, 0, 0);
   gait(e.g, dt, gaitSpeed(Math.hypot(e.vx, e.vz)), { twist: e.st === 'wind' || e.st === 'rec' ? 0 : 1, sword: false });
 
