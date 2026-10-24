@@ -24,7 +24,9 @@ import { separate } from './systems/separation.js';
 import { updateXray } from './world/xray.js';
 import { initInput } from './systems/input.js';
 import { loadGame, initSave } from './systems/save.js';
-import { updatePets } from './pets/manager.js';
+import { buildFarm, updateFarm, FARM } from './entities/farm.js';
+import { updatePets, setPet } from './pets/manager.js';
+import { DOG } from './pets/dog.js';
 import { refreshPetButton, initHotbarFit } from './ui/hotbar.js';
 import { initPanel } from './ui/panel.js';
 import { initWorldMap } from './ui/worldmap.js';
@@ -55,6 +57,7 @@ function frame(now) {
   updatePlayer(dt);
   updateEnemies(dt);
   updateNpcs(realDt, now);
+  updateFarm(realDt);
   separate();
   updateLoot(dt, now);
   updateBombs(dt);
@@ -95,10 +98,11 @@ buildPois();
 const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
 const mr = mergeStatics(worldBefore, dyn);
 if (location.hash === '#dev') console.log('merge', mr);
+buildFarm();   // animais de fazenda (enfeite) — criados depois da fusão para continuarem animáveis
 // o jogo sempre começa na vila, com o personagem sentado descansando (clicar no mundo o levanta)
 P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw;
 initSave();
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

@@ -31,8 +31,26 @@ export const MON = {
   g.cm.position.set(0, .62, .58);
   g.cm.visible = false;
   g.add(g.cm);
+  // pratos de bronze: aparecem quando ele comemora
+  const gold = new THREE.MeshLambertMaterial({ color: 0xe8b830 }), knob = new THREE.MeshLambertMaterial({ color: 0xb88a18 });
+  g.cym = [-1, 1].map(side => {
+    const c = new THREE.Group(), d = new THREE.Mesh(new THREE.CylinderGeometry(.17, .17, .02, 12), gold), k = new THREE.Mesh(new THREE.SphereGeometry(.04, 6, 5), knob);
+    d.rotation.z = Math.PI / 2; k.position.x = side * .02; c.add(d, k);
+    c.position.set(side * .07, -.42, .02); c.visible = false;
+    (side < 0 ? g.arm : g.armL).fa.add(c);
+    return c;
+  });
   scene.add(g);
 }
+
+/* Golpes do macaco (da prévia): deslocamentos somados à pose normal. u = 0..1 */
+const env = (u, a, b) => { const x = Math.max(0, Math.min(1, (u - a) / (b - a))); return x * x * (3 - 2 * x); };
+const MATK = {
+  scratch: { d: .55, f: u => { const wu = env(u, 0, .3) * (1 - env(u, .3, .45)), st = env(u, .3, .45) * (1 - env(u, .6, 1)); return { ar: 1.5 * wu - 1.8 * st, fr: -.8 * st, ln: .2 * st, hd: .15 * st }; } },
+  bite: { d: .55, f: u => { const wu = env(u, 0, .3) * (1 - env(u, .3, .4)), st = env(u, .3, .4) * (1 - env(u, .65, 1)); return { hd: -.6 * wu + .7 * st, ln: .3 * st - .1 * wu, ar: -.6 * st, al: -.6 * st, hy: Math.sin(u * 45) * .3 * st }; } },
+  smash: { d: .7, f: u => { const ra = env(u, 0, .4) * (1 - env(u, .45, .55)), im = env(u, .45, .55) * (1 - env(u, .7, 1)); return { ar: -2.85 * ra, al: -2.85 * ra, fr: -.2 * ra, ln: -.45 * ra + .35 * im, hd: -.3 * ra + .3 * im }; } },
+};
+const MATK_KEYS = Object.keys(MATK);
 
 /** Posição do ombro do jogador */
 const shp = () => {
@@ -223,6 +241,7 @@ function updateAttack(dt, g, pos, run, home) {
         puff(e.x, 1.6, e.z, 0xffe060, 4, 6);
       }
       MON.ac = (mu ? .35 : 1.6) * PCD();
+      MON.am = { k: MATK_KEYS[Math.floor(Math.random() * MATK_KEYS.length)], t: 0 };   // animação do golpe (arranhão, mordida ou soco duplo)
     }, .16);
   } else run(e.x, e.z, MSP.atk, 3);
 }
@@ -285,6 +304,34 @@ function animateMonkey(dt, t, g, pos) {
   MON.sx += (sx - MON.sx) * k;
   MON.sy += (sy - MON.sy) * k;
   g.scale.set(MS * MON.sx, MS * MON.sy, MS * MON.sx);
+
+  // golpe: soma o deslocamento da animação à pose
+  const am = MON.am;
+  if (am) {
+    am.t += dt;
+    const A = MATK[am.k], u = am.t / A.d;
+    if (u >= 1 || MON.s !== 'attack') MON.am = null;
+    else {
+      const f = A.f(u);
+      g.arm.rotation.x += f.ar || 0;
+      g.armL.rotation.x += f.al || 0;
+      g.arm.fa.rotation.x += f.fr || 0;
+      g.rotation.x += f.ln || 0;
+      g.head.rotation.x += f.hd || 0;
+      g.head.rotation.y += f.hy || 0;
+    }
+  }
+  // comemoração com pratos: bate palmas com os pratos de bronze
+  const cym = sit && MON.cel > 0;
+  g.cym[0].visible = g.cym[1].visible = cym;
+  if (cym) {
+    const sn = Math.sin(t * 13), hit = (.5 + .5 * sn) ** 2;
+    g.arm.rotation.x = g.armL.rotation.x = -1.35;
+    g.arm.fa.rotation.x = g.armL.fa.rotation.x = -.9;
+    g.arm.rotation.z = -(.1 + .42 * hit);
+    g.armL.rotation.z = .1 + .42 * hit;
+    g.head.rotation.z = sn * .1;
+  } else { g.arm.rotation.z = 0; g.armL.rotation.z = 0; }
 
   const ta = mv ? .4 : .22;
   g.tail.forEach((p, j) => { p.rotation.y = Math.sin(t * (mv ? 6 : 2) + j * .7) * ta; });

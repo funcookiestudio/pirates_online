@@ -28,6 +28,6 @@ export function initHotbarFit() {
 export function refreshPetButton() {
   const pet = state.pet;
   $('pi').textContent = pet.ic;
-  $('pm').textContent = state.petAttack ? '⚔' : (pet.id === 'dog' ? '🐾' : '📦');
+  $('pm').textContent = state.petAttack ? '⚔' : ((pet.id === 'dog' || pet.id === 'rat') ? '🐾' : '📦');
   $('s5').classList.toggle('on', state.petAttack);
 }

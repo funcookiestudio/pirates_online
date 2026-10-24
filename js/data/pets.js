@@ -5,10 +5,11 @@ export const PETLIST = [
   { id: 'raven',  n: 'Corvo',    ic: '🐦‍⬛', d: 'Voa · coleta · ataca' },
   { id: 'monkey', n: 'Macaco',   ic: '🐒',   d: 'Pula · coleta · ataca' },
   { id: 'dog',    n: 'Cachorro', ic: '🐕',   d: 'Segue · senta · ataca' },
+  { id: 'rat',    n: 'Rato',     ic: '🐀',   d: 'Veloz · fica em pé · ataca' },
 ];
 
 /** Multiplicador do dano do jogador aplicado pelo companheiro */
-export const PL = { parrot: .9, raven: 1, monkey: .85, dog: .85 };
+export const PL = { parrot: .9, raven: 1, monkey: .85, dog: .85, rat: .8 };
 
 /** XP necessário para o companheiro passar do nível `l` para `l + 1` */
 export const pxn = l => Math.round(30 * Math.pow(1.18, l - 1));
@@ -57,5 +58,13 @@ export const PSK = {
     K('d', 'Mordida Dilacerante', '🩸', 2, 4, ['a', 2], { bleed: .2 }),
     K('e', 'Latido Ensurdecedor', '📢', 2, 3, ['b', 2], { stun: .12, knock: .5 }),
     K('f', 'Fúria Canina', '🐺', 3, 3, ['d', 2], { multi: .12, heal: .012 }),
+  ],
+  rat: [
+    K('a', 'Dentes de Roedor', '🦷', 1, 5, 0, { dmg: .1 }),
+    K('b', 'Patinhas Velozes', '🐾', 1, 3, 0, { spd: .08, rate: .08 }),
+    K('c', 'Pelo Sujo', '🛡', 1, 4, 0, { guard: .05 }),
+    K('d', 'Mordida Infectada', '🩸', 2, 4, ['a', 2], { bleed: .25 }),
+    K('e', 'Guincho Agudo', '📢', 2, 3, ['b', 2], { stun: .13 }),
+    K('f', 'Praga de Porão', '☣', 3, 3, ['d', 2], { multi: .15, mark: .08 }),
   ],
 };

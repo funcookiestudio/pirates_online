@@ -150,6 +150,72 @@ export function mkDog() {
   return g;
 }
 
+/** Rato (patas na mesma ordem do cachorro). Expõe: g.head, g.legs[4] (.knee), g.tail (1º segmento), g.tailSegs[6], g.earL, g.earR */
+export function mkRat() {
+  const g = new THREE.Group(), fur = 0x8a8478, dk = 0x5c564c, belly = 0xc9c0ae, pk = 0xe8909e, wh = 0xf4f0dc;
+  g.add(
+    wb(.3, .26, .5, fur, 0, .28, 0),
+    wb(.34, .3, .28, fur, 0, .28, -.2),
+    wb(.22, .08, .4, belly, 0, .16, .04),
+    wb(.1, .04, .6, dk, 0, .42, -.05)
+  );
+  const h = new THREE.Group();
+  h.position.set(0, .34, .3);
+  h.add(
+    wb(.24, .22, .3, fur, 0, 0, 0),
+    wb(.14, .12, .2, belly, 0, -.04, .2),
+    wb(.07, .06, .04, pk, 0, -.02, .32),
+    wb(.04, .05, .02, 0x111111, .1, .05, .15),
+    wb(.04, .05, .02, 0x111111, -.1, .05, .15),
+    wb(.04, .05, .02, wh, 0, -.11, .29), // dentes
+    wb(.22, .01, .01, 0xe8e8e8, .14, -.03, .16), // bigodes
+    wb(.22, .01, .01, 0xe8e8e8, -.14, -.03, .16)
+  );
+  const ear = k => {
+    const e = new THREE.Group();
+    e.position.set(k * .11, .15, -.05);
+    e.add(wb(.13, .15, .03, fur, 0, .05, 0), wb(.09, .11, .02, pk, 0, .05, .015));
+    e.rotation.z = k * .25;
+    h.add(e);
+    return e;
+  };
+  g.earL = ear(-1);
+  g.earR = ear(1);
+  g.add(h);
+  g.head = h;
+
+  const leg = (x, z) => {
+    const l = new THREE.Group();
+    l.position.set(x, .2, z);
+    const k = new THREE.Group();
+    k.position.y = -.1;
+    k.add(wb(.07, .1, .07, fur, 0, -.05, 0), wb(.09, .04, .12, pk, 0, -.1, .02));
+    l.add(wb(.08, .1, .08, fur, 0, -.05, 0), k);
+    l.knee = k;
+    g.add(l);
+    return l;
+  };
+  g.legs = [leg(-.1, .2), leg(.1, .2), leg(-.1, -.22), leg(.1, -.22)];
+
+  // rabo longo e rosado em 6 segmentos encadeados
+  g.tail = [];
+  let tp = new THREE.Group();
+  tp.position.set(0, .26, -.34);
+  g.add(tp);
+  for (let i = 0; i < 6; i++) {
+    tp.add(wb(.04, .04, .2, i > 4 ? dk : pk, 0, 0, -.1));
+    const n = new THREE.Group();
+    n.position.z = -.2;
+    tp.add(n);
+    tp.rotation.x = i ? .05 : .25;
+    g.tail.push(tp);
+    tp = n;
+  }
+  g.tailSegs = g.tail;
+  g.tail = g.tail[0];
+  return g;
+}
+
 /** Macaco. Expõe: g.head, g.arm, g.armL (com .fa), g.legL, g.legR (com .knee), g.tail[] */
 export function mkMonkey() {
   const g = new THREE.Group(), br = 0x7a4a26, dk = 0x4a2a14, tn = 0xd8b088;

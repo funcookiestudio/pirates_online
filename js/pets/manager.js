@@ -12,16 +12,18 @@ import { PAR, FLY_MODELS, flyerUpd, activateFlyer, dropCarried, hideFlyers } fro
 import { MON, monkeyUpd, resetMonkey, dropMonkeyCarried } from './monkey.js';
 import { DOG, dogUpd, resetDog } from './dog.js';
 
+const isDog = id => id === 'dog' || id === 'rat';   // cachorro e rato compartilham o comportamento terrestre
+
 /** Posição 3D do companheiro ativo */
 export function petPos() {
   const id = state.pet.id;
-  return id === 'monkey' ? MON.g.position : id === 'dog' ? DOG.g.position : PAR.g.position;
+  return id === 'monkey' ? MON.g.position : isDog(id) ? DOG.g.position : PAR.g.position;
 }
 
 /** O companheiro está pousado/sentado no ombro (seguro de ataques)? */
 export function petPerched() {
   const id = state.pet.id;
-  return id === 'monkey' ? MON.s === 'perch' : id === 'dog' ? false : PAR.s === 'perch';
+  return id === 'monkey' ? MON.s === 'perch' : isDog(id) ? false : PAR.s === 'perch';
 }
 
 /** Companheiro recebe dano; ao chegar a 0 de vida desmaia por 20 s */
@@ -42,7 +44,7 @@ export function hurtPet(d) {
 export function togglePet() {
   state.petAttack = !state.petAttack;
   refreshPetButton();
-  const pet = state.pet, dog = pet.id === 'dog';
+  const pet = state.pet, dog = isDog(pet.id);
   log(pet.ic + ' ' + pet.n + (state.petAttack
     ? ': ataca' + (dog ? '' : ' e coleta (só coleta fora de combate)')
     : (dog ? ': só acompanha' : ': somente coleta')));
@@ -81,12 +83,12 @@ export function setPet(id) {
   state.pet = n;
   if (FLY_MODELS[id]) activateFlyer(id);
   else if (id === 'monkey') resetMonkey();
-  else resetDog();
+  else resetDog(id);
 
   puff(P.x, 1.8, P.z, 0xffe060, 4, 10);
   state.petHappy = HAPPY_TIME;
   refreshPetButton();
-  log(n.ic + ' ' + n.n + (id === 'dog' ? ' agora acompanha você' : ' agora está com você'));
+  log(n.ic + ' ' + n.n + (isDog(id) ? ' agora acompanha você' : ' agora está com você'));
   emit('pets:changed');
 }
 
@@ -110,5 +112,5 @@ export function updatePets(dt, now) {
   else if (id === 'monkey') monkeyUpd(dt, now);
   else dogUpd(dt, now);
 
-  happyFx(dt, id === 'monkey' ? MON.g : id === 'dog' ? DOG.g : PAR.g);
+  happyFx(dt, id === 'monkey' ? MON.g : isDog(id) ? DOG.g : PAR.g);
 }

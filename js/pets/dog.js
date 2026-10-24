@@ -7,21 +7,21 @@ import { turnTo } from '../core/utils.js';
 import { scene } from '../core/engine.js';
 import { P } from '../entities/player.js';
 import { puff } from '../systems/effects.js';
-import { mkDog } from './models.js';
+import { mkDog, mkRat } from './models.js';
 import { PV, PCD } from './stats.js';
 import { petStrike } from './strike.js';
 import { petFighting } from './common.js';
 
 export const DOG = {
-  g: mkDog(), sit: 0, idle: 0, v: 0, ph: 0, s: 'none', at: null, ac: 0, tm: 0, ow: 0, ap: 'wind',
+  g: mkDog(), dg: null, rg: null, sit: 0, idle: 0, v: 0, ph: 0, s: 'none', at: null, ac: 0, tm: 0, ow: 0, ap: 'wind',
   hit: false, lv: { x: 0, z: 0 }, jy: 0, roll: 0, gt: 0, ge: null, mu: 0,
 };
 {
-  const g = DOG.g;
-  g.scale.setScalar(.75);
-  g.rotation.order = 'YXZ';
-  g.visible = false;
-  scene.add(g);
+  DOG.dg = DOG.g;
+  DOG.rg = mkRat();
+  DOG.dg.scale.setScalar(.75);
+  DOG.rg.scale.setScalar(.95);
+  [DOG.dg, DOG.rg].forEach(g => { g.rotation.order = 'YXZ'; g.visible = false; scene.add(g); });
 }
 
 /** Defasagens das patas no trote (DTO) e no galope (DGO) */
@@ -29,8 +29,12 @@ const DTO = [0, Math.PI, Math.PI, 0];
 const DGO = [0, .5, Math.PI, Math.PI + .5];
 
 /** Coloca o cachorro ao lado do jogador (usado ao trocar de companheiro) */
-export function resetDog() {
+export function resetDog(id) {
+  const from = DOG.g.position;
+  DOG.g.visible = false;
+  DOG.g = id === 'rat' ? DOG.rg : DOG.dg;
   DOG.g.position.set(P.x - 1.6, 0, P.z - 1.6);
+  void from;
   DOG.sit = 0;
   DOG.v = 0;
   DOG.idle = 0;
@@ -193,19 +197,28 @@ function animateDog(dt, t, g, pos, c) {
   });
 
   DOG.jy += (c.ju - DOG.jy) * Math.min(1, dt * 20);
-  g.rotation.x = -.55 * sm + OV.bx * ow + DOG.v * .008 + Math.sin(ph * 2) * .05 * gp;
+  const rat = !!g.tailSegs;
+  g.rotation.x = (rat ? -1.1 : -.55) * sm + OV.bx * ow + DOG.v * .008 + Math.sin(ph * 2) * .05 * gp;
   g.rotation.z = DOG.roll;
-  pos.y = groundY(pos.x, pos.z) + Math.abs(Math.sin(ph)) * .04 * amp - .105 * sm - .03 * ow + DOG.jy + (DOG.v === 0 && !sm ? Math.sin(t * 2) * .008 : 0);
+  pos.y = groundY(pos.x, pos.z) + Math.abs(Math.sin(ph)) * .04 * amp - (rat ? .02 : .105) * sm - .03 * ow + DOG.jy + (rat ? .32 * sm : 0) + (DOG.v === 0 && !sm ? Math.sin(t * 2) * .008 : 0);
 
   DOG.mu = Math.max(0, DOG.mu - dt);
   g.head.rotation.x = .5 * sm + OV.hd * ow + Math.sin(t * 1.3) * .06 + Math.sin(ph * 2) * .05 * amp + (DOG.mu > 0 ? .5 * DOG.mu / .25 : 0);
   g.head.rotation.y = Math.sin(t * .7) * (.3 + .25 * sm) * (1 - ow);
-  g.tail.rotation.x = .8 - .9 * sm + .5 * ow;
-  g.tail.rotation.y = Math.sin(t * (7 + DOG.v)) * .6 * (1 - ow * .8);
+  if (rat) {   // rato: rabo em segmentos que ondulam; parado, fica em pé sobre as patas de trás
+    const ta = .25 + .2 * ow;
+    g.tailSegs.forEach((q, i) => { q.rotation.x = (i ? .05 : .25) + ta * .2; q.rotation.y = Math.sin(t * 3 - i * .6) * ta * .8 * (1 + DOG.v * .15); });
+    g.legs.forEach((l, i) => { if (i >= 2) l.rotation.x = l.rotation.x * (1 - sm) + 1.15 * sm; else l.rotation.x += .0; });
+    g.head.rotation.x += 0;
+  } else {
+    g.tail.rotation.x = .8 - .9 * sm + .5 * ow;
+    g.tail.rotation.y = Math.sin(t * (7 + DOG.v)) * .6 * (1 - ow * .8);
+  }
   g.earL.rotation.z = -.35 - Math.max(0, Math.sin(t * 2.1)) * .15 - DOG.v * .04 - ow * .35;
   g.earR.rotation.z = .35 + Math.max(0, Math.sin(t * 2.1 + 1)) * .15 + DOG.v * .04 + ow * .35;
 
   // língua para fora quando corre/ofega
+  if (rat) return;
   const tg = g.head.children[6], pn = Math.max(sm * .5, Math.min(1, DOG.v / 6)) * (1 - ow);
   tg.scale.z = 1 + pn * .8 + Math.sin(t * 16) * .2 * pn;
   tg.rotation.x = pn * .5;

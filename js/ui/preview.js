@@ -3,7 +3,7 @@
 import { person } from '../entities/character.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
-import { mkParrot, mkRaven, mkDog, mkMonkey } from '../pets/models.js';
+import { mkParrot, mkRaven, mkDog, mkMonkey, mkRat } from '../pets/models.js';
 import { isPanelOpen } from '../core/utils.js';
 import { state } from '../core/state.js';
 import { HAPPY_TIME } from '../pets/manager.js';
@@ -177,6 +177,12 @@ const PETS = {
     g.head.rotation.x = Math.sin(t * 1.7) * .05;
     g.position.y = base(g) + Math.abs(Math.sin(t * 1.9)) * .008;
   }],
+  rat: [mkRat, (g, t) => {
+    g.tailSegs.forEach((q, i) => { q.rotation.y = Math.sin(t * 3 - i * .6) * .2; });
+    g.head.rotation.y = Math.sin(t * .8) * .5;
+    g.head.rotation.x = Math.sin(t * 14) * .05;
+    g.position.y = base(g) + Math.sin(t * 2) * .005;
+  }],
 };
 
 let vp = null, va = null;
@@ -191,7 +197,7 @@ export function showPlayer() {
 export function showPet(id) {
   if (!va) va = makeView('cvA');
   const [mk, idle] = PETS[id];
-  setModel(va, id, mk, idle, 2.1);
+  setModel(va, id, mk, idle, id === 'rat' ? 3 : 2.1);
 }
 
 const t0 = performance.now();
@@ -215,7 +221,7 @@ function draw(v) {
     const k = state.petHappy / HAPPY_TIME, env = Math.min(1, k * 2.5), tt = (1 - k) * HAPPY_TIME;
     v.inner.position.y += Math.abs(Math.sin(tt * 7)) * .5 * env;
     v.inner.rotation.z = Math.sin(tt * 16) * .22 * env;
-  } else if (v === va && (v.key === 'dog' || v.key === 'monkey')) v.inner.rotation.z = 0;
+  } else if (v === va && (v.key === 'dog' || v.key === 'rat' || v.key === 'monkey')) v.inner.rotation.z = 0;
   r.render(v.scene, v.cam);
   const ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);

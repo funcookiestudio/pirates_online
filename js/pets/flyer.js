@@ -6,7 +6,7 @@ import { state } from '../core/state.js';
 import { loot, enemies } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { applyLoot } from '../entities/loot.js';
-import { puff } from '../systems/effects.js';
+import { puff, whirl } from '../systems/effects.js';
 import { mkParrot, mkRaven } from './models.js';
 import { PV, PCD } from './stats.js';
 import { petStrike } from './strike.js';
@@ -229,6 +229,7 @@ function updateAttack(dt, t, pos, FL, mv) {
       PAR.hd = true;
       if (petStrike(e, 1, { ang: Math.atan2(PAR.dd.x, PAR.dd.z) })) PAR.mu = 1;
       puff(e.x, 1.8, e.z, 0xffe060, 4, 6);
+      if (state.pet.id === 'parrot') whirl(e.x, .2, e.z);   // ciclone de vento e areia do papagaio
     }
     if (PAR.tm > .7 || (PAR.hd && PAR.tm > .3)) { PAR.ap = 'recover'; PAR.tm = 0; }
   } else {
