@@ -15,6 +15,8 @@ import { setDun, dSee, DG, dCell } from './dgrid.js';
 import { goldAt, xpToNext } from '../data/scaling.js';
 import { addItem, refreshTorch } from '../systems/inventory.js';
 import { levelUp } from '../entities/player.js';
+import { WEAPONS } from '../data/weapons.js';
+import { hash } from './dungeongen.js';
 import { buildGimmicks, updateGimmicks, gimmickMarks } from './dungeon-gimmicks.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
@@ -209,6 +211,14 @@ export function leaveDungeon(msg) {
   if (msg) log(msg);
 }
 
+/** Arma fixa da recompensa de 1ª vitória desta dungeon (sempre a mesma para a mesma semente; só entre as que o nível permite) */
+export function rewardOf(D) {
+  const pool = [];
+  WEAPONS.forEach((w, i) => { if (w.lv && !w.torch && w.lv >= D.lv * .5 && w.lv <= D.lv + 4 && (!w.rare || D.lv >= 22)) pool.push(i); });
+  if (!pool.length) return null;
+  return { wi: pool[hash(D.seed + ':r') % pool.length], q: D.lv >= 10 ? 3 : 2 };
+}
+
 /** Primeira vez que derrota o chefe desta dungeon: ouro, XP e uma tocha mágica */
 function firstClear(D) {
   if (state.dunDone[D.seed]) return;
@@ -216,7 +226,9 @@ function firstClear(D) {
   const gold = goldAt(D.lv) * 10, xp = Math.round(xpToNext(P.lv) * .35);
   P.gold += gold; P.xp += xp; levelUp();
   addItem({ ty: 'wpn', q: 2, wi: 7, il: D.lv });
-  log('🏆 Dungeon concluída! +' + gold + ' ouro · +' + xp + ' XP · Tocha mágica');
+  const r = rewardOf(D);
+  if (r) addItem({ ty: 'wpn', q: r.q, wi: r.wi, il: D.lv });
+  log('🏆 Dungeon concluída! +' + gold + ' ouro · +' + xp + ' XP · Tocha mágica' + (r ? ' · ' + WEAPONS[r.wi].n : ''));
 }
 
 /** Por frame: abre baús, acende o portal do chefe, sai pelos portais */

@@ -11,7 +11,8 @@ import { log } from '../ui/notify.js';
 import { pois } from './pois.js';
 import { generateDungeon, THEMES, hash } from '../dungeon/dungeongen.js';
 import { tierOf, tierBonus } from '../data/scaling.js';
-import { enterDungeon } from '../dungeon/dungeon-scene.js';
+import { WEAPONS } from '../data/weapons.js';
+import { enterDungeon, rewardOf } from '../dungeon/dungeon-scene.js';
 
 const M = c => xray(M0(c));
 const NAMES = {
@@ -75,7 +76,7 @@ function show(D) {
     '📐 ' + size,
     '🧭 Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
     g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : '💰 Tesouro espalhado pelo caminho',
-    '👑 Chefe no fim do caminho · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 🏆 recompensa na 1ª vitória'),
+    '👑 Chefe no fim do caminho · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 🏆 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
     '⚠ ' + perigo(df) + ' (você: Nv ' + P.lv + ')',
   ].map(t => '<div>' + t + '</div>').join('');
   $('cvp').style.display = 'block';

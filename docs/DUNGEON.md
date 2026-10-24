@@ -39,3 +39,6 @@ Minimapa da dungeon com névoa de exploração (só células vistas, portais, ba
 
 ## Fase 4 (feita)
 `dungeon/dungeon-gimmicks.js`: **porta trancada** num gargalo do caminho até o chefe (procura uma célula onde bloquear 1–5 células corta o início do chefe; se o mapa é aberto demais, não há porta). A porta é parede na grade (A* e colisão a respeitam) até o jogador chegar com a **chave**, que cai de um **guardião elite** (+2 níveis) posto na sala alcançável mais distante do início. **Armadilhas de espinhos** (5 + nível/6, máx. 14) com ciclo de 3,4 s (aviso → sobem → recolhem); dano 6% da vida + 2×nível, a rolada esquiva. Dungeons de nível ≥ 20 / ≥ 40 ganham +1 inimigo por sala e mais elites. Minimapa marca a porta (vermelho) e a chave (amarelo). A grade da dungeon é copiada a cada entrada (a porta não altera o gerador em cache).
+
+## Fase 6 (feita)
+Ajustes: salas crescem com o nível (9 + nível/4, máx. 17), tema e nome fixos por semente, e a **recompensa de 1ª vitória é fixa por semente**: ouro, XP, Tocha mágica e uma arma sorteada pela semente entre as de nível entre ½ e +4 do nível da dungeon (lendária a partir do nível 10; as raras só do nível 22). A arma aparece no card da caverna. Erosão das ruínas corrigida para nunca isolar a saída.
