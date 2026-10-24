@@ -20,7 +20,8 @@ function slot(it, fn, label, ph) {
   d.className = 'sl' + (it ? ' r' + it.q : ph ? ' ph' : '');
   if (it) {
     d.innerHTML = (it.ty === 'wpn' ? (WEAPONS[it.w].gun ? '🔫' : '⚔') : '🛡') + '<small>+' + it.v + '</small>';
-    d.title = it.n + ' (' + RN[it.q] + ') +' + it.v + (it.ty === 'wpn' ? ' dano' : ' vida');
+    d.title = it.n + ' (' + RN[it.q] + ') +' + it.v + (it.ty === 'wpn' ? ' dano · ' + (WEAPONS[it.w].big ? '2 mãos' : '1 mão') : ' vida');
+    if (it.ty === 'wpn' && WEAPONS[it.w].big) d.insertAdjacentHTML('beforeend', '<b class="hand2">2M</b>');
   } else if (ph) d.innerHTML = '<em>' + ph + '</em>';
   if (label) d.insertAdjacentHTML('beforeend', '<u>' + label + '</u>');
   if (fn) d.onclick = fn;
@@ -45,7 +46,7 @@ function pickE(k) { selE = selE === k ? '' : k; sel = -1; renderPanel(); fitPane
 function itemCard(it, worn) {
   const isW = it.ty === 'wpn', W = isW ? WEAPONS[it.w] : null, old = worn ? null : eq[pickSlot(it, false)];
   const diff = worn ? 0 : old ? it.v - old.v : it.v, df = diff ? ' <small>(' + (diff > 0 ? '+' : '') + diff + ' vs. equipado)</small>' : '';
-  return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (isW ? (W.gun ? ' · arma de fogo' : ' · corpo a corpo') : ' · armadura') + '</small></span></div>' +
+  return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (isW ? (W.gun ? ' · arma de fogo' : ' · corpo a corpo') + (W.big ? ' · 2 MÃOS' : ' · 1 mão') : ' · armadura') + '</small></span></div>' +
     stat(isW ? '⚔' : '🛡', isW ? 'ATAQUE' : 'DEFESA / VIDA', '+' + it.v, df.replace(/<\/?small>/g, '')) +
     (isW ? stat('⏱', 'VELOCIDADE', (1 / (W.cd || 1)).toFixed(1) + '/s', 'Recarga ' + (W.cd || 1) + 's') : '') +
     (worn ? '<div class="iact"><button id="ieq">DESEQUIPAR</button><button id="idr">FECHAR</button></div>' : '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>');
@@ -154,10 +155,10 @@ export function fitPanel() {
     el.style.transform = 'translateX(-50%)';
     // espaço livre: acima da hotbar (que também pode estar reduzida) e dentro da largura da tela
     // o painel nasce do topo do convés da hotbar, centralizado entre os diamantes, e cresce para cima
-    const hb = $('deck').getBoundingClientRect();
-    const avail = hb.top + 2 - 8 - 6;
+    const hb = $('hb').getBoundingClientRect();
+    const avail = hb.top - 2 - 8 - 6;
     el.style.top = 'auto';
-    el.style.bottom = (innerHeight - hb.top - 2) + 'px';
+    el.style.bottom = (innerHeight - hb.top + 2) + 'px';
     el.style.transformOrigin = '50% 100%';
     el.style.left = (hb.left + hb.width / 2) + 'px';
     let k = Math.min(1, avail / el.offsetHeight, (innerWidth - 4) / el.offsetWidth);

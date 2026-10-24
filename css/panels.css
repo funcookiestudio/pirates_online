@@ -262,3 +262,7 @@
 .iact button:last-child { color: #e88; border-color: #7a3a2a; }
 .icard b { display: none; }
 .sl.sel { outline: 2px solid #ffe08a; outline-offset: -2px; }
+#pnl, #pnl2 { z-index: 8; }
+
+.sl { position: relative; }
+.hand2 { position: absolute; left: 2px; top: 2px; font-size: 9px; line-height: 1; padding: 1px 3px; border-radius: 3px; background: #a03020; color: #fff; pointer-events: none; }
