@@ -3,7 +3,7 @@ import { cam, torch } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { P } from '../entities/player.js';
 
-const rig = { x: null, z: null };
+const rig = { x: null, y: 0, z: null };   // y acompanha a altura do chão sob o jogador (relevo, cais, nado)
 const ZMIN = .22, ZMAX = 1.3;   // 1 = distância padrão; menor = mais perto do personagem
 let zoomT = 1, zoom = 1;
 let yawT = 0, yaw = 0;          // giro da câmera em volta do jogador (rad)
@@ -15,18 +15,19 @@ export function rotateBy(a) { yawT += a; }
 export function zoomBy(f) { zoomT = Math.min(ZMAX, Math.max(ZMIN, zoomT * f)); }
 
 export function updateCamera(dt) {
-  if (rig.x === null) { rig.x = P.x; rig.z = P.z; }
+  if (rig.x === null) { rig.x = P.x; rig.z = P.z; rig.y = P.g.position.y; }
   const k = 1 - Math.exp(-dt * 7);
   rig.x += (P.x - rig.x) * k;
   rig.z += (P.z - rig.z) * k;
+  rig.y += (P.g.position.y - rig.y) * (1 - Math.exp(-dt * 5));   // sobe e desce suave em morros
 
   state.SHK = Math.max(0, state.SHK - dt * 1.4);
   zoom += (zoomT - zoom) * (1 - Math.exp(-dt * 10));
   yaw += (yawT - yaw) * (1 - Math.exp(-dt * 10));
   const c = Math.cos(yaw), n = Math.sin(yaw), ox = (16 * c + 16 * n) * zoom, oz = (16 * c - 16 * n) * zoom;
   const sx = (Math.random() - .5) * state.SHK, sz = (Math.random() - .5) * state.SHK;
-  cam.position.set(rig.x + ox + sx, 20 * zoom, rig.z + oz + sz);
-  cam.lookAt(rig.x + sx, 1.2 * (1 - zoom), rig.z + sz);
+  cam.position.set(rig.x + ox + sx, rig.y + 20 * zoom, rig.z + oz + sz);
+  cam.lookAt(rig.x + sx, rig.y + 1.2 * (1 - zoom), rig.z + sz);
 
-  torch.position.set(P.x, 4, P.z);
+  torch.position.set(P.x, rig.y + 4, P.z);
 }
