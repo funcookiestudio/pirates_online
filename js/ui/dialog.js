@@ -19,7 +19,7 @@ const BUY = 9, SELL = { smith: 4, tavern: 3, trader: 6 };
 function makeStock(kind) {
   if (kind === 'smith') {
     const s = [];
-    WEAPONS.forEach((w, wi) => [1, 2].forEach(q => s.push({ ty: 'wpn', q, wi, price: val('wpn', q, wi) * BUY })));
+    WEAPONS.forEach((w, wi) => (!w.lv || w.shop) && [1, 2].forEach(q => s.push({ ty: 'wpn', q, wi, price: val('wpn', q, wi) * BUY })));
     [1, 2, 3].forEach(q => s.push({ ty: 'arm', q, wi: 0, price: val('arm', q, 0) * BUY }));
     return s;
   }

@@ -157,12 +157,16 @@ export function attack(dx, dz) {
   P.g.updateMatrixWorld(true);
   const mp = P.hand.localToWorld(new THREE.Vector3(0, -(W.ml || 1), 0)); // boca do cano
   const mx = mp.x, mz = mp.z, my = mp.y;
-  puff(mx, my, mz, 0xffd070, 4, 6);
-  puff(mx, my, mz, 0x999999, 2, 4);
-  const m = new THREE.Mesh(new THREE.SphereGeometry(.12, 4, 3), new THREE.MeshBasicMaterial({ color: 0xffe070 }));
+  let m;
+  if (W.thrown) m = W.build();   // arma de arremesso: voa o próprio modelo da arma
+  else {
+    puff(mx, my, mz, 0xffd070, 4, 6);
+    puff(mx, my, mz, 0x999999, 2, 4);
+    m = new THREE.Mesh(new THREE.SphereGeometry(.12, 4, 3), new THREE.MeshBasicMaterial({ color: 0xffe070 }));
+  }
   m.position.set(mx, my, mz);
   scene.add(m);
-  shots.push({ m, t, d: P.dmg * W.mul, sp: W.sp, sl: W.splash });
+  shots.push({ m, t, d: P.dmg * W.mul, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0 });
 }
 
 /** Momento do golpe corpo a corpo: acerta quem está no arco à frente */
@@ -175,7 +179,11 @@ export function impact() {
     let da = Math.atan2(dx, dz) - a;
     da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da)));
     if (e !== P.tgt && da > arc / 2) return;
-    hit(e, P.dmg * W.mul * (fin ? 1.4 : 1) * (e === P.tgt ? 1 : .7), { kn: fin ? 1.6 : .8, fin, ang: a });
+    hit(e, P.dmg * W.mul * (fin ? 1.4 : 1) * (e === P.tgt ? 1 : .7), { kn: fin ? 1.6 : .8, fin, ang: a, cr: W.crit && Math.random() < .15 + W.crit ? true : undefined });
+    if (!e.dead) {   // efeitos das armas: sangramento e atordoamento
+      if (W.bleed && Math.random() < W.bleed) { e.bl = 3; e.bd = Math.max(1, P.dmg * .25); e.bt = .5; }
+      if (W.stun && Math.random() < W.stun) e.sn = Math.max(e.sn || 0, e.t.boss ? .35 : 1);
+    }
   });
 
   // arco visual do golpe
@@ -198,6 +206,8 @@ export function updateShots(dt) {
       const dx = s.t.x - p.x, dy = 1.3 - p.y, dz = s.t.z - p.z, d = Math.hypot(dx, dy, dz);
       if (d < .8) {
         hit(s.t, s.d, { kn: .6 });
+        if (s.th && s.fx) puff(s.t.x, 1, s.t.z, 0xa77be0, 6, 10);
+        if (s.fx && s.fx.stun && !s.t.dead) s.t.sn = Math.max(s.t.sn || 0, s.t.t.boss ? .4 : s.fx.stun);
         if (s.sl) {
           enemies.forEach(o => {
             if (o !== s.t && !o.dead && Math.hypot(o.x - s.t.x, o.z - s.t.z) < 2.2) hit(o, s.d * .6);
@@ -209,6 +219,9 @@ export function updateShots(dt) {
         p.x += dx * k;
         p.y += dy * k;
         p.z += dz * k;
+        if (s.th === 1) { s.m.rotation.y = Math.atan2(dx, dz); s.m.rotation.x += 16 * dt; }          // machados: giram no ar
+        else if (s.th === 2) s.m.rotation.y += 14 * dt;                                             // boleadeiras/rede/bomba: rodopiam
+        else if (s.th) s.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(dx / d, dy / d, dz / d)); // facas/lanças: ponta na direção do voo
       }
     }
     if (done) {

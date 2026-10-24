@@ -56,13 +56,20 @@ export function dropLoot(e) {
     const r = Math.random();
     const ty = boss && i < 2 ? (i ? 'arm' : 'wpn') : elite && i === 0 ? (Math.random() < .5 ? 'wpn' : 'arm') : r < .6 ? 'gold' : r < .8 ? 'pot' : r < .93 ? 'wpn' : 'arm';
     const q = boss ? (Math.random() < .3 ? 3 : 2) : rollQuality(il, elite ? 1 : 0);
-    const wi = Math.floor(Math.random() * WEAPONS.length);
+    const wi = pickWeapon(il, q);
     const m = lootModel(ty, q, wi);
     m.position.set(e.x + (Math.random() - .5) * 2, .3, e.z + (Math.random() - .5) * 2);
     m.position.y += groundY(m.position.x, m.position.z);
     scene.add(m);
     loot.push({ m, ty, q, wi, il, life: 0 });
   }
+}
+
+/** Sorteia uma arma que faz sentido para o nível do inimigo (as fortes só caem em níveis altos; lendárias raras só em itens lendários) */
+export function pickWeapon(il, q) {
+  const ok = [];
+  WEAPONS.forEach((w, i) => { if (!w.lv || (w.lv <= il + 3 && (!w.rare || q >= 3))) ok.push(i); });
+  return ok[Math.floor(Math.random() * ok.length)];
 }
 
 /** Tempo (s) que um item fica no chão antes de sumir */

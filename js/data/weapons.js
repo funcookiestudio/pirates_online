@@ -4,6 +4,7 @@
    hp = onde as mãos seguram a arma de fogo · ml = comprimento até a boca do cano
    reload = recarrega apoiando a arma no chão durante a recarga (cd) · big = arma grande: mira apoiada no ombro (sb = mão do gatilho → coronha, fs = mão do gatilho → mão da frente) */
 import { wb, grp } from '../core/utils.js';
+import { EXTRA } from './weapons-extra.js';
 
 const ST = 0xd8dce0, BR = 0xb08a30, WD = 0x6a4020, LT = 0x3a2412, GN = 0x44464a;
 
@@ -91,6 +92,11 @@ export const WEAPONS = [
     },
   },
 ];
+
+/* Armas extras (lâminas, duas mãos, contundentes e de arremesso): anexadas ao fim para não mudar os índices salvos.
+   Duas mãos de corpo a corpo reutilizam `big` (mão 2 ocupada, tocha some, vai nas costas). */
+EXTRA.forEach(w => { if (w.two) w.big = 1; WEAPONS.push(w); });
+export const BASE_WEAPONS = WEAPONS.length - EXTRA.length;
 
 /** Nomes das raridades (índice = qualidade 1..3) */
 export const RN = ['', 'Comum', 'Mágico', 'Lendário'];
