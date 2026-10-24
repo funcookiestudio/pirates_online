@@ -1,6 +1,6 @@
 /* Macaco: senta no ombro, desce para pegar loot e pula nos inimigos.
    Estados de MON.s: perch · hop (pulo) · goto/grab/carry (coleta) · return · attack */
-import { groundY } from '../world/terrain.js';
+import { groundY, walkable } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { enemies, loot } from '../core/registry.js';
@@ -98,8 +98,11 @@ export function monkeyUpd(dt, now) {
     MON.rv += (sp - MON.rv) * Math.min(1, dt * 4.5);
     if (d > stop) {
       const k = Math.min(MON.rv * dt, d - stop);
-      pos.x += dx / d * k;
-      pos.z += dz / d * k;
+      const nx = pos.x + dx / d * k, nz = pos.z + dz / d * k;
+      // macaco não entra na água: anda só onde dá para pisar (desliza num eixo se o outro é água)
+      if (walkable(nx, nz) || !walkable(pos.x, pos.z)) { pos.x = nx; pos.z = nz; }
+      else if (walkable(nx, pos.z)) pos.x = nx;
+      else if (walkable(pos.x, nz)) pos.z = nz;
       turnTo(g, Math.atan2(dx, dz), 8, dt);
       MON.sp = Math.max(.01, MON.rv);
     }
