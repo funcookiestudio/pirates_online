@@ -106,6 +106,40 @@ function buildPlayer() {
   return g;
 }
 
+/* ---------- Itens (prévia ao selecionar na mochila ou no equipamento) ---------- */
+
+const QCOL = [0, 0x8a6a44, 0x3a6ab0, 0xd8a820];   // cor da armadura por qualidade
+function buildItem(it) {
+  if (it.ty === 'arm') {            // armadura: o personagem vestindo a peça
+    const g = person(0xe0b48a, QCOL[it.q] || 0x8a6a44, 0x2e3a5a, 0x1a1a1a);
+    [2, 3].forEach(i => { if (g.arm.fa.children[i]) g.arm.fa.children[i].visible = false; });
+    return g;
+  }
+  const W = WEAPONS[it.w], w = W.build(), box = new THREE.Box3().setFromObject(w);
+  const sz = box.getSize(new THREE.Vector3()), k = 2.5 / Math.max(sz.x, sz.y, sz.z, .01);
+  const wrap = new THREE.Group(), c = box.getCenter(new THREE.Vector3());
+  w.position.sub(c);
+  const pivot = new THREE.Group();
+  pivot.add(w);
+  pivot.rotation.z = W.gun ? 0 : .5;            // espada inclinada; arma de fogo deitada
+  wrap.add(pivot);
+  wrap.scale.setScalar(k);
+  wrap.position.y = 1.05;
+  const out = new THREE.Group();
+  out.add(wrap);
+  return out;
+}
+function idleItem(g, t) {
+  if (g.children.length === 1 && g.children[0].isGroup && !g.arm) g.position.y = Math.sin(t * 1.6) * .06;
+  else idlePlayer(g, t);
+}
+
+/** Mostra o item `it` (arma 3D girável ou armadura vestida) no canvas do personagem */
+export function showItem(it) {
+  if (!vp) vp = makeView('cvP');
+  setModel(vp, 'i' + it.ty + it.w + '_' + it.q + '_' + it.v, () => buildItem(it), idleItem);
+}
+
 /* ---------- Companheiros ---------- */
 
 /* Animações de espera dos companheiros: todos "no chão" (as aves ficam em pé, com as asas recolhidas) */

@@ -17,7 +17,7 @@ export function resetPlayer() {
   loot.splice(0).forEach(l => scene.remove(l.m)); // itens largados no chão
   state.cp = -1; state.deaths = {}; state.stam = 1; state.autoRest = false; state.seek = null; state.clearing = false;
   P.dr = 0; P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.vx = P.vz = 0; P.sit = P.sitT = 1; P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw; // volta para a vila, sentado
-  eq.wpn = eq.gun = eq.arm = null;
+  eq.wpn = eq.gun = eq.arm = eq.off = null;
   Object.assign(P, { lv: 1, xp: 0, nxt: 60, max: 100, mmax: 60, dmg: 12, gold: 0, pot: 3, bmb: 3, wb: 0, tgt: null, swap: null });
   P.hp = P.max;
   P.mp = P.mmax;

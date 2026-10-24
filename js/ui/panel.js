@@ -5,12 +5,12 @@ import { $, isPanelOpen } from '../core/utils.js';
 import { WEAPONS, RN } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { dropItem } from '../entities/loot.js';
-import { slotOf } from '../systems/inventory.js';
+import { slotOf, unequip, pickSlot, POT_MAX, BOMB_MAX } from '../systems/inventory.js';
 import { bag, eq, equip, BAG_MAX } from '../systems/inventory.js';
 import { PST } from '../pets/stats.js';
 import { renderPets, initPetPanel } from './pet-panel.js';
 import { fitHotbar } from './hotbar.js';
-import { showPlayer, initPreview } from './preview.js';
+import { showPlayer, showItem, initPreview } from './preview.js';
 import { clearSave } from '../systems/save.js';
 import { resetPlayer, armedButton } from '../systems/reset.js';
 
@@ -28,7 +28,7 @@ function slot(it, fn, label, ph) {
 }
 
 /** Aba aberta: 'char' · 'skills' · 'tal'; e aba da mochila: 'eq' · 'cons' · 'quest' · 'mat' */
-let tab = 'char', btab = 'eq', sel = -1;
+let tab = 'char', btab = 'eq', sel = -1, selE = '';   // sel = item da mochila · selE = espaço equipado selecionado
 
 /** Espaços de equipamento (como em telas de ARPG): [id, rótulo, ícone]. Só os que têm item no jogo funcionam por enquanto. */
 const LEFT = [['helm', 'ELMO', '🪖'], ['amulet', 'AMULETO', '📿'], ['arm', 'PEITORAL', '🦺'], ['ring1', 'ANEL', '💍']];
@@ -38,17 +38,26 @@ function stat(ic, name, val, sub, tip) {
   return '<div class="st" title="' + (tip || '') + '"><i>' + ic + '</i><span>' + name + (sub ? '<small>' + sub + '</small>' : '') + '</span><b>' + val + '</b></div>';
 }
 
+/** Seleciona (ou fecha) a prévia de um item equipado */
+function pickE(k) { selE = selE === k ? '' : k; sel = -1; renderPanel(); fitPanel(); }
+
 /** Atualiza cartão do personagem e atributos */
-function itemCard(it) {
-  const isW = it.ty === 'wpn', W = isW ? WEAPONS[it.w] : null, old = eq[slotOf(it)];
-  const diff = old ? it.v - old.v : it.v, df = diff ? ' <small>(' + (diff > 0 ? '+' : '') + diff + ' vs. equipado)</small>' : '';
+function itemCard(it, worn) {
+  const isW = it.ty === 'wpn', W = isW ? WEAPONS[it.w] : null, old = worn ? null : eq[pickSlot(it, false)];
+  const diff = worn ? 0 : old ? it.v - old.v : it.v, df = diff ? ' <small>(' + (diff > 0 ? '+' : '') + diff + ' vs. equipado)</small>' : '';
   return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (isW ? (W.gun ? ' · arma de fogo' : ' · corpo a corpo') : ' · armadura') + '</small></span></div>' +
     stat(isW ? '⚔' : '🛡', isW ? 'ATAQUE' : 'DEFESA / VIDA', '+' + it.v, df.replace(/<\/?small>/g, '')) +
     (isW ? stat('⏱', 'VELOCIDADE', (1 / (W.cd || 1)).toFixed(1) + '/s', 'Recarga ' + (W.cd || 1) + 's') : '') +
-    '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>';
+    (worn ? '<div class="iact"><button id="ieq">DESEQUIPAR</button><button id="idr">FECHAR</button></div>' : '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>');
 }
 
 export function renderStats() {
+  if (selE && eq[selE]) {
+    $('stt').innerHTML = itemCard(eq[selE], true);
+    $('ieq').onclick = () => { const k = selE; selE = ''; unequip(k); };
+    $('idr').onclick = () => { selE = ''; renderPanel(); fitPanel(); };
+    return;
+  }
   if (sel >= 0 && bag[sel]) {
     $('stt').innerHTML = itemCard(bag[sel]);
     $('ieq').onclick = () => { const i = sel; sel = -1; equip(i); };
@@ -64,7 +73,20 @@ export function renderStats() {
     stat('⚔', 'ATAQUE', P.dmg, 'DPS ' + (P.dmg * W.mul / (W.cd || 1)).toFixed(1) + ' · Vel. ' + (1 / (W.cd || 1)).toFixed(1) + '/s<br>Crítico 15% · x2', 'Dano, DPS, velocidade de ataque e crítico') +
     stat('🛡', 'DEFESA', (eq.arm ? eq.arm.v : 0), 'Redução de dano ' + Math.round((P.dr || 0) * 100) + '%', 'Defesa da armadura') +
     stat('❤', 'VIDA', P.max, 'Atual ' + Math.ceil(P.hp) + '<br>Mana ' + Math.floor(P.mp) + ' / ' + P.mmax, 'Vida máxima');
-  $('attr').innerHTML = ['💪|FOR', '🏹|DES', '🧠|INT'].map(x => { const [i, n] = x.split('|'); return '<div title="Atributo — em breve"><span>' + i + ' ' + n + '</span><b>—</b></div>'; }).join('');
+  renderQuick();
+}
+
+/** Linha central sob o retrato: poção, bomba e arma de fogo (a mão 2 fica no canto) */
+function renderQuick() {
+  const el = $('attr');
+  el.innerHTML = '';
+  const cons = (ic, n, lb, tip) => { const d = slot(null, null, lb, ic); d.className = 'sl ' + (n > 0 ? 'r1' : 'ph'); d.innerHTML = '<em>' + ic + '</em><small>x' + n + '</small><u>' + lb + '</u>'; d.title = tip; return d; };
+  el.append(cons('🧪', P.pot, 'POÇÃO', 'Poção de vida (tecla E) · leva até ' + POT_MAX));
+  el.append(cons('💣', P.bmb, 'BOMBA', 'Bomba (tecla W) · leva até ' + BOMB_MAX));
+  const g = slot(eq.gun, eq.gun ? () => pickE('gun') : null, 'FOGO', '🔫');
+  if (P.act === 'gun') g.classList.add('act');
+  if (selE === 'gun') g.classList.add('sel');
+  el.append(g);
 }
 
 const grid = (el, n) => { el.innerHTML = ''; for (let i = 0; i < n; i++) el.append(slot(null, null, '', '🔒')); };
@@ -79,23 +101,28 @@ function renderPanel() {
 
   const fill = (el, list) => {
     el.innerHTML = '';
-    list.forEach(([id, lb, ic]) => el.append(slot(id === 'arm' ? eq.arm : null, null, lb, ic)));
+    list.forEach(([id, lb, ic]) => { const d = slot(id === 'arm' ? eq.arm : null, id === 'arm' && eq.arm ? () => pickE('arm') : null, lb, ic); if (selE === id) d.classList.add('sel'); el.append(d); });
   };
-  showPlayer();
+  if (selE && !eq[selE]) selE = '';
+  const shown = sel >= 0 && bag[sel] ? bag[sel] : selE ? eq[selE] : null;
+  if (shown) showItem(shown); else showPlayer();
   fill($('eqL'), LEFT);
   fill($('eqR'), RIGHT);
-  const w = slot(eq.wpn, null, 'CORPO A CORPO', '⚔'), g = slot(eq.gun, null, 'FOGO', '🔫');
-  (P.act === 'wpn' ? w : g).classList.add('act'); // a que está na mão
+  const w = slot(eq.wpn, eq.wpn ? () => pickE('wpn') : null, 'MÃO 1', '⚔');
+  const o = slot(eq.off, eq.off ? () => pickE('off') : null, 'MÃO 2', '✋');
+  o.title = eq.off ? o.title : 'Mão 2 livre: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas)';
+  if (P.act === 'wpn') w.classList.add('act');
+  if (selE === 'wpn') w.classList.add('sel'); if (selE === 'off') o.classList.add('sel');
   $('eqW').innerHTML = $('eqG').innerHTML = '';
   $('eqW').append(w);
-  $('eqG').append(g);
+  $('eqG').append(o);
 
   // mochila: abas Equipamento / Consumíveis / Missão / Materiais
   document.querySelectorAll('#btabs span').forEach(e => e.classList.toggle('on', e.dataset.b === btab));
   const b = $('bag');
   b.innerHTML = '';
   if (btab === 'eq') {
-    for (let i = 0; i < BAG_MAX; i++) b.append(slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; renderPanel(); fitPanel(); } : null));
+    for (let i = 0; i < BAG_MAX; i++) b.append(slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; selE = ''; renderPanel(); fitPanel(); } : null));
     if (sel >= 0) b.children[sel] && b.children[sel].classList.add('sel');
     $('bcnt').textContent = bag.length + ' / ' + BAG_MAX + (bag.length >= BAG_MAX ? ' · CHEIA' : '');
     $('bcnt').style.color = bag.length >= BAG_MAX ? '#ff8a6a' : '';

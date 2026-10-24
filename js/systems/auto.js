@@ -3,7 +3,7 @@
 import { state, aim } from '../core/state.js';
 import { enemies, loot, respawns, bombs } from '../core/registry.js';
 import { P } from '../entities/player.js';
-import { bag, eq, equip, slotOf, lootBlocked } from './inventory.js';
+import { bag, equip, pickSlot, lootBlocked } from './inventory.js';
 import { refillStep } from './refill.js';
 import { townStep } from './town.js';
 import { autoWeapon } from './swap.js';
@@ -34,8 +34,7 @@ export function autoThink(dt) {
   if (AI <= 0 && state.autoCfg.equip) {
     AI = 1.5;
     for (let i = 0; i < bag.length; i++) {
-      const it = bag[i], c = eq[slotOf(it)];
-      if (!c || it.v > c.v) { equip(i); break; }
+      if (pickSlot(bag[i], true)) { equip(i); break; }
     }
   }
 

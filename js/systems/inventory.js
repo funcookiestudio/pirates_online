@@ -21,7 +21,7 @@ export const PRICE = { potTavern: 25, potTrader: 32, bomb: 45 };
 export const lootBlocked = l => ((l.ty === 'wpn' || l.ty === 'arm') && bagFull()) || (l.ty === 'pot' && P.pot >= POT_MAX);
 
 /** Equipamento atual: arma corpo a corpo (wpn), arma de fogo (gun) e armadura (arm). Uma arma fica na mão, a outra no coldre. */
-export const eq = { wpn: null, gun: null, arm: null };
+export const eq = { wpn: null, gun: null, arm: null, off: null };   // off = segunda mão (livre): outra arma do mesmo tipo
 
 /** Em qual espaço de equipamento o item entra */
 export const slotOf = it => it.ty === 'arm' ? 'arm' : (WEAPONS[it.w].gun ? 'gun' : 'wpn');
@@ -36,19 +36,36 @@ export function addItem(l) {
   emit('inventory:changed');
 }
 
+/** Em que espaço o item entra? 'wpn' | 'gun' | 'arm' | 'off' (segunda mão). Com `better`, devolve null se não melhora nada.
+    Mão 2: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas); armas grandes (mosquete) ocupam as duas mãos. */
+export function pickSlot(it, better) {
+  const s = slotOf(it);
+  if (s === 'arm') return !eq.arm || !better || it.v > eq.arm.v ? 'arm' : null;
+  const main = eq[s];
+  if (!main) return s;
+  const big = WEAPONS[it.w].big || WEAPONS[main.w].big, off = eq.off, offSame = off && slotOf(off) === s;
+  if (!off && !big) return 'off';
+  const low = offSame && off.v < main.v ? 'off' : s;
+  return !better || it.v > eq[low].v ? low : null;
+}
+
 /** Equipa o item `i` da mochila; o item antigo do mesmo espaço volta para a mochila */
 export function equip(i) {
   const it = bag[i];
   if (!it) return;
-  const slot = slotOf(it), old = eq[slot];
+  const slot = pickSlot(it, false), old = eq[slot];
+  bag.splice(i, 1);
   if (old) {
     if (slot === 'arm') { P.max -= old.v; P.hp = Math.min(P.hp, P.max); }
     bag.push(old);
   }
   eq[slot] = it;
-  bag.splice(i, 1);
   if (slot === 'arm') { P.max += it.v; P.hp += it.v; }
-  else {
+  else if (slot === 'off') {
+    // grande na mão principal ocupa as duas mãos; mão 2 e principal de tipos diferentes não se misturam
+    applyWeaponBonus();
+  } else {
+    if (WEAPONS[it.w].big && eq.off && slotOf(eq.off) === slot && bag.length < BAG_MAX) { bag.push(eq.off); eq.off = null; }
     P.swap = null;
     // a arma nova vai para a mão se for do espaço que já estava na mão; senão vai direto para o coldre
     setWeapon(P.models[P.act] && P.act !== slot ? P.act : slot);
@@ -56,9 +73,25 @@ export function equip(i) {
   emit('inventory:changed');
 }
 
+/** Tira o item do espaço `slot` e devolve à mochila (se couber). Sem a principal, a mão 2 do mesmo tipo assume. */
+export function unequip(slot) {
+  const it = eq[slot];
+  if (!it || bagFull()) return false;
+  if (slot === 'arm') { P.max -= it.v; P.hp = Math.min(P.hp, P.max); eq.arm = null; }
+  else {
+    eq[slot] = null;
+    if (slot !== 'off' && eq.off && slotOf(eq.off) === slot) { eq[slot] = eq.off; eq.off = null; }
+    if (slot !== 'off') { P.swap = null; setWeapon(P.act); } else applyWeaponBonus();
+  }
+  bag.push(it);
+  emit('inventory:changed');
+  return true;
+}
+
 /** Soma ao dano o bônus da arma que está na mão (e tira o da anterior) */
 export function applyWeaponBonus() {
-  const nb = (eq[P.act] && eq[P.act].v) || 0;
+  // segunda mão do mesmo tipo da que está na mão soma 60% do ataque
+  const nb = ((eq[P.act] && eq[P.act].v) || 0) + (eq.off && slotOf(eq.off) === P.act ? Math.round(eq.off.v * .6) : 0);
   P.dmg += nb - P.wb;
   P.wb = nb;
 }

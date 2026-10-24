@@ -53,6 +53,7 @@ export function loadGame() {
     (s.bag || []).filter(validItem).forEach(it => bag.push(it));
     eq.wpn = validItem(s.eq && s.eq.wpn) ? s.eq.wpn : null;
     eq.gun = validItem(s.eq && s.eq.gun) ? s.eq.gun : null;
+    eq.off = validItem(s.eq && s.eq.off) && s.eq.off.w != null && !WEAPONS[s.eq.off.w].big ? s.eq.off : null;
     eq.arm = validItem(s.eq && s.eq.arm) ? s.eq.arm : null;
     // saves antigos guardavam a arma de fogo no espaço da arma corpo a corpo
     let act = s.act === 'gun' ? 'gun' : 'wpn';
