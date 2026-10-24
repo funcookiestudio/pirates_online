@@ -55,6 +55,7 @@ MATK.sonic = { d: .8, f: u => { const rs = env(u, 0, .35), rl = env(u, .6, .9), 
 MATK.tailwhip = { d: .7, f: u => { const sp = env(u, .15, .3) * (1 - env(u, .8, 1)); return { ry: Math.PI * 2 * env(u, .2, .8), ln: .15 * sp, ar: -.2 * sp, al: -.2 * sp, kl: .5 * sp, kr: .5 * sp }; } };   // rabada: giro completo
 MATK.throw = { d: .8, f: u => { const wu = env(u, 0, .35) * (1 - env(u, .35, .5)), st = env(u, .35, .5) * (1 - env(u, .7, 1)); return { ar: 1.2 * wu - 2 * st, fr: -1.2 * wu, al: -.8 * wu, ln: -.25 * wu + .2 * st, rock: u > .4 }; } };   // arremesso de pedra
 MATK.stomp = { d: .8, f: u => { const up = Math.sin(Math.PI * Math.min(1, u / .6)), im = env(u, .6, .7) * (1 - env(u, .8, 1)); return { ar: -2.4 * up, al: -2.4 * up, ll: -.6 * up, lr: -.6 * up, kl: .8 * up, kr: .8 * up, ln: -.15 * up + .3 * im, py: .5 * up, ring: u > .6 }; } };   // pulo esmagador
+MATK.charge = { d: .7, f: u => { const k = env(u, .05, .25) * (1 - env(u, .75, 1)), w = Math.sin(u * 40); return { ln: .35 * k, ar: -.8 * k * w, al: .8 * k * w, ll: .9 * k * w, lr: -.9 * k * w, kl: .5 * k, kr: .5 * k, hd: .3 * k }; } };   // investida: corrida de cabeça baixa
 const MATK_KEYS = Object.keys(MATK);
 
 /** Posição do ombro do jogador */

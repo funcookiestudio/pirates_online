@@ -205,6 +205,11 @@ function animateDog(dt, t, g, pos, c) {
   DOG.mu = Math.max(0, DOG.mu - dt);
   g.head.rotation.x = .5 * sm + OV.hd * ow + Math.sin(t * 1.3) * .06 + Math.sin(ph * 2) * .05 * amp + (DOG.mu > 0 ? .5 * DOG.mu / .25 : 0);
   g.head.rotation.y = Math.sin(t * .7) * (.3 + .25 * sm) * (1 - ow);
+  if (rat && DOG.s === 'lunge') {   // mordida do rato: cabeça estica e estala os dentes, orelhas para trás
+    g.head.rotation.x += .35 + Math.sin(t * 50) * .25;
+    g.earL.rotation.z -= .3; g.earR.rotation.z += .3;
+  }
+  if (rat && DOG.v > 4.5) g.legs.forEach(l => { l.knee.rotation.x += .25; });   // corrida: joelhos mais dobrados
   if (rat) {   // rato: rabo em segmentos que ondulam; parado, fica em pé sobre as patas de trás
     const ta = .25 + .2 * ow;
     g.tailSegs.forEach((q, i) => { q.rotation.x = (i ? .05 : .25) + ta * .2; q.rotation.y = Math.sin(t * 3 - i * .6) * ta * .8 * (1 + DOG.v * .15); });
