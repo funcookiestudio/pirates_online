@@ -34,17 +34,23 @@ export function initTerrain(posts = [], seed = SEED) {
   const cands = [];
   for (let z = -95; z <= 95; z += 3) for (let x = -95; x <= 95; x += 3) {
     const d = Math.hypot(x, z);
-    if (d > VILLAGE_R + 10 && d < 92 && roomy(x, z, 9)) cands.push([x, z, d, Math.atan2(z, x)]);
+    if (d > 44 && d < 92 && roomy(x, z, 7)) cands.push([x, z, d, Math.atan2(z, x)]);
   }
   // espalha os postos por pontos bem distantes entre si (e da vila), depois ordena pela distância: quanto mais longe, mais perigoso
   const chosen = [];
   for (let n = 0; n < posts.length && cands.length; n++) {
-    let best = null, bs = -1;
-    for (const c of cands) {
-      let m = (c[2] - VILLAGE_R) * 1.1 - (c[2] > 70 ? (c[2] - 70) * 2 : 0);
-      for (const q of chosen) m = Math.min(m, Math.hypot(q[0] - c[0], q[1] - c[1]));
-      if (m > bs) { bs = m; best = c; }
+    let best = null;
+    for (const sep of [26, 22, 18, 16]) {          // separação mínima entre postos: relaxa só se a ilha não comportar
+      let bs = -1;
+      for (const c of cands) {
+        if (chosen.some(q => Math.hypot(q[0] - c[0], q[1] - c[1]) < sep)) continue;
+        let m = (c[2] - 44) * 1.1 - (c[2] > 80 ? (c[2] - 80) * 2 : 0);
+        for (const q of chosen) m = Math.min(m, Math.hypot(q[0] - c[0], q[1] - c[1]));
+        if (m > bs) { bs = m; best = c; }
+      }
+      if (best) break;
     }
+    if (!best) break;
     chosen.push(best);
   }
   chosen.sort((a, b) => a[2] - b[2]);

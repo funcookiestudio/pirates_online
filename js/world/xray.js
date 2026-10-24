@@ -2,6 +2,7 @@
    ganham um buraco redondo em volta dele, para ele nunca sumir atrás de objetos. */
 import { cam, ren } from '../core/engine.js';
 import { P } from '../entities/player.js';
+import { groundY } from './terrain.js';
 
 const U = {
   uPS: { value: new THREE.Vector2(-1e4, -1e4) }, // posição do personagem na tela (pixels do buffer)
@@ -36,7 +37,7 @@ const v = new THREE.Vector3();
 /** Atualiza a posição do personagem na tela (chamar a cada quadro, antes de renderizar) */
 export function updateXray() {
   cam.updateMatrixWorld();
-  v.set(P.x, 1, P.z);
+  v.set(P.x, groundY(P.x, P.z) + 1, P.z);
   const d = -v.clone().applyMatrix4(cam.matrixWorldInverse).z;
   v.project(cam);
   const s = ren.getDrawingBufferSize(new THREE.Vector2());

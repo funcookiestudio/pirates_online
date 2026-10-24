@@ -1,6 +1,7 @@
 /* Malha 3D da ilha procedural: relevo com cor por vértice, mar, rios/lagos, pontes e vegetação instanciada.
    Tudo é marcado userData.dyn para o mergeStatics deixar quieto (a malha já é única e instanciada). */
 import { scene } from '../core/engine.js';
+import { xray } from './xray.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { N, V, ss, rngf, hash, RD } from './islandgen.js';
 import { isl, H, VX, VZ, HV, VS, SEA, groundY, addObstacles, walkable } from './terrain.js';
@@ -21,7 +22,7 @@ function col(h, ny, rw, v, mo, dep) {
 }
 
 const dyn = o => { o.userData.dyn = 1; return o; };
-const mat = c => new THREE.MeshLambertMaterial({ color: c });
+const mat = c => xray(new THREE.MeshLambertMaterial({ color: c }));   // xray: buraco redondo em volta do personagem quando algo fica na frente
 
 function terrain() {
   const { pm, mo, W } = isl, r = rngf(hash(isl.seed + 'm')), NV = V * V, pos = new Float32Array(NV * 3), cl = new Float32Array(NV * 3);

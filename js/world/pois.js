@@ -1,7 +1,9 @@
 /* Pontos de interesse do gerador de ilhas: Porto (cais), Caverna (entrada) e Tesouro (X no chão, com recompensa única). */
 import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
-import { M } from '../core/utils.js';
+import { M as M0 } from '../core/utils.js';
+import { xray } from './xray.js';
+const M = c => xray(M0(c));
 import { isl, VX, VZ, groundY } from './terrain.js';
 import { P } from '../entities/player.js';
 import { log } from '../ui/notify.js';

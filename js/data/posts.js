@@ -20,9 +20,18 @@ const RAW = [
   [310, 50, 'Penhasco Sombrio',          [[K.SOMBRA, 'p', 4.5], [K.SOMBRA, 'p', 5], [K.CORSARIO, 'p', 5.5], [K.BRUTO, 's', 2.6]]],
 ];
 
-export const POST_DATA = RAW.map(([deg, r, name, crew], i) => {
+// poucos postos, bem espalhados: 2 no anel 1, 3 no anel 2 e 2 no anel 3 (a posição final vem do relevo: terrain.js)
+const KEEP = [0, 2, 5, 6, 7, 8, 10];
+const ringOf = i => i >> 2;
+export const POST_DATA = KEEP.map((ri, i) => {
+  const [deg, r, name, crew] = RAW[ri];
   const a = deg * Math.PI / 180, lvs = crew.map(c => ENEMY_KINDS[c[0]].lv);
-  return { id: i, deg, r, name, crew, x: Math.cos(a) * r, z: Math.sin(a) * r, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: i < 4 ? -1 : i - 4 };
+  return { id: i, ring: ringOf(ri), deg, r, name, crew, x: Math.cos(a) * r, z: Math.sin(a) * r, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };
+});
+// ao morrer 2x num posto, volta para um posto do anel anterior (ou a vila, no anel 1)
+POST_DATA.forEach((p, i) => {
+  const before = POST_DATA.filter(q => q.ring === p.ring - 1);
+  p.prev = before.length ? before[i % before.length].id : -1;
 });
 
 /** Posto mais próximo de (x,z) dentro de `max` metros (ou null) */
