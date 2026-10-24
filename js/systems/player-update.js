@@ -1,4 +1,5 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
+import { refreshTorch } from './inventory.js';
 import { steer, navTarget, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { updateSwimState, swimPose } from './swim.js';
@@ -223,8 +224,12 @@ function animate(dt) {
 
   // marcha: pés rolando, quadril, braço livre, cabeça, pena do chapéu (golpe/mira têm as próprias poses)
   const busy = gn || P.sw > 0 || P.swap;
-  gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap && !P.torchM, head: !W.big, gun: gn, sword: !busy });
-  if (P.torchM && !P.swap) {   // braço da tocha: erguido, balança pouco
+  gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap && !(P.torchM && P.torchM.visible), head: !W.big, gun: gn, sword: !busy });
+  if (P.torchM) {   // com arma de 2 mãos na mão a tocha some (o braço livre ajuda a mirar)
+    const on = !W.big;
+    if (P.torchM.visible !== on) { P.torchM.visible = on; refreshTorch(); }
+  }
+  if (P.torchM && P.torchM.visible && !P.swap) {   // braço da tocha: erguido, balança pouco
     const sw = Math.sin(performance.now() / 170) * Math.min(1, P.walk || 0) * .05;
     P.g.armL.rotation.set(TORCH_ARM.x + sw, 0, TORCH_ARM.z);
     P.g.armL.fa.rotation.x = TORCH_ARM.fa;

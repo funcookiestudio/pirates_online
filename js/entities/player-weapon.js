@@ -60,7 +60,7 @@ function smallGunPose(W) {
   // cotovelos levantados e abertos: os braços "abraçam" o corpo em vez de ficarem retos
   const ey = -.55 + .4 * e;
   ik(P.g.arm,  L(-.17 + sway, y, rz), new V(-1, ey, -.15));
-  if (!P.torchM) ik(P.g.armL, L(-.07 + sway, y - .03, lz), new V(1, ey, -.15));
+  if (!(P.torchM && P.torchM.visible)) ik(P.g.armL, L(-.07 + sway, y - .03, lz), new V(1, ey, -.15));
   {
     const q = P.g.arm.quaternion.clone().multiply(P.g.arm.fa.quaternion).conjugate();
     P.hl.p.set(0, -.32 - h[0], 0);

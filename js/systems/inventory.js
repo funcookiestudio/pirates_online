@@ -58,8 +58,8 @@ export function pickSlot(it, better) {
 /** Equipa o item `i` da mochila; o item antigo do mesmo espaço volta para a mochila */
 /** O item `it` pode ir para o espaço `slot` (arrastar e soltar)? A mão 2 aceita o mesmo tipo da principal, exceto armas grandes. */
 export function canEquipTo(it, slot) {
-  // tocha: só na mão 2, e só se nenhuma arma equipada for de 2 mãos (sem item na mão 1 vale a arma inicial, de 1 mão)
-  if (isTorch(it)) return slot === 'off' && !(eq.wpn && WEAPONS[eq.wpn.w].big) && !(eq.gun && WEAPONS[eq.gun.w].big);
+  // tocha: só na mão 2 (com arma de 2 mãos na mão ela some até voltar a uma de 1 mão)
+  if (isTorch(it)) return slot === 'off';
   const s = slotOf(it);
   if (slot === s) return true;
   if (slot === 'off') return s !== 'arm' && !WEAPONS[it.w].big && !!eq[s] && !WEAPONS[eq[s].w].big;
@@ -70,7 +70,6 @@ export function equip(i, forced) {
   const it = bag[i];
   if (!it) return;
   if (P.lv < itemReq(it)) { log('🔒 ' + it.n + ' exige nível ' + itemReq(it)); return; }
-  if (isTorch(it) && !canEquipTo(it, 'off')) { log('🔥 A tocha só vai na mão 2, junto de armas de 1 mão'); return; }
   const slot = forced && canEquipTo(it, forced) ? forced : pickSlot(it, false), old = eq[slot];
   bag.splice(i, 1);
   if (old) {
@@ -83,7 +82,7 @@ export function equip(i, forced) {
     // grande na mão principal ocupa as duas mãos; mão 2 e principal de tipos diferentes não se misturam
     applyWeaponBonus(); refreshTorch();
   } else {
-    if (WEAPONS[it.w].big && eq.off && (slotOf(eq.off) === slot || isTorch(eq.off)) && bag.length < BAG_MAX) { bag.push(eq.off); eq.off = null; }
+    if (WEAPONS[it.w].big && eq.off && slotOf(eq.off) === slot && !isTorch(eq.off) && bag.length < BAG_MAX) { bag.push(eq.off); eq.off = null; }
     P.swap = null;
     // a arma nova vai para a mão se for do espaço que já estava na mão; senão vai direto para o coldre
     setWeapon(P.models[P.act] && P.act !== slot ? P.act : slot);
@@ -94,7 +93,8 @@ export function equip(i, forced) {
 /** Tira o item do espaço `slot` e devolve à mochila (se couber). Sem a principal, a mão 2 do mesmo tipo assume. */
 export function unequip(slot) {
   const it = eq[slot];
-  if (!it || bagFull()) return false;
+  if (!it) return false;
+  if (bagFull()) { log('🎒 Mochila cheia: libere espaço para desequipar ' + it.n); return false; }
   if (slot === 'arm') { P.max -= it.v; P.hp = Math.min(P.hp, P.max); eq.arm = null; }
   else {
     eq[slot] = null;
@@ -102,7 +102,6 @@ export function unequip(slot) {
     if (slot !== 'off') { P.swap = null; setWeapon(P.act); } else { applyWeaponBonus(); refreshTorch(); }
   }
   bag.push(it);
-  if (slot !== 'off' && isTorch(eq.off) && !canEquipTo(eq.off, 'off') && bag.length < BAG_MAX) { bag.push(eq.off); eq.off = null; refreshTorch(); }   // sem arma de 1 mão, a tocha volta à mochila
   emit('inventory:changed');
   return true;
 }
@@ -118,8 +117,10 @@ export function applyWeaponBonus() {
 /** Monta as armas equipadas; `prefer` = qual fica na mão ('wpn' ou 'gun') */
 /** Modelo da tocha na mão livre e alcance da luz */
 export function refreshTorch() {
-  const on = isTorch(eq.off);
-  mountTorch(on ? eq.off.w : null);
+  const has = isTorch(eq.off);
+  mountTorch(has ? eq.off.w : null);
+  const on = has && !WEAPONS[P.wid].big;
+  if (P.torchM) P.torchM.visible = on;
   torchLight.distance = on ? 44 : 22;
   torchLight.intensity = (DG.on ? 1.8 : 1.2) * (on ? 1.5 : 1);     // com tocha: luz mais forte e que alcança mais longe
 }
