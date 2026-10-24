@@ -16,6 +16,8 @@ const list = [];
 export const npcList = list;
 /** NPC (cidadão) que mantém a loja `kind` */
 export const npcByShop = kind => list.find(n => n.info && n.info.shop === kind && n.g.visible !== false);
+/** Baú da vila */
+export const npcChest = () => list.find(n => n.role === 'chest' && n.info && n.info.chest);
 const turn = (a, b, k) => { let d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); };
 
 /** Peças do chapéu em g.head.children: 0 rosto (fundido) · 1-2 olhos · 3 aba · 4 copa · 5 caveira · 6 pena */

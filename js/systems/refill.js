@@ -10,10 +10,11 @@ import { lootText, log } from '../ui/notify.js';
 
 /** Qual compra falta fazer? { kind: 'tavern' | 'trader', pot, bomb } ou null */
 function plan() {
-  const q = state.autoCfg.buyQty;
-  const needPot = P.pot <= 0 && P.gold >= PRICE.potTavern, needBomb = P.bmb <= 0 && P.gold >= PRICE.bomb;
-  if (needPot) return { kind: 'tavern', pot: Math.min(POT_MAX - P.pot, q, Math.floor(P.gold / PRICE.potTavern)), bomb: 0 };
-  if (needBomb) return { kind: 'trader', pot: 0, bomb: Math.min(BOMB_MAX - P.bmb, q, Math.floor(P.gold / PRICE.bomb)) };
+  const c = state.autoCfg, gold = P.gold - c.reserve;
+  const needPot = c.potTarget > 0 && P.pot <= c.potMin && P.pot < c.potTarget && gold >= PRICE.potTavern;
+  const needBomb = c.bombTarget > 0 && P.bmb <= c.bombMin && P.bmb < c.bombTarget && gold >= PRICE.bomb;
+  if (needPot) return { kind: 'tavern', pot: Math.min(POT_MAX, c.potTarget) - P.pot > 0 ? Math.min(Math.min(POT_MAX, c.potTarget) - P.pot, Math.floor(gold / PRICE.potTavern)) : 0, bomb: 0 };
+  if (needBomb) return { kind: 'trader', pot: 0, bomb: Math.min(Math.min(BOMB_MAX, c.bombTarget) - P.bmb, Math.floor(gold / PRICE.bomb)) };
   return null;
 }
 
@@ -21,7 +22,7 @@ function plan() {
 export function refillStep() {
   if (!state.autoCfg.refill || state.seek || state.autoRest || state.clearing) { state.trip = null; return false; }
   const pl = plan();
-  if (!pl) { state.trip = null; return false; }
+  if (!pl || (pl.pot <= 0 && pl.bomb <= 0)) { state.trip = null; return false; }
   if (danger()) return false;                              // inimigo perto: luta primeiro
   const n = npcByShop(pl.kind);
   if (!n) return false;

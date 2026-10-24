@@ -188,11 +188,23 @@ export function initPanel() {
   // ajustes do auto (botão ⚙)
   Object.keys(state.autoCfg).forEach(k => {
     const c = $('ac-' + k);
-    c.onchange = () => { state.autoCfg[k] = c.type === 'checkbox' ? c.checked : +c.value; };
+    c.onchange = () => { state.autoCfg[k] = c.type === 'checkbox' ? c.checked : +c.value; sync(); };
+    if (c.type === 'range') c.oninput = c.onchange;
   });
+  // texto de resumo das sliders/linhas dependentes
+  const sync = () => {
+    const c = state.autoCfg;
+    $('acv-potHp').textContent = c.potHp + '%';
+    $('acv-reserve').textContent = c.reserve + ' ouro';
+    $('acv-bagAt').textContent = c.bagAt + '/24';
+    const RQ = ['nada', 'Comum', 'Comum e Mágico', 'tudo (inclui Lendário)'];
+    $('acs-sell').textContent = c.sellMax ? 'Vende ' + RQ[c.sellMax] + ' que não seja melhor que o equipado' : 'Não vende sozinho';
+    $('acs-store').textContent = c.storeMin ? 'Guarda no baú itens ' + ['', 'Comuns ou melhores', 'Mágicos ou melhores', 'Lendários'][c.storeMin] : 'Não guarda sozinho';
+  };
   $('bg').onclick = () => {
     const a = $('acfg');
     Object.keys(state.autoCfg).forEach(k => { const c = $('ac-' + k); if (c.type === 'checkbox') c.checked = state.autoCfg[k]; else c.value = state.autoCfg[k]; });
+    sync();
     a.style.display = a.style.display === 'block' ? 'none' : 'block';
   };
   on('inventory:changed', () => { if ($('pnl').style.display === 'block') renderPanel(); });

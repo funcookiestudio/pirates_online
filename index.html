@@ -69,13 +69,37 @@
 
 <!-- ===== Painel do personagem ===== -->
 <div id="acfg">
-  <h3>AJUSTES DO AUTO</h3>
-  <label><input type="checkbox" id="ac-loot"> 💰 Coletar loot</label>
-  <label><input type="checkbox" id="ac-equip"> 🛡 Equipar itens melhores</label>
-  <label><input type="checkbox" id="ac-swap"> 🔫 Trocar de arma automaticamente</label>
-  <label><input type="checkbox" id="ac-refill"> 🧪 Auto refil: comprar poções e bombas quando acabarem</label>
-  <label>🛒 Quantidade a comprar <select id="ac-buyQty"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select> <small>(bombas até 3)</small></label>
-  <h3 style="margin-top:12px">PROGRESSO</h3>
+  <h3>🤖 AUTOPLAY</h3>
+  <div class="acs">
+    <h4>⚔ Combate</h4>
+    <label><input type="checkbox" id="ac-loot"> 💰 Coletar loot</label>
+    <label><input type="checkbox" id="ac-swap"> 🔫 Trocar de arma (perto/longe)</label>
+    <label><input type="checkbox" id="ac-dodge"> 🤸 Esquivar golpes pesados</label>
+    <label><input type="checkbox" id="ac-bomb"> 💣 Bomba em chefes e grupos</label>
+    <label><input type="checkbox" id="ac-spin"> 🌀 Giro quando cercado</label>
+    <label><input type="checkbox" id="ac-usePot"> 🧪 Usar poção com vida abaixo de
+      <select id="ac-potHp"><option value="25">25%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="75">75%</option></select> <b id="acv-potHp" hidden></b></label>
+  </div>
+  <div class="acs">
+    <h4>🛡 Equipamento</h4>
+    <label><input type="checkbox" id="ac-equip"> Equipar itens melhores</label>
+  </div>
+  <div class="acs">
+    <h4>🛒 Compras <small>(taverna: poções · mercadora: bombas)</small></h4>
+    <label><input type="checkbox" id="ac-refill"> Comprar sozinho quando acabar</label>
+    <div class="acr"><span>🧪 Poções: comprar quando ter ≤</span><select id="ac-potMin"><option>0</option><option>1</option><option>2</option><option>3</option></select><span>até</span><select id="ac-potTarget"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+    <div class="acr"><span>💣 Bombas: comprar quando ter ≤</span><select id="ac-bombMin"><option>0</option><option>1</option><option>2</option></select><span>até</span><select id="ac-bombTarget"><option>0</option><option>1</option><option>2</option><option>3</option></select></div>
+    <div class="acr"><span>💰 Ouro de reserva (não gastar)</span><input type="range" id="ac-reserve" min="0" max="1000" step="50"><b id="acv-reserve"></b></div>
+  </div>
+  <div class="acs">
+    <h4>📦 Mochila <small>(vende no ferreiro · guarda no baú)</small></h4>
+    <div class="acr"><span>💰 Vender itens de qualidade</span><select id="ac-sellMax"><option value="0">Não vender</option><option value="1">Comum</option><option value="2">Comum e Mágico</option><option value="3">Todos</option></select></div>
+    <small id="acs-sell"></small>
+    <div class="acr"><span>📦 Guardar no baú a partir de</span><select id="ac-storeMin"><option value="0">Não guardar</option><option value="1">Comum</option><option value="2">Mágico</option><option value="3">Lendário</option></select></div>
+    <small id="acs-store"></small>
+    <div class="acr"><span>🎒 Ir à vila com a mochila em</span><input type="range" id="ac-bagAt" min="4" max="24" step="1"><b id="acv-bagAt"></b></div>
+  </div>
+  <h4>PROGRESSO</h4>
   <div class="pact"><div id="rst">Apagar progresso salvo</div></div>
 </div>
 <div id="pnl">

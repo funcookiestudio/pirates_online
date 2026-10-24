@@ -148,6 +148,15 @@
   background: linear-gradient(#241810f2, #120a05f2); border: 3px solid #a07a3a; border-radius: 6px;
   padding: 10px 12px; box-shadow: 0 0 30px #000; color: #e8d8b8; font-size: 13px; max-width: calc(100% - 16px); box-sizing: border-box;
 }
+#acfg { overflow-y: auto; max-height: calc(100% - 80px); width: min(430px, calc(100% - 16px)); }
+#acfg .acs { border: 1px solid #6a4a22; border-radius: 6px; padding: 4px 10px 8px; margin-bottom: 8px; background: #00000030; }
+#acfg h4 { margin: 6px 0 2px; color: #e0a458; font-size: 12px; letter-spacing: 1px; }
+#acfg h4 small { color: #a89878; letter-spacing: 0; font-weight: normal; }
+#acfg .acr { display: flex; align-items: center; gap: 8px; padding: 4px 0; flex-wrap: wrap; }
+#acfg .acr span { flex: 1 1 auto; }
+#acfg small { display: block; color: #a89878; font-size: 11px; margin: -2px 0 4px; }
+#acfg select { background: #2a1a0a; color: #f0e0c0; border: 1px solid #a07a3a; border-radius: 4px; padding: 3px 4px; font-size: 13px; }
+#acfg input[type=range] { width: 120px; height: auto; }
 #acfg h3 { margin: 0 0 8px; color: #e0a458; letter-spacing: 2px; font-size: 13px; }
 #acfg label { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
 #acfg input { width: 18px; height: 18px; accent-color: #e0a458; }

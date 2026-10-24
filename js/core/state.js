@@ -13,7 +13,12 @@ export const state = {
   cp: -1,           // posto de renascimento atual (-1 = vila)
   deaths: {},       // mortes por posto
   autoHold: 0,      // segundos em que o jogador assume o controle do auto combate
-  autoCfg: { loot: true, equip: true, swap: true, refill: true, buyQty: 5 }, // ajustes do auto combate
+  autoCfg: {
+    loot: true, equip: true, swap: true,                       // geral
+    usePot: true, potHp: 40, dodge: true, bomb: true, spin: true, // combate
+    refill: true, potMin: 0, potTarget: 5, bombMin: 0, bombTarget: 3, reserve: 0, // compras
+    sellMax: 0, storeMin: 0, bagAt: 20,                         // vendas e baú
+  }, // ajustes do auto combate
   pet: PETLIST[0],  // companheiro ativo
   petHappy: 0,      // tempo restante (s) da animação feliz ao equipar um companheiro
   petAttack: true,  // companheiro ataca? (tecla R)

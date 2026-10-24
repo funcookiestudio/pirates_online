@@ -1,0 +1,55 @@
+/* Vendas e baú automáticos: com a mochila cheia (limite configurável), o auto vai ao Ferreiro vender o que não presta
+   e ao baú guardar o que vale a pena, e volta a lutar. Regras: qualidade ≥ storeMin → guarda no baú · qualidade ≤ sellMax → vende. */
+import { state } from '../core/state.js';
+import { P } from '../entities/player.js';
+import { bag, chest, CHEST_MAX } from './inventory.js';
+import { npcByShop, npcChest } from '../entities/npc.js';
+import { danger } from './stamina.js';
+import { freePoint } from './steer.js';
+import { emit } from '../core/events.js';
+import { lootText, log } from '../ui/notify.js';
+
+const SELL_MUL = 4; // preço de venda no ferreiro = valor × 4 (igual ao diálogo)
+let active = false;
+
+const toStore = () => { const c = state.autoCfg; return c.storeMin ? bag.filter(it => it.q >= c.storeMin) : []; };
+const toSell = () => { const c = state.autoCfg; return c.sellMax ? bag.filter(it => it.q <= c.sellMax && !(c.storeMin && it.q >= c.storeMin)) : []; };
+
+function goTo(n, kind) {
+  const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
+  if (d < 3.2) return true;
+  const dx = P.x - nx, dz = P.z - nz, k = 2.2 / (d || 1), f = freePoint(nx + dx * k, nz + dz * k, .6);
+  if (!state.trip) log(kind === 'sell' ? '💰 Mochila cheia: indo vender ao ferreiro' : '📦 Indo guardar itens no baú');
+  state.trip = kind; P.tgt = null; P.tx = f.x; P.tz = f.z;
+  return false;
+}
+
+/** true = este frame foi usado para ir ao ferreiro/baú */
+export function townStep() {
+  const c = state.autoCfg;
+  if ((!c.sellMax && !c.storeMin) || state.seek || state.autoRest || state.clearing) { active = false; return false; }
+  const sell = toSell(), store = toStore().slice(0, Math.max(0, CHEST_MAX - chest.length));
+  if (!sell.length && !store.length) { active = false; if (state.trip === 'sell' || state.trip === 'chest') state.trip = null; return false; }
+  if (!active && bag.length < c.bagAt) return false;
+  active = true;
+  if (danger()) return false;                       // inimigo perto: luta primeiro
+  if (sell.length) {
+    const n = npcByShop('smith');
+    if (!n) { active = false; return false; }
+    if (!goTo(n, 'sell')) return true;
+    let gold = 0;
+    sell.forEach(it => { gold += Math.max(1, Math.round(it.v * SELL_MUL)); bag.splice(bag.indexOf(it), 1); });
+    P.gold += gold; emit('inventory:changed');
+    lootText('+' + gold + ' ouro (' + sell.length + ' itens vendidos)'); log('💰 Vendeu ' + sell.length + ' item(ns) por ' + gold + ' ouro');
+    state.trip = null; P.tx = P.x; P.tz = P.z;
+    return false;
+  }
+  const n = npcChest();
+  if (!n) { active = false; return false; }
+  if (!goTo(n, 'chest')) return true;
+  store.forEach(it => { bag.splice(bag.indexOf(it), 1); chest.push(it); });
+  emit('inventory:changed');
+  lootText(store.length + ' itens no baú'); log('📦 Guardou ' + store.length + ' item(ns) no baú');
+  state.trip = null; P.tx = P.x; P.tz = P.z; active = false;
+  return false;
+}

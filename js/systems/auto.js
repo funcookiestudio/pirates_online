@@ -5,6 +5,7 @@ import { enemies, loot, respawns, bombs } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { bag, eq, equip, slotOf, lootBlocked } from './inventory.js';
 import { refillStep } from './refill.js';
+import { townStep } from './town.js';
 import { autoWeapon } from './swap.js';
 import { spin, bomb, potion } from './combat.js';
 import { dodge } from './dodge.js';
@@ -40,12 +41,14 @@ export function autoThink(dt) {
 
   // sem poções/bombas: vai até o NPC comprar (auto refil)
   if (refillStep()) return;
+  // mochila cheia: vende no ferreiro e guarda no baú
+  if (townStep()) return;
 
   // indo para a fogueira com caminho livre: o movimento é decidido em updateStamina
   if (state.seek && !danger()) return;
 
   // esquiva (rolamento para trás): golpe pesado/especial sendo preparado perto, ou vida abaixo de 20% com inimigo colado
-  if (P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) {
+  if (state.autoCfg.dodge && P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) {
     const heavy = alive.find(e => e.st === 'wind' && dist(e) < (e.slam ? 5.6 : 3.6) &&
       (e.slam || e.t.boss || e.t.d >= P.max * .2));
     const near = P.hp < P.max * .2 ? alive.find(e => e.ag && dist(e) < 3.6) : null;
@@ -58,7 +61,7 @@ export function autoThink(dt) {
   }
 
   // poção com vida baixa
-  if (P.hp < P.max * .4 && P.pot > 0 && thr.length) potion();
+  if (state.autoCfg.usePot && P.hp < P.max * state.autoCfg.potHp / 100 && P.pot > 0 && thr.length) potion();
 
   // sem poção e quase morrendo: foge
   if (P.hp < P.max * .25 && P.pot <= 0 && thr.length) {
@@ -95,11 +98,11 @@ export function autoThink(dt) {
   }
 
   // giro quando cercado
-  if (alive.filter(e => dist(e) < 4).length >= 3 && P.cds[0] <= 0) spin();
+  if (state.autoCfg.spin && alive.filter(e => dist(e) < 4).length >= 3 && P.cds[0] <= 0) spin();
 
   // bomba em boss ou grupos
   const t = P.tgt;
-  if (t && !t.dead && P.cds[1] <= 0 && dist(t) > 7 && dist(t) < 11 &&
+  if (state.autoCfg.bomb && t && !t.dead && P.cds[1] <= 0 && dist(t) > 7 && dist(t) < 11 &&
       (t.t.boss || alive.filter(e => Math.hypot(e.x - t.x, e.z - t.z) < 4).length >= 3)) {
     aim.set(t.x, 0, t.z);
     bomb();
