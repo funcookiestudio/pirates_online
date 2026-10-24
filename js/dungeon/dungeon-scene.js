@@ -11,7 +11,10 @@ import { KIND } from '../data/enemies.js';
 import { dropLoot } from '../entities/loot.js';
 import { setAuto } from '../systems/stamina.js';
 import { log } from '../ui/notify.js';
-import { setDun, dCenter } from './dgrid.js';
+import { setDun, dSee, DG, dCell } from './dgrid.js';
+import { goldAt, xpToNext } from '../data/scaling.js';
+import { addItem } from '../systems/inventory.js';
+import { levelUp } from '../entities/player.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
 const LOOK = {
@@ -24,6 +27,11 @@ const M = c => xray(M0(c));
 
 let cur = null;          // { D, g(group), chests[], portals[], boss, saved }
 export const inDungeon = () => !!cur;
+/** Marcadores do minimapa: portais e baús que o jogador já viu */
+export const dungeonMarks = () => !cur ? [] : [
+  ...cur.portals.filter(p => p.g.visible && DG.seen[dCell(p.x, p.z)]).map(p => ({ x: p.x, z: p.z, c: p.on && p.armed && p.g === cur.portals[1].g ? '#40e0a0' : '#a070ff' })),
+  ...cur.chests.filter(c => !c.open && DG.seen[dCell(c.x, c.z)]).map(c => ({ x: c.x, z: c.z, c: '#ffd040' })),
+];
 export const currentDungeon = () => cur && cur.D;
 
 const rngSeed = s => { let a = 0; for (const c of s) a = (a * 31 + c.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
@@ -157,12 +165,23 @@ export function leaveDungeon(msg) {
   if (msg) log(msg);
 }
 
+/** Primeira vez que derrota o chefe desta dungeon: ouro, XP e uma tocha mágica */
+function firstClear(D) {
+  if (state.dunDone[D.seed]) return;
+  state.dunDone[D.seed] = 1;
+  const gold = goldAt(D.lv) * 10, xp = Math.round(xpToNext(P.lv) * .35);
+  P.gold += gold; P.xp += xp; levelUp();
+  addItem({ ty: 'wpn', q: 2, wi: 7, il: D.lv });
+  log('🏆 Dungeon concluída! +' + gold + ' ouro · +' + xp + ' XP · Tocha mágica');
+}
+
 /** Por frame: abre baús, acende o portal do chefe, sai pelos portais */
 export function updateDungeon(dt, now) {
   if (!cur || P.dead) return;
   const t = now / 1000;
+  dSee(P.x, P.z, 7);
   cur.portals.forEach(p => { if (p.g.visible) { p.g.children[0].rotation.z = t; p.g.children[0].scale.setScalar(1 + Math.sin(t * 3) * .04); } });
-  if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('✨ Chefe derrotado! O portal de saída se abriu'); }
+  if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('✨ Chefe derrotado! O portal de saída se abriu'); firstClear(cur.D); }
   cur.portals.forEach(p => {
     if (!p.on) return;
     const d = Math.hypot(P.x - p.x, P.z - p.z);

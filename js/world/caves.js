@@ -67,6 +67,7 @@ function info(D) {
 function show(D) {
   const g = info(D), df = D.lv - P.lv;
   $('cvn').textContent = D.name;
+  $('cvn').textContent = D.name + (state.dunDone[D.seed] ? '  ✔' : '');
   $('cvl').innerHTML = 'Nível recomendado: <b style="color:' + colorFor(df) + '">Nv ' + D.lv + '</b> <small>(chefe Nv ' + (D.lv + 4) + ')</small>';
   const size = D.theme === 'caverna' ? 'Caverna ampla · ' + g.floor + ' m²' : g.rooms.length + ' salas · ' + g.floor + ' m²';
   $('cvi').innerHTML = [
@@ -74,7 +75,7 @@ function show(D) {
     '📐 ' + size,
     '🧭 Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
     g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : '💰 Tesouro espalhado pelo caminho',
-    '👑 Chefe no fim do caminho · baú do chefe',
+    '👑 Chefe no fim do caminho · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 🏆 recompensa na 1ª vitória'),
     '⚠ ' + perigo(df) + ' (você: Nv ' + P.lv + ')',
   ].map(t => '<div>' + t + '</div>').join('');
   $('cvp').style.display = 'block';

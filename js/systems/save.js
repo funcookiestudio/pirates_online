@@ -32,6 +32,7 @@ export function saveGame() {
       pet: state.pet.id,
       petAttack: state.petAttack,
       autoCfg: state.autoCfg,
+      dunDone: state.dunDone,
     }));
   } catch (e) { /* armazenamento indisponível: o jogo segue sem salvar */ }
 }
@@ -73,6 +74,7 @@ export function loadGame() {
       if (p.rk && typeof p.rk === 'object') PST[id].rk = { ...p.rk };
     });
 
+    state.dunDone = s.dunDone && typeof s.dunDone === 'object' ? s.dunDone : {};
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });
     if (PST[s.pet]) setPet(s.pet);

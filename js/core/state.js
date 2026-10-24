@@ -12,6 +12,7 @@ export const state = {
   clearing: false,  // limpando inimigos da fogueira antes de descansar
   cp: -1,           // posto de renascimento atual (-1 = vila)
   deaths: {},       // mortes por posto
+  dunDone: {},      // dungeons já concluídas (semente → 1)
   autoHold: 0,      // segundos em que o jogador assume o controle do auto combate
   autoCfg: {
     loot: true, equip: true, swap: true,                       // geral

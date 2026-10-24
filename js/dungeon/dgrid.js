@@ -2,7 +2,12 @@
    Célula (i,j) cobre x ∈ [ox + i·C, ox + (i+1)·C), z ∈ [oz + j·C, ...). grid[j·W + i] > 0 = piso. */
 export const DG = { on: false, ox: 0, oz: 0, C: 2, W: 0, H: 0, grid: null };
 
-export function setDun(d) { if (!d) { DG.on = false; DG.grid = null; return; } Object.assign(DG, d, { on: true }); }
+export function setDun(d) { if (!d) { DG.on = false; DG.grid = null; DG.seen = null; return; } Object.assign(DG, d, { on: true, seen: new Uint8Array(d.W * d.H) }); }
+/** Marca como explorado o que está a menos de r m de (x,z) */
+export function dSee(x, z, r) {
+  const i0 = Math.floor((x - r - DG.ox) / DG.C), i1 = Math.floor((x + r - DG.ox) / DG.C), j0 = Math.floor((z - r - DG.oz) / DG.C), j1 = Math.floor((z + r - DG.oz) / DG.C);
+  for (let j = Math.max(0, j0); j <= Math.min(DG.H - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(DG.W - 1, i1); i++) if (Math.hypot(DG.ox + (i + .5) * DG.C - x, DG.oz + (j + .5) * DG.C - z) < r + 1) DG.seen[j * DG.W + i] = 1;
+}
 export const dIn = (x, z) => DG.on && x >= DG.ox && z >= DG.oz && x < DG.ox + DG.W * DG.C && z < DG.oz + DG.H * DG.C;
 export const dCell = (x, z) => Math.floor((z - DG.oz) / DG.C) * DG.W + Math.floor((x - DG.ox) / DG.C);
 export const dCenter = k => [DG.ox + ((k % DG.W) + .5) * DG.C, DG.oz + (((k / DG.W) | 0) + .5) * DG.C];
