@@ -15,6 +15,7 @@ import { setDun, dSee, DG, dCell } from './dgrid.js';
 import { goldAt, xpToNext } from '../data/scaling.js';
 import { addItem, refreshTorch } from '../systems/inventory.js';
 import { levelUp } from '../entities/player.js';
+import { buildGimmicks, updateGimmicks, gimmickMarks } from './dungeon-gimmicks.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
 const LOOK = {
@@ -30,9 +31,11 @@ export const inDungeon = () => !!cur;
 /** Marcadores do minimapa: portais e baús que o jogador já viu */
 export const dungeonMarks = () => !cur ? [] : [
   ...cur.portals.filter(p => p.g.visible && DG.seen[dCell(p.x, p.z)]).map(p => ({ x: p.x, z: p.z, c: p.on && p.armed && p.g === cur.portals[1].g ? '#40e0a0' : '#a070ff' })),
+  ...(cur.gm ? gimmickMarks(cur.gm, DG.seen) : []),
   ...cur.chests.filter(c => !c.open && DG.seen[dCell(c.x, c.z)]).map(c => ({ x: c.x, z: c.z, c: '#ffd040' })),
 ];
 export const currentDungeon = () => cur && cur.D;
+export const dungeonGimmicks = () => cur && cur.gm;
 
 const rngSeed = s => { let a = 0; for (const c of s) a = (a * 31 + c.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
 
@@ -59,7 +62,7 @@ function chestMesh(x, z, gold) {
 
 export function enterDungeon(D, gen) {
   if (cur) return;
-  const { W, H, grid } = gen, look = LOOK[D.theme], R = rngSeed(D.seed);
+  const { W, H } = gen, grid = gen.grid.slice(), look = LOOK[D.theme], R = rngSeed(D.seed);
   const ox = OX - W * C / 2, oz = OZ - H * C / 2;
   setDun({ ox, oz, C, W, H, grid });
   const wx = i => ox + (i + .5) * C, wz = j => oz + (j + .5) * C;
@@ -104,12 +107,12 @@ export function enterDungeon(D, gen) {
   else for (let k = 0; k < W * H; k += 37) if (grid[k]) { const [x, z] = cellXZ(k); if (Math.hypot(x - sx, z - sz) > 16 && Math.hypot(x - ex, z - ez) > 12) spots.push({ x, z, w: 5, h: 5 }); }
   const kinds = MOBS[D.theme], list = [];
   spots.forEach(s => {
-    const n = (s.big ? 4 : 2) + (R() < .5 ? 1 : 0);
+    const n = (s.big ? 4 : 2) + (R() < .5 ? 1 : 0) + (D.lv >= 20 ? 1 : 0) + (D.lv >= 40 ? 1 : 0);   // mais inimigos em dungeons de nível alto
     for (let q = 0; q < n; q++) {
       const a = R() * 6.28, d = R() * Math.min(s.w, s.h) * .6 * C / 2 * 1.2;
       let x = s.x + Math.cos(a) * d, z = s.z + Math.sin(a) * d;
       if (!grid[Math.floor((z - oz) / C) * W + Math.floor((x - ox) / C)]) { x = s.x; z = s.z; }
-      const k = kinds[Math.floor(R() * kinds.length)], elite = R() < .12;
+      const k = kinds[Math.floor(R() * kinds.length)], elite = R() < .12 + Math.min(.12, D.lv * .003);
       spawn(k, x, z, null, { lv: D.lv + (R() < .35 ? 1 : 0), elite });
       enemies[enemies.length - 1].dun = 1; list.push(enemies[enemies.length - 1]);
     }
@@ -125,13 +128,16 @@ export function enterDungeon(D, gen) {
   gen.nooks.forEach(n => addChest(wx(n.x), wz(n.y), false));
   addChest(ex + 3 * (R() < .5 ? 1 : -1), ez, true);
 
+  // porta trancada + chave (guardião elite) e armadilhas
+  const gm = buildGimmicks({ gen, grid, g, W, H, ox, oz, C, WH, wx, wz, s0: gen.s0, e0: gen.e0, R, D, spots, kinds, list });
+
   // portal de entrada/saída no início
   const pIn = portal(sx, sz, 0xa070ff); g.add(pIn);
   const pOut = portal(ex, ez + 4, 0x40e0a0); pOut.visible = false; g.add(pOut);
   scene.add(g);
 
   cur = {
-    D, g, chests, boss, list,
+    D, g, chests, boss, list, gm,
     portals: [{ g: pIn, x: sx, z: sz, on: true, armed: false }, { g: pOut, x: ex, z: ez + 4, on: false, armed: true }],
     saved: { bg: scene.background, fog: scene.fog, hemi: null, torch: torch.intensity },
   };
@@ -147,7 +153,7 @@ export function enterDungeon(D, gen) {
   for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, -2]]) { if (grid[Math.floor((sz + dz - oz) / C) * W + Math.floor((sx + dx - ox) / C)]) { px = sx + dx; pz = sz + dz; break; } }
   P.x = P.tx = px; P.z = P.tz = pz; P.vx = P.vz = 0; P.tgt = null; P.sit = P.sitT = 0;
   state.dunRet = { x: D.fx, z: D.fz };
-  log('🕳 ' + D.name + ' · Nv ' + D.lv + ' — derrote o chefe e saia pelo portal');
+  log('🕳 ' + D.name + ' · Nv ' + D.lv + ' — ' + (cur.gm.door ? 'ache a chave, abra a porta e derrote o chefe' : 'derrote o chefe e saia pelo portal') + ' · cuidado com os espinhos');
 }
 
 export function leaveDungeon(msg) {
@@ -190,6 +196,7 @@ export function updateDungeon(dt, now) {
     else if (d < 1.2 && p.armed) leaveDungeon(cur.boss.dead ? '🏴 Você saiu da dungeon com o saque' : 'Você saiu da dungeon');
   });
   if (!cur) return;
+  updateGimmicks(cur.gm, dt, t, cur.D);
   cur.chests.forEach(c => {
     if (c.open) { c.open = Math.min(1, c.open + dt * 2); c.g.userData.lid.rotation.x = -c.open * 1.1; return; }
     if (Math.hypot(P.x - c.x, P.z - c.z) < 1.8) {

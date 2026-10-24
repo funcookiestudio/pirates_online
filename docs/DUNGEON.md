@@ -36,3 +36,6 @@ Fonte: `Dungeon_low_poly_v2.html` (gerador procedural 64×64, 3 temas).
 
 ## Fase 3 (feita)
 Minimapa da dungeon com névoa de exploração (só células vistas, portais, baús e inimigos já avistados); recompensa de 1ª vitória (ouro, XP e Tocha mágica) salva em `state.dunDone` (por semente) e indicada no card (✔).
+
+## Fase 4 (feita)
+`dungeon/dungeon-gimmicks.js`: **porta trancada** num gargalo do caminho até o chefe (procura uma célula onde bloquear 1–5 células corta o início do chefe; se o mapa é aberto demais, não há porta). A porta é parede na grade (A* e colisão a respeitam) até o jogador chegar com a **chave**, que cai de um **guardião elite** (+2 níveis) posto na sala alcançável mais distante do início. **Armadilhas de espinhos** (5 + nível/6, máx. 14) com ciclo de 3,4 s (aviso → sobem → recolhem); dano 6% da vida + 2×nível, a rolada esquiva. Dungeons de nível ≥ 20 / ≥ 40 ganham +1 inimigo por sala e mais elites. Minimapa marca a porta (vermelho) e a chave (amarelo). A grade da dungeon é copiada a cada entrada (a porta não altera o gerador em cache).
