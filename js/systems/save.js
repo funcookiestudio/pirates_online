@@ -8,6 +8,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { PST } from '../pets/stats.js';
 import { setPet } from '../pets/manager.js';
 import { refreshPetButton } from '../ui/hotbar.js';
+import { MOUNT } from './mount.js';
 
 const KEY = 'pirata-arpg:save:v1';
 const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'pot', 'bmb', 'x', 'z'];
@@ -33,6 +34,7 @@ export function saveGame() {
       petAttack: state.petAttack,
       autoCfg: state.autoCfg,
       dunDone: state.dunDone,
+      horse: MOUNT.owned,
     }));
   } catch (e) { /* armazenamento indisponível: o jogo segue sem salvar */ }
 }
@@ -74,6 +76,7 @@ export function loadGame() {
       if (p.rk && typeof p.rk === 'object') PST[id].rk = { ...p.rk };
     });
 
+    MOUNT.owned = !!s.horse;
     state.dunDone = s.dunDone && typeof s.dunDone === 'object' ? s.dunDone : {};
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });

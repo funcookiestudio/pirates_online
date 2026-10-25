@@ -11,6 +11,8 @@ import { groundY, walkable, onRoad, SEA, isl, VX, VZ, flatten } from '../world/t
 import { N, V } from '../world/islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { pois } from '../world/pois.js';
+import { makeNpc } from './npc.js';
+import { HORSEMAN } from '../data/npcs.js';
 import { ZONES } from '../world/reserve.js';
 import { H } from '../world/terrain.js';
 const E = N / 2;
@@ -229,6 +231,8 @@ function buildOne(spot) {
     bx(2.6, 1.8, 2, 0x8a6238, c2 - 3, .9, PZ0 + 1.5);                                       // cocheira
     bx(2.9, .12, 2.3, 0x4a3426, c2 - 3, 1.85, PZ0 + 1.5);
     solid(c2 - 3, PZ0 + 1.5, 1.4);
+    const fm = toWorld(spot, f, 3.5, 5);   // criador de cavalos (vende a montaria), de frente para a estrada
+    makeNpc('citizen', fm.x, fm.z, Math.atan2(f.fx, f.fz), [0xd8a880, 0x5a7a3a, 0x5a4020, 0xc8a050], 4, HORSEMAN);
     pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spots(c1, 4, 6.5) });
     pens.push({ kinds: ['horse', 'horse'], at: spots(c2, 2, 6) });
   }

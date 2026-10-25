@@ -16,6 +16,7 @@ import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
+import { toggleMount } from './mount.js';
 
 const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -122,6 +123,7 @@ export function initInput() {
     if (e.code === 'Space') { e.preventDefault(); dodge(); }
     if (e.code === 'KeyR') togglePet();
     if (e.code === 'KeyG') toggleSit();
+    if (e.code === 'KeyH') toggleMount();
     if (e.code === 'KeyX') switchWeapon();
     if (e.code === 'KeyI' || e.code === 'KeyC') openTab('char');
     if (e.code === 'KeyP') openTab('pets');
@@ -139,6 +141,7 @@ export function initInput() {
   $('s4').onclick = potion;
   $('sr').onclick = dodge;
   $('s5').onclick = togglePet;
+  $('sm').onclick = toggleMount;
   $('sa').onclick = togAuto;
   $('gwl').onclick = () => openTab('char');
   $('gwr').onclick = () => openTab('pets');

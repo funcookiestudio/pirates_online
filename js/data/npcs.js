@@ -32,6 +32,9 @@ export const BOARD = { name: 'Mural de Missões', title: 'Cartazes de procurados
 export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic: '⛵', ferry: true,
   lines: ['Ahoy! Meu barco leva marujo a qualquer ilha do arquipélago... por uma moedinha.', 'O mar está calmo. Diga o destino e eu iço a vela!', 'Cada ilha tem seus perigos e seus tesouros. Boa viagem, marujo!'] };
 
+export const HORSEMAN = { name: 'Seu Tobias', title: 'Criador de cavalos', ic: '🐴', stable: true,
+  lines: ['Cavalo bom não se acha em qualquer curral, marujo. O meu corre mais que vento de tempestade!', 'Com ele você cruza a ilha na metade do tempo — mas cavalo não nada, hein.', 'Trate bem do bicho e ele nunca te deixa a pé. Assobie (tecla H) e ele vem.'] };
+
 export const ISLANDS = [
   { seed: 'pirata', name: 'Ilha Natal', cost: 0, tier: 0 },
   { seed: 'corvo', name: 'Ilha do Corvo', cost: 25, tier: 1 },

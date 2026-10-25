@@ -9,6 +9,7 @@ import { tierBonus } from '../data/scaling.js';
 import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
 import { saveGame } from '../systems/save.js';
+import { MOUNT, giveHorse } from '../systems/mount.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
 
@@ -113,12 +114,21 @@ function renderShop() {
   }
 }
 
+const HORSE_COST = 120;
 function say(txt) { $('dtx').textContent = txt; }
 
 function buttons() {
   const b = $('dbt');
   b.innerHTML = '';
   const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); };
+  if (cur.stable) {
+    if (!MOUNT.owned) add('🐴 Comprar o cavalo · ' + HORSE_COST + ' ouro', () => {
+      if (P.gold < HORSE_COST) { say('Faltam moedas, marujo! O cavalo custa ' + HORSE_COST + ' de ouro.'); return; }
+      P.gold -= HORSE_COST; giveHorse(); saveGame();
+      say('Negócio fechado! Ele é seu. Assobie com a tecla H e ele vem correndo.'); buttons();
+    });
+    else add('🐴 Seu cavalo está esperando (H para chamar)', () => say('Cavalo e dono, uma coisa só! Use a tecla H para chamar, montar e desmontar.'));
+  }
   if (cur.chest) add('📦 Abrir baú', openShop);
   if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : '🛒 Ver mercadoria', openShop);
   if (cur.shop === 'tavern') add('🍺 Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('🍺 Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });

@@ -17,17 +17,20 @@ import { updateStamina } from './stamina.js';
 import { applySwap, placeWeapons } from '../entities/holster.js';
 import { updateSwap } from './swap.js';
 import { rollMove, updateDodgeTimers, animateRoll } from './dodge.js';
+import { MOUNT, updateMount, mountPose } from './mount.js';
 
 const AXIS_X = new THREE.Vector3(1, 0, 0);
 
 export function updatePlayer(dt) {
   updateSwimState(dt);
+  updateMount(dt);
   if (!P.dead) {
     updateStamina(dt);
     updateSwap(dt);
     updateAim(dt);
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
+    else if (MOUNT.on) { const sp0 = P.sp; P.sp *= MOUNT.mult; moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
     else moveAndAct(dt);
   }
 
@@ -152,9 +155,10 @@ let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
   props.forEach(p => {
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
-    if (dd < p.r + .5) {
-      P.x = p.position.x + ex / dd * (p.r + .5);
-      P.z = p.position.z + ez / dd * (p.r + .5);
+    const rr = p.r + (MOUNT.on ? .9 : .5);   // montado ocupa mais espaço
+    if (dd < rr) {
+      P.x = p.position.x + ex / dd * rr;
+      P.z = p.position.z + ez / dd * rr;
     }
   });
   // mar e paredões: desliza pela margem ou volta ao último ponto firme
@@ -234,6 +238,7 @@ function animate(dt) {
     P.g.armL.rotation.set(TORCH_ARM.x + sw, 0, TORCH_ARM.z);
     P.g.armL.fa.rotation.x = TORCH_ARM.fa;
   }
+  mountPose(dt);   // montado: sobe na sela e abre as pernas
 }
 
 /** Vasculhar o baú: encara o baú, inclina o tronco e revira com os dois braços, alternando */

@@ -4,6 +4,7 @@ import { P } from '../entities/player.js';
 import { puff } from './effects.js';
 import { gaitReset } from '../entities/gait.js';
 import { startDive } from './swim.js';
+import { MOUNT } from './mount.js';
 
 export const ROLL_TIME = .5; // duração da rolada (s)
 export const ROLL_CD = 3.5;  // recarga (s)
@@ -11,7 +12,7 @@ const ROLL_SPEED = 14;       // velocidade inicial (m/s); desacelera até ~30% n
 
 /** Inicia a rolada, se possível */
 export function dodge() {
-  if (P.swap) return;
+  if (P.swap || MOUNT.on) return;   // montado não rola
   if (P.swimming) { startDive(); return; }   // na água a esquiva é um mergulho
   if (P.dead || P.roll > 0 || P.rcd > 0 || P.sit > 0 || P.sitT) return;
   const a = P.g.rotation.y;
