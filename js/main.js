@@ -12,7 +12,7 @@ import { updatePerf } from './systems/perf.js';
 import { updateSettings, initSettings } from './systems/settings.js';
 import { DOORS } from './world/doors.js';
 import { updateLod } from './systems/lod.js';
-import { updateVision, canSee, VIS } from './systems/vision.js';
+import { updateVision, updateVisionOverlay, canSee, VIS } from './systems/vision.js';
 import { pathTo } from './systems/steer.js';
 import { mergeStatics } from './world/merge.js';
 import { initUpdater } from './ui/updater.js';
@@ -101,7 +101,8 @@ function tick(now) {
   updateOverlays(now);
 
   updateXray();
-  updateVision(realDt, inDungeon());   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
+  updateVision(realDt, inDungeon());
+  updateVisionOverlay(inDungeon());   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
   ren.render(scene, cam);
 }
 
