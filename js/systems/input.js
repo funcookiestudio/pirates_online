@@ -23,7 +23,7 @@ import { PICKDBG, flashBlocked } from './settings.js';
 import { wakeUp } from './bed.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
-import { toggleMount, MOUNT } from './mount.js';
+import { toggleMount, dismissHorse, MOUNT } from './mount.js';
 
 const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -163,7 +163,7 @@ export function initInput() {
     if (e.code === 'Space') { e.preventDefault(); dodge(); }
     if (e.code === 'KeyR') togglePet();
     if (e.code === 'KeyG') toggleSit();
-    if (e.code === 'KeyH') toggleMount();
+    if (e.code === 'KeyH') { if (e.shiftKey) dismissHorse(); else toggleMount(); }
     if (e.code === 'KeyX') switchWeapon();
     if (e.code === 'KeyI' || e.code === 'KeyC') openTab('char');
     if (e.code === 'KeyP') openTab('pets');
@@ -184,7 +184,12 @@ export function initInput() {
   $('s4').onclick = potion;
   $('sr').onclick = dodge;
   $('s5').onclick = togglePet;
-  $('sm').onclick = toggleMount;
+  { /* toque curto: monta/desmonta/chama · segurar ~0,6 s: dispensa o cavalo */
+    const b = $('sm'); let tm = 0, held = false;
+    b.onpointerdown = () => { held = false; clearTimeout(tm); tm = setTimeout(() => { held = true; dismissHorse(); }, 600); };
+    ['onpointerup', 'onpointerleave', 'onpointercancel'].forEach(k => { b[k] = () => clearTimeout(tm); });
+    b.onclick = () => { if (held) { held = false; return; } toggleMount(); };
+  }
   $('sa').onclick = togAuto;
   $('gwl').onclick = () => openTab('char');
   $('gwr').onclick = () => openTab('pets');

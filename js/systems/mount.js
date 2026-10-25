@@ -92,7 +92,7 @@ export function refreshMountButton() {
   if (!b.querySelector('u')) b.insertAdjacentHTML('beforeend', '<u style="position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;border:1px solid #1c1208;text-decoration:none"></u>');
   const act = MOUNT.on || !!(MOUNT.root && MOUNT.root.visible);
   b.querySelector('u').style.background = MOUNT.on ? '#7ad84a' : act ? '#e0c050' : '#666';
-  b.title = 'Montaria (H): ' + (MOUNT.on ? 'montado — desmontar' : act ? 'cavalo ativo — ir montar' : 'chamar o cavalo');
+  b.title = 'Montaria (H; segurar o botão ou Shift+H dispensa o cavalo): ' + (MOUNT.on ? 'montado — desmontar' : act ? 'cavalo ativo — ir montar' : 'chamar o cavalo');
   b.style.opacity = act ? '1' : '.6';
 }
 
@@ -148,6 +148,17 @@ function mountUp() {
   P.tgt = null; P.tx = P.x; P.tz = P.z;
   puff(P.x, 1, P.z, 0xd8c8a0, 3, 3);
   refreshMountButton();
+}
+
+/** Dispensa o cavalo: desmonta (se montado) e ele volta ao estábulo; para chamá-lo de novo, é só usar o botão/H */
+export function dismissHorse() {
+  if (!MOUNT.owned || !MOUNT.root) return;
+  if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1) return; dismount(); }
+  MOUNT.want = false; MOUNT.pending = false; MOUNT.st = 'park';
+  if (!MOUNT.root.visible) return;
+  puff(MOUNT.x, 1, MOUNT.z, 0xd8c8a0, 3, 3);
+  MOUNT.root.visible = false; refreshMountButton();
+  log('🐴 Você dispensou o cavalo: ele voltou ao estábulo');
 }
 
 /** Tecla H: desmonta · monta (se o cavalo está perto) · ou chama o cavalo */
