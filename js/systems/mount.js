@@ -8,6 +8,7 @@ import { groundY, slideTo, walkable } from '../world/terrain.js';
 import { freePoint } from './steer.js';
 import { dIn } from '../dungeon/dgrid.js';
 import { VILLAGE_R } from '../core/village-const.js';
+import { ik } from '../entities/player-weapon.js';
 import { puff } from './effects.js';
 import { standUp } from './rest.js';
 import { log } from '../ui/notify.js';
@@ -91,7 +92,7 @@ const canRide = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && Math.hypot(P.x
 
 export function dismount(msg) {
   if (!MOUNT.on) return;
-  MOUNT.on = false; MOUNT.t = 0;
+  MOUNT.on = false; P.mounted = false; MOUNT.t = 0;
   const a = P.g.rotation.y + 1.2;
   MOUNT.x = P.x + Math.sin(a) * 1.7; MOUNT.z = P.z + Math.cos(a) * 1.7;
   if (!walkable(MOUNT.x, MOUNT.z)) { MOUNT.x = P.x; MOUNT.z = P.z; }
@@ -104,7 +105,7 @@ export function dismount(msg) {
 
 function mountUp() {
   if (!canRide()) { log('🐴 Não dá para montar aqui'); return; }
-  MOUNT.on = true; MOUNT.t = 0; MOUNT.st = 'park'; MOUNT.want = false;
+  MOUNT.on = true; P.mounted = true; MOUNT.t = 0; MOUNT.st = 'park'; MOUNT.want = false;
   P.tgt = null; P.tx = P.x; P.tz = P.z;
   puff(P.x, 1, P.z, 0xd8c8a0, 3, 3);
   refreshMountButton();
@@ -207,10 +208,21 @@ function animateHorseLegs(dt, v) {
   g.earR.rotation.z = -Math.sin(MOUNT.idle * 3.4) * .05 * (1 - amp) + run * .2;
 }
 
-/** Pose do jogador montado (chamada no fim de animate(), depois da marcha): sobe na sela e abre as pernas */
+const V3 = THREE.Vector3, OFFY = new V3(0, .72, 0);
+const reins = [0, 1].map(() => { const r = new THREE.Mesh(new THREE.BoxGeometry(.018, .018, 1), new THREE.MeshLambertMaterial({ color: 0x4a2a14 })); r.visible = false; scene.add(r); return r; });
+const _a = new V3(), _b = new V3();
+function placeRein(r, A, B) {
+  r.position.copy(A).add(B).multiplyScalar(.5);
+  r.scale.z = Math.max(.05, A.distanceTo(B));
+  r.lookAt(B);
+}
+
+/** Pose do jogador montado (chamada no fim de animate(), depois da marcha): sobe na sela, abre as pernas,
+    guarda a arma e segura as rédeas: duas mãos — ou só a direita, se a tocha ocupa a esquerda */
 export function mountPose(dt) {
-  if (!MOUNT.on) return;
+  if (!MOUNT.on) { P.mountK = 0; reins[0].visible = reins[1].visible = false; return; }
   const g = P.g, k = ss(MOUNT.t), run = Math.min(1, MOUNT.sp / 6);
+  P.mountK = k;
   const bob = Math.abs(Math.sin(MOUNT.ph)) * .05 * Math.min(1, MOUNT.sp / 2.2);
   g.position.y += LIFT * k + bob;
   const tl = -1.1 - .15 * run, kl = .75;
@@ -222,4 +234,29 @@ export function mountPose(dt) {
   });
   g.up.position.y += Math.sin(MOUNT.ph * 2) * .02 * run;
   g.rotation.x += .06 * run * k;                      // inclina para a frente no galope
+  // braços nas rédeas (cinemática inversa; as mãos acompanham o balanço do corpo)
+  const torch = !!(P.torchM && P.torchM.visible);
+  g.up.rotation.set(0, 0, 0);
+  const sway = Math.sin(MOUNT.ph * 2) * .02 * run, hy = 1.02 + LIFT * 0 + sway;
+  const hold = (arm, side) => {
+    const q0 = arm.quaternion.clone(), f0 = arm.fa.rotation.x;
+    ik(arm, new V3(side * .15, hy + .1 - .72 + LIFT * 0, .36), new V3(side * 1, -.7, -.35));
+    arm.quaternion.copy(q0.slerp(arm.quaternion, k));
+    arm.fa.rotation.x = f0 + (arm.fa.rotation.x - f0) * k;
+  };
+  hold(g.arm, -1);
+  if (!torch) hold(g.armL, 1);
+  g.updateMatrixWorld(true);
+  // rédeas: da(s) mão(s) até o bridão do cavalo
+  const hd = MOUNT.g.head;
+  hd.updateWorldMatrix(true, false);
+  const hands = torch ? [g.arm] : [g.arm, g.armL];
+  [0, 1].forEach(i => {
+    const sd = i ? 1 : -1, arm = torch ? hands[0] : hands[i];
+    if (!arm || k < .6) { reins[i].visible = false; return; }
+    arm.fa.localToWorld(_a.set(0, -.32, 0));
+    hd.localToWorld(_b.set(sd * .1, -.08, .42));
+    placeRein(reins[i], _a, _b);
+    reins[i].visible = true;
+  });
 }

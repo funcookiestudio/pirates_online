@@ -140,7 +140,7 @@ function moveAndAct(dt) {
   }
 
   // arma de fogo só dispara depois de mirar
-  if (d <= rng && P.tgt && P.cd <= 0 && !P.swap && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
+  if (d <= rng && P.tgt && P.cd <= 0 && !P.swap && !MOUNT.on && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
 
   clampToWorld();
 
