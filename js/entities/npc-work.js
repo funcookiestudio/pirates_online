@@ -105,7 +105,7 @@ export function initSmith(n, at, th, pts) {
   const [bx0, bz0] = at(...pts.bar), W2 = a => at(...a);
   n.job = {
     at, th, hm, tongs, mug, anvilSword, handSword, fire, glowL, heat: 1, hit: -1, flash: 0, dip: 0,
-    hx: ax, hz: az, bx: bx0, bz: bz0, fx, fz, home: W2(pts.home), forgeSpot: W2(pts.forgeSpot), barSpot: W2(pts.barSpot), wps: pts.wps.map(W2), door: W2(pts.door), ay: pts.ay, topY: pts.anvilY, barY: pts.fireY - .02,
+    hx: ax, hz: az, bx: bx0, bz: bz0, fx, fz, home: W2(pts.home), bed: W2(pts.bed), bedY: pts.bedY, bedRy: th - Math.PI / 2, forgeSpot: W2(pts.forgeSpot), barSpot: W2(pts.barSpot), wps: pts.wps.map(W2), door: W2(pts.door), ay: pts.ay, topY: pts.anvilY, barY: pts.fireY - .02,
     segs: [], i: 0, s: 0, away: false, nd: 0, st: 0,
   };
   planSession(n.job);

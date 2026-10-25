@@ -146,7 +146,8 @@ export function updateCutaway() {
     const inside = Math.abs(px) < h.hx && Math.abs(pz) < h.hz;
     if (inside) INSIDE = true;
     h.roof.visible = !inside;
-    if (h.inner) h.inner.visible = inside || DOORS.some(d => d.open && !d.room && d.h.x === h.x && d.h.z === h.z);
+    h.shown = inside || DOORS.some(d => d.open && !d.room && d.h.x === h.x && d.h.z === h.z);   // interior à vista (jogador dentro ou porta externa aberta)
+    if (h.inner) h.inner.visible = h.shown;
     if (h.up) h.up.visible = !inside || !!P.up;
     const [cx, cz] = toL(h, cam.position.x, cam.position.z);
     const inY = inside && !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;   // paredes só somem com o personagem dentro

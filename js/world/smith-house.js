@@ -191,6 +191,7 @@ for(let i=0;i<5;i++){const a=i*1.3,r=C(.4,.5,.4,5,-6+Math.cos(a)*.6,.2,5+Math.si
     anvil, bar: tub, fire: furnace, fireY: .92, anvilY: .8,
     home: Pm(8.12, 1.5), forgeSpot: Pm(7.1, -.7), barSpot: Pm(7.9, .2),
     door: Pm(-1.4, 3.4), wps: [Pm(5.8, 4.4), Pm(9.4, 3.2)],
+    bed: [1.85 * K, -2.25 * K], bedY: .72 * K + .18,                  // pé da cama (onde o ferreiro deita à noite)
   };
   [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
   DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });

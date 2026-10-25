@@ -1,6 +1,6 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
-import { openDoorById, doorClosed, tickRent } from '../world/doors.js';
+import { openDoorById, doorClosed, tickRent, setDoorLock } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
@@ -103,6 +103,15 @@ function arrive(n) {
 
 const v3 = new THREE.Vector3();
 
+/** Portas das casas de quem mora lá (ferreiro, cartógrafo, mercadora...) ficam trancadas à noite, vistas de fora; a taberna e o castelo ficam de fora da regra */
+const inFoot = (h, x, z) => { const dx = x - h.x, dz = z - h.z, lx = (dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, lz = (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K; return Math.abs(lx) <= 4.4 && Math.abs(lz) <= 3.4; };
+setDoorLock(d => {
+  if (d.room || !isNight(hourNow()) || (d.id && String(d.id).startsWith('tavern')) || d.h.K === 1) return null;   // K=1: castelo
+  if (inFoot(d.h, P.x, P.z)) return null;   // quem está dentro sempre pode sair
+  const n = list.find(q => q.info && q.role !== 'chest' && !q.tn && (q.job ? inFoot(d.h, q.g.position.x, q.g.position.z) || inFoot(d.h, q.job.bed[0], q.job.bed[1]) : inFoot(d.h, q.hx, q.hz)));
+  return n ? n.info.name : null;
+});
+
 /** Baú de armazenamento: clicável como um NPC (usa o mesmo diálogo) */
 export function makeChest(x, z, ry, info) {
   const g = new THREE.Group();
@@ -193,7 +202,7 @@ export function updateNpcs(dt, now) {
     const g = n.g, t = t0 + n.ph;
     if (n.lab) {
       v3.set(g.position.x, n.ly || 2.7, g.position.z).project(cam);
-      const vis = n.g.visible && !P.up && v3.z < 1 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < 20;
+      const vis = (n.g.visible || (n.inHid && n.role !== 'chest')) && !P.up && v3.z < 1 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < 20;
       n.lab.style.display = vis ? 'block' : 'none';
       if (vis) { n.lab.style.left = (v3.x * .5 + .5) * innerWidth + 'px'; n.lab.style.top = (-v3.y * .5 + .5) * innerHeight + 'px'; }
     }
@@ -205,10 +214,27 @@ export function updateNpcs(dt, now) {
     }
     // longe do jogador: não desenha nem processa (o ferreiro controla a própria visibilidade)
     if (Math.hypot(P.x - g.position.x, P.z - g.position.z) > 66) { if (!n.job) g.visible = false; return; }
-    if (!n.job && !(n.rt && n.rt.hide)) g.visible = true;
+    if (!n.job && !(n.rt && n.rt.hide) && !n.inHid) g.visible = true;
     if (n.role === 'chest') return;
     if (n.job) {
+      const J = n.job, sleepy = isNight(hourNow()) && talking !== n && (!J.away || n.smHid);   // das 21h às 6h o ferreiro dorme na cama (se estiver visível na rua, termina a entrega antes)
+      if (sleepy || n.sl > 0) {
+        [J.hm, J.tongs, J.mug, J.anvilSword, J.handSword].forEach(o => { if (o) o.visible = false; });
+        if (J.glowL) J.glowL.intensity = 0;
+        const zz = n.zz || (n.zz = makeZzz());
+        if (sleepy) {
+          n.sl = Math.min(1, (n.sl || 0) + dt / 1.6); n.vx = n.vz = 0; g.visible = true;
+          g.position.set(J.bed[0], J.bedY, J.bed[1]); g.rotation.y = J.bedRy;
+          lieDown(g, n.sl, t);
+          zz.update(J.bed[0] - Math.sin(J.bedRy) * 1.7, J.bedY + .55, J.bed[1] - Math.cos(J.bedRy) * 1.7, t, n.sl > .95);
+        } else {   // amanheceu: levanta e volta para o ponto de trabalho
+          n.sl = Math.max(0, n.sl - dt / 1.2); lieDown(g, n.sl, t); zz.update(0, 0, 0, t, false);
+          if (n.sl === 0) { standFromBed(g); g.position.set(J.home[0], groundY(J.home[0], J.home[1]), J.home[1]); }
+        }
+        return;
+      }
       updateSmith(n, dt, now, [P.x, P.z], talking === n);
+      n.smHid = !g.visible;   // updateSmith esconde o ferreiro quando ele entra na casa/loja
       return;
     }
     if (n.role === 'citizen') {

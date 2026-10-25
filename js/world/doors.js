@@ -79,7 +79,11 @@ function useDoor(d, final) {
   anim = { t: 0, d, done: false, final };
   P.tgt = null; P.tx = P.x; P.tz = P.z;
 }
+/** Regra de tranca de portas externas (definida por npc.js): devolve o nome de quem dorme lá dentro, ou null */
+let lockRule = null;
+export const setDoorLock = fn => { lockRule = fn; };
 function toggleDoor(d) {
+  if (!d.open && !d.room && lockRule) { const who = lockRule(d); if (who) { log('🔒 ' + who + ' está dormindo — a porta está trancada até de manhã'); return; } }
   if (d.room && ROOM_OWNERS[d.id]) { log('🔒 Quarto de ' + ROOM_OWNERS[d.id] + ': trancado'); return; }
   if (d.room && !roomRented() && sideOf(d) !== (d.f < 0 ? -1 : 1)) { log('🔒 Trancada. Alugue um quarto com a Madame Rum'); return; }
   d.open = !d.open; d.t = 0; if (d.pair) { d.pair.open = d.open; d.pair.t = 0; }

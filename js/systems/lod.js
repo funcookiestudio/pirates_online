@@ -4,6 +4,7 @@ import { P } from '../entities/player.js';
 import { npcList } from '../entities/npc.js';
 import { enemies } from '../core/registry.js';
 import { FARM } from '../entities/farm.js';
+import { houseAt } from '../world/floors.js';
 import { vcMat, colorsOf } from '../world/merge.js';
 
 const FAR = 15.5 * 15.5, NEAR = 14 * 14, EVERY = .2;
@@ -58,6 +59,15 @@ function one(g, dead) {
   const dx = g.position.x - P.x, dz = g.position.z - P.z, d = dx * dx + dz * dz;
   if (!st.far && d > FAR && !dead) { setFar(g, st); if (st.far && st.proxy) st.proxy.visible = true; }
   else if (st.far && (d < NEAR || dead)) setNear(g, st);
+}
+
+/** NPCs e baús dentro de uma casa fechada (jogador fora) ficam ocultos; só o nome continua aparecendo (ver updateNpcs) */
+export function hideInside() {
+  for (let i = 0; i < npcList.length; i++) {
+    const n = npcList[i], g = n.g, h = houseAt(g.position.x, g.position.z, 0);
+    n.inHid = !!h && !h.sc && h.shown === false;   // o castelo fica de fora da regra
+    if (n.inHid) g.visible = false;
+  }
 }
 
 export function updateLod(dt) {
