@@ -160,17 +160,35 @@ export function stairMove(dt) {
 let INSIDE = false;
 /** O personagem está dentro de uma casa? (o raio-x das árvores/pedras fica desligado lá dentro) */
 export const insideHouse = () => INSIDE;
-const _bb = new THREE.Box3(), _bv = new THREE.Vector3(), LOW = .14;
-/** Parede "abaixada" (como no The Sims): em vez de sumir, fica só uma bordinha baixa rente ao piso dela */
+const _m = new THREE.Matrix4(), _v = new THREE.Vector3(), STUB = .42;
+/** Cria (uma vez) a "bordinha" da parede: faixa baixa de reboco com friso de madeira em cima, do tamanho da parede (no quadro do pai) */
+function buildStub(w) {
+  const g = w.g, par = g.parent, mn = new THREE.Vector3(1e9, 1e9, 1e9), mx = new THREE.Vector3(-1e9, -1e9, -1e9);
+  par.updateWorldMatrix(true, true);
+  const inv = new THREE.Matrix4().copy(par.matrixWorld).invert();
+  g.traverse(o => {
+    if (!o.isMesh || !o.geometry.attributes.position) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const bx = o.geometry.boundingBox; _m.multiplyMatrices(inv, o.matrixWorld);
+    for (let i = 0; i < 8; i++) { _v.set(i & 1 ? bx.max.x : bx.min.x, i & 2 ? bx.max.y : bx.min.y, i & 4 ? bx.max.z : bx.min.z).applyMatrix4(_m); mn.min(_v); mx.max(_v); }
+  });
+  if (mx.x < mn.x) { w.stub = null; return; }
+  const st = new THREE.Group(), H = STUB, TH = .3;
+  // plano da parede: pela normal e distância D (paredes externas) ou pelo plano da divisória; o comprimento vem da caixa das peças
+  let alongX, plane;
+  if (w.plane) { alongX = w.plane === 'v'; plane = w.c; }
+  else if (w.nx) { alongX = false; plane = w.nx * w.D; } else { alongX = true; plane = w.nz * w.D; }
+  const L = alongX ? Math.max(.2, mx.x - mn.x) : Math.max(.2, mx.z - mn.z), mid = alongX ? (mx.x + mn.x) / 2 : (mx.z + mn.z) / 2;
+  const box = (bl, bh, bt, y, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? bl : bt, bh, alongX ? bt : bl), new THREE.MeshLambertMaterial({ color: c })); m.position.set(alongX ? mid : plane, mn.y + y, alongX ? plane : mid); st.add(m); };
+  box(L, H * .8, TH, H * .4, 0xcdbf9e); box(L + .02, H * .2, TH + .08, H * .9, 0x4a3320);
+  st.visible = false; par.add(st); w.stub = st;
+}
+/** Parede "abaixada" (como no The Sims): em vez de sumir, vira só uma bordinha baixa rente ao piso dela */
 function lower(w, h, on) {
   const g = w.g; if (!g.parent) return;
-  if (w.yb === undefined) {
-    g.scale.y = 1; g.position.y = 0; g.parent.updateWorldMatrix(true, true);
-    _bb.setFromObject(g); _bv.set(0, _bb.isEmpty() ? 0 : _bb.min.y, 0); g.parent.worldToLocal(_bv); w.yb = _bv.y;
-  }
-  const k = on ? LOW : 1;
-  if (g.scale.y !== k) { g.scale.y = k; g.position.y = w.yb * (1 - k); }
-  g.visible = true;
+  if (w.stub === undefined) buildStub(w);
+  g.visible = !on || !w.stub;
+  if (w.stub) w.stub.visible = on;
 }
 export function updateCutaway() {
   INSIDE = false;
