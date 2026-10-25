@@ -5,6 +5,7 @@ import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
 import { houseAt, HOUSES, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
+import { applyFull } from '../ui/fullscreen.js';
 import { doorTiles } from '../world/doors.js';
 import { saveGame } from './save.js';
 import { groundY } from '../world/terrain.js';
@@ -134,6 +135,7 @@ export function initSettings() {
   tl.checked = CFG.tiles; tl.onchange = () => { CFG.tiles = tl.checked; save(); };
   hh.onchange = () => { CFG.hlhide = hh.checked; save(); };
   $('gx-switch').onclick = () => { saveGame(); location.reload(); };   // a tela de seleção abre a cada início
+  const fu = $('gx-full'); fu.checked = CFG.full !== undefined ? !!CFG.full : matchMedia('(pointer:coarse)').matches; fu.onchange = () => { CFG.full = fu.checked; save(); applyFull(fu.checked); };
   const nm = $('gx-names'); nm.checked = CFG.names !== false; nm.onchange = () => { CFG.names = nm.checked; save(); };
   const dg2 = $('gx-diag'); dg2.onchange = () => { CFG.diag = dg2.value; };   /* não é salvo: volta ao normal ao recarregar */
   const vs = $('gx-vis'); vs.checked = CFG.vis !== false; vs.onchange = () => { CFG.vis = vs.checked; save(); };
