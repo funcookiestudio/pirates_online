@@ -10,10 +10,12 @@ import { resetPet, armedButton } from '../systems/reset.js';
 
 /** Aba da árvore de habilidades em exibição (null = a do companheiro ativo) */
 let treeTab = null;
+const own = () => PETLIST.filter(x => state.owned[x.id]);   // só aparecem os companheiros que o jogador tem
+const curId = () => { const o = own(); return treeTab && o.some(x => x.id === treeTab) ? treeTab : o.some(x => x.id === state.pet.id) ? state.pet.id : o.length ? o[0].id : null; };
 let petTab = 'main'; // 'main' (ficha) · 'skills' · 'tal'
 
 /** A árvore exibida é a do companheiro ativo? (para atualizar a barra de XP) */
-export const treeShowsActivePet = () => (treeTab || state.pet.id) === state.pet.id;
+export const treeShowsActivePet = () => curId() === state.pet.id;
 
 /** Texto dos efeitos de uma habilidade, ex.: "+10% dano por nível" */
 function effectText(n) {
@@ -64,7 +66,7 @@ function renderSheet(id, s, pp) {
 
 function renderTree() {
   const b = $('tree');
-  const id = treeTab || state.pet.id, s = PST[id], pp = PETLIST.find(x => x.id === id), L = PSK[id];
+  const id = curId(), s = PST[id], pp = PETLIST.find(x => x.id === id), L = PSK[id];
 
   let h = '<div class="bhead" style="text-align:left;margin-top:14px;letter-spacing:2px;font-size:12px;color:#c9a050">HABILIDADES · ' + pp.n.toUpperCase() +
     ' · Pontos: <i style="color:#ffd040;font-style:normal">' + s.pts + '</i></div><small style="opacity:.7">O companheiro só ganha XP lutando.</small>';
@@ -94,7 +96,15 @@ function renderTree() {
 
 /** Seletor de companheiros (em linha) + ficha e habilidades do selecionado */
 export function renderPets() {
-  const id = treeTab || state.pet.id;
+  const id = curId();
+  if (!id) {   // nenhum companheiro ainda: ganhe o primeiro numa missão
+    $('ppn2').textContent = 'Nenhum companheiro'; $('pdots').innerHTML = '';
+    ['main', 'skills', 'tal'].forEach(k => { $('pg-p' + k).hidden = k !== 'main'; $('pt-' + k).classList.toggle('on', k === 'main'); });
+    ['peL', 'peR', 'peW', 'peG', 'pattr', 'pstt', 'pbag'].forEach(q => { $(q).innerHTML = ''; });
+    $('ppl').textContent = ''; $('ppn').textContent = 'Sem companheiro'; $('pxb').style.width = '0%';
+    $('usep').textContent = ''; $('usep').onclick = null; $('rpp').innerHTML = '';
+    emit('panel:fit'); return;
+  }
   ['main', 'skills', 'tal'].forEach(k => {
     $('pg-p' + k).hidden = petTab !== k;
     $('pt-' + k).classList.toggle('on', petTab === k);
@@ -102,7 +112,7 @@ export function renderPets() {
   // frame do modelo: nome em cima, setas e pontos embaixo
   const pe = PETLIST.find(x => x.id === id);
   $('ppn2').textContent = pe.ic + ' ' + pe.n;
-  $('pdots').innerHTML = PETLIST.map(x => '<i class="' + (x.id === id ? 'on' : '') + '"></i>').join('');
+  $('pdots').innerHTML = own().map(x => '<i class="' + (x.id === id ? 'on' : '') + '"></i>').join('');
   if (petTab === 'main') renderSheet(id, PST[id], PETLIST.find(x => x.id === id));
   else if (petTab === 'skills') renderTree();
   else {
@@ -116,8 +126,9 @@ export function renderPets() {
 /** Abas do painel do companheiro */
 export function initPetPanel() {
   const step = d => () => {
-    const i = PETLIST.findIndex(x => x.id === (treeTab || state.pet.id));
-    treeTab = PETLIST[(i + d + PETLIST.length) % PETLIST.length].id;
+    const o = own(); if (!o.length) return;
+    const i = o.findIndex(x => x.id === curId());
+    treeTab = o[(i + d + o.length) % o.length].id;
     renderPets();
   };
   $('pprev').onclick = step(-1);

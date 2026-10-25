@@ -8,6 +8,7 @@ import { dialogOpen } from './dialog.js';
 import { nearestPost } from '../data/posts.js';
 import { updateLootTexts } from './notify.js';
 import { ROLL_CD } from '../systems/dodge.js';
+import { questHud } from '../systems/quest.js';
 import { autoCost, autoMinutes } from '../systems/stamina.js';
 import { PST, pmax, PDN } from '../pets/stats.js';
 import { renderStats } from './panel.js';
@@ -59,7 +60,7 @@ export function updateOverlays(now) {
   txt('bc', P.bmb);
   const bossAlive = enemies.some(z => z.t.boss && !z.dead);
   const np = nearestPost(P.x, P.z, 26);
-  txt('qt', P.dead ? '' : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : ''));
+  txt('qt', P.dead ? '' : questHud() ? questHud() : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : ''));
 
   // XP do companheiro (botão R e árvore de habilidades)
   const s = PST[state.pet.id], w = (s.xp / pxn(s.lv) * 100) + '%';

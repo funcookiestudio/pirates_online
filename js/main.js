@@ -43,6 +43,7 @@ import { dodge } from './systems/dodge.js';
 import { buildFarmSite } from './entities/farm-site.js';
 import { buildFarm, updateFarm, FARM } from './entities/farm.js';
 import { updatePets, setPet, unequipPet } from './pets/manager.js';
+import { updateQuest, ratDbg } from './systems/quest.js';
 import { DOG } from './pets/dog.js';
 import { refreshPetButton, initHotbarFit } from './ui/hotbar.js';
 import { initPanel } from './ui/panel.js';
@@ -106,6 +107,7 @@ function tick(now) {
   S('updateStatusBars', () => updateStatusBars());
   S('updateShots', () => updateShots(realDt));
   S('updatePets', () => updatePets(realDt, now));
+  S('updateQuest', () => updateQuest(realDt));
   S('updateOverlays', () => updateOverlays(now));
 
   S('updateXray', () => updateXray());
@@ -154,5 +156,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, unequipPet, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, unequipPet, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

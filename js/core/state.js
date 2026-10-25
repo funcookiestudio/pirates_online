@@ -5,6 +5,8 @@ export const state = {
   HS: 0,            // "hit-stop": tempo restante de câmera lenta num golpe forte
   SHK: 0,           // intensidade do tremor de câmera
   autoOn: false,    // auto combate ligado?
+  quest: { st: 0 }, // primeira missão (O Rato da Taverna): estágio
+  owned: {},        // companheiros que o jogador tem (id → true)
   fleeing: false,   // auto combate sem ouro: fugindo para a vila
   autoDebt: 0,      // ouro devido do auto combate (fração)
   trip: null,       // indo comprar poções/bombas

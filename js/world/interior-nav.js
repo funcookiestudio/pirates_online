@@ -109,6 +109,13 @@ const nearestFree = (g, i, j) => {
   return null;
 };
 
+/** Pontos livres (mundo) do andar L da casa h, para quem vagueia dentro dela (ex.: o rato da missão) */
+export function freeSpots(h, L = 0) {
+  const g = build(h, L), out = [];
+  for (let j = 0; j < g.d; j += 2) for (let i = 0; i < g.w; i += 2) if (free(g, i, j) && free(g, i + 1, j) && free(g, i, j + 1) && (!h.inBox || h.inBox(...center(g, i, j).map(v => v / h.K)))) out.push(toW(h, ...center(g, i, j)));
+  return out;
+}
+
 /** Plano para (tx,tz) a partir de (x,z). Devolve { pts:[[x,z]...], goal:[x,z], exact } ou null se um dos pontos não está num interior */
 export function planInterior(x, z, tx, tz, L) {
   const g = gridAt(x, z, L); if (!g || gridAt(tx, tz, L) !== g && (!gridAt(tx, tz, L) || gridAt(tx, tz, L).h !== g.h)) return null;

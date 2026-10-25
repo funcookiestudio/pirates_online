@@ -10,6 +10,7 @@ import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
 import { saveGame } from '../systems/save.js';
 import { ROOM_PRICE, roomRented, rentRoom, cancelRent, rentDue } from '../world/doors.js';
+import { questSay, questButtons } from '../systems/quest.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
@@ -144,6 +145,7 @@ function buttons() {
   const b = $('dbt');
   b.innerHTML = '';
   const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); };
+  questButtons(cur).forEach(([t, f]) => add(t, () => f(say, buttons)));   // botões da missão em andamento
   if (cur.stable) {
     COATS.forEach((k, i) => {
       if (MOUNT.owned && i <= MOUNT.coat) return;
@@ -187,10 +189,11 @@ function buttons() {
 export function openDialog(info) {
   cur = info;
   li = Math.floor(Math.random() * info.lines.length);
+  const qs = questSay(info);
   $('dic').textContent = info.ic;
   $('dnm').textContent = info.name;
   $('dtt').textContent = info.title;
-  say(info.lines[li]);
+  say(qs || info.lines[li]);
   buttons();
   closeShop();
   $('dlg').style.display = 'block';
