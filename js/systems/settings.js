@@ -112,12 +112,15 @@ export function updateSettings(dt) {
     tile.visible = away;
     placeTile(tile, mark.position.x, mark.position.y + .05, mark.position.z);
   } else { tile.visible = false; mark.visible = CFG.hl === 'ring' && away; }
-  if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = VERSION + ' · ' + Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res · js ' + DIAG.js.toFixed(1) + ' rend ' + DIAG.rend.toFixed(1) + ' gpu ' + DIAG.gpu.toFixed(1) + 'ms · ' + DIAG.calls + ' calls ' + Math.round(DIAG.tris / 1000) + 'k tri\n' + Object.entries(DIAG.sec).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([k, v]) => k.replace('update', '') + ' ' + v.toFixed(1)).join(' · '); }
+  if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = VERSION + ' · ' + Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res\n'
+    + 'js ' + DIAG.js.toFixed(1) + ' · rend ' + DIAG.rend.toFixed(1) + ' · gpu ' + DIAG.gpu.toFixed(1) + ' ms\n'
+    + DIAG.calls + ' calls · ' + Math.round(DIAG.tris / 1000) + 'k tri\n'
+    + Object.entries(DIAG.sec).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([k, v]) => k.replace('update', '') + ' ' + v.toFixed(1)).join(' · '); }
 }
 
 export function initSettings() {
   fpsEl = document.createElement('div');
-  fpsEl.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(4px + env(safe-area-inset-top,0px));z-index:9;font:11px monospace;white-space:pre;text-align:center;color:#cfe;background:#0008;padding:1px 5px;border-radius:3px;pointer-events:none;display:none';
+  fpsEl.style.cssText = 'position:fixed;left:max(56px,calc(50% - 170px));top:calc(4px + env(safe-area-inset-top,0px));z-index:9;font:10px/1.25 monospace;white-space:pre-wrap;word-break:break-word;text-align:center;width:min(340px,calc(100% - 168px));box-sizing:border-box;color:#cfe;background:#0008;padding:1px 5px;border-radius:3px;pointer-events:none;display:none';
   document.body.appendChild(fpsEl);
   const show = () => { fpsEl.style.display = CFG.fps ? 'block' : 'none'; };
   const q = $('gx-q'), f = $('gx-fps'), hl = $('gx-hl'), hh = $('gx-hlhide'), tl = $('gx-tiles'), dg = $('gx-dbg');
