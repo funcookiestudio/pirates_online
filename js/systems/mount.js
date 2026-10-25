@@ -224,27 +224,35 @@ export function updateMount(dt) {
   animateHorseLegs(dt, 0);
 }
 
-/** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s) */
+/** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): passo → trote → galope de quatro tempos
+    (posteriores esquerdo e direito, depois anteriores esquerdo e direito, com um instante no ar). */
+const TROT = [Math.PI, 0, Math.PI, 0], GALOP = [2.83, 3.46, 0, .63];   // fases de [AE, AD, PE, PD] (anterior/posterior esquerdo/direito)
 function animateHorseLegs(dt, v) {
   const g = MOUNT.g;
   if (!g) return;
   MOUNT.sp += (Math.min(v, 12) - MOUNT.sp) * (1 - Math.exp(-dt * 10));
   const s = MOUNT.sp;
-  MOUNT.ph += dt * (s > .2 ? 4 + s * 1.15 : 0);
+  MOUNT.ph += dt * (s > .2 ? 3.2 + s * 1.55 : 0);
   MOUNT.idle += dt;
-  const run = Math.min(1, s / 6), amp = Math.min(1, s / 2.2) * (.55 + .35 * run);
-  const base = [0, Math.PI * (.5 + .4 * run), Math.PI, Math.PI * (1.5 - .4 * run)];   // trote → galope (as quatro pernas se aproximam)
+  const ph = MOUNT.ph, run = sat((s - 2.2) / 3.6), amp = sat(s / 2.2), PI2 = Math.PI * 2;
+  const A = (.42 + .5 * run) * amp;
   g.legs.forEach((l, i) => {
-    const w = Math.sin(MOUNT.ph + base[i]);
-    l.rotation.x = w * amp;
-    l.knee.rotation.x = Math.max(0, Math.cos(MOUNT.ph + base[i])) * amp * 1.1;
+    const off = TROT[i] + (GALOP[i] - TROT[i]) * run, f = ph + off + (i < 2 ? 0 : 0);
+    const c = Math.cos(f), sn = Math.sin(f);
+    const reach = i < 2 ? 1.15 : .95;                                  // anteriores alcançam mais; posteriores empurram
+    l.rotation.x = c * A * reach * (c < 0 ? 1.1 : 1) - .05 * run * amp;   // apoio (c>0) vai para trás, balanço para a frente
+    l.knee.rotation.x = (Math.max(0, sn) * (.85 + .55 * run) + (i < 2 ? .08 : .15) * (1 - c) * .5) * amp;   // dobra no balanço
   });
-  const bob = Math.abs(Math.sin(MOUNT.ph)) * .05 * amp;
-  g.position.y = bob;
-  g.neck.rotation.x = .55 - run * .15 + Math.sin(MOUNT.ph * 2) * .05 * amp + Math.sin(MOUNT.idle * 1.4) * .04 * (1 - amp);
-  g.tail.rotation.x = .35 + amp * .25 + Math.sin(MOUNT.idle * 2.2) * .12;
-  g.earL.rotation.z = Math.sin(MOUNT.idle * 3) * .05 * (1 - amp) - run * .2;
-  g.earR.rotation.z = -Math.sin(MOUNT.idle * 3.4) * .05 * (1 - amp) + run * .2;
+  // quique: um por ciclo no galope (suspensão), dois no trote
+  const bobG = (.5 + .5 * Math.cos(ph + 1.9)) * .13 * run, bobT = Math.abs(Math.sin(ph)) * .05 * (1 - run);
+  MOUNT.bob = (bobG + bobT) * amp;
+  g.position.y = MOUNT.bob;
+  g.rotation.x = Math.sin(ph + .4) * .055 * run * amp;                 // balança o corpo (cabeça sobe, garupa desce)
+  g.neck.rotation.x = .55 - run * .3 - Math.sin(ph + .4) * .16 * run * amp + Math.sin(ph * 2) * .04 * (1 - run) * amp + Math.sin(MOUNT.idle * 1.4) * .04 * (1 - amp);
+  g.head.rotation.x = -.05 + Math.sin(ph + 1) * .07 * run * amp;
+  g.tail.rotation.x = .35 + amp * (.25 + .45 * run) + Math.sin(MOUNT.idle * 2.2) * .12 + Math.sin(ph) * .1 * run;
+  g.earL.rotation.z = Math.sin(MOUNT.idle * 3) * .05 * (1 - amp) - run * .35;
+  g.earR.rotation.z = -Math.sin(MOUNT.idle * 3.4) * .05 * (1 - amp) + run * .35;
 }
 
 const V3 = THREE.Vector3, OFFY = new V3(0, .72, 0);
@@ -262,7 +270,7 @@ export function mountPose(dt) {
   if (!MOUNT.on) { P.mountK = 0; reins[0].visible = reins[1].visible = false; return; }
   const g = P.g, k = ss(MOUNT.t), run = Math.min(1, MOUNT.sp / 6);
   P.mountK = k;
-  const bob = Math.abs(Math.sin(MOUNT.ph)) * .05 * Math.min(1, MOUNT.sp / 2.2);
+  const bob = (MOUNT.bob || 0) * SCALE;
   const u = MOUNT.t, rise = ss(sat((u - .06) / .44)), hop = u < 1 ? Math.sin(Math.PI * sat((u - .2) / .7)) * .38 : 0, over = Math.sin(Math.PI * sat((u - .38) / .5));   // pulo + perna passando por cima
   g.position.y += LIFT * rise + bob + hop;
   const tl = -1.1 - .15 * run, kl = .75;
@@ -274,13 +282,13 @@ export function mountPose(dt) {
     l.knee.rotation.x += (kl - l.knee.rotation.x) * k;
     if (l.foot) l.foot.rotation.x += (-.2 - l.foot.rotation.x) * k;
   });
-  g.up.position.y += Math.sin(MOUNT.ph * 2) * .02 * run;
+  g.up.position.y += Math.sin(MOUNT.ph + 2.4) * .025 * run;
   g.rotation.x += .06 * run * k;                      // inclina para a frente no galope
   // braços nas rédeas (cinemática inversa; as mãos acompanham o balanço do corpo)
   const torch = !!(P.torchM && P.torchM.visible);
   g.up.rotation.set(.3 * over, 0, 0);
   const w = ss(sat((u - .1) / .5));
-  const sway = Math.sin(MOUNT.ph * 2) * .02 * run, hy = 1.02 + LIFT * 0 + sway;
+  const sway = Math.sin(MOUNT.ph + 2.4) * .025 * run, hy = 1.02 + LIFT * 0 + sway;
   const hold = (arm, side) => {
     const q0 = arm.quaternion.clone(), f0 = arm.fa.rotation.x;
     ik(arm, new V3(side * .15, hy + .1 - .72 + LIFT * 0, .36), new V3(side * 1, -.7, -.35));
