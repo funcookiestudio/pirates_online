@@ -196,12 +196,16 @@ export function build(seed,type){
  // 5) vegetação por bioma (fora de estradas, praças e água)
  const veg={palms:[],pines:[],rocks:[],bushes:[]},near=(x,z)=>pois.some(p=>(p.x-x)**2+(p.z-z)**2<64);
  const DEN=[[.012,0,.004,.002],[0,.004,.02,.002],[0,.07,.035,.003],[0,.006,.06,.0008],[.014,.002,.03,.006],[0,.012,.004,.05]],BCOL=[0x6aa050,0x5fa04a,0x2f7a3a,0x4a5a30,0x9a9a45,0x6a7a5a];
+ // espaçamento mínimo: árvores >= 3.8 m entre si (o personagem passa entre os troncos), pedras e arbustos também respeitam folga
+ const SG=3.8,tg=new Map(),tkey=(x,z)=>Math.floor((x+N/2)/SG)*4096+Math.floor((z+N/2)/SG);
+ const free=(x,z,rr)=>{const a=Math.floor((x+N/2)/SG),c=Math.floor((z+N/2)/SG);for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const l=tg.get((a+i)*4096+c+j);if(l)for(const q of l){const dd=Math.hypot(q[0]-x,q[1]-z);if(dd<Math.max(rr,q[2]))return false}}return true};
+ const claim=(x,z,rr)=>{const kk=tkey(x,z);let l=tg.get(kk);if(!l)tg.set(kk,l=[]);l.push([x,z,rr])};
  for(let k=V+1;k<NV-V-1;k++){if(H[k]<=.35||pm[k]||W[k]>-90)continue;const x=cx(k)+r()-.5,z=cz(k)+r()-.5,h=H[k],p=r();if(near(x,z))continue;
   const b=bio[k],d=DEN[b],f=nw((k%V)*.24*sc+ox,(k/V|0)*.24*sc+oy),cm=f>.52?2.4:.45,c0=d[0]*cm,c1=c0+d[1]*cm,c2=c1+d[2]*cm,c3=c2+d[3];
-  if(p<c0){if(veg.palms.length<4000)veg.palms.push([x,z,.8+r()*.5,(r()-.5)*.3,r()*6])}
-  else if(p<c1){if(veg.pines.length<7000)veg.pines.push([x,z,.7+r()*.6,0,r()*6])}
-  else if(p<c2){if(veg.bushes.length<7000)veg.bushes.push([x,z,.5+r()*.5,0,r()*6,BCOL[b]])}
-  else if(p<c3||(sl(k)>.18&&p>.97)){if(veg.rocks.length<2500)veg.rocks.push([x,z,.5+r()*.9,0,r()*6])}}
+  if(p<c0){if(free(x,z,3.8)){claim(x,z,3.8);veg.palms.push([x,z,.8+r()*.5,(r()-.5)*.3,r()*6])}}
+  else if(p<c1){if(free(x,z,3.8)){claim(x,z,3.8);veg.pines.push([x,z,.7+r()*.6,0,r()*6])}}
+  else if(p<c2){if(free(x,z,2.4)){claim(x,z,2.4);veg.bushes.push([x,z,.5+r()*.5,0,r()*6,BCOL[b]])}}
+  else if(p<c3||(sl(k)>.18&&p>.97)){if(free(x,z,3.2)){claim(x,z,3.2);veg.rocks.push([x,z,.5+r()*.9,0,r()*6])}}}
  // 6) malha de navegação: bloqueia mar, água funda e paredões (convés das pontes é liberado)
  const nav=new Uint8Array(NV);for(let k=V+1;k<NV-V-1;k++)if(cb[k]||H[k]<-.1||(W[k]>-90&&W[k]-H[k]>.35)||sl(k)>.7)nav[k]=1;
  for(let k=0;k<NV;k++)if(deck[k]>-90)nav[k]=0;

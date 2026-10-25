@@ -3,7 +3,7 @@
 
 /** Dificuldade das ilhas: cada tier soma ISLAND_STEP níveis a todos os inimigos da ilha */
 export const ISLAND_STEP = 7;
-const NAMED = { tortuga: 0, pirata: 0, corvo: 1, tormenta: 2, caveira: 3 };
+const NAMED = { bussola: 0, tortuga: 0, pirata: 0, corvo: 1, tormenta: 2, caveira: 3 };
 /** Tier (0..3) da ilha pela semente; sementes desconhecidas (?seed=) caem num tier estável pelo hash */
 export function tierOf(seed) {
   if (seed in NAMED) return NAMED[seed];

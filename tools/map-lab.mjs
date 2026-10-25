@@ -80,7 +80,7 @@ for (const seed of seeds) {
   let maxS = 0; for (const road of r.roads) for (let i = 1; i < road.pts.length; i++) { const a = road.pts[i - 1], b = road.pts[i], d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; maxS = Math.max(maxS, Math.abs(a[2] - b[2]) / d); }
   if (maxS > .45) bad.push('declive de estrada ' + maxS.toFixed(2));
   const tot = r.roads.reduce((s, q) => s + q.pts.length, 0);
-  console.log((bad.length ? '✗' : '✓'), seed.padEnd(9), (Date.now() - t0) + ' ms', 'terra', (r.land * 100 | 0) + '%', 'vila↔porto', Math.round(dd(vil, por)) + 'm', 'castelo', '+' + (hAt(L.castle) - hAt(vil)).toFixed(1) + 'm', 'camps', L.camps.length, 'dung', L.dungeons.length, 'estradas', r.roads.length, tot + ' pts', 'rios', r.rivers.length, bad.length ? '← ' + bad.join(' · ') : '');
+  console.log((bad.length ? '✗' : '✓'), seed.padEnd(9), (Date.now() - t0) + ' ms', 'terra', (r.land * 100 | 0) + '%', 'vila↔porto', Math.round(dd(vil, por)) + 'm', 'castelo', '+' + (hAt(L.castle) - hAt(vil)).toFixed(1) + 'm', 'camps', L.camps.length, 'dung', L.dungeons.length, 'estradas', r.roads.length, tot + ' pts', 'rios', r.rivers.length, 'veg', r.veg.palms.length + '/' + r.veg.pines.length + '/' + r.veg.bushes.length + '/' + r.veg.rocks.length, bad.length ? '← ' + bad.join(' · ') : '');
   if (bad.length) fails++;
   if (pngDir) draw(r, path.join(pngDir, seed + '.png'));
 }

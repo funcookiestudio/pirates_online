@@ -41,7 +41,7 @@ export const FARMER_GRANJA = { name: 'Seu Zé', title: 'Granjeiro', ic: '🐖', 
   lines: ['Eita, visita! Chegue, que o porco tá gordo e a lã das ovelhas tá no ponto.', 'Roça é trabalho de sol a sol, mas não troco por mar nenhum.', 'Se ouvir barulho de ovelha à noite, é só o vento. Eu acho...'] };
 
 export const ISLANDS = [
-  { seed: 'tortuga', name: 'Ilha Natal', cost: 0, tier: 0 },
+  { seed: 'bussola', name: 'Ilha Natal', cost: 0, tier: 0 },
   { seed: 'corvo', name: 'Ilha do Corvo', cost: 25, tier: 1 },
   { seed: 'tormenta', name: 'Ilha da Tormenta', cost: 25, tier: 2 },
   { seed: 'caveira', name: 'Ilha da Caveira', cost: 25, tier: 3 },

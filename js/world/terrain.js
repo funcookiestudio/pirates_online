@@ -5,9 +5,9 @@ import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { CASTLE, ZONES } from './reserve.js';
 
-/** Semente da ilha: padrão 'tortuga'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
+/** Semente da ilha: padrão 'bussola'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
 const savedSeed = () => { try { return localStorage.getItem('pirata-ilha'); } catch (e) { return null; } };
-export const SEED = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('seed')) || savedSeed() || 'tortuga';
+export const SEED = (typeof location !== 'undefined' && new URLSearchParams(location.search).get('seed')) || savedSeed() || 'bussola';
 export let isl = null;     // dados crus do gerador
 export let H = null;       // alturas (já relativas à vila: vila = 0)
 export let VX = 0, VZ = 0; // posição da vila na grade do gerador (m, centro = 0)
