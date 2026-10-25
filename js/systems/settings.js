@@ -6,7 +6,7 @@ import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
 import { houseAt, HOUSES } from '../world/floors.js';
 import { debugGrid, navVersion } from '../world/interior-nav.js';
-import { setQualityMode, perfRatio, perfFps } from './perf.js';
+import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
 
 const KEY = 'pirata-ajustes';
 export const CFG = { q: 'auto', fps: false, hl: 'tile', hlhide: true, tiles: false, dbg: false, vis: true };
@@ -91,7 +91,7 @@ export function updateSettings(dt) {
     tile.visible = away;
     placeTile(tile, mark.position.x, mark.position.y + .05, mark.position.z);
   } else { tile.visible = false; mark.visible = CFG.hl === 'ring' && away; }
-  if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = VERSION + ' · ' + Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res'; }
+  if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = VERSION + ' · ' + Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res · js ' + DIAG.js.toFixed(1) + ' rend ' + DIAG.rend.toFixed(1) + ' gpu ' + DIAG.gpu.toFixed(1) + 'ms · ' + DIAG.calls + ' calls ' + Math.round(DIAG.tris / 1000) + 'k tri'; }
 }
 
 export function initSettings() {

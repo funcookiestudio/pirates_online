@@ -8,8 +8,8 @@ import { buildVillage } from './world/village.js';
 import { buildCastle } from './world/castle.js';
 import { initDialog } from './ui/dialog.js';
 import { updateNpcs, npcList } from './entities/npc.js';
-import { updatePerf } from './systems/perf.js';
-import { updateSettings, initSettings } from './systems/settings.js';
+import { updatePerf, DIAG } from './systems/perf.js';
+import { updateSettings, initSettings, CFG } from './systems/settings.js';
 import { DOORS } from './world/doors.js';
 import { updateLod } from './systems/lod.js';
 import { updateVision, updateVisionOverlay, canSee, VIS } from './systems/vision.js';
@@ -69,6 +69,7 @@ function tick(now) {
   const rawDt = (now - (last || now)) / 1000;   // sem limite: o contador de FPS e a qualidade automática precisam enxergar fps abaixo de 20
   let dt = Math.min(.05, rawDt);
   last = now;
+  const tJs = performance.now();
   const realDt = dt; // companheiros e balas não sofrem o "hit-stop"
 
   // hit-stop: câmera lenta curta em golpes fortes
@@ -104,7 +105,12 @@ function tick(now) {
   updateXray();
   updateVision(realDt, inDungeon());
   updateVisionOverlay(inDungeon());   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
+  const tR = performance.now();
   ren.render(scene, cam);
+  const tE = performance.now(), k = .1;
+  DIAG.js += ((tR - tJs) - DIAG.js) * k; DIAG.rend += ((tE - tR) - DIAG.rend) * k;
+  DIAG.calls = ren.info.render.calls; DIAG.tris = ren.info.render.triangles;
+  if (CFG.fps && (++DIAG.n % 30) === 0) { const gl = ren.getContext(), a = performance.now(); gl.finish(); DIAG.gpu = performance.now() - a; }   // amostra: bloqueia até a GPU terminar
 }
 
 const worldBefore = new Set(scene.children);

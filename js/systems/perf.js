@@ -27,3 +27,6 @@ export function updatePerf(dt) {
 }
 export const perfRatio = () => ratio;
 export const perfFps = () => 1 / Math.max(ema, 1e-3);
+
+/** Diagnóstico por quadro (ms): js = lógica, rend = envio do desenho, gpu = espera real da GPU (gl.finish, amostrado) */
+export const DIAG = { js: 0, rend: 0, gpu: 0, calls: 0, tris: 0, n: 0 };
