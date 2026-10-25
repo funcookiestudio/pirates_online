@@ -42,7 +42,7 @@ function cost(s) {
     if (!walkable(w.x, w.z)) bad += 2;
     sum += gy; n++; lo = Math.min(lo, gy); hi = Math.max(hi, gy);
   }
-  if (hi - lo > 7) return null;
+  if (hi - lo > 4.5) return null;
   const mean = sum / n;
   for (let lx = X0; lx <= X1; lx += 3) for (let lz = Z0; lz <= Z1; lz += 3) {
     const w = toWorld(s, f, lx, lz);
@@ -63,6 +63,7 @@ export function chooseFarmSite(avoid = []) {
     for (const side of [-1, 1]) for (const off of [14, 18, 23]) {
       const s = { x: q.x + nx * side * off, z: q.z + nz * side * off, tx: q.x, tz: q.z, ty: groundY(q.x, q.z) };
       if (Math.hypot(s.x, s.z) < VILLAGE_R + 22) continue;
+      if (isl.bridges.some(b => Math.hypot(b[0] - VX - s.x, b[1] - VZ - s.z) < 33)) continue;   // ponte antiga ficaria solta no ar
       if (far.some(p => Math.hypot(p.x - s.x, p.z - s.z) < 30)) continue;
       const c = cost(s) + off * .25;
       if (c < best) { best = c; spot = s; }
@@ -75,7 +76,7 @@ export function chooseFarmSite(avoid = []) {
   let sum = 0, n = 0;
   for (let lx = X0; lx <= X1; lx += 3) for (let lz = Z0; lz <= Z1; lz += 3) { const w = toWorld(spot, f, lx, lz); sum += groundY(w.x, w.z); n++; }
   const y0 = sum / n, cen = toWorld(spot, f, (X0 + X1) / 2, (Z0 + Z1) / 2 + 1);
-  flatten(cen.x, cen.z, 20, 29, y0);
+  flatten(cen.x, cen.z, 20, 40, y0);
   // ramal de terra do portão até a estrada
   const G = toWorld(spot, f, 0, Z1 + 1), len = Math.hypot(spot.tx - G.x, spot.tz - G.z);
   for (let t = 0; t <= len; t += .5) {
@@ -84,8 +85,8 @@ export function chooseFarmSite(avoid = []) {
     for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) {
       const k = (gz + j) * V + gx + i, d = Math.hypot(i, j);
       if (d > 3 || gx + i < 1 || gz + j < 1 || gx + i >= N || gz + j >= N || H[k] < SEA + .8) continue;
-      if (d <= 1.6) { isl.pm[k] = 1; H[k] = h; isl.nav[k] = 0; isl.W[k] = -99; }
-      else if (!isl.pm[k]) { isl.pm[k] = 2; H[k] = H[k] * .5 + h * .5; }
+      if (d <= 1.6) { isl.pm[k] = 1; isl.nav[k] = 0; }
+      else if (!isl.pm[k]) isl.pm[k] = 2;
     }
   }
   FARMSITE.spot = spot; FARMSITE.y0 = y0;
@@ -187,8 +188,6 @@ export function buildFarmSite() {
   cyl(.9, .9, .9, 0x8a8a86, -10, .45, 3, 12); cyl(.65, .65, .05, 0x2a6aa0, -10, .85, 3, 12);
   bx(.14, 1.8, .14, 0x6a4a2a, -10.8, 1.5, 3); bx(.14, 1.8, .14, 0x6a4a2a, -9.2, 1.5, 3); bx(1.9, .14, 1.1, 0x6a3a28, -10, 2.45, 3);
   solid(-10, 3, 1.1);
-  // caminho de terra do portão até a vila
-  for (let lz = PZ1 + .5; lz < Z1 + 6; lz += 1.6) bx(2.6, .05, 1.7, 0x9a7a52, (lz % 3.2 < 1.6 ? .1 : -.1), .03, lz);
 
   // dados para os animais
   const pen = [];
