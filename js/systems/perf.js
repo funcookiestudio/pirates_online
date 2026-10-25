@@ -14,8 +14,8 @@ export function setQualityMode(m) {
 }
 
 export function updatePerf(dt) {
-  if (mode !== 'auto') { if (dt < .1) ema += (dt - ema) * .05; return; }
-  if (dt < .1) ema += (dt - ema) * .03;   // travadas isoladas (carregamento, troca de aba) não contam
+  if (mode !== 'auto') { if (dt < .5) ema += (dt - ema) * .05; return; }
+  if (dt < .5) ema += (dt - ema) * .03;   // travadas isoladas (carregamento, troca de aba) não contam
   t += dt;
   if (t < 1) return;
   t = 0; cool -= 1;

@@ -10,7 +10,7 @@ import { addDoor, roomRented } from './doors.js';
 import { addBed } from './beds.js';
 import { addCabinet } from './cabinets.js';
 
-export const TAVERN_SC = 1.22;
+export const TAVERN_SC = 1.28;
 
 export function buildTavernHouse(x, z, a) {
   const th = Math.atan2(-Math.cos(a), -Math.sin(a));

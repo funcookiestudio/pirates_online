@@ -1,4 +1,5 @@
 /* Vila no centro da ilha: muralha com 4 portões (2 guardas em cada), casinhas e moradores. */
+import { TAVERN_SC } from './tavern-house.js';
 import { VILLAGE_R, GATE_HW } from '../core/village-const.js';
 import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
@@ -118,7 +119,7 @@ export function buildVillage() {
     if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[k], { kind: 'smith', at, th, pts }, k); }
     else citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId } : undefined, k);
     if (kind === 'tavern') {   // moradores da taberna (cada um com seu quarto no andar de cima)
-      const K = 1.22;
+      const K = TAVERN_SC;
       // cada um tem o seu quarto no andar de cima: Breu na frente (cama da direita), Polly nos fundos
       const room = (bx, bz, front) => { const [wx, wz] = at(bx * K, (bz + (front ? -.85 : .85)) * K); return { x: wx, z: wz, y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), sb: at(-4.35 * K, 2.5 * K), door: at(0, 5.2 * K), dr: 'tavern-front' }; };
       citizen(...at(1.4 * K, 6.0 * K), th, looks[3], { kind: 'tenant', room: room(4.3, 3.65, true) }, 3);     // Mestre Breu

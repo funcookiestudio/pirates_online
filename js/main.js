@@ -66,7 +66,8 @@ function frame(now) {
 
 function tick(now) {
 
-  let dt = Math.min(.05, (now - (last || now)) / 1000);
+  const rawDt = (now - (last || now)) / 1000;   // sem limite: o contador de FPS e a qualidade automática precisam enxergar fps abaixo de 20
+  let dt = Math.min(.05, rawDt);
   last = now;
   const realDt = dt; // companheiros e balas não sofrem o "hit-stop"
 
@@ -74,7 +75,7 @@ function tick(now) {
   if (state.HS > 0) { state.HS -= dt; dt *= .12; }
 
   // 1) jogo
-  updatePerf(realDt);
+  updatePerf(rawDt);
   updateSettings(realDt);
   updatePlayer(dt);
   updateEnemies(dt);
