@@ -44,6 +44,17 @@ const res = await p.evaluate(() => {
   reach('taberna cima', tav, true, [-3.5 * 1.22, 3.2 * 1.22], [[-3, 3.5], [-2.5, 4], [-3.2, 4.4], [-4.3, -3], [0, -.2], [3, -.2]]);
   reach('taberna térreo', tav, false, [0, 1.2], [[-4.3, 2.5], [0, 0], [3, -.5], [-1, 1]]);
   reach('castelo cima', cas, true, [10, 0], [[10, 5], [8, -8], [5.9, 9.7]]);
+  // 2b) casas de um cômodo (mapa de retângulos): alcança o interior e NÃO sai pelas paredes (porta fechada)
+  [['trader-front', [-1.4, 1.8], [[-1.4, 0.5], [-2.5, 1], [0, 2], [-3, -1]], [[-1.4, 4], [5, 0], [0, -4.5], [-5, 0]]],
+   ['cartog-front', [-1.4, 1.8], [[-1.4, 0.5], [-2.5, 1], [0, 2]], [[-1.4, 4], [5, 0], [0, -4.5], [-5, 0]]],
+   ['smith-front', [-1.4, 1.8], [[-1.4, 0.5], [-2.5, 1]], [[-1.4, 4], [-5, 0], [0, -4.5]]],
+   ['aves-front', [0.8, 1.8], [[0.8, 0.6], [-0.5, 1.8], [0.2, 0]], [[0.8, 4], [-5, 0], [0, -4.5]]]].forEach(([id, from, ins, outs]) => {
+    const h = H.find(q => (q.rects || []).some(r => r.dr && r.dr.id === id));
+    if (!h) { out.push({ t: 'casa ' + id, ok: false, info: 'não encontrada' }); return; }
+    P.up = false; G.FLOORS.refreshProps(); const s = W(h, from[0] * h.K, from[1] * h.K);
+    ins.forEach(q => { const t = W(h, q[0] * h.K, q[1] * h.K), r = G.nav.snapInterior(s[0], s[1], t[0], t[1]); out.push({ t: 'alcance ' + id + ' (' + q + ')', ok: Array.isArray(r) && Math.hypot(r[0] - t[0], r[1] - t[1]) < .6, info: 'ok' }); });
+    outs.forEach(q => { const t = W(h, q[0] * h.K, q[1] * h.K), r = G.nav.snapInterior(s[0], s[1], t[0], t[1]); out.push({ t: 'parede ' + id + ' (' + q + ')', ok: !Array.isArray(r) || Math.hypot(r[0] - t[0], r[1] - t[1]) > .6, info: 'fechado' }); });
+  });
   // 3) precisão do clique no andar de cima (câmera padrão): ponto livre projetado na tela deve cair a < .5 do esperado
   P.up = true; G.FLOORS.refreshProps();
   const s = W(tav, -3.66, 3.9); P.x = s[0]; P.z = s[1]; P.tx = P.x; P.tz = P.z; window.__tav = tav;

@@ -5,8 +5,9 @@ import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
-import { registerFloors, refreshProps } from './floors.js';
+import { registerFloors, refreshProps, HOUSES } from './floors.js';
 import { addDoor } from './doors.js';
+import { shellRects } from './imap.js';
 import { addBed } from './beds.js';
 
 export const AVES_HOUSE = { w: 8, d: 6 };      // dimensões externas (m): o resto do sítio se organiza em volta
@@ -174,16 +175,17 @@ export function buildAvesHouse(x, z, th, y0 = 0, style = {}) {
   // ── colisões (mesmo esquema das casas da vila) ──
   const K = KS;
   const at = (lx, lz) => [x + lx * Math.cos(th) + lz * Math.sin(th), z - lx * Math.sin(th) + lz * Math.cos(th)];
-  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; if (dr) o.dr = dr; props.push(o); };
+  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; o.map = true; if (dr) o.dr = dr; props.push(o); };
   for (let u = -4; u <= 4.01; u += .9) { if (u < -.4 || u > 2.0) block(u * K, 3.1 * K, .55); block(u * K, -3.1 * K, .55); }
   for (let v = -2.2; v <= 2.21; v += .9) { block(-4 * K, v * K, .55); block(4 * K, v * K, .55); }
-  [[3.5, -.8, .8], [3.5, -1.6, .7], [3.5, 0, .7], [4.5, -.8, .9], [-1.4, .8, .5], [-.6, .8, .5], [-1.5, -2.6, .55], [-.5, -2.6, .55], [1.0, -2.7, .5], [1.8, -2.7, .5],
-   [3.1, -2.6, .65], [-3.0, -2.5, .8], [-3.0, -1.5, .8], [-3.0, -.5, .55], [-1.75, -2.0, .5], [3.0, 2.0, .6], [-3.3, 2.25, .5], [-2.7, 2.35, .45], [-3.4, 1.3, .5], [0.4, -2.4, .4]]
-    .forEach(([fx, fz, r]) => block(fx * K, fz * K, r * K));
+  const FURN = [[3.5, -.8, .8], [3.5, -1.6, .7], [3.5, 0, .7], [4.5, -.8, .9], [-1.4, .8, .5], [-.6, .8, .5], [-1.5, -2.6, .55], [-.5, -2.6, .55], [1.0, -2.7, .5], [1.8, -2.7, .5],
+   [3.1, -2.6, .65], [-3.0, -2.5, .8], [-3.0, -1.5, .8], [-3.0, -.5, .55], [-1.75, -2.0, .5], [3.0, 2.0, .6], [-3.3, 2.25, .5], [-2.7, 2.35, .45], [-3.4, 1.3, .5], [0.4, -2.4, .4]];
+  FURN.forEach(([fx, fz, r]) => block(fx * K, fz * K, r * K));
   [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
-  DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [0, .6, 1.2, 1.8].forEach(lx => block(lx * K, 3.1 * K, .55, dd)); });
+  let FD; DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); FD = dd; [0, .6, 1.2, 1.8].forEach(lx => block(lx * K, 3.1 * K, .55, dd)); });
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
+  shellRects(HOUSES[HOUSES.length - 1], [.8,1.1], FD, FURN, []);
   // cama de casal: o dorminhoco deita de costas, cabeça no travesseiro (fundo), pés para a frente
   const hit = new THREE.Mesh(new THREE.BoxGeometry(1.8, .7, 2.4), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(-3.0, .8, -1.75); hit.userData.dyn = 1; S.add(hit);
   const bf = at(-3.0 * K, -.75 * K), ba = at(-2.3 * K, -.1 * K);

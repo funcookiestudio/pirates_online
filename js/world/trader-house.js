@@ -3,8 +3,9 @@ import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
-import { registerFloors, refreshProps } from './floors.js';
+import { registerFloors, refreshProps, HOUSES } from './floors.js';
 import { addDoor } from './doors.js';
+import { shellRects } from './imap.js';
 
 export const TRADER_SC = 1.28;
 
@@ -121,17 +122,18 @@ B(.05,.9,1.3,3.93,1.8,-.1,TM);B(.06,.8,1.2,3.92,1.8,-.1,0xe6dcb4);B(.07,.4,.7,3.
   const K = TRADER_SC;
   scene.add(root);
   const at = (lx, lz) => [x + lx * Math.cos(th) + lz * Math.sin(th), z - lx * Math.sin(th) + lz * Math.cos(th)];
-  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; if (dr) o.dr = dr; props.push(o); };
+  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; o.map = true; if (dr) o.dr = dr; props.push(o); };
   for (let u = -4; u <= 4.01; u += .9) { if (u < -2.45 || u > -.35) block(u * K, 3.1 * K, .45); block(u * K, -3.1 * K, .45); }
   for (let v = -2.2; v <= 2.21; v += .9) { block(-4 * K, v * K, .45); block(4 * K, v * K, .45); }
   // mobília: o balcão fecha o lado direito (a Capitã fica atrás); a esquerda fica livre
-  [[0, -.5, .55], [.9, -.5, .55], [1.8, -.5, .55], [2.7, -.5, .55], [3.4, -.5, .5], [3.2, -2.1, .5], [-3.3, -1.9, .45], [-2.5, -2.3, .45], [-3.4, .3, .5], [-3.3, 1.2, .5],
-   [3.0, 4.2, .6], [3.6, 4.9, .5], [2.2, 5.0, .45], [-3.3, 4.7, .7]]
-    .forEach(([fx, fz, r]) => block(fx * K, fz * K, r));
+  const FURN = [[0, -.5, .55], [.9, -.5, .55], [1.8, -.5, .55], [2.7, -.5, .55], [3.4, -.5, .5], [3.2, -2.1, .5], [-3.3, -1.9, .45], [-2.5, -2.3, .45], [-3.4, .3, .5], [-3.3, 1.2, .5],
+   [3.0, 4.2, .6], [3.6, 4.9, .5], [2.2, 5.0, .45], [-3.3, 4.7, .7]];
+  FURN.forEach(([fx, fz, r]) => block(fx * K, fz * K, r));
   const pts = { ay: 0, door: [-1.4 * K, 3.4 * K], talkAt: at(1.4 * K, 1.0 * K), doorId: 'trader-front' };
   [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
-  DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
+  let FD; DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); FD = dd; [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
+  shellRects(HOUSES[HOUSES.length - 1], [-1.4,1.2], FD, FURN.slice(5), [[-.3,-1,3.5,0]]);
   return { g: root, th, at, pts, front: at(1.2 * K, -1.55 * K) };
 }

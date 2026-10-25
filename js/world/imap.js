@@ -47,3 +47,17 @@ export function pushOut(h, L, x, z, r) {
   }
   return toW(h, u, v);
 }
+
+/** Casca padrão das casas de um cômodo (u ±4, v ±3, parede de .3 m): paredes, vão da porta de entrada (fechada bloqueia) e móveis.
+ *  `furn` = [u, v, raio]: o retângulo do móvel é um quadrado de lado 1,4×raio (o círculo antigo era folgado demais). */
+export function shellRects(h, door, dd, furn, extra = []) {
+  const T = .15, [c, w] = door, g0 = c - w / 2, g1 = c + w / 2;
+  addRect(h, 0, -4 - T, 3 - T, g0, 3 + T, undefined, true);
+  addRect(h, 0, g1, 3 - T, 4 + T, 3 + T, undefined, true);
+  addRect(h, 0, g0, 3 - T, g1, 3 + T, dd, true);
+  addRect(h, 0, -4 - T, -3 - T, 4 + T, -3 + T, undefined, true);
+  addRect(h, 0, -4 - T, -3, -4 + T, 3, undefined, true);
+  addRect(h, 0, 4 - T, -3, 4 + T, 3, undefined, true);
+  furn.forEach(([u, v, r]) => addRect(h, 0, u - r * .7, v - r * .7, u + r * .7, v + r * .7));
+  extra.forEach(e => addRect(h, 0, ...e));
+}

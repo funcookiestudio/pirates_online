@@ -4,8 +4,9 @@ import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
-import { registerFloors, refreshProps } from './floors.js';
+import { registerFloors, refreshProps, HOUSES } from './floors.js';
 import { addDoor } from './doors.js';
+import { shellRects } from './imap.js';
 import { addBed } from './beds.js';
 
 export const SMITH_SC = 1.28;
@@ -176,16 +177,17 @@ for(let i=0;i<5;i++){const a=i*1.3,r=C(.4,.5,.4,5,-6+Math.cos(a)*.6,.2,5+Math.si
   const K = SMITH_SC, Pm = (mx, mz) => [mx * K, mz * K];
   scene.add(root);
   const at = (lx, lz) => [x + lx * Math.cos(th) + lz * Math.sin(th), z - lx * Math.sin(th) + lz * Math.cos(th)];
-  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; if (dr) o.dr = dr; props.push(o); };
+  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; o.map = true; if (dr) o.dr = dr; props.push(o); };
   // paredes: a da frente tem um vão na porta (x = -1.4) para o jogador entrar
   for (let u = -4; u <= 4.01; u += .9) { if (u < -2.45 || u > -.35) block(u * K, 3.1 * K, .45); block(u * K, -3.1 * K, .45); }
   for (let v = -2.2; v <= 2.21; v += .9) { block(-4 * K, v * K, .45); block(4 * K, v * K, .45); }
   // mobília do interior
-  [[2.2, -2.25, .6], [3.2, -2.25, .6], [3.55, -.95, .6], [-.8, .15, .5], [.4, .15, .5], [-3.3, -2.3, .45], [-2.1, -2.3, .45], [-3.4, .9, .45], [1, -2.5, .45]]
-    .forEach(([fx, fz, r]) => block(fx * K, fz * K, r));
+  const FURN = [[2.2, -2.25, .6], [3.2, -2.25, .6], [3.55, -.95, .6], [-.8, .15, .5], [.4, .15, .5], [-3.3, -2.3, .45], [-2.1, -2.3, .45], [-3.4, .9, .45], [1, -2.5, .45]];
+  FURN.forEach(([fx, fz, r]) => block(fx * K, fz * K, r));
   const anvil = Pm(6.85, 1.5), furnace = Pm(5.0, -.7), tub = Pm(5.95, .2);
   block(furnace[0], furnace[1], .85); block(tub[0], tub[1], .5); block(anvil[0], anvil[1], .42);
   block(...Pm(5.0, -1.9), .6); block(...Pm(5.0, .9), .5);
+  props.slice(-5).forEach(o => { o.map = false; });   // a forja fica fora da casca: continua como círculo
   const pts = {
     ay: -Math.PI / 2,                                                  // o ferreiro fica a leste da bigorna, olhando para -x (a parede)
     anvil, bar: tub, fire: furnace, fireY: .92, anvilY: .8,
@@ -194,12 +196,13 @@ for(let i=0;i<5;i++){const a=i*1.3,r=C(.4,.5,.4,5,-6+Math.cos(a)*.6,.2,5+Math.si
     bed: [1.85 * K, -2.25 * K], bedY: .72 * K + .18,                  // pé da cama (onde o ferreiro deita à noite)
   };
   [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
-  DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
+  let FD; DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); FD = dd; [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
   // cama: o dorminhoco deita de costas, cabeça no travesseiro
   { const hit = new THREE.Mesh(new THREE.BoxGeometry(1.05, .7, 2.1), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(2.7, .8, -2.25); hit.rotation.y = Math.PI / 2; hit.userData.dyn = 1; S.add(hit);
     const bf = at(1.85 * K, -2.25 * K), ba = at(2.4 * K, -1.1 * K);
     addBed({ x: bf[0], z: bf[1], y: 0.72 * K + .18, ry: th + (-Math.PI / 2), ax: ba[0], az: ba[1], hit }); }
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
+  shellRects(HOUSES[HOUSES.length - 1], [-1.4,1.2], FD, FURN, []);
   return { g: root, th, at, pts, front: at(-1.4 * K, 4.2 * K) };
 }
