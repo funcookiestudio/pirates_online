@@ -162,7 +162,7 @@ let INSIDE = false;
 export const insideHouse = () => INSIDE;
 const _m = new THREE.Matrix4(), _v = new THREE.Vector3(), STUB = .42;
 /** Cria (uma vez) a "bordinha" da parede: faixa baixa de reboco com friso de madeira em cima, do tamanho da parede (no quadro do pai) */
-function buildStub(w) {
+function buildStub(w, h) {
   const g = w.g, par = g.parent, mn = new THREE.Vector3(1e9, 1e9, 1e9), mx = new THREE.Vector3(-1e9, -1e9, -1e9);
   par.updateWorldMatrix(true, true);
   const inv = new THREE.Matrix4().copy(par.matrixWorld).invert();
@@ -179,14 +179,22 @@ function buildStub(w) {
   if (w.plane) { alongX = w.plane === 'v'; plane = w.c; }
   else if (w.nx) { alongX = false; plane = w.nx * w.D; } else { alongX = true; plane = w.nz * w.D; }
   const L = alongX ? Math.max(.2, mx.x - mn.x) : Math.max(.2, mx.z - mn.z), mid = alongX ? (mx.x + mn.x) / 2 : (mx.z + mn.z) / 2;
-  const box = (bl, bh, bt, y, c) => { const m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? bl : bt, bh, alongX ? bt : bl), new THREE.MeshLambertMaterial({ color: c })); m.position.set(alongX ? mid : plane, mn.y + y, alongX ? plane : mid); st.add(m); };
-  box(L, H * .8, TH, H * .4, 0xcdbf9e); box(L + .02, H * .2, TH + .08, H * .9, 0x4a3320);
+  const box = (c0, c1, bh, bt, y, c) => { const bl = c1 - c0, m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? bl : bt, bh, alongX ? bt : bl), new THREE.MeshLambertMaterial({ color: c })); m.position.set(alongX ? (c0 + c1) / 2 : plane, mn.y + y, alongX ? plane : (c0 + c1) / 2); st.add(m); };
+  const lo = mid - L / 2, hi = mid + L / 2, full = Math.max(H, mx.y - mn.y), PW = .18;
+  // vãos das portas dessa parede ficam livres (sem bordinha)
+  const gaps = DOORS.filter(d => d.h && h && d.h.x === h.x && d.h.z === h.z && (alongX ? d.ax !== 'z' : d.ax === 'z') && Math.abs(d.f - plane) < .7 && d.lvl === (mn.y > 1.5 ? 1 : 0))
+    .map(d => [d.c - d.w / 2 - .12, d.c + d.w / 2 + .12]).sort((a, b) => a[0] - b[0]);
+  let cur = lo; const segs = [];
+  gaps.forEach(([g0, g1]) => { if (g0 > cur) segs.push([cur, g0]); cur = Math.max(cur, g1); });
+  if (cur < hi) segs.push([cur, hi]);
+  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .8, TH, H * .4, 0xcdbf9e); box(c0, c1, H * .2, TH + .08, H * .9, 0x4a3320); });
+  [lo, hi - PW].forEach(c0 => box(c0, c0 + PW, full, TH + .08, full / 2, 0x4a3320));   // bordinha lateral: quina de madeira em cada ponta da parede (na união com a vizinha)
   st.visible = false; par.add(st); w.stub = st;
 }
 /** Parede "abaixada" (como no The Sims): em vez de sumir, vira só uma bordinha baixa rente ao piso dela */
 function lower(w, h, on) {
   const g = w.g; if (!g.parent) return;
-  if (w.stub === undefined) buildStub(w);
+  if (w.stub === undefined) buildStub(w, h);
   g.visible = !on || !w.stub;
   if (w.stub) w.stub.visible = on;
 }
