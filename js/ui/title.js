@@ -1,10 +1,11 @@
 /* Tela inicial "Tiny Pirates": cena 3D (heróis de frente atacando, inimigos de costas, aves voando) atrás do título HTML. */
 import { VERSION } from '../core/version.js';
-import { playerModel, enemyModel } from '../entities/character.js';
+import { enemyModel } from '../entities/character.js';
+import { buildHuman, SKM, SKF } from '../entities/human.js';
 import { ENEMY_KINDS } from '../data/enemies.js';
 import { mkParrot, mkRaven } from '../pets/models.js';
 import { WEAPONS } from '../data/weapons.js';
-import { cleanLook } from '../entities/look.js';
+import { cleanLook, resolveLook } from '../entities/look.js';
 
 const CSS = `
 #ttl{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(4vh + env(safe-area-inset-top,0px)) 0 calc(5vh + env(safe-area-inset-bottom,0px));overflow:hidden;color:#f3e6c4;font-family:Cinzel,'Trajan Pro','Palatino Linotype',Georgia,serif;user-select:none;-webkit-user-select:none;
@@ -30,13 +31,16 @@ function scene3d(root, cv) {
   const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 100);
   sc.add(new THREE.HemisphereLight(0xfff0d0, 0x6a5030, .95));
   const dl = new THREE.DirectionalLight(0xffe2b0, .8); dl.position.set(-4, 6, 8); sc.add(dl);
-  const mk = (f, a) => playerModel(f, cleanLook(f, a));
-  const hm = mk(false, { hs: 2, hc: 2, sk: 2, ey: 3, bs: 3, bc: 2 }), hf = mk(true, { hs: 6, hc: 7, sk: 1, ey: 2, bs: 2, hc2: 0 });
+  // heróis com roupa de pirata (melhor que a roupa inicial) e a aparência escolhida
+  const mk = (f, a) => { const L = resolveLook(f, cleanLook(f, a)), base = f ? SKF.pirata : SKM.pirata; return buildHuman(f, Object.assign({}, base, { skin: L.skin, hair: L.hair, look: L, ex: f ? ['earring'] : [] })); };
+  const hm = mk(false, { hs: 2, hc: 2, sk: 2, ey: 3, bs: 3, bc: 2 }), hf = mk(true, { hs: 6, hc: 7, sk: 1, ey: 2, bs: 2 });
   const pirate = enemyModel(ENEMY_KINDS[7]), skel = enemyModel(ENEMY_KINDS[5]);
   const raven = mkRaven(), parrot = mkParrot();
-  // a menina empunha um mosquete (o modelo vai no antebraço da arma; a espada padrão some)
-  hf.arm.fa.children.forEach(c => { if (c.userData.sword) c.visible = false; });
-  const gun = WEAPONS[WEAPONS.findIndex(w => /Mosquete/.test(w.n))].build(); gun.position.set(0, -.32, 0); hf.arm.fa.add(gun);
+  // o menino segura o mosquete com as duas mãos; a menina, a espada erguida na direita e uma tocha na esquerda
+  hm.arm.fa.children.forEach(c => { if (c.userData.sword) c.visible = false; });
+  const gun = WEAPONS[WEAPONS.findIndex(w => /Mosquete/.test(w.n))].build(); gun.position.set(0, -.32, 0); hm.arm.fa.add(gun);
+  const torch = WEAPONS[WEAPONS.findIndex(w => /Tocha/.test(w.n))].build(); torch.position.y = .12;
+  const tg = new THREE.Group(); tg.position.set(0, -.32, 0); tg.add(torch); hf.armL.fa.add(tg);
   const all = [hm, hf, pirate, skel];
   const blob = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .32, depthWrite: false });
   const shadows = all.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(.6, 20).rotateX(-Math.PI / 2), blob); sc.add(m); return m; });
@@ -51,6 +55,7 @@ function scene3d(root, cv) {
     const d = DIST - z, half = Math.tan(15 * Math.PI / 180) * d, aspect = W / H;
     const sH = hs * 2 * half / h0[i];
     g.scale.setScalar(sH); g.position.set((sx - .5) * 2 * half * aspect, (.5 - sy) * 2 * half, z);
+    if (i > 1) shadows[i].visible = false;
     shadows[i].position.set(g.position.x, g.position.y + .02, z); shadows[i].scale.setScalar(sH * 1.1);
     return sH;
   }
@@ -60,11 +65,11 @@ function scene3d(root, cv) {
     ren.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75)); ren.setSize(W, H, false);
     cam.aspect = aspect; cam.position.set(0, 0, DIST); cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
     const portrait = aspect < 1;
-    const hh = portrait ? Math.min(.36, .9 * aspect * .9) : .46;            // altura dos heróis (fração da tela)
+    const hh = portrait ? Math.min(.28, .8 * aspect * .9) : .36;            // altura dos heróis (fração da tela)
     const hxs = portrait ? .27 : .24;                                         // distância ao centro (fração da largura)
-    const eh = hh * .66, exs = portrait ? .3 : .27;
-    bs = place(0, hm, .5 - hxs, .5, hh, 0); place(1, hf, .5 + hxs, .5, hh, 0);
-    place(2, pirate, .5 - exs, .93, eh, 1.8); place(3, skel, .5 + exs, .93, eh, 1.8);
+    const eh = hh * 2.1, exs = portrait ? .3 : .27;
+    bs = place(0, hm, .5 - hxs, .46, hh, -3); place(1, hf, .5 + hxs, .46, hh, -3);
+    place(2, pirate, .5 - exs, 1.2, eh, 5); place(3, skel, .5 + exs, 1.2, eh, 5);
     hero = hh; birdY = hh;
     const ps = bs * .55; raven.scale.setScalar(ps); parrot.scale.setScalar(ps);
   }
@@ -73,20 +78,20 @@ function scene3d(root, cv) {
   /** Poses fixas (sem animação): heróis inclinados para o inimigo da diagonal, inimigos de costas, inclinados para trás olhando o herói da diagonal oposta */
   function pose() {
     hm.rotation.y = .6; hf.rotation.y = -.6; pirate.rotation.y = Math.PI - .7; skel.rotation.y = Math.PI + .7;
-    [hm, hf].forEach(g => {
-      g.arm.rotation.set(-1.9, 0, 0); g.arm.fa.rotation.x = -.9; g.armL.rotation.set(-.6, 0, -.35);
-      g.up.rotation.x = .22; g.legL.knee.rotation.x = .45; g.legR.knee.rotation.x = .3; g.legL.rotation.x = -.45; g.legR.rotation.x = .3;
-    });
-    // menina mirando o mosquete: braços à frente segurando a arma, cabeça inclinada, olho esquerdo fechado
-    hf.arm.rotation.set(-1.4, 0, .12); hf.arm.fa.rotation.x = -.15; hf.armL.rotation.set(-1.55, 0, -.55); hf.armL.fa.rotation.x = -.2;
-    hf.up.rotation.x = .08; hf.head.rotation.z = .16; hf.head.rotation.x = -.04; hf.eyeL.scale.y = .15;
+    [hm, hf].forEach(g => { g.up.rotation.x = .12; g.legL.knee.rotation.x = .4; g.legR.knee.rotation.x = .3; g.legL.rotation.x = -.4; g.legR.rotation.x = .3; });
+    // menino mirando o mosquete com as duas mãos
+    hm.arm.rotation.set(-1.4, 0, .12); hm.arm.fa.rotation.x = -.15; hm.armL.rotation.set(-1.55, 0, -.55); hm.armL.fa.rotation.x = -.2;
+    hm.head.rotation.z = .16; hm.head.rotation.x = -.04; hm.eyeL.scale.y = .15;
+    // menina: espada erguida (direita) e tocha (esquerda, em pé)
+    hf.arm.rotation.set(-2.6, 0, .1); hf.arm.fa.rotation.x = -.3; hf.armL.rotation.set(-.9, 0, -.4); hf.armL.fa.rotation.x = -.6;
+    tg.rotation.set(-(hf.armL.rotation.x + hf.armL.fa.rotation.x), 0, .1);
     [[pirate, 1], [skel, -1]].forEach(([g, d]) => {
       g.arm.rotation.set(-.9, 0, 0); g.arm.fa.rotation.x = -.5; g.armL.rotation.set(-.3, 0, .3);
       g.up.rotation.x = -.14; g.legL.knee.rotation.x = .2; g.legR.knee.rotation.x = .2; if (g.head) g.head.rotation.y = d * .25;
     });
-    const half = Math.tan(15 * Math.PI / 180) * DIST, y = hero * 2 * half * 1.14;
-    raven.position.set(hm.position.x, hm.position.y + y, .4); raven.rotation.set(0, .5, -.12);
-    parrot.position.set(hf.position.x, hf.position.y + y, .4); parrot.rotation.set(0, -.5, .12);
+    const half = Math.tan(15 * Math.PI / 180) * (DIST + 3), y = hero * 2 * half * 1.14;
+    raven.position.set(hm.position.x, hm.position.y + y, -2.6); raven.rotation.set(0, .5, -.12);
+    parrot.position.set(hf.position.x, hf.position.y + y, -2.6); parrot.rotation.set(0, -.5, .12);
     [raven, parrot].forEach(g => { const f = .75; if (g.pw) g.pw.forEach(w => { w.sh.rotation.set(0, 0, -w.s * f); w.tip.rotation.set(0, 0, -w.s * f * .5); }); else if (g.wl) { g.wl.rotation.z = f; g.wr.rotation.z = -f; } });
   }
   function frame() { pose(); ren.render(sc, cam); }
