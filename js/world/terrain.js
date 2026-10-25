@@ -141,7 +141,7 @@ function roomy(x, z, r) {
 }
 
 /** Achata um círculo (centro em coordenadas do jogo) para a altura h, com borda suave até r1 */
-function flatten(x, z, r0, r1, h) {
+export function flatten(x, z, r0, r1, h) {
   const cx = x + VX + E, cz = z + VZ + E;
   for (let j = Math.max(1, Math.floor(cz - r1)); j <= Math.min(N - 1, Math.ceil(cz + r1)); j++)
     for (let i = Math.max(1, Math.floor(cx - r1)); i <= Math.min(N - 1, Math.ceil(cx + r1)); i++) {

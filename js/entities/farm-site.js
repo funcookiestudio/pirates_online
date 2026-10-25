@@ -3,7 +3,9 @@
 import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { M } from '../core/utils.js';
-import { groundY, walkable, nearObstacle, onRoad, SEA } from '../world/terrain.js';
+import { groundY, walkable, onRoad, SEA, isl, VX, VZ, flatten } from '../world/terrain.js';
+import { N, V } from '../world/islandgen.js';
+const E = N / 2;
 import { VILLAGE_R } from '../core/village-const.js';
 import { pois } from '../world/pois.js';
 import { FZONE } from '../world/reserve.js';
@@ -12,52 +14,88 @@ export const FARMSITE = { ok: false, spot: null, x: 0, z: 0, pen: [], yard: [] }
 
 // área ocupada (coordenadas locais: +z = lado da vila / portão)
 const X0 = -15, X1 = 17, Z0 = -13, Z1 = 7;
+import { H } from '../world/terrain.js';
 
-function frame(x, z) {
-  const d = Math.hypot(x, z) || 1, fx = -x / d, fz = -z / d;
+/** Orientação: o portão (+z local) olha para o ponto `t` (estrada mais próxima) */
+function frame(s) {
+  const dx = s.tx - s.x, dz = s.tz - s.z, d = Math.hypot(dx, dz) || 1, fx = dx / d, fz = dz / d;
   return { fx, fz, th: Math.atan2(fx, fz) };
 }
 const toWorld = (s, f, lx, lz) => ({ x: s.x + f.fz * lx + f.fx * lz, z: s.z - f.fx * lx + f.fz * lz });
 
-/** Pontos ruins na área (água/estrada = proibido; árvore/pedra e declive contam). Menor é melhor; null = inviável */
-const R = { road: 0, water: 0, slope: 0 };
+/** Pontos das estradas do gerador em coordenadas do jogo (a vila é a origem) */
+function roadPts() {
+  const out = [];
+  for (const r of isl.roads) r.pts.forEach((p, i) => out.push({ x: p[0] - VX, z: p[1] - VZ, y: p[2], i, r }));
+  return out;
+}
+
+/** Pontos ruins na área (água/estrada no meio = proibido; declive e terreno intransitável pesam). Menor é melhor; null = inviável */
 function cost(s) {
-  const f = frame(s.x, s.z), y0 = groundY(s.x, s.z);
-  let bad = 0;
+  const f = frame(s);
+  let bad = 0, sum = 0, n = 0, lo = 1e9, hi = -1e9;
+  for (let lx = X0; lx <= X1; lx += 3) for (let lz = Z0; lz <= Z1 + 3; lz += 3) {
+    const w = toWorld(s, f, lx, lz);
+    if (lz < Z1 - 1 && onRoad(w.x, w.z, 1)) return null;
+    const gy = groundY(w.x, w.z);
+    if (gy < SEA + 1) return null;
+    if (!walkable(w.x, w.z)) bad += 2;
+    sum += gy; n++; lo = Math.min(lo, gy); hi = Math.max(hi, gy);
+  }
+  if (hi - lo > 7) return null;
+  const mean = sum / n;
   for (let lx = X0; lx <= X1; lx += 3) for (let lz = Z0; lz <= Z1; lz += 3) {
     const w = toWorld(s, f, lx, lz);
-    if (onRoad(w.x, w.z, 1.5)) { R.road++; return null; }
-    const gy = groundY(w.x, w.z);
-    if (gy < SEA + .9) { R.water++; return null; }
-    if (!walkable(w.x, w.z)) bad += 3;
-    if (Math.abs(gy - y0) > 3) { R.slope++; return null; }
-    if (Math.abs(gy - y0) > 2) bad += 3;
-    if (Math.abs(gy - y0) > 1.1) bad += 1;
+    bad += Math.abs(groundY(w.x, w.z) - mean) * .7;     // quanto de terra será movida
   }
   return bad;
 }
 
-/** Escolhe o terreno (antes de nascer a vegetação) e reserva a área */
+/** Escolhe o terreno (antes de nascer a vegetação): perto de uma estrada, longe da vila, dos postos, da caverna, do porto e do tesouro.
+    Aplaina a área e liga o portão à estrada com um ramal de terra. */
 export function chooseFarmSite(avoid = []) {
+  const rp = roadPts(), far = [...avoid, ...isl.pois.map(p => ({ x: p.x - VX, z: p.z - VZ }))];
   let spot = null, best = 1e9;
-  for (let t = 0; t < 4500; t++) {
-    const a = .4 + (t % 180) / 180 * 6.283, d = VILLAGE_R + 10 + Math.floor(t / 180) * 2;
-    const s = { x: Math.cos(a) * d, z: Math.sin(a) * d };
-    if (avoid.some(p => Math.hypot(p.x - s.x, p.z - s.z) < 16)) continue;
-    const c = cost(s);
-    if (c !== null && c < best) { best = c; spot = s; if (c === 0) break; }
+  for (let i = 0; i < rp.length; i += 4) {
+    const q = rp[i], q2 = rp[Math.min(rp.length - 1, i + 1)], q0 = rp[Math.max(0, i - 1)];
+    if (Math.hypot(q.x, q.z) < VILLAGE_R + 14) continue;
+    const tx = q2.x - q0.x, tz = q2.z - q0.z, tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
+    for (const side of [-1, 1]) for (const off of [14, 18, 23]) {
+      const s = { x: q.x + nx * side * off, z: q.z + nz * side * off, tx: q.x, tz: q.z, ty: groundY(q.x, q.z) };
+      if (Math.hypot(s.x, s.z) < VILLAGE_R + 22) continue;
+      if (far.some(p => Math.hypot(p.x - s.x, p.z - s.z) < 30)) continue;
+      const c = cost(s) + off * .25;
+      if (c < best) { best = c; spot = s; }
+    }
   }
   if (location.hash === '#dev') console.log('fazenda', spot, best);
-  if (!spot) return;
-  const f = frame(spot.x, spot.z);
-  FARMSITE.spot = spot;
-  Object.assign(FZONE, { on: true, x: spot.x, z: spot.z, fx: f.fx, fz: f.fz, x0: X0, x1: X1, z0: Z0, z1: Z1 + 6 });
+  if (!spot || best > 400) return;
+  const f = frame(spot);
+  // aplaina a área (média do terreno), com transição suave
+  let sum = 0, n = 0;
+  for (let lx = X0; lx <= X1; lx += 3) for (let lz = Z0; lz <= Z1; lz += 3) { const w = toWorld(spot, f, lx, lz); sum += groundY(w.x, w.z); n++; }
+  const y0 = sum / n, cen = toWorld(spot, f, (X0 + X1) / 2, (Z0 + Z1) / 2 + 1);
+  flatten(cen.x, cen.z, 20, 29, y0);
+  // ramal de terra do portão até a estrada
+  const G = toWorld(spot, f, 0, Z1 + 1), len = Math.hypot(spot.tx - G.x, spot.tz - G.z);
+  for (let t = 0; t <= len; t += .5) {
+    const u = t / len, x = G.x + (spot.tx - G.x) * u, z = G.z + (spot.tz - G.z) * u, h = y0 + (spot.ty - y0) * u;
+    const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
+    for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) {
+      const k = (gz + j) * V + gx + i, d = Math.hypot(i, j);
+      if (d > 3 || gx + i < 1 || gz + j < 1 || gx + i >= N || gz + j >= N || H[k] < SEA + .8) continue;
+      if (d <= 1.6) { isl.pm[k] = 1; H[k] = h; isl.nav[k] = 0; isl.W[k] = -99; }
+      else if (!isl.pm[k]) { isl.pm[k] = 2; H[k] = H[k] * .5 + h * .5; }
+    }
+  }
+  FARMSITE.spot = spot; FARMSITE.y0 = y0;
+  Object.assign(FZONE, { on: true, x: spot.x, z: spot.z, fx: f.fx, fz: f.fz, x0: X0 - 1, x1: X1 + 1, z0: Z0 - 1, z1: Z1 + 3 });
 }
 
 export function buildFarmSite() {
   const spot = FARMSITE.spot;
   if (!spot) return FARMSITE;
-  const f = frame(spot.x, spot.z), by = groundY(spot.x, spot.z);
+  const f = frame(spot), by = FARMSITE.y0;
   const g = new THREE.Group();
   g.position.set(spot.x, by, spot.z);
   g.rotation.y = f.th;
