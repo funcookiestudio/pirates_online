@@ -100,7 +100,8 @@ export function hideSword(g) { g.arm.fa.children.forEach(c => { if (c.userData.s
 export function buildHuman(F, d) {
   const SKIN = d.skin !== undefined ? d.skin : (F ? 0xf5c9a6 : 0xf2c29b), ex = d.ex || [];
   const root = new THREE.Group();
-  const B = (w, h, dd, b, c) => bb(w * K, h * K, dd * K, b * K, c);
+  let FL = d.rags ? 1 : 0;   // roupa de saco: arestas sem brilho do chanfro
+  const B = (w, h, dd, b, c) => bb(w * K, h * K, dd * K, (FL ? b * .2 : b) * K, c);
   const put = (m, x, y, z, p) => { m.position.set(x * K, y * K, z * K); (p || root).add(m); return m; };
   const at = (o, x, y, z) => { o.position.set(x * K, y * K, z * K); return o; };
   const keep = new Set();
@@ -199,7 +200,8 @@ export function buildHuman(F, d) {
   const armR = arm(F ? -.74 : -.82), armL = arm(F ? .74 : .82);   // armR = braço da arma (-x) · armL = braço livre (+x)
   addSword(armR.fa).forEach(m => keep.add(m));
 
-  if (d.rags) {   // remendos, rasgos e franjas de juta
+  FL = 0;
+  if (false) {   // remendos, rasgos e franjas de juta
     const SK = SKIN, DK = 0x5a4626;
     const yc = F ? 1.95 : 1.65, zc = F ? .4 : .43, yl = F ? 1.05 : 1.0, zl = F ? .45 : .47;
     put(B(.3, .26, .04, .02, SK), -.3, yc + .1, zc);      // rasgo no peito (pele aparece)
