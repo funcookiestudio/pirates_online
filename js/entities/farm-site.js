@@ -101,6 +101,16 @@ export function chooseFarmSite(avoid = []) {
         if (d <= 1.6) { isl.pm[k] = 1; isl.nav[k] = 0; } else if (!isl.pm[k]) isl.pm[k] = 2;
       }
     }
+    // pátio e corredor central: textura de estrada do terreno (nada de objetos por cima)
+    const paint = (lx, lz) => {
+      const w = toWorld(spot, f, lx, lz), gx = Math.round(w.x + VX + E), gz = Math.round(w.z + VZ + E);
+      if (gx < 1 || gz < 1 || gx >= N || gz >= N) return;
+      const k = gz * V + gx;
+      if (H[k] < SEA + .8) return;
+      isl.pm[k] = 1; isl.nav[k] = 0;
+    };
+    for (let lx = -14; lx <= 14; lx += .5) for (let lz = -8.6; lz <= -3.2; lz += .5) paint(lx, lz);
+    for (let lx = -2; lx <= 2; lx += .5) for (let lz = -8.6; lz <= Z1 + 1; lz += .5) paint(lx, lz);
     spot.y0 = y0; spot.v = vr; spot.f = f;
     chosen.push(spot);
     ZONES.push({ x: spot.x, z: spot.z, fx: f.fx, fz: f.fz, x0: X0 - 1, x1: X1 + 1, z0: Z0 - 1, z1: Z1 + 3 });
@@ -207,9 +217,6 @@ function buildOne(spot) {
     const c = i % 3, rw = Math.floor(i / 3), rows = Math.ceil(n / 3);
     return [r.x0 + 2.4 + (c + .5 * (rw % 2)) * ((r.x1 - r.x0 - 4.8) / 2.5), r.z0 + 1.8 + (rw + .5) * ((r.z1 - r.z0 - 3.6) / rows) + ((i * 7) % 3) * .25];
   });
-  // pátio de terra e corredor até o portão
-  bx(28, .05, 5.4, 0x9a6a44, 0, .03, -5.9);
-  bx(4, .05, Z1 + 9.6, 0x9a6a44, 0, .045, (Z1 - 8.6) / 2);
   const A = [-14, -3.4, -2.4, 3.4], B = [-14, -3.4, 4.4, 10.2];   // cercados da esquerda [x0,x1,z0,z1]
   const pens = [];
 
