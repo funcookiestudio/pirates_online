@@ -3,6 +3,7 @@ import { VERSION } from '../core/version.js';
 import { playerModel, enemyModel } from '../entities/character.js';
 import { ENEMY_KINDS } from '../data/enemies.js';
 import { mkParrot, mkRaven } from '../pets/models.js';
+import { WEAPONS } from '../data/weapons.js';
 import { cleanLook } from '../entities/look.js';
 
 const CSS = `
@@ -33,6 +34,9 @@ function scene3d(root, cv) {
   const hm = mk(false, { hs: 2, hc: 2, sk: 2, ey: 3, bs: 3, bc: 2 }), hf = mk(true, { hs: 6, hc: 7, sk: 1, ey: 2, bs: 2, hc2: 0 });
   const pirate = enemyModel(ENEMY_KINDS[7]), skel = enemyModel(ENEMY_KINDS[5]);
   const raven = mkRaven(), parrot = mkParrot();
+  // a menina empunha um mosquete (o modelo vai no antebraço da arma; a espada padrão some)
+  hf.arm.fa.children.forEach(c => { if (c.userData.sword) c.visible = false; });
+  const gun = WEAPONS[WEAPONS.findIndex(w => /Mosquete/.test(w.n))].build(); gun.position.set(0, -.32, 0); hf.arm.fa.add(gun);
   const all = [hm, hf, pirate, skel];
   const blob = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .32, depthWrite: false });
   const shadows = all.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(.6, 20).rotateX(-Math.PI / 2), blob); sc.add(m); return m; });
@@ -64,44 +68,31 @@ function scene3d(root, cv) {
     hero = hh; birdY = hh;
     const ps = bs * .55; raven.scale.setScalar(ps); parrot.scale.setScalar(ps);
   }
-  layout(); addEventListener('resize', layout);
+  
 
-  /** golpe: fase 0..1 → [ombro, antebraço, inclinação do tronco] */
-  function swing(p) {
-    if (p < .55) { const k = ease(p / .55); return [lerp(-.5, -2.5, k), lerp(-.3, -1.1, k), lerp(0, -.18, k)]; }
-    if (p < .68) { const k = (p - .55) / .13; return [lerp(-2.5, -.15, k), lerp(-1.1, -.1, k), lerp(-.18, .3, k)]; }
-    const k = ease((p - .68) / .32); return [lerp(-.15, -.5, k), lerp(-.1, -.3, k), lerp(.3, 0, k)];
-  }
-  const fly = (g, t, ph, hxw, baseX, kind) => {
-    const a = t * 1.1 + ph, rx = hxw * .5;
-    g.position.x = baseX + Math.cos(a) * rx; g.position.z = Math.sin(a) * 1.1 + .4;
-    g.position.y = birdY * 0 + g.userData.y + Math.sin(t * 2.3 + ph) * .18 * bs;
-    g.rotation.y = Math.atan2(-Math.sin(a) * rx, -Math.cos(a) * 1.1) ;
-    g.rotation.z = Math.cos(a) * .25; const f = Math.sin(t * 15 + ph) * .85;
-    if (g.pw) g.pw.forEach(w => { w.sh.rotation.set(0, 0, -w.s * f); w.tip.rotation.set(0, 0, -w.s * f * .6); }); else if (g.wl) { g.wl.rotation.z = f; g.wr.rotation.z = -f; }
-  };
-  function frame(t) {
-    [[hm, 0], [hf, .35]].forEach(([g, off]) => {
-      const p = ((t / 1.5 + off) % 1), [aa, af, lean] = swing(p);
-      g.arm.rotation.set(aa, 0, 0); g.arm.fa.rotation.x = af; g.armL.rotation.set(-.7 + Math.sin(t * 3 + off) * .1, 0, -.35);
-      if (g.up) g.up.rotation.x = lean; g.legL.knee.rotation.x = .35; g.legR.knee.rotation.x = .35; g.legL.rotation.x = -.3 - lean * .3; g.legR.rotation.x = .25;
-      g.position.y = g.position.y;
+  /** Poses fixas (sem animação): heróis inclinados para o inimigo da diagonal, inimigos de costas, inclinados para trás olhando o herói da diagonal oposta */
+  function pose() {
+    hm.rotation.y = .6; hf.rotation.y = -.6; pirate.rotation.y = Math.PI - .7; skel.rotation.y = Math.PI + .7;
+    [hm, hf].forEach(g => {
+      g.arm.rotation.set(-1.9, 0, 0); g.arm.fa.rotation.x = -.9; g.armL.rotation.set(-.6, 0, -.35);
+      g.up.rotation.x = .22; g.legL.knee.rotation.x = .45; g.legR.knee.rotation.x = .3; g.legL.rotation.x = -.45; g.legR.rotation.x = .3;
     });
-    [[pirate, 0], [skel, 1.2]].forEach(([g, off]) => {   // inimigos de costas: respiram e erguem a arma
-      const p = ((t / 2.4 + off * .2) % 1), k = Math.sin(p * Math.PI * 2);
-      g.arm.rotation.set(-.9 + k * .35, 0, 0); g.arm.fa.rotation.x = -.5; g.armL.rotation.set(-.3, 0, .3);
-      if (g.up) g.up.rotation.x = .05 + Math.sin(t * 2 + off) * .03;
-      g.legL.knee.rotation.x = .25; g.legR.knee.rotation.x = .25;
+    // menina mirando o mosquete: braços à frente segurando a arma, cabeça inclinada, olho esquerdo fechado
+    hf.arm.rotation.set(-1.4, 0, .12); hf.arm.fa.rotation.x = -.15; hf.armL.rotation.set(-1.55, 0, -.55); hf.armL.fa.rotation.x = -.2;
+    hf.up.rotation.x = .08; hf.head.rotation.z = .16; hf.head.rotation.x = -.04; hf.eyeL.scale.y = .15;
+    [[pirate, 1], [skel, -1]].forEach(([g, d]) => {
+      g.arm.rotation.set(-.9, 0, 0); g.arm.fa.rotation.x = -.5; g.armL.rotation.set(-.3, 0, .3);
+      g.up.rotation.x = -.14; g.legL.knee.rotation.x = .2; g.legR.knee.rotation.x = .2; if (g.head) g.head.rotation.y = d * .25;
     });
-    const half = Math.tan(15 * Math.PI / 180) * DIST, aspect = W / H, headY = (.5 - .5 + 0) ;
-    // aves acima das cabeças
-    const top = (g) => g.position.y + (hero * 2 * half);
-    raven.userData.y = hm.position.y + hero * 2 * half * 1.12; parrot.userData.y = hf.position.y + hero * 2 * half * 1.12;
-    fly(raven, t, 0, hero * half * aspect * .6, hm.position.x, 'r'); fly(parrot, t, 2, hero * half * aspect * .6, hf.position.x, 'p');
-    cam.position.x = Math.sin(t * .3) * .25; cam.lookAt(0, 0, 0);
-    ren.render(sc, cam);
+    const half = Math.tan(15 * Math.PI / 180) * DIST, y = hero * 2 * half * 1.14;
+    raven.position.set(hm.position.x, hm.position.y + y, .4); raven.rotation.set(0, .5, -.12);
+    parrot.position.set(hf.position.x, hf.position.y + y, .4); parrot.rotation.set(0, -.5, .12);
+    [raven, parrot].forEach(g => { const f = .75; if (g.pw) g.pw.forEach(w => { w.sh.rotation.set(0, 0, -w.s * f); w.tip.rotation.set(0, 0, -w.s * f * .5); }); else if (g.wl) { g.wl.rotation.z = f; g.wr.rotation.z = -f; } });
   }
-  return { frame, dispose() { removeEventListener('resize', layout); sc.traverse(c => { if (c.geometry) c.geometry.dispose(); }); ren.dispose(); } };
+  function frame() { pose(); ren.render(sc, cam); }
+  const redraw = () => { layout(); frame(); };
+  redraw(); addEventListener('resize', redraw);
+  return { frame, dispose() { removeEventListener('resize', redraw); sc.traverse(c => { if (c.geometry) c.geometry.dispose(); }); ren.dispose(); } };
 }
 
 /** Mostra a tela inicial; resolve quando o jogador toca em Jogar */
@@ -115,10 +106,8 @@ export function runTitle() {
     document.body.appendChild(root);
     let S = null, raf = 0, done = false;
     try { S = scene3d(root, root.querySelector('canvas')); } catch (e) { console.warn('title 3d', e); root.querySelector('canvas').remove(); }
-    const t0 = performance.now();
-    (function loop(now) { if (done) return; raf = requestAnimationFrame(loop); if (S) S.frame((now - t0) / 1000); })(t0);
     const go = () => {
-      if (done) return; done = true; cancelAnimationFrame(raf); removeEventListener('keydown', key, true);
+      if (done) return; done = true; removeEventListener('keydown', key, true);
       root.style.transition = 'opacity .3s'; root.style.opacity = 0;
       setTimeout(() => { if (S) S.dispose(); root.remove(); st.remove(); res(); }, 300);
     };
