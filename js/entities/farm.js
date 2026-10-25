@@ -666,12 +666,12 @@ export function buildFarm() {
   const MK = { rooster: mkRooster, hen: mkHen, duck: mkDuck, turkey: mkTurkey, peacock: mkPeacock, pig: mkPig, sheep: mkSheep, cow: mkCow, ox: mkOx, horse: mkHorse };
   const SCALE = { rooster: .9, hen: .9, duck: .9, turkey: 1, peacock: 1, pig: 1, sheep: 1, cow: 1, ox: 1, horse: 1 };
   if (FARMSITE.ok) {
-    FARMSITE.pens.forEach(pn => pn.kinds.forEach((kind, i) => {
+    FARMSITE.sites.forEach(st => st.pens.forEach(pn => pn.kinds.forEach((kind, i) => {
       const w = pn.pts[i % pn.pts.length], g = MK[kind](), root = new THREE.Group();
       g.scale.setScalar(SCALE[kind]); root.add(g);
       root.position.set(w.x, groundY(w.x, w.z), w.z); root.visible = false; scene.add(root);
       FARM.push({ root, a: createAnimator(root, g, kind), ox: w.x, oz: w.z });
-    }));
+    })));
     return;
   }
   const used = [];
