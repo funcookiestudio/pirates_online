@@ -8,8 +8,9 @@ export const toU = (h, x, z) => { const { c, s } = frame(h), dx = x - h.x, dz = 
 export const toW = (h, u, v) => { const { c, s } = frame(h); return [h.x + u * c + v * s, h.z - u * s + v * c]; };
 
 /** Registra um retângulo (coordenadas locais da casa × K). `dr` = porta: só bloqueia fechada. */
-export function addRect(h, l, u0, v0, u1, v1, dr) {
-  (h.rects ||= []).push({ l, u0: Math.min(u0, u1) * h.K, u1: Math.max(u0, u1) * h.K, v0: Math.min(v0, v1) * h.K, v1: Math.max(v0, v1) * h.K, dr });
+/** `tall`: bloqueia também a visão (paredes e portas); móveis só bloqueiam o passo */
+export function addRect(h, l, u0, v0, u1, v1, dr, tall) {
+  (h.rects ||= []).push({ l, u0: Math.min(u0, u1) * h.K, u1: Math.max(u0, u1) * h.K, v0: Math.min(v0, v1) * h.K, v1: Math.max(v0, v1) * h.K, dr, tall: !!tall });
 }
 export const rectsOf = (h, L) => (h.rects || []).filter(r => r.l === L && !(r.dr && r.dr.open));
 
