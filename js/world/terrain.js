@@ -82,7 +82,53 @@ export function initTerrain(posts = [], seed = SEED) {
     flatten(p.x, p.z, 7, 15, heightAt(p.x, p.z));
   });
   CAVES = pickCaves(posts);
+  carveTrails(posts);
   return isl;
+}
+
+
+/** Trilhas estreitas até cada acampamento e cada boca de caverna: caminho de menor esforço (poucas ladeiras) por terra alcançável,
+    terminando na estrada ou na vila mais próxima. A textura de estrada limpa a vegetação ao redor (onRoad) e garante rota para o A*. */
+function carveTrails(posts) {
+  const targets = [...posts.map(p => [p.x, p.z]), ...CAVES.map(c => [c.x + c.dx * 3, c.z + c.dz * 3])]
+    .sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
+  const NV2 = V * V, dist = new Float32Array(NV2), from = new Int32Array(NV2), done = new Uint8Array(NV2);
+  const gc = (x, z) => [Math.round(x + VX + E), Math.round(z + VZ + E)];
+  const isGoal = k => { const i = k % V, j = (k / V) | 0; return isl.pm[k] === 1 || Math.hypot(i - E - VX, j - E - VZ) < 20; };
+  const D8 = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.41], [-1, 1, 1.41], [1, -1, 1.41], [-1, -1, 1.41]];
+  for (const [tx, tz] of targets) {
+    const [sx, sz] = gc(tx, tz);
+    if (sx < 2 || sz < 2 || sx >= N - 1 || sz >= N - 1) continue;
+    dist.fill(1e9); from.fill(-1); done.fill(0);
+    const heap = [[0, sz * V + sx]]; dist[sz * V + sx] = 0;
+    const push = it => { let i = heap.push(it) - 1; while (i > 0) { const q = (i - 1) >> 1; if (heap[q][0] <= heap[i][0]) break; [heap[q], heap[i]] = [heap[i], heap[q]]; i = q; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (l + 1 < heap.length && heap[l + 1][0] < heap[m][0]) m = l + 1; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+    let end = -1;
+    while (heap.length) {
+      const [d, k] = pop();
+      if (done[k]) continue; done[k] = 1;
+      if (d > 0 && isGoal(k)) { end = k; break; }
+      const i = k % V, j = (k / V) | 0;
+      for (const [a, b, w] of D8) {
+        const x = i + a, y = j + b, q = y * V + x;
+        if (x < 2 || y < 2 || x >= N - 1 || y >= N - 1 || done[q] || REACH[q] !== 1 || H[q] < SEA + 1 || isl.nav[q] !== 0) continue;
+        const sl = Math.abs(H[q] - H[k]) / w;
+        if (sl > .75) continue;
+        const nd = d + w * (1 + sl * 8) + (isl.pm[q] === 1 ? -.5 * w : 0);
+        if (nd < dist[q]) { dist[q] = nd; from[q] = k; push([nd, q]); }
+      }
+    }
+    if (end < 0) continue;
+    // pinta do alvo até a estrada: miolo (pm 1, ~3 m) e acostamento (pm 2)
+    for (let k = end; k >= 0; k = from[k]) {
+      const i = k % V, j = (k / V) | 0;
+      for (let b = -3; b <= 3; b++) for (let a = -3; a <= 3; a++) {
+        const x = i + a, y = j + b, q = y * V + x, r = Math.hypot(a, b);
+        if (x < 1 || y < 1 || x >= N || y >= N || r > 2.6 || H[q] < SEA + .8) continue;
+        if (r <= 1.2) { isl.pm[q] = 1; isl.nav[q] = 0; } else if (!isl.pm[q]) isl.pm[q] = 2;
+      }
+    }
+  }
 }
 
 /** Inclinação do relevo em (x,z): [gx, gz, módulo] (m de altura por m de distância) */

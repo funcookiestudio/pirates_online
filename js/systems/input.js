@@ -42,9 +42,9 @@ function pick(cx, cy) {
     }
     void hit; }
 
-  if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, .05, aim.z); return; }
+  if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
   const n = npcAt(aim.x, aim.z);
-  if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, .05, n.g.position.z); return; }
+  if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, groundY(n.g.position.x, n.g.position.z) + .12, n.g.position.z); return; }
   cancelTalk();
 
   let best = null, bd = 2.2;
@@ -59,7 +59,7 @@ function pick(cx, cy) {
     const f = freePoint(aim.x, aim.z, .7);
     P.tx = f.x;
     P.tz = f.z;
-    mark.position.set(f.x, .05, f.z);
+    mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z);
   }
 }
 

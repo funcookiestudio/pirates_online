@@ -75,8 +75,9 @@ export function autoThink(dt) {
     const near = P.hp < P.max * .2 ? alive.find(e => e.ag && dist(e) < 3.6) : null;
     const from = heavy || near;
     if (from) {
-      P.g.rotation.y = Math.atan2(from.x - P.x, from.z - P.z); // de frente para o inimigo: a rolada vai para longe dele
-      dodge();
+      // rola para longe do inimigo, usando a animação certa: ele pela frente → para trás, pelas costas → para a frente, pelo lado → para o outro lado
+      const rel = Math.atan2(Math.sin(Math.atan2(from.x - P.x, from.z - P.z) - P.g.rotation.y), Math.cos(Math.atan2(from.x - P.x, from.z - P.z) - P.g.rotation.y));
+      dodge(Math.abs(rel) < .8 ? 'b' : Math.abs(rel) > 2.34 ? 'f' : rel > 0 ? 'r' : 'l');
       return;
     }
   }

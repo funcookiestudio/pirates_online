@@ -1,6 +1,6 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
 import { refreshTorch } from './inventory.js';
-import { steer, navTarget, freePoint, setSwim } from './steer.js';
+import { steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
@@ -122,12 +122,12 @@ function moveAndAct(dt) {
   STEER.st = want > .5 && mvd < want * dt * .25 ? (STEER.st || 0) + dt : 0;
   if (STEER.st > .5) {
     STEER.st = 0;
-    if (!P.tgt && d < 3) { P.tx = P.x; P.tz = P.z; P.vx = P.vz = 0; } else { STEER.path = null; STEER.side = -(STEER.side || 1); }
+    if (!P.tgt && d < 3) { P.tx = P.x; P.tz = P.z; P.vx = P.vz = 0; } else { markStuck(STEER, P.x, P.z); STEER.side = -(STEER.side || 1); }
   }
   // sem chegar mais perto do destino por ~1,5 s (e já perto): desiste em vez de rodar em volta
   if (!P.tgt && want > 0) {
     if (d < STEER.bd - .4) { STEER.bd = d; STEER.bt = 0; } else if ((STEER.bt += dt) > 1.5) {
-      if (d < 5) { P.tx = P.x; P.tz = P.z; STEER.gx = P.tx; STEER.gz = P.tz; } else { STEER.bt = 0; STEER.bd = d; STEER.path = null; STEER.side = -(STEER.side || 1); }
+      if (d < 5) { P.tx = P.x; P.tz = P.z; STEER.gx = P.tx; STEER.gz = P.tz; } else { STEER.bt = 0; STEER.bd = d; markStuck(STEER, P.x, P.z); STEER.side = -(STEER.side || 1); }
     }
   }
   // chegou perto o bastante (destino no chão): para em vez de ficar corrigindo
@@ -187,7 +187,7 @@ function animate(dt) {
     + (P.sw > 0 && !gn ? Math.sin((1 - P.sw) * Math.PI) * .22 : 0)
     + (gn ? -.05 - .1 * P.sw * P.sw : 0);
   P.lean += (leanTarget - P.lean) * (1 - Math.exp(-dt * 14));
-  P.g.rotation.x = P.lean;
+  P.g.rotation.x = P.lean; P.g.rotation.z = 0;
 
   // braço da arma
   const u = 1 - P.sw, ss = x => x * x * (3 - 2 * x);

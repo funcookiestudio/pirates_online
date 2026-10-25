@@ -20,7 +20,8 @@ function goTo(n, kind) {
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
   if (d < 3.2) return true;
   const dx = P.x - nx, dz = P.z - nz, k = 2.2 / (d || 1), f = freePoint(nx + dx * k, nz + dz * k, .6);
-  if (!state.trip) log(kind === 'sell' ? '💰 Mochila cheia: indo vender ao ferreiro' : '📦 Indo guardar itens no baú');
+  const now = performance.now();
+  if (!state.trip && now - (goTo.last || -1e9) > 45000) { goTo.last = now; log(kind === 'sell' ? '💰 Mochila cheia: indo vender ao ferreiro' : '📦 Indo guardar itens no baú'); }
   state.trip = kind; P.tgt = null; P.tx = f.x; P.tz = f.z;
   return false;
 }

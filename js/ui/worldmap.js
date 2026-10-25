@@ -4,7 +4,7 @@ import { $ } from '../core/utils.js';
 import { state } from '../core/state.js';
 import { P, mark } from '../entities/player.js';
 import { terrainImage } from '../world/terrain-mesh.js';
-import { VX, VZ } from '../world/terrain.js';
+import { VX, VZ, groundY } from '../world/terrain.js';
 import { N } from '../world/islandgen.js';
 import { pois } from '../world/pois.js';
 import { POST_DATA } from '../data/posts.js';
@@ -96,7 +96,6 @@ export function initWorldMap() {
     state.autoHold = 6; P.tgt = null;
     const f = freePoint(wx, wz, .7);
     P.tx = f.x; P.tz = f.z;
-    mark.position.set(f.x, .05, f.z);
-    toggleWorldMap(false);
+    mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z);
   });
 }

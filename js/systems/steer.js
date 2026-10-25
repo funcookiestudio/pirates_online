@@ -62,7 +62,7 @@ export function collide(q, r) {
 }
 
 // ---------- caminho (A*) em grade, para contornar construções, muralha e aglomerados ----------
-const N = 288, ORG = -144;
+const N = 340, ORG = -170;   // cobre a ilha inteira (±150 m) com folga
 let grid = null, gridN = -1, cost = null, hgt = null;
 const cell = v => Math.floor(v - ORG);
 
@@ -78,6 +78,9 @@ function buildGrid() {
     else if (roadAt(x, z)) cost[k] = 4;
     else if (nearObstacle(x, z, 1.6)) cost[k] = 16;
   }
+  // folga em volta de paredes, encostas, água e árvores: caminho prefere ficar longe da borda (custo extra perto dela)
+  const raw = grid.slice();
+  const nb = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   props.forEach(p => {
     const R = p.r + .5;
     for (let cx = cell(p.position.x - R); cx <= cell(p.position.x + R); cx++) {
@@ -87,6 +90,18 @@ function buildGrid() {
       }
     }
   });
+  const near1 = new Uint8Array(N * N);
+  for (let cz = 1; cz < N - 1; cz++) for (let cx = 1; cx < N - 1; cx++) {
+    const k = cz * N + cx;
+    if (grid[k]) continue;
+    for (const [a, b] of nb) if (grid[k + b * N + a]) { near1[k] = 1; break; }
+    if (near1[k]) cost[k] = Math.min(250, cost[k] + 22);
+  }
+  for (let cz = 2; cz < N - 2; cz++) for (let cx = 2; cx < N - 2; cx++) {
+    const k = cz * N + cx;
+    if (grid[k] || near1[k]) continue;
+    for (const [a, b] of nb) if (near1[k + b * N + a]) { cost[k] = Math.min(250, cost[k] + 7); break; }
+  }
 }
 
 function nearestFree(cx, cz) {
@@ -104,7 +119,7 @@ function nearestFree(cx, cz) {
 export const pathTo = (sx, sz, gx, gz, r = .5) => findPath(sx, sz, gx, gz, r);
 
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
-function findPath(sx, sz, gx, gz, r) {
+function findPath(sx, sz, gx, gz, r, bad) {
   if (dIn(sx, sz)) return dPath(sx, sz, gx, gz);      // dentro da dungeon: caminho pela grade
   if (!grid || gridN !== props.length) buildGrid();
   const s = nearestFree(cell(sx), cell(sz)), g = nearestFree(Math.max(0, Math.min(N - 1, cell(gx))), Math.max(0, Math.min(N - 1, cell(gz))));
@@ -113,6 +128,9 @@ function findPath(sx, sz, gx, gz, r) {
   const gS = new Float32Array(N * N).fill(1e9), from = new Int32Array(N * N).fill(-1), closed = new Uint8Array(N * N);
   const heap = [[0, s]];
   gS[s] = 0;
+  const pen = new Map();   // pontos onde o personagem já travou: custo extra em volta
+  if (bad) bad.forEach(([bx, bz]) => { const bc = cell(bx), bz2 = cell(bz); for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) pen.set((bz2 + b) * N + bc + a, 60); });
+  let best = s, bh = 1e9;
   const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
   const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { let l = 2 * i + 1, m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (l + 1 < heap.length && heap[l + 1][0] < heap[m][0]) m = l + 1; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
   let it = 0, found = false;
@@ -122,20 +140,23 @@ function findPath(sx, sz, gx, gz, r) {
     closed[c] = 1;
     if (c === g) { found = true; break; }
     const cx = c % N, cz = (c / N) | 0;
+    { const hh = Math.hypot(cx - gxc, cz - gzc); if (hh < bh) { bh = hh; best = c; } }
     for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
       if (!dx && !dz) continue;
       const x = cx + dx, z = cz + dz;
       if (x < 0 || z < 0 || x >= N || z >= N || grid[z * N + x]) continue;
       // diagonais livres: o corpo cabe em quinas de 1 célula
-      const n = z * N + x, ng = gS[c] + (dx && dz ? 1.414 : 1) * cost[n] / 10 + Math.abs(hgt[n] - hgt[c]) * 1.2;
-      if (ng < gS[n]) { gS[n] = ng; from[n] = c; const h = Math.max(Math.abs(x - gxc), Math.abs(z - gzc)) + .414 * Math.min(Math.abs(x - gxc), Math.abs(z - gzc)); push([ng + h * .55, n]); }
+      const n = z * N + x, ng = gS[c] + (dx && dz ? 1.414 : 1) * cost[n] / 10 + Math.abs(hgt[n] - hgt[c]) * 3 + (pen.get(n) || 0) / 10;
+      if (ng < gS[n]) { gS[n] = ng; from[n] = c; const h = Math.max(Math.abs(x - gxc), Math.abs(z - gzc)) + .414 * Math.min(Math.abs(x - gxc), Math.abs(z - gzc)); push([ng + h * .45, n]); }
     }
   }
-  if (!found) { return null; }
+  // destino inalcançável (cercado por muros, água, encosta): vai até o ponto alcançável mais próximo dele
+  let end = g;
+  if (!found) { if (best === s) return null; end = best; }
   const pts = [];
-  for (let c = g; c !== -1; c = from[c]) pts.push([c % N + ORG + .5, ((c / N) | 0) + ORG + .5]);
+  for (let c = end; c !== -1; c = from[c]) pts.push([c % N + ORG + .5, ((c / N) | 0) + ORG + .5]);
   pts.reverse();
-  pts[pts.length - 1] = [gx, gz];
+  if (found) pts[pts.length - 1] = [gx, gz];
   // suaviza: pula pontos intermediários quando a linha reta está livre
   const out = [];
   let i = 0, cur = [sx, sz];
@@ -144,7 +165,7 @@ function findPath(sx, sz, gx, gz, r) {
     for (; j > i; j--) {
       const dx = pts[j][0] - cur[0], dz = pts[j][1] - cur[1];
       if (Math.hypot(dx, dz) > 7 && j > i + 1) continue;    // atalhos curtos: não corta o traçado das estradas
-      if (clear(cur[0], cur[1], Math.atan2(dx, dz), Math.hypot(dx, dz), r)) break;
+      if (clear(cur[0], cur[1], Math.atan2(dx, dz), Math.hypot(dx, dz), r + .3)) break;
     }
     out.push(pts[j]);
     cur = pts[j];
@@ -163,7 +184,8 @@ export function navTarget(mem, x, z, gx, gz, r, now) {
   if (d < .5 || (!(mem.road && d > 14) && clear(x, z, Math.atan2(gx - x, gz - z), d, r))) { mem.path = null; return [gx, gz]; }
   const t = now || performance.now();
   if (!mem.path || Math.hypot(mem.gx - gx, mem.gz - gz) > 2.5 || (!mem.road && t - mem.pt > 1200)) {
-    mem.path = findPath(x, z, gx, gz, r);
+    if (mem.gx != null && Math.hypot(mem.gx - gx, mem.gz - gz) > 6) mem.bad = null;   // novo destino: esquece os pontos de travamento
+    mem.path = findPath(x, z, gx, gz, r, mem.bad);
     mem.gx = gx; mem.gz = gz; mem.pt = t;
   }
   if (!mem.path) return [gx, gz];
@@ -183,4 +205,10 @@ export function freePoint(x, z, r = .6) {
     }
   }
   return { x, z };
+}
+
+/** O dono ficou preso neste ponto: o próximo caminho passa longe dele */
+export function markStuck(mem, x, z) {
+  mem.bad = [...(mem.bad || []).slice(-3), [x, z]];
+  mem.path = null; mem.pt = 0;
 }

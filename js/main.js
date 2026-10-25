@@ -26,6 +26,7 @@ import { initInput } from './systems/input.js';
 import { loadGame, initSave } from './systems/save.js';
 import { MOUNT, initMount, toggleMount, giveHorse } from './systems/mount.js';
 import { CLOCK } from './core/clock.js';
+import { dodge } from './systems/dodge.js';
 import { buildFarmSite } from './entities/farm-site.js';
 import { buildFarm, updateFarm, FARM } from './entities/farm.js';
 import { updatePets, setPet } from './pets/manager.js';
@@ -39,7 +40,7 @@ import { updateStatusBars, updateOverlays } from './ui/hud.js';
 import { log } from './ui/notify.js';
 import './systems/death.js';
 import { initFullscreen, initPwa } from './ui/fullscreen.js';
-import { VILLAGE_SEAT } from './data/posts.js';
+import { VILLAGE_SEAT, POST_DATA } from './data/posts.js';
 import { P, hurtP } from './entities/player.js';
 import { enemies, props, loot } from './core/registry.js';
 
@@ -109,5 +110,5 @@ P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.
 initSave();
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { CLOCK, MOUNT, toggleMount, giveHorse, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);
