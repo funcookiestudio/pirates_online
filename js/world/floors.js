@@ -180,7 +180,9 @@ function wallColor(g) {
   return best;
 }
 /** Cria (uma vez) a "bordinha" da parede: faixa baixa de reboco com friso de madeira em cima, do tamanho da parede (no quadro do pai) */
-function buildStub(w, h) {
+/** Geometria da parede no quadro do pai: eixo, plano, extensão [lo, hi] e base y (guardada em w.g0) */
+function geoOf(w) {
+  if (w.g0 !== undefined) return w.g0;
   const g = w.g, par = g.parent, mn = new THREE.Vector3(1e9, 1e9, 1e9), mx = new THREE.Vector3(-1e9, -1e9, -1e9);
   par.updateWorldMatrix(true, true);
   const inv = new THREE.Matrix4().copy(par.matrixWorld).invert();
@@ -190,37 +192,54 @@ function buildStub(w, h) {
     const bx = o.geometry.boundingBox; _m.multiplyMatrices(inv, o.matrixWorld);
     for (let i = 0; i < 8; i++) { _v.set(i & 1 ? bx.max.x : bx.min.x, i & 2 ? bx.max.y : bx.min.y, i & 4 ? bx.max.z : bx.min.z).applyMatrix4(_m); mn.min(_v); mx.max(_v); }
   });
-  if (mx.x < mn.x) { w.stub = null; return; }
-  const st = new THREE.Group(), H = STUB, TH = .3;
+  if (mx.x < mn.x) return (w.g0 = null);
   // plano da parede: pela normal e distância D (paredes externas) ou pelo plano da divisória; o comprimento vem da caixa das peças
   let alongX, plane;
   if (w.plane) { alongX = w.plane === 'v'; plane = w.c; }
   else if (w.nx) { alongX = false; plane = w.nx * w.D; } else { alongX = true; plane = w.nz * w.D; }
   const L = alongX ? Math.max(.2, mx.x - mn.x) : Math.max(.2, mx.z - mn.z), mid = alongX ? (mx.x + mn.x) / 2 : (mx.z + mn.z) / 2;
-  const WC = new THREE.Color(wallColor(g)), WD = WC.clone().multiplyScalar(.82);
-  const box = (c0, c1, bh, bt, y, c) => { const bl = c1 - c0, m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? bl : bt, bh, alongX ? bt : bl), new THREE.MeshLambertMaterial({ color: c })); m.position.set(alongX ? (c0 + c1) / 2 : plane, mn.y + y, alongX ? plane : (c0 + c1) / 2); st.add(m); };
-  const lo = mid - L / 2, hi = mid + L / 2, full = Math.max(H, mx.y - mn.y), PW = .18;
+  return (w.g0 = { alongX, plane, lo: mid - L / 2, hi: mid + L / 2, y: mn.y, top: mx.y });
+}
+const BEAM = 0x4a3320;
+/** Cria (uma vez) a "bordinha" da parede: faixa baixa na cor da parede com friso alto de madeira (cor das vigas) por cima e quinas nas pontas */
+function buildStub(w, h, all) {
+  const G0 = geoOf(w), g = w.g, par = g.parent;
+  if (!G0) { w.stub = null; return; }
+  const { alongX, plane, y } = G0, st = new THREE.Group(), H = STUB, TH = .3;
+  let { lo, hi } = G0;
+  // junção: a ponta vai até a face externa da parede vizinha perpendicular (sem vão nem degrau na quina)
+  const snap = (e, sgn) => { for (const v of all) { const q = v === w ? null : geoOf(v); if (!q || q.alongX === alongX || Math.abs(q.y - y) > 1.2) continue; if (Math.abs(q.plane - e) < .8 && plane > q.lo - .8 && plane < q.hi + .8) return q.plane + sgn * TH / 2; } return e; };
+  lo = snap(lo, -1); hi = snap(hi, 1);
+  const mid = (lo + hi) / 2;
+  const WC = new THREE.Color(wallColor(g)), BM = new THREE.Color(BEAM);
+  const box = (c0, c1, bh, bt, yy, c) => { const bl = c1 - c0, m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? bl : bt, bh, alongX ? bt : bl), new THREE.MeshLambertMaterial({ color: c })); m.position.set(alongX ? (c0 + c1) / 2 : plane, y + yy, alongX ? plane : (c0 + c1) / 2); st.add(m); return m; };
+  const full = Math.max(H, G0.top - y), PW = .2;
   // vãos das portas dessa parede ficam livres (sem bordinha)
-  const gaps = DOORS.filter(d => d.h && h && d.h.x === h.x && d.h.z === h.z && (alongX ? d.ax !== 'z' : d.ax === 'z') && Math.abs(d.f - plane) < .7 && d.lvl === (mn.y > 1.5 ? 1 : 0))
+  const gaps = DOORS.filter(d => d.h && h && d.h.x === h.x && d.h.z === h.z && (alongX ? d.ax !== 'z' : d.ax === 'z') && Math.abs(d.f - plane) < .7 && d.lvl === (y > 1.5 ? 1 : 0))
     .map(d => [d.c - d.w / 2 - .12, d.c + d.w / 2 + .12]).sort((a, b) => a[0] - b[0]);
   let cur = lo; const segs = [];
   gaps.forEach(([g0, g1]) => { if (g0 > cur) segs.push([cur, g0]); cur = Math.max(cur, g1); });
   if (cur < hi) segs.push([cur, hi]);
-  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .8 + .03, TH, H * .4 - .015, WC); box(c0, c1, H * .2, TH + .04, H * .9, WD); });
-  w.posts = [lo, hi - PW].map(c0 => { const n0 = st.children.length; box(c0, c0 + PW, full, TH + .04, full / 2, WC); return st.children[n0]; });   // quinas nas pontas: só aparecem junto de parede vizinha em pé
-  w.geo = { alongX, plane, lo, hi, y: mn.y };
-  st.visible = false; par.add(st); w.stub = st;
+  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .58, TH, H * .29 - .015, WC); box(c0, c1, H * .46, TH + .06, H * .77, BM); });   // corpo na cor da parede + friso alto de madeira que cobre o topo
+  w.posts = [lo, hi - PW].map(c0 => { const n0 = st.children.length; box(c0, c0 + PW, full, TH + .06, full / 2, BM); return st.children[n0]; });   // quinas de madeira: só aparecem junto de parede vizinha em pé
+  w.geo = { alongX, plane, lo, hi, y };
+  st.visible = false; par.add(st); w.stub = st; void mid;
 }
 /** Parede "abaixada" (como no The Sims): em vez de sumir, vira só uma bordinha baixa rente ao piso dela */
 function lower(w, h, on) {
   const g = w.g; if (!g.parent) return;
-  if (w.stub === undefined) buildStub(w, h);
   g.visible = !on || !w.stub;
   if (w.stub) w.stub.visible = on;
+}
+function ensureStubs(h) {
+  if (h._stubs) return; h._stubs = 1;
+  const all = [...h.walls, ...(h.iw || [])];
+  all.forEach(w => { if (w.g.parent && w.stub === undefined) buildStub(w, h, all); });
 }
 export function updateCutaway() {
   INSIDE = false;
   for (const h of HOUSES) {
+    ensureStubs(h);
     const [px, pz] = toL(h, P.x, P.z);
     const inside = Math.abs(px) < h.hx && Math.abs(pz) < h.hz && (!h.inBox || h.sc || h.inBox(px, pz));   // taverna: encostar na parede por fora não conta como entrar (hx/hz passam das paredes)
     if (inside) INSIDE = true;
@@ -238,7 +257,6 @@ export function updateCutaway() {
     h.walls.forEach(w => lower(w, h, (inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)));
     {   // quinas das pontas: só onde há parede vizinha em pé (união entre paredes visíveis)
       const all = [...h.walls, ...(h.iw || [])];
-      if (!h._stubs) { h._stubs = 1; all.forEach(w => { if (w.g.parent && w.stub === undefined) buildStub(w, h); }); }
       all.forEach(w => {
         if (!w.posts || !w.geo) return;
         const lowered = !!(w.stub && w.stub.visible);
