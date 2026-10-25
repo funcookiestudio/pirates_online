@@ -17,7 +17,7 @@ import { updateStamina } from './stamina.js';
 import { applySwap, placeWeapons } from '../entities/holster.js';
 import { updateSwap } from './swap.js';
 import { rollMove, updateDodgeTimers, animateRoll } from './dodge.js';
-import { MOUNT, updateMount, mountPose } from './mount.js';
+import { MOUNT, updateMount, mountPose, mountMult } from './mount.js';
 
 const AXIS_X = new THREE.Vector3(1, 0, 0);
 
@@ -30,7 +30,7 @@ export function updatePlayer(dt) {
     updateAim(dt);
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
-    else if (MOUNT.on) { const sp0 = P.sp; P.sp *= MOUNT.mult; moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
+    else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
     else moveAndAct(dt);
   }
 

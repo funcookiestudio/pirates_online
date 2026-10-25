@@ -15,7 +15,8 @@ import { $ } from '../core/utils.js';
 
 export const MOUNT = {
   owned: false, on: false, t: 0,          // t = progresso de subir (0 no chão … 1 na sela)
-  mult: 2.05,                             // velocidade montado ÷ a pé
+  mult: 2.05, en: 1, tired: false,        // en = fôlego do cavalo (0‥1); cansado só trota
+                              // velocidade montado ÷ a pé
   st: 'park',                             // park (parado) · come (vindo até o jogador)
   want: false,                            // chamou o cavalo para montar ao chegar
   x: 0, z: 0, yaw: 0, ph: 0, sp: 0, root: null, g: null, stuck: 0, idle: 0,
@@ -68,6 +69,8 @@ export function initMount(owned) {
 export function refreshMountButton() {
   const b = $('sm');
   if (!b) return;
+  if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+  if (!b.querySelector('i')) b.insertAdjacentHTML('beforeend', '<i style="position:absolute;left:3px;right:3px;bottom:3px;height:4px;border-radius:2px;background:rgba(0,0,0,.5);overflow:hidden"><b style="display:block;height:100%;width:100%;background:#7ad84a"></b></i>');
   b.style.display = MOUNT.owned ? '' : 'none';
   b.classList.toggle('on', MOUNT.on);
 }
@@ -108,9 +111,24 @@ export function toggleMount() {
   log('🐴 Assobiou: o cavalo está a caminho');
 }
 
+/** Multiplicador de velocidade atual (cansado: só um trote um pouco mais rápido que a pé) */
+export const mountMult = () => MOUNT.tired ? 1.3 : MOUNT.mult;
+
+function updateBreath(dt) {
+  const sp = Math.hypot(P.vx, P.vz);
+  if (MOUNT.on) MOUNT.en += (sp > 3.5 ? -.085 : sp > .3 ? -.01 : .06) * dt;
+  else MOUNT.en += .12 * dt;
+  MOUNT.en = Math.max(0, Math.min(1, MOUNT.en));
+  if (MOUNT.en <= 0 && !MOUNT.tired) { MOUNT.tired = true; if (MOUNT.on) log('🐴 O cavalo está cansado: ande um pouco para ele recuperar o fôlego'); }
+  else if (MOUNT.tired && MOUNT.en > .35) MOUNT.tired = false;
+  const b = $('sm') && $('sm').querySelector('b');
+  if (b) { b.style.width = (MOUNT.en * 100) + '%'; b.style.background = MOUNT.tired ? '#d8503a' : MOUNT.en < .3 ? '#e0b030' : '#7ad84a'; }
+}
+
 /** Todo frame (antes do movimento do jogador) */
 export function updateMount(dt) {
   if (!MOUNT.owned || !MOUNT.root) return;
+  updateBreath(dt);
   if (MOUNT.pending && P.sit === 0 && !P.sitT) { MOUNT.pending = false; toggleMount(); }
   if (MOUNT.on) {
     if (P.dead) { dismount(); return; }
