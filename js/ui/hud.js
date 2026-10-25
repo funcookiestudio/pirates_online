@@ -18,20 +18,27 @@ import { drawDayClock } from './dayclock.js';
 /** Orbes de vida, cooldowns, status do topo e barra de XP */
 export function updateStatusBars() {
   const pet = PST[state.pet.id];
-  $('hp').style.height = Math.max(0, P.hp / P.max * 100) + '%';
-  $('mp').style.height = Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%';
-  $('hpt').textContent = Math.ceil(P.hp) + '/' + P.max;
-  $('mpt').textContent = PDN() ? '💤' : Math.ceil(pet.hp);
-  $('c2').style.height = P.cds[0] / 3 * 100 + '%';
-  $('c3').style.height = P.cds[1] / 5 * 100 + '%';
-  $('c6').style.height = P.rcd / ROLL_CD * 100 + '%';
-  $('st').textContent = 'Nv ' + P.lv + ' · 💰' + P.gold + ' · 🧪' + P.pot + ' · Dano ' + P.dmg;
-  $('lvp').textContent = 'Nv ' + P.lv;
-  $('lva').textContent = 'Nv ' + pet.lv;
-  $('xpb').style.width = P.xp / P.nxt * 100 + '%';
+  sty('hp', 'height', Math.max(0, P.hp / P.max * 100) + '%');
+  sty('mp', 'height', Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%');
+  txt('hpt', Math.ceil(P.hp) + '/' + P.max);
+  txt('mpt', PDN() ? '💤' : Math.ceil(pet.hp));
+  sty('c2', 'height', P.cds[0] / 3 * 100 + '%');
+  sty('c3', 'height', P.cds[1] / 5 * 100 + '%');
+  sty('c6', 'height', P.rcd / ROLL_CD * 100 + '%');
+  txt('st', 'Nv ' + P.lv + ' · 💰' + P.gold + ' · 🧪' + P.pot + ' · Dano ' + P.dmg);
+  txt('lvp', 'Nv ' + P.lv);
+  txt('lva', 'Nv ' + pet.lv);
+  sty('xpb', 'width', P.xp / P.nxt * 100 + '%');
   updateStaminaRing();
 }
 
+
+/* escrita no DOM só quando o valor muda: reescrever o mesmo texto/estilo todo quadro invalida o estilo da página e o celular refaz layout/pintura depois do JS */
+const memo = new Map();
+const put = (k, v, fn) => { if (memo.get(k) === v) return; memo.set(k, v); fn(); };
+const sty = (id, prop, v) => put(id + '.' + prop, v, () => { $(id).style[prop] = v; });
+const txt = (id, v) => put(id + '#t', String(v), () => { $(id).textContent = v; });
+const htm = (id, v) => put(id + '#h', v, () => { $(id).innerHTML = v; });
 let lastStatsRefresh = 0, mmTick = 0;
 
 /** Barra do inimigo, missão, XP do companheiro, atributos do painel e minimapa */
@@ -44,19 +51,19 @@ export function updateOverlays(now) {
     eh.classList.toggle('boss', !!e.t.boss);
     eh.style.display = 'block';
     const df = e.lv - P.lv, col = df >= 5 ? '#ff4040' : df >= 3 ? '#ff9030' : df >= -2 ? '#f0e050' : df >= -4 ? '#60d060' : '#a0a0a0';
-    $('en').innerHTML = (df >= 5 ? '☠ ' : '') + (e.elite ? '⭐ Elite ' : '') + e.t.n + ' <b style="color:' + col + '">Nv ' + e.lv + '</b>';
-    $('ebi').style.width = Math.max(0, e.hp / e.max * 100) + '%';
+    htm('en', (df >= 5 ? '☠ ' : '') + (e.elite ? '⭐ Elite ' : '') + e.t.n + ' <b style="color:' + col + '">Nv ' + e.lv + '</b>');
+    sty('ebi', 'width', Math.max(0, e.hp / e.max * 100) + '%');
   } else eh.style.display = 'none';
 
-  $('pc').textContent = P.pot;
-  $('bc').textContent = P.bmb;
+  txt('pc', P.pot);
+  txt('bc', P.bmb);
   const bossAlive = enemies.some(z => z.t.boss && !z.dead);
   const np = nearestPost(P.x, P.z, 26);
-  $('qt').textContent = P.dead ? '' : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : '');
+  txt('qt', P.dead ? '' : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : ''));
 
   // XP do companheiro (botão R e árvore de habilidades)
   const s = PST[state.pet.id], w = (s.xp / pxn(s.lv) * 100) + '%';
-  $('pxh').style.width = w;
+  sty('pxh', 'width', w);
   const y = $('pxb');
   if (y && treeShowsActivePet()) y.style.width = w;
 
@@ -78,10 +85,10 @@ function updateStaminaRing() {
   const v = $('sar');
   v.style.strokeDasharray = st * 100 + ' 100';
   v.setAttribute('class', 'val ' + (recovering ? 'rec' : st < LOW ? 'low' : st < .4 ? 'mid' : ''));
-  $('ai').textContent = state.autoRest ? '💤' : '🤖';
+  txt('ai', state.autoRest ? '💤' : '🤖');
   // número no canto: tempo de auto restante, ou quanto falta para recarregar
   const left = state.autoOn && !state.autoRest ? st * AUTO_TIME
     : state.autoRest ? Math.max(0, WAKE - st) * REST_TIME
     : (1 - st) * REST_TIME;
-  $('at').textContent = left >= 1 ? mmss(left) : '';
+  txt('at', left >= 1 ? mmss(left) : '');
 }

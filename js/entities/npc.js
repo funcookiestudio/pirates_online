@@ -203,8 +203,12 @@ export function updateNpcs(dt, now) {
     if (n.lab) {
       v3.set(g.position.x, n.ly || 2.7, g.position.z).project(cam);
       const vis = (n.g.visible || (n.inHid && n.role !== 'chest')) && !P.up && v3.z < 1 && Math.abs(v3.x) < 1.05 && Math.abs(v3.y) < 1.05 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < 20;
-      n.lab.style.display = vis ? 'block' : 'none';
-      if (vis) { n.lab.style.left = (v3.x * .5 + .5) * innerWidth + 'px'; n.lab.style.top = (-v3.y * .5 + .5) * innerHeight + 'px'; }
+      /* só escreve no DOM quando muda (cada escrita invalida o estilo e o celular refaz layout/pintura depois do JS), e move por transform, que não força layout */
+      if (n.labOn !== vis) { n.labOn = vis; n.lab.style.display = vis ? 'block' : 'none'; if (vis && n.labX === undefined) { n.lab.style.left = '0'; n.lab.style.top = '0'; } }
+      if (vis) {
+        const lx = Math.round((v3.x * .5 + .5) * innerWidth), ly = Math.round((-v3.y * .5 + .5) * innerHeight);
+        if (lx !== n.labX || ly !== n.labY) { n.labX = lx; n.labY = ly; n.lab.style.transform = 'translate(' + lx + 'px,' + ly + 'px) translate(-50%,-100%)'; }
+      }
     }
     if (n.lid) {
       const on = talking === n || n.forceOpen ? 1 : 0;
