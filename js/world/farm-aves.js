@@ -80,7 +80,7 @@ export function buildAvesDecor(c) {
     const inGate = z => (z > -1.2 && z < 2.2) || (z > 5.6 && z < 9);
     for (const sx of [-1, 1]) {
       B(.16, .16, ZL, TRIM, AX + sx * AH, 2.7, ZM, g); B(.12, .12, ZL, TRIM, AX + sx * (AH - 1.2), 2.82, ZM, g);
-      for (let z = Z0; z <= Z1 + .01; z += 1.4) if (!inGate(z)) { B(.16, 2.7, .16, TRIM, AX + sx * AH, 1.35, z, g); S(.34, GREEN2, AX + sx * AH, 1.3, z, g, 1, 2.2, 1); solid(AX + sx * AH, z, .3); }
+      for (let z = Z0; z <= Z1 + .01; z += 1.4) if (!inGate(z)) { B(.16, 2.7, .16, TRIM, AX + sx * AH, 1.35, z, g); S(.34, GREEN2, AX + sx * AH, 1.3, z, g, 1, 2.2, 1); }   // sebe da cerca: atravessável
     }
     B(.14, .14, ZL, TRIM, AX, 2.95, ZM, g);
     for (let z = Z0 - .2; z <= Z1 + .3; z += .7) {
@@ -238,7 +238,7 @@ export function buildAvesDecor(c) {
   for (let x = -14.4; x <= 14.5; x += 1.8) {                                                    // muro baixo de pedra ao fundo
     B(1.7, .8, .5, (Math.round(x * 3) & 1) ? PLINTH : PLINTH2, x, .4, -16.7); B(1.74, .12, .6, PLINTH2, x, .86, -16.7); if ((Math.round(x / 1.8)) % 2 === 0) solid(x, -16.7, 1.0);
   }
-  for (const sx of [-1, 1]) for (let z = -14; z <= 12.2; z += 1.5) { S(.62, (Math.round(z * 2) & 1) ? GREEN : GREEN2, sx * 14.9, .55, z, g, 1.1, .9, 1.4); if ((Math.round(z / 1.5)) % 2 === 0) solid(sx * 14.9, z, .8); }
+  for (const sx of [-1, 1]) for (let z = -14; z <= 12.2; z += 1.5) { S(.62, (Math.round(z * 2) & 1) ? GREEN : GREEN2, sx * 14.9, .55, z, g, 1.1, .9, 1.4); }   // sebes laterais: atravessáveis
   {
     const ct = G(-2.6, 0, -13.2, .5);                                                           // carrinho de ovos
     B(1.7, .12, 1, WOODL, 0, .7, 0, ct); for (const sz of [-1, 1]) B(1.7, .4, .08, WOODD, 0, .9, sz * .5, ct); B(.08, .4, 1, WOODD, .85, .9, 0, ct);
