@@ -1,5 +1,6 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
+import { openDoorById } from '../world/doors.js';
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
 import { P } from './player.js';
@@ -87,6 +88,7 @@ export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
   let lab = null;
   if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }
   const n = { info, lab, g, role, hx: x, hz: z, ry, ph: Math.random() * 6, t: 2 + Math.random() * 4, tx: x, tz: z, vx: 0, vz: 0, sm: { side: 0 } };
+  if (work && work.talkAt) { n.talkAt = work.talkAt; n.doorId = work.doorId; }
   if (work && work.kind === 'smith') initSmith(n, work.at, work.th, work.pts);
   list.push(n);
   return n;
@@ -107,8 +109,9 @@ export function talkTo(n) {
   want = n;
   P.tgt = null;
   const dx = P.x - n.g.position.x, dz = P.z - n.g.position.z, d = Math.hypot(dx, dz) || 1;
-  P.tx = n.g.position.x + dx / d * 2.3;
-  P.tz = n.g.position.z + dz / d * 2.3;
+  if (n.doorId) openDoorById(n.doorId);   // abre a porta da casa dele (se não estiver trancada)
+  if (n.talkAt) { P.tx = n.talkAt[0]; P.tz = n.talkAt[1]; }   // NPC dentro de casa: vai ao ponto livre diante dele (pela porta)
+  else { P.tx = n.g.position.x + dx / d * 2.3; P.tz = n.g.position.z + dz / d * 2.3; }
   if (d < 3.4) arrive(n);
 }
 

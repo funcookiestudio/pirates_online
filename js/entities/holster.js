@@ -129,7 +129,7 @@ export function placeWeapons() {
     const kind = kindOf(WEAPONS[P.wids[k]]);
     decomp(M.multiplyMatrices(up.matrixWorld, HM[kind]), wp, wq);   // no coldre
     const cur = active && P.swap && P.swap.cur;
-    const mk = active && !cur ? (P.mountK || 0) : 0;   // montado: a arma da mão vai para o coldre
+    const mk = active && !cur ? Math.max(P.mountK || 0, P.safeK || 0) : 0;   // montado: a arma da mão vai para o coldre
     const w = cur ? cur : { wh: active ? mk : 1, wl: 0, wr: active ? 1 - mk : 0 };
     if (w.wh < 1) {
       // na mão direita (pose normal da arma) e, na passagem da lâmina, na esquerda

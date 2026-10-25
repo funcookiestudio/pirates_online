@@ -14,6 +14,8 @@ import { togglePet } from '../pets/manager.js';
 import { freePoint } from './steer.js';
 import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
+import { stairClick, cancelStair, floorLevelH } from '../world/floors.js';
+import { doorClick, cancelDoor, exitClick } from '../world/doors.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
 import { toggleMount, MOUNT } from './mount.js';
@@ -32,17 +34,21 @@ function pick(cx, cy) {
   ray.setFromCamera(pointer, cam);
   ray.ray.intersectPlane(ground, aim);
   // relevo: avança pelo raio até o chão real (morros e cais), em vez do plano y=0
-  { const o = ray.ray.origin, d = ray.ray.direction; let hit = false;
+  { const o = ray.ray.origin, d = ray.ray.direction, LH = floorLevelH(); let hit = false;
     for (let t = 0; t < 400; t += 1) {
       const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t;
-      if (y <= groundY(x, z)) {
+      if (y <= groundY(x, z) + LH) {
         let lo = t - 1, hi = t;
-        for (let i = 0; i < 8; i++) { const m = (lo + hi) / 2; (o.y + d.y * m <= groundY(o.x + d.x * m, o.z + d.z * m)) ? hi = m : lo = m; }
+        for (let i = 0; i < 8; i++) { const m = (lo + hi) / 2; (o.y + d.y * m <= groundY(o.x + d.x * m, o.z + d.z * m) + LH) ? hi = m : lo = m; }
         aim.set(o.x + d.x * hi, 0, o.z + d.z * hi); hit = true; break;
       }
     }
     void hit; }
 
+  cancelStair(); cancelDoor();
+  if (doorClick(ray)) return;
+  if (exitClick(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
+  if (stairClick(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
   if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
   const n = npcAt(aim.x, aim.z);
   if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, groundY(n.g.position.x, n.g.position.z) + .12, n.g.position.z); return; }

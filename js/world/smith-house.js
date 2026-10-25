@@ -3,14 +3,18 @@
 import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
+import { bakeGroup } from './merge.js';
+import { registerFloors, refreshProps } from './floors.js';
+import { addDoor } from './doors.js';
 
-export const SMITH_SC = 1.15;
+export const SMITH_SC = 1.28;
 
 export function buildSmithHouse(x, z, a) {
   const th = Math.atan2(-Math.cos(a), -Math.sin(a));
   const root = new THREE.Group();
   root.position.set(x, 0, z); root.rotation.y = th;
   const S = new THREE.Group(); S.scale.setScalar(SMITH_SC); root.add(S);
+  const DR = [];
 const PL=0xe0d3b4,STONE=0x7b786f,STONE2=0x66635c,TM=0x4a3320,DOOR=0x6b4a2b,DOOR2=0x5c3f24,IRON=0x2b2b30,WOOD=0x8a6238,WOOD2=0x6e4d2c,SH=0x3f5a47;
 let DEF=S;let XR=false;function M(c,e){const m=new THREE.MeshLambertMaterial({color:c,emissive:e||0});return XR?xray(m):m}
 function B(w,h,d,x,y,z,c,p,e){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c,e));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||DEF).add(m);return m}
@@ -22,7 +26,7 @@ function tr(m,o){m.material.transparent=true;m.material.opacity=o;return m}
 // terreno
 
 // estrutura
-const H=3,T=.3,front=new THREE.Group(),roof=new THREE.Group(),walls=new THREE.Group();S.add(front,roof,walls);
+const H=3,T=.3,front=new THREE.Group(),roof=new THREE.Group(),walls=new THREE.Group();S.add(front,roof,walls);const wB=new THREE.Group(),wL=new THREE.Group(),wR=new THREE.Group();walls.add(wB,wL,wR);
 B(8.6,.4,6.6,0,-.1,0,STONE2);B(7.7,.1,5.7,0,.06,0,0x5a4430);
 for(let i=0;i<8;i++)B(.94,.03,5.7,-3.5+i,.115,0,i%2?0x6b5238:0x7a5e40);
 function wall(ax,f,a0,a1,ops,g){
@@ -48,7 +52,7 @@ function win(ax,f,c,w,y0,y1,g){const h=y1-y0,y=(y0+y1)/2,s=Math.sign(f);
 }
 function door(c,w,h,g){
  W('x',3,c-w/2-.09,h/2,.18,h+.1,T+.14,TM,g);W('x',3,c+w/2+.09,h/2,.18,h+.1,T+.14,TM,g);W('x',3,c,h+.1,w+.5,.22,T+.14,TM,g);
- const p=new THREE.Group();p.position.set(c-w/2,0,2.98);p.rotation.y=1.05;g.add(p);
+ const p=new THREE.Group();p.position.set(c-w/2,0,2.98);p.rotation.y=0;g.add(p);DR.push({p,g,openRot:1.05,c,f:3,w,lvl:0,id:'smith-front'});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06+Math.random()*.04,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);
  B(w,.12,.09,w/2,.45,.01,IRON,p);B(w,.12,.09,w/2,h-.45,.01,IRON,p);B(w,.06,.09,w/2,h/2,.01,TM,p);
  B(.2,.09,.1,.1,.45,.02,IRON,p);B(.2,.09,.1,.1,h-.45,.02,IRON,p);
@@ -57,13 +61,13 @@ function door(c,w,h,g){
 }
 XR=true;wall('x',3,-4,4,[{c:-1.4,w:1.2,y0:0,y1:2.2},{c:1.8,w:1.3,y0:1,y1:2.1}],front);
 door(-1.4,1.2,2.2,front);win('x',3,1.8,1.3,1,2.1,front);
-wall('x',-3,-4,4,[{c:-.6,w:1.1,y0:1,y1:2.1}],walls);win('x',-3,-.6,1.1,1,2.1,walls);
-wall('z',-4,-3,3,[{c:-.6,w:1.2,y0:1,y1:2.1}],walls);win('z',-4,-.6,1.2,1,2.1,walls);
+wall('x',-3,-4,4,[{c:-.6,w:1.1,y0:1,y1:2.1}],wB);win('x',-3,-.6,1.1,1,2.1,wB);
+wall('z',-4,-3,3,[{c:-.6,w:1.2,y0:1,y1:2.1}],wL);win('z',-4,-.6,1.2,1,2.1,wL);
 // parede direita (lado da forja): pedra, sem janela
 {const sc2=[0x7b786f,0x6a675f,0x8a867b,0x73706a,0x5f5c56];
- W('z',4,0,H/2,6,H,T,0x4a4640,walls);
- for(let r=0;r<10;r++){let z=-3;while(z<3-.01){const l=Math.min(.55+Math.random()*.45,3-z);B(T+.06,.28,l-.03,4,.14+r*.3,z+l/2,sc2[(Math.random()*5)|0],walls);z+=l}}
- W('z',4,0,H-.09,6.2,.18,T+.12,TM,walls)}
+ W('z',4,0,H/2,6,H,T,0x4a4640,wR);
+ for(let r=0;r<10;r++){let z=-3;while(z<3-.01){const l=Math.min(.55+Math.random()*.45,3-z);B(T+.06,.28,l-.03,4,.14+r*.3,z+l/2,sc2[(Math.random()*5)|0],wR);z+=l}}
+ W('z',4,0,H-.09,6.2,.18,T+.12,TM,wR)}
 B(1.9,.2,.9,-1.4,.12,3.55,STONE);B(1.4,.12,.5,-1.4,.06,4.2,STONE2);
 // telhado
 const L=Math.hypot(3.6,2.2),A=Math.atan2(2.2,3.6),RT=H+2.2,sc=[0x5a4636,0x6b5644,0x4f3d2f,0x74604a];
@@ -171,7 +175,7 @@ for(let i=0;i<5;i++){const a=i*1.3,r=C(.4,.5,.4,5,-6+Math.cos(a)*.6,.2,5+Math.si
   const K = SMITH_SC, Pm = (mx, mz) => [mx * K, mz * K];
   scene.add(root);
   const at = (lx, lz) => [x + lx * Math.cos(th) + lz * Math.sin(th), z - lx * Math.sin(th) + lz * Math.cos(th)];
-  const block = (lx, lz, r) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; props.push(o); };
+  const block = (lx, lz, r, dr) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; if (dr) o.dr = dr; props.push(o); };
   // paredes: a da frente tem um vão na porta (x = -1.4) para o jogador entrar
   for (let u = -4; u <= 4.01; u += .9) { if (u < -2.45 || u > -.35) block(u * K, 3.1 * K, .45); block(u * K, -3.1 * K, .45); }
   for (let v = -2.2; v <= 2.21; v += .9) { block(-4 * K, v * K, .45); block(4 * K, v * K, .45); }
@@ -187,5 +191,9 @@ for(let i=0;i<5;i++){const a=i*1.3,r=C(.4,.5,.4,5,-6+Math.cos(a)*.6,.2,5+Math.si
     home: Pm(8.12, 1.5), forgeSpot: Pm(7.1, -.7), barSpot: Pm(7.9, .2),
     door: Pm(-1.4, 3.4), wps: [Pm(5.8, 4.4), Pm(9.4, 3.2)],
   };
+  [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
+  DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
+  refreshProps();
+  registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
   return { g: root, th, at, pts, front: at(-1.4 * K, 4.2 * K) };
 }

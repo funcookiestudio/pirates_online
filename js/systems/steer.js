@@ -65,6 +65,8 @@ export function collide(q, r) {
 const N = 340, ORG = -170;   // cobre a ilha inteira (±150 m) com folga
 let grid = null, gridN = -1, cost = null, hgt = null;
 const cell = v => Math.floor(v - ORG);
+/** Obriga a recalcular a grade (colisões de andar mudaram) */
+export function invalidateGrid() { gridN = -1; }
 
 function buildGrid() {
   grid = new Uint8Array(N * N);
@@ -82,6 +84,7 @@ function buildGrid() {
   const raw = grid.slice();
   const nb = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
   props.forEach(p => {
+    if (p.ng) return;
     const R = p.r + .5;
     for (let cx = cell(p.position.x - R); cx <= cell(p.position.x + R); cx++) {
       for (let cz = cell(p.position.z - R); cz <= cell(p.position.z + R); cz++) {

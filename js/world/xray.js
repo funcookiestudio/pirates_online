@@ -3,6 +3,8 @@
 import { cam, ren } from '../core/engine.js';
 import { P } from '../entities/player.js';
 import { groundY } from './terrain.js';
+import { insideHouse } from './floors.js';
+import { VILLAGE_R } from '../core/village-const.js';
 
 const U = {
   uPS: { value: new THREE.Vector2(-1e4, -1e4) }, // posição do personagem na tela (pixels do buffer)
@@ -37,11 +39,11 @@ const v = new THREE.Vector3();
 /** Atualiza a posição do personagem na tela (chamar a cada quadro, antes de renderizar) */
 export function updateXray() {
   cam.updateMatrixWorld();
-  v.set(P.x, groundY(P.x, P.z) + 1, P.z);
+  v.set(P.x, groundY(P.x, P.z) + (P.fy || 0) + 1, P.z);
   const d = -v.clone().applyMatrix4(cam.matrixWorldInverse).z;
   v.project(cam);
   const s = ren.getDrawingBufferSize(new THREE.Vector2());
   U.uPS.value.set((v.x * .5 + .5) * s.x, (v.y * .5 + .5) * s.y);
   U.uPD.value = d;
-  U.uR.value = s.y * .18;
+  U.uR.value = (insideHouse() || Math.hypot(P.x, P.z) < VILLAGE_R + .5) ? 0 : s.y * .4;   // raio fixo em fração da tela: o círculo ocupa ~80% da altura em qualquer zoom
 }

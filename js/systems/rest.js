@@ -76,7 +76,7 @@ function placeWeapon() {
   fa.updateMatrixWorld(true);
   M.compose(P.hl.p, P.hl.q, ONE).premultiply(fa.matrixWorld).decompose(wp, wq, ws); // pose se estivesse na mão
   gp.copy(GROUND).applyMatrix4(P.g.matrixWorld);
-  gp.y = GROUND.y + groundY(P.x, P.z);
+  gp.y = GROUND.y + (groundY(P.x, P.z) + (P.fy || 0));
   gq.copy(P.g.quaternion).multiply(Q_LAY);
   wp.lerp(gp, b);
   wq.slerp(gq, b);
@@ -113,7 +113,7 @@ export function animateSit(dt) {
   g.updateMatrixWorld(true);
   box.setFromObject(g.legL);
   box.union(tmp.setFromObject(g.legR));
-  g.position.y = groundY(P.x, P.z) - box.min.y - .02;
+  g.position.y = (groundY(P.x, P.z) + (P.fy || 0)) - box.min.y - .02;
   g.updateMatrixWorld(true);
   placeWeapon();
 
@@ -125,5 +125,5 @@ function endSit() {
   g.up.rotation.x = 0;
   g.legL.rotation.z = g.legR.rotation.z = 0;
   g.armL.rotation.set(0, 0, 0);
-  g.position.y = groundY(P.x, P.z);
+  g.position.y = (groundY(P.x, P.z) + (P.fy || 0));
 }

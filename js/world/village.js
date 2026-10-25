@@ -48,7 +48,7 @@ function buildWall() {
 }
 
 let gi = 0, ci = 0;
-function citizen(x, z, ry, look, work) { makeNpc('citizen', x, z, ry, look, ci === 0 ? 2 : ci, CITIZENS[ci % CITIZENS.length], work); ci++; blocker(x, z, .55); }
+function citizen(x, z, ry, look, work, idx = ci) { makeNpc('citizen', x, z, ry, look, idx === 0 ? 2 : idx, CITIZENS[idx % CITIZENS.length], work); ci++; blocker(x, z, .55); }
 
 function buildGate(a) {
   const d = [Math.cos(a), Math.sin(a)], t = [-Math.sin(a), Math.cos(a)];
@@ -78,7 +78,7 @@ export function buildVillage() {
   const ground = new THREE.Mesh(new THREE.CircleGeometry(VILLAGE_R + 3, 24).rotateX(-Math.PI / 2), M(0x9a8a62));
   ground.position.y = .012;
   scene.add(ground);
-  buildWall();
+  // buildWall();   // muralhas removidas por enquanto (só os portões ficam)
   for (let k = 0; k < 4; k++) buildGate(k * Math.PI / 2);
 
   // fogueira no centro da vila (substitui o antigo poço)
@@ -87,7 +87,8 @@ export function buildVillage() {
   // casas temáticas coladas na muralha (um slot por ofício), deixando o centro livre
   const looks = [[0xe0b48a, 0x5a4a3a, 0x3a3a3a, 0x2a2a2a], [0xc8946a, 0xb06a2a, 0x3a3a4a, 0x8a5a2a], [0xf0c8a0, 0x3a5a8a, 0x2a3a5a, 0xd8d0b0],
     [0xa87850, 0x7a5a2a, 0x4a3a2a, 0x6a4a3a], [0xe8bc94, 0x2a8a8a, 0x5a2a2a, 0x2a2a2a], [0xd0a07a, 0x2a7a4a, 0x3a4a3a, 0xa87850], [0xc8946a, 0x8a8a8a, 0x3a4a3a, 0xa87850]];
-  const SLOTS = [['smith', 33], ['tavern', 140], ['cartog', 225], ['caulk', 312], ['sailor', 208], ['trader', 242], ['fisher', 298]];
+  const SLOTS = [['smith', 36], ['tavern', 138], ['cartog', 212], ['trader', 298]];   // Zé Carrancudo e sua casa foram removidos; a Capitã Sal ocupa o lugar   // Mestre Breu e Pé-de-Pau moram na taberna
+  const IDX = { smith: 0, tavern: 1, cartog: 2, trader: 5, fisher: 6 };
   // à direita da casa do Zé Carrancudo, junto ao muro: mural de missões e baú
   const edge = VILLAGE_R - 2.1;
   [[324, 'board'], [341, 'chest']].forEach(([deg, what]) => {
@@ -97,11 +98,16 @@ export function buildVillage() {
       [-.7, .7].forEach(lx => blocker(x + lx * Math.cos(ry), z - lx * Math.sin(ry), .8));
     } else { makeChest(x, z, ry, CHEST); blocker(x, z, 1.0); }
   });
-  SLOTS.forEach(([kind, deg], i) => {
-    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ smith: 5.3, tavern: 5.6 }[kind] || 3.7);
+  SLOTS.forEach(([kind, deg]) => {
+    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ smith: 5.9, tavern: 6.0 }[kind] || 3.7), k = IDX[kind];
     const [fx, fz, th, at, pts] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
-    if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[i], { kind: 'smith', at, th, pts }); }
-    else citizen(fx, fz, th, looks[i]);
+    if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[k], { kind: 'smith', at, th, pts }, k); }
+    else citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId } : undefined, k);
+    if (kind === 'tavern') {   // moradores da taberna (cada um com seu quarto no andar de cima)
+      const K = 1.22;
+      citizen(...at(2.2 * K, 1.6 * K), th + Math.PI / 2, looks[3], undefined, 3);     // Mestre Breu, junto da mesa da janela
+      citizen(...at(-1.6 * K, -.15 * K), th + Math.PI, looks[4], undefined, 4);        // Pé-de-Pau Polly, no balcão
+    }
   });
 }
 

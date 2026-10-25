@@ -119,7 +119,7 @@ export function applyWeaponBonus() {
 export function refreshTorch() {
   const has = isTorch(eq.off);
   mountTorch(has ? eq.off.w : null);
-  const on = has && !WEAPONS[P.wid].big;
+  const on = has && !WEAPONS[P.wid].big && !P.safe;
   if (P.torchM) P.torchM.visible = on;
   torchLight.distance = on ? 44 : 22;
   torchLight.intensity = (DG.on ? 1.8 : 1.2) * (on ? 1.5 : 1);     // com tocha: luz mais forte e que alcança mais longe

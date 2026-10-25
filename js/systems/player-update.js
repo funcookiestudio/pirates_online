@@ -2,6 +2,10 @@
 import { refreshTorch } from './inventory.js';
 import { steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
+import { floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
+import { dIn } from '../dungeon/dgrid.js';
+import { updateDoors, applyDoorReach } from '../world/doors.js';
+import { VILLAGE_R } from '../core/village-const.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
 import { props } from '../core/registry.js';
@@ -50,6 +54,7 @@ export function updatePlayer(dt) {
   animate(dt);
   applyAim();
   swimPose(dt);
+  applyDoorReach();
   placeWeapons();
 }
 
@@ -89,6 +94,7 @@ function moveAndAct(dt) {
   const px = P.x, pz = P.z;
   if (state.autoOn) autoThink(dt);
   if (P.tgt && P.tgt.dead) P.tgt = null;
+  stairTick();
 
   if (!P.tgt && (P.tx !== STEER.gx || P.tz !== STEER.gz)) {
     // destino novo: tira de dentro de obstáculos e zera o controle de progresso
@@ -142,9 +148,16 @@ function moveAndAct(dt) {
 
   // arma de fogo só dispara depois de mirar
   if (MOUNT.on && !MOUNT.dis && MOUNT.t >= 1 && P.tgt && d <= rng + 4.5) startDismount();   // montado não ataca: desmonta um pouco antes do alvo
-  if (d <= rng && P.tgt && P.cd <= 0 && !P.swap && !MOUNT.on && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
+  if (d <= rng && P.tgt && P.cd <= 0 && !P.safe && !P.swap && !MOUNT.on && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
 
   clampToWorld();
+  stairMove(dt);
+  P.fy = floorOffset(P.x, P.z);
+  updateCutaway();
+  updateDoors(dt);
+  // dentro da vila (zona segura) o personagem guarda a arma no coldre; ela volta à mão ao sair
+  P.safe = Math.hypot(P.x, P.z) < VILLAGE_R - .3 && !dIn(P.x, P.z);
+  P.safeK = (P.safeK || 0) + ((P.safe ? 1 : 0) - (P.safeK || 0)) * Math.min(1, dt * 6);
 
   // intensidade da caminhada (0 parado … 1 correndo) e regeneração
   P.walk += ((dt > 0 ? Math.min(1, Math.hypot(P.x - px, P.z - pz) / (P.sp * dt)) : 0) - P.walk) * (1 - Math.exp(-dt * 12));
@@ -180,7 +193,7 @@ function animate(dt) {
 
   // passos
   P.ph = P.g.gs ? P.g.gs.ph : P.ph;   // fase do passo (a marcha nova mantém a própria)
-  P.g.position.set(P.x, groundY(P.x, P.z), P.z);
+  P.g.position.set(P.x, groundY(P.x, P.z) + (P.fy || 0), P.z);
 
   // inclinação do corpo
   const leanTarget = P.walk * .09
@@ -232,7 +245,7 @@ function animate(dt) {
   const busy = gn || P.sw > 0 || P.swap;
   gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap && !(P.torchM && P.torchM.visible), head: !W.big, gun: gn, sword: !busy });
   if (P.torchM) {   // com arma de 2 mãos na mão a tocha some (o braço livre ajuda a mirar)
-    const on = !W.big;
+    const on = !W.big && !P.safe;   // tocha apagada e guardada em locais iluminados (vila e casas)
     if (P.torchM.visible !== on) { P.torchM.visible = on; refreshTorch(); }
   }
   if (P.torchM && P.torchM.visible && !P.swap) {   // braço da tocha: erguido, balança pouco
@@ -252,7 +265,7 @@ function animateRummage(dt) {
   g.rotation.y += dy * (1 - Math.exp(-dt * 10));
   P.walk = 0; P.lean = 0;
   g.rotation.x = 0;
-  g.position.set(P.x, groundY(P.x, P.z), P.z);
+  g.position.set(P.x, groundY(P.x, P.z) + (P.fy || 0), P.z);
   g.legL.rotation.x = g.legR.rotation.x = 0;
   const a = Math.sin(t * 4.2), b = Math.sin(t * 4.2 + Math.PI), dig = .5 + .5 * Math.sin(t * 1.3);
   g.up.rotation.set(r * (.55 + dig * .12 + Math.sin(t * 2.1) * .04), r * Math.sin(t * 1.3) * .12, 0);

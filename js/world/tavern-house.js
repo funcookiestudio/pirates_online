@@ -3,8 +3,11 @@
 import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
+import { bakeGroup } from './merge.js';
+import { registerFloors, refreshProps } from './floors.js';
+import { addDoor } from './doors.js';
 
-export const TAVERN_SC = 1.15;
+export const TAVERN_SC = 1.22;
 
 export function buildTavernHouse(x, z, a) {
   const th = Math.atan2(-Math.cos(a), -Math.sin(a));
@@ -12,6 +15,7 @@ export function buildTavernHouse(x, z, a) {
   root.position.set(x, 0, z); root.rotation.y = th;
   const S = new THREE.Group(); S.scale.setScalar(TAVERN_SC); root.add(S);
   let XR = false;
+  const DR = []; let DI = {};
   const MC = {};
   function M(c, e) { const k = c + '_' + (e || 0) + (XR ? 'x' : ''); if (MC[k]) return MC[k]; const m = new THREE.MeshLambertMaterial({ color: c, emissive: e || 0 }); return MC[k] = XR ? xray(m) : m; }
 const PL=0xe6d9b6,STONE=0x7b786f,STONE2=0x66635c,TM=0x4a3320,DOOR=0x6b4a2b,DOOR2=0x5c3f24,IRON=0x2b2b30,WOOD=0x8a6238,WOOD2=0x6e4d2c,SH=0x7a2e2e;
@@ -19,7 +23,7 @@ function B(w,h,d,x,y,z,c,p,e){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d
 function C(rt,rb,h,n,x,y,z,c,p,e){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,n),M(c,e));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||S).add(m);return m}
 function W(ax,f,u,y,l,h,t,c,g){return ax=='x'?B(l,h,t,u,y,f,c,g):B(t,h,l,f,y,u,c,g)}
 function tr(m,o){m.material=m.material.clone();m.material.transparent=true;m.material.opacity=o;return m}
-const front=new THREE.Group(),walls=new THREE.Group(),up=new THREE.Group(),roof=new THREE.Group();S.add(front,walls,up,roof);
+const front=new THREE.Group(),walls=new THREE.Group(),up=new THREE.Group(),roof=new THREE.Group();S.add(front,walls,up,roof);const wB=new THREE.Group(),wL=new THREE.Group(),wR=new THREE.Group(),uB=new THREE.Group(),uL=new THREE.Group(),uR=new THREE.Group();walls.add(wB,wL,wR);up.add(uB,uL,uR);
 const T=.3,sc2=[0x7b786f,0x6a675f,0x8a867b,0x73706a,0x5f5c56];
 B(10.8,.4,7.8,0,-.1,0,STONE2);B(9.7,.1,6.7,0,.06,0,0x5a4430);
 for(let i=0;i<10;i++)B(.96,.03,6.7,-4.5+i,.115,0,i%2?0x6b5238:0x7a5e40);
@@ -48,7 +52,7 @@ function win(ax,f,c,w,y0,y1,g){const h=y1-y0,y=(y0+y1)/2,s=Math.sign(f);
 }
 function door(f,c,w,h,g,ang){const s=Math.sign(f);
  W('x',f,c-w/2-.09,h/2,.18,h+.1,T+.14,TM,g);W('x',f,c+w/2+.09,h/2,.18,h+.1,T+.14,TM,g);W('x',f,c,h+.1,w+.5,.22,T+.14,TM,g);
- const p=new THREE.Group();p.position.set(c-w/2,0,f-s*.02);p.rotation.y=s*ang;g.add(p);
+ const p=new THREE.Group();p.position.set(c-w/2,0,f-s*.02);p.rotation.y=0;g.add(p);DR.push({p,g,openRot:s*ang,c,f,w,lvl:0,...DI});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06+Math.random()*.04,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);
  B(w,.12,.09,w/2,.45,.01,IRON,p);B(w,.12,.09,w/2,h-.45,.01,IRON,p);B(w,.06,.09,w/2,h/2,.01,TM,p);
  const r=new THREE.Mesh(new THREE.TorusGeometry(.07,.016,4,8),M(IRON));r.position.set(w-.15,1.0,.07);p.add(r);
@@ -56,23 +60,23 @@ function door(f,c,w,h,g,ang){const s=Math.sign(f);
 XR=true;
 // paredes do térreo (pedra) e do andar de cima (enxaimel)
 wall('x',3.5,-5,5,[{c:0,w:1.4,y0:.12,y1:2.3},{c:-3.2,w:1.2,y0:1,y1:2.1},{c:3.4,w:1.2,y0:1,y1:2.1}],front,.12,2.9,true);
-door(3.5,0,1.4,2.3,front,1.0);win('x',3.5,-3.2,1.2,1,2.1,front);win('x',3.5,3.4,1.2,1,2.1,front);
-wall('x',-3.5,-5,5,[{c:1.5,w:1.2,y0:1,y1:2.1},{c:3.8,w:1.2,y0:.12,y1:2.2}],walls,.12,2.9,true);win('x',-3.5,1.5,1.2,1,2.1,walls);door(-3.5,3.8,1.2,2.2,walls,.5);
-wall('z',-5,-3.5,3.5,[{c:-2.2,w:1.2,y0:1,y1:2.1}],walls,.12,2.9,true);win('z',-5,-2.2,1.2,1,2.1,walls);
-wall('z',5,-3.5,3.5,[{c:1.5,w:1.2,y0:1,y1:2.1}],walls,.12,2.9,true);win('z',5,1.5,1.2,1,2.1,walls);
+DI={id:'tavern-front'};door(3.5,0,1.4,2.3,front,1.0);win('x',3.5,-3.2,1.2,1,2.1,front);win('x',3.5,3.4,1.2,1,2.1,front);
+wall('x',-3.5,-5,5,[{c:1.5,w:1.2,y0:1,y1:2.1},{c:3.8,w:1.2,y0:.12,y1:2.2}],wB,.12,2.9,true);win('x',-3.5,1.5,1.2,1,2.1,wB);DI={id:'tavern-back'};door(-3.5,3.8,1.2,2.2,wB,.5);
+wall('z',-5,-3.5,3.5,[{c:-2.2,w:1.2,y0:1,y1:2.1}],wL,.12,2.9,true);win('z',-5,-2.2,1.2,1,2.1,wL);
+wall('z',5,-3.5,3.5,[{c:1.5,w:1.2,y0:1,y1:2.1}],wR,.12,2.9,true);win('z',5,1.5,1.2,1,2.1,wR);
 const uf=new THREE.Group();front.add(uf);
 wall('x',3.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uf,3.15,2.45,false);
 for(const c of[-3,0,3])win('x',3.9,c,1.1,3.8,4.8,uf);
-wall('x',-3.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],up,3.15,2.45,false);
-for(const c of[-3,0,3])win('x',-3.9,c,1.1,3.8,4.8,up);
-wall('z',-5,-3.9,3.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],up,3.15,2.45,false);win('z',-5,0,1.1,3.8,4.8,up);
-wall('z',5,-3.9,3.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],up,3.15,2.45,false);win('z',5,0,1.1,3.8,4.8,up);
+wall('x',-3.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uB,3.15,2.45,false);
+for(const c of[-3,0,3])win('x',-3.9,c,1.1,3.8,4.8,uB);
+wall('z',-5,-3.9,3.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],uL,3.15,2.45,false);win('z',-5,0,1.1,3.8,4.8,uL);
+wall('z',5,-3.9,3.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],uR,3.15,2.45,false);win('z',5,0,1.1,3.8,4.8,uR);
 // piso do andar de cima, com abertura da escada
-B(9,.2,7.8,.55,3.05,0,WOOD2,up);B(1.2,.2,3,-4.5,3.05,-2.4,WOOD2,up);B(1.2,.2,1.2,-4.5,3.05,3.3,WOOD2,up);
+B(8.65,.2,7.8,.725,3.05,0,WOOD2,up);B(1.5,.2,2.15,-4.35,3.05,-2.825,WOOD2,up);B(1.5,.2,2.05,-4.35,3.05,2.875,WOOD2,up);B(1.5,.2,.6,-4.35,3.05,-1.45,WOOD2,up);
 for(let x=-4.5;x<=4.6;x+=1.5)B(.22,.26,8.1,x,2.9,0,TM,up);
 for(let x=-4.5;x<=4.5;x+=1.5)B(.2,.25,.8,x,2.9,3.6,TM,up);
-for(let i=0;i<10;i++)B(.9,.3*(i+1),.3,-4.55,.125+.15*(i+1),2.55-i*.3,i%2?WOOD:WOOD2);
-B(.06,.9,3.6,-3.95,3.6,.9,TM,up);for(const z of[-.9,.9,2.7])B(.1,1,.1,-3.95,3.65,z,TM,up);
+for(let i=0;i<10;i++)B(1.26,.3*(i+1),.3,-4.37,.125+.15*(i+1),1.7-i*.3,i%2?WOOD:WOOD2);
+B(.06,.9,3.0,-3.62,3.6,.35,TM,up);for(const z of[-1.15,.05,1.85])B(.1,1,.1,-3.62,3.65,z,TM,up);
 // telhado
 const L=Math.hypot(4.4,2.4),A=Math.atan2(2.4,4.4),RT=5.6+2.4,sc=[0x6a3e2e,0x7a4a38,0x5a3326,0x84523c];
 for(const s of[1,-1]){const g=new THREE.Group();g.position.set(0,RT,0);g.rotation.x=s*A;roof.add(g);
@@ -98,18 +102,21 @@ for(let i=0;i<3;i++){const f=new THREE.Mesh(new THREE.ConeGeometry(.12,.5,4),M(0
 // balcão, barris, prateleiras
 B(3.6,1.05,.7,-2.6,.65,-1.5,WOOD2);B(3.8,.1,.9,-2.6,1.2,-1.5,WOOD);B(.7,1.05,2.2,-4.35,.65,-2.55,WOOD2);B(.9,.1,2.4,-4.35,1.2,-2.55,WOOD);
 for(let i=0;i<4;i++)B(.04,.9,.02,-4.1+i*.9,.65,-1.14,TM);
-for(const x of[-3.7,-2.6,-1.5]){const c=C(.45,.45,.9,10,x,.6,-2.75,WOOD);c.rotation.x=Math.PI/2;for(const dz of[-.2,.2]){const q=C(.46,.46,.06,10,x,.6,-2.75+dz,IRON);q.rotation.x=Math.PI/2}
- const t=C(.03,.03,.18,5,x,.5,-2.25,0xc9a85a);t.rotation.x=Math.PI/2}
+// um barril pequeno no canto do balcão, junto à parede
+{C(.3,.26,.28,10,-4.4,1.39,-1.75,WOOD);C(.26,.3,.28,10,-4.4,1.67,-1.75,WOOD);for(const y of[1.3,1.53,1.76]){const q=C(.31,.31,.04,10,-4.4,y,-1.75,IRON);q.scale.set(1.02,1,1.02)}const t=C(.025,.025,.14,5,-4.1,1.5,-1.75,0xc9a85a);t.rotation.z=Math.PI/2}
 B(3.4,.06,.35,-2.6,1.9,-3.3,WOOD2);B(3.4,.06,.35,-2.6,2.5,-3.3,WOOD2);
 for(let i=0;i<8;i++){C(.05,.05,.3,6,-4+i*.4,2.08,-3.3,[0x2e6b3a,0x6b2a2a,0x3a4a7a][i%3]);C(.06,.05,.1,6,-3.9+i*.4,2.58,-3.3,0xb8b0a0)}
 for(let i=0;i<5;i++)C(.07,.06,.12,6,-3.6+i*.7,1.31,-1.5,0xb8b0a0);
-for(let i=0;i<5;i++)C(.22,.2,.45,6,-4.1+i*.8,.35,-.7,WOOD2);
+for(let i=2;i<5;i++)C(.22,.2,.45,6,-4.1+i*.8,.35,-.7,WOOD2);
 // mesas e bancos
 function tbl(x,z,w,d){B(w,.08,d,x,.85,z,WOOD);for(const a of[-1,1])for(const b of[-1,1])B(.1,.8,.1,x+a*(w/2-.1),.45,z+b*(d/2-.1),WOOD2);
  C(.06,.05,.1,6,x-.2,.94,z,0xb8b0a0);C(.03,.03,.14,6,x+.2,.95,z,0xe8dcb0);B(.3,.08,.14,x,.93,z+.2,0xd2a45a)}
 function bnc(x,z,w){B(w,.08,.35,x,.5,z,WOOD);for(const a of[-1,1])B(.08,.4,.3,x+a*(w/2-.1),.3,z,WOOD2)}
-tbl(.9,.4,2,.9);bnc(.9,-.3,2);bnc(.9,1.1,2);tbl(2.6,2.2,1.8,.9);bnc(2.6,1.55,1.8);bnc(2.6,2.85,1.8);tbl(-2.3,1.6,1.4,.9);bnc(-2.3,.95,1.4);bnc(-2.3,2.25,1.4);
-B(2,.02,1.4,-2.3,.14,1.6,0x2a4a5a);
+// mesa junto da janela lateral (x=5, z=1.5), comprimento no eixo z, centrada na janela
+{const x=3.9,z=1.5,w=.9,d=1.8;B(w,.08,d,x,.85,z,WOOD);for(const a of[-1,1])for(const b of[-1,1])B(.1,.8,.1,x+a*(w/2-.1),.45,z+b*(d/2-.1),WOOD2);
+ C(.06,.05,.1,6,x,.94,z-.2,0xb8b0a0);C(.03,.03,.14,6,x,.95,z+.2,0xe8dcb0);B(.14,.08,.3,x+.2,.93,z,0xd2a45a);
+ for(const sx of[-1,1]){B(.35,.08,d,x+sx*.65,.5,z,WOOD);for(const a of[-1,1])B(.3,.4,.08,x+sx*.65,.3,z+a*(d/2-.1),WOOD2)}}
+
 // lustre de roda de carroça
 {const ch=new THREE.Mesh(new THREE.TorusGeometry(.6,.05,4,12),M(TM));ch.rotation.x=Math.PI/2;ch.position.set(0,2.45,.4);S.add(ch);
  for(const a of[0,1,2,3,4,5]){const x=Math.cos(a*1.047)*.6,z=Math.sin(a*1.047)*.6;C(.03,.03,.14,6,x,2.55,.4+z,0xe8dcb0);const f=new THREE.Mesh(new THREE.ConeGeometry(.03,.08,4),M(0xffc040,0xffa020));f.position.set(x,2.66,.4+z);S.add(f)}
@@ -117,23 +124,23 @@ B(2,.02,1.4,-2.3,.14,1.6,0x2a4a5a);
 for(const q of[[-3,2],[3,-.5],[-1.5,-1],[0,2.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);C(.1,0,.4,5,q[0],2.45,q[1],0x6a8f3a);C(.08,0,.3,5,q[0]+.15,2.5,q[1],0xb8a040)}
 XR=true;
 // andar de cima: camas, partições, mesa
-for(const bx of[-4.2,-1.07,2.5]){const z0=-2.75;
+for(const bx of[-1.07,2.5]){const z0=-2.75;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0+.35,[0x7a2e2e,0x2e4a7a,0x3a6b3a][bx<-3?0:bx<0?1:2],up);B(.8,.12,.4,bx,3.95,z0-.8,0xf0ead8,up);
  B(1.3,1.1,.1,bx,4.0,-3.8,WOOD2,up);B(1.2,.5,.08,bx,3.65,-1.62,WOOD2,up);const cx=bx+(bx<-1?1.05:bx>1?1.0:1.15);B(.8,.45,.5,cx,3.38,-3.3,WOOD2,up);B(.82,.1,.52,cx,3.66,-3.3,WOOD,up);
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
 // divisórias entre os quartos, parede do corredor e portas
 for(const x of[-1.8,1.8]){B(.15,2.45,2.55,x,4.375,-2.475,PL,up);for(const z of[-3.7,-1.25])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,2.55,x,5.5,-2.475,TM,up);B(.2,.2,2.55,x,3.25,-2.475,TM,up)}
-wall('x',-1.2,-5,5,[{c:-3,w:1,y0:3.15,y1:5.2},{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
+wall('x',-1.2,-1.8,5,[{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
 const d2=c=>{const w=1,h=2.05,yb=3.15;W('x',-1.2,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',-1.2,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
- const p=new THREE.Group();p.position.set(c-w/2,yb,-1.18);p.rotation.y=-.9;up.add(p);
+ const p=new THREE.Group();p.position.set(c-w/2,yb,-1.18);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:.9,c,f:-1.2,w,lvl:1,room:true,id:'room-'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,.01,IRON,p);B(w,.1,.09,w/2,h-.4,.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,.07);p.add(r)};
-d2(-3);d2(0);d2(3.4);
+d2(0);d2(3.4);
 // quartos da frente (da direita para a esquerda), com corredor entre eles e os quartos dos fundos
 wall('x',.6,-1.8,5,[{c:3,w:1,y0:3.15,y1:5.2},{c:-.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
 for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',.6,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',.6,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
- const p=new THREE.Group();p.position.set(c-w/2,yb,.58);p.rotation.y=.9;up.add(p);
+ const p=new THREE.Group();p.position.set(c-w/2,yb,.58);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:-.9,c,f:.6,w,lvl:1,room:true,id:'room-f'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,-.01,IRON,p);B(w,.1,.09,w/2,h-.4,-.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,-.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,-.07);p.add(r)}
 for(const x of[-1.8,1.8]){B(.15,2.45,3.15,x,4.375,2.175,PL,up);for(const z of[.7,3.65])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,3.15,x,5.5,2.175,TM,up);B(.2,.2,3.15,x,3.25,2.175,TM,up)}
@@ -143,8 +150,12 @@ for(const bx of[2.5,-1.07]){const z0=2.65;
  const cx=bx+1.05;B(.8,.45,.5,cx,3.38,3.3,WOOD2,up);B(.82,.1,.52,cx,3.66,3.3,WOOD,up);
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
-B(1.6,.08,.8,-2.9,3.95,2.6,WOOD,up);for(const a of[-1,1])for(const b of[-1,1])B(.1,.8,.1,-2.9+a*.7,3.55,2.6+b*.3,WOOD2,up);
-C(.03,.03,.14,6,-2.9,4.04,2.6,0xe8dcb0,up);
+B(1.6,.08,.8,-4.0,3.95,3.35,WOOD,up);for(const a of[-1,1])for(const b of[-1,1])B(.1,.8,.1,-4.0+a*.7,3.55,3.35+b*.3,WOOD2,up);
+C(.03,.03,.14,6,-4.0,4.04,3.35,0xe8dcb0,up);
+// cadeira puxada e girada, como se alguém tivesse levantado e deixado fora do lugar
+{const g=new THREE.Group();g.position.set(-4.4,3.15,2.45);g.rotation.y=1.05;up.add(g);B(.46,.06,.46,0,.5,0,WOOD,g);for(const a of[-.19,.19])for(const b of[-.19,.19])B(.05,.5,.05,a,.25,b,WOOD2,g);B(.46,.5,.05,0,.78,-.21,WOOD2,g);B(.4,.06,.05,0,1.05,-.21,WOOD,g)}
+// proteção na borda sul do vão da escada
+B(1.5,.9,.06,-4.35,3.6,1.85,TM,up);B(.1,1,.1,-5.0,3.65,1.85,TM,up);
 XR=false;
 // placa pendurada e lanternas
 const sg=new THREE.Group();sg.position.set(1.9,2.75,3.6);front.add(sg);
@@ -163,20 +174,49 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   const K = TAVERN_SC;
   scene.add(root);
   const at = (lx, lz) => [x + lx * Math.cos(th) + lz * Math.sin(th), z - lx * Math.sin(th) + lz * Math.cos(th)];
-  const block = (lx, lz, r) => { const o = new THREE.Object3D(); const [wx, wz] = at(lx * K, lz * K); o.position.set(wx, 0, wz); o.r = r * K; props.push(o); };
+  // colisão: lvl 0 = térreo, 1 = andar de cima, sem lvl = os dois
+  const block = (lx, lz, r, lvl, ng, dr) => {
+    // ng: a grade grosseira do pathfinding (1 m) ignora o círculo, senão a escada (estreita) fica "fechada"; a colisão real continua valendo
+    
+    const o = new THREE.Object3D(); const [wx, wz] = at(lx * K, lz * K); o.position.set(wx, 0, wz); o.r = r * K; if (ng) o.ng = true; if (dr) o.dr = dr;
+    if (lvl !== undefined) { o.lvl = lvl; o.hx = wx; o.hz = wz; if (lvl === 1) { o.position.x = 1e5; o.position.z = 1e5; } }
+    props.push(o);
+  };
   // paredes (a da frente tem o vão da porta)
-  [-5, -4.1, -3.2, -2.35].forEach(u => { block(u, 3.6, .45); block(-u, 3.6, .45); });
-  block(-1.5, 3.6, .6); block(1.5, 3.6, .6);
-  for (let u = -5; u <= 5.01; u += .9) block(u, -3.6, .45);
-  for (let v = -2.8; v <= 2.81; v += .9) { block(-5, v, .45); block(5, v, .45); }
-  // mobília
-  [-4.2, -3.4, -2.6, -1.8, -1.0].forEach(u => block(u, -1.5, .5));
-  block(-4.35, -2.0, .5); block(-4.35, -3.0, .5);
-  [-2.8, -1.7, -.6, .5, 1.6, 2.7].forEach(v => block(-4.55, v, .4)); // escada
-  [-2.2, -1.2, -.4].forEach(v => block(4.4, v, .5));                 // lareira
-  const tb = (tx, tz, hw) => [-1, 1].forEach(s => [-.7, 0, .7].forEach(dz => block(tx + s * hw, tz + dz, .4)));
-  tb(.9, .4, .5); tb(2.6, 2.2, .45); tb(-2.3, 1.6, .35); tb(-3.8, 5.8, .45);
-  block(4.6, 4.5, .55); block(5.7, 4.5, .55);
-  const pts = { keeper: [-.3, -1.6] };
+  [-5, -4.1, -3.2, -2.35].forEach(u => { block(u, 3.6, .45, undefined, u < -3); block(-u, 3.6, .45); });
+  block(-1.5, 3.6, .5); block(1.5, 3.6, .5);
+  for (let u = -5; u <= 5.01; u += .9) if (Math.abs(u - 3.8) > 1.2) block(u, -3.6, .45);
+  for (let v = -2.8; v <= 2.81; v += .9) { block(-5, v, .2, undefined, true); block(5, v, .45); }
+  // mobília do térreo (raios pequenos: os corredores precisam ficar livres)
+  [-2.6, -1.8, -1.0].forEach(u => block(u, -1.5, .4, 0));
+  block(-4.35, -2.0, .4, 0); block(-4.35, -3.0, .4, 0);
+  [-2.2, -1.2, -.4].forEach(v => block(4.4, v, .45, 0));                // lareira
+  const tb = (tx, tz, hw) => [-1, 1].forEach(s => [-.5, .5].forEach(dz => block(tx + s * hw * .5, tz + dz * 1.0, .3, 0)));
+  [-1, 1].forEach(sx => [-1, 1].forEach(sz => block(3.9 + sx * .65, 1.5 + sz * .55, .3, 0)));
+  // debaixo da escada: lados fechados (só se entra pela parte de baixo)
+  [-4.7, -4.0, -3.4].forEach(u => block(u, -2.0, .3, 0, true)); [-.45, .35, 1.15].forEach(v => block(-2.8, v, .12, 0, true));
+  // fora
+  block(-3.8, 5.8, .3, undefined); block(-4.2, 5.8, .3); block(-3.4, 5.8, .3); block(4.6, 4.5, .55); block(5.7, 4.5, .55);
+  // ── andar de cima ──
+  const wl = (axis, c, a0, a1, gaps, ng) => { for (let u = a0; u <= a1 + .01; u += .5) { if (gaps.some(g => Math.abs(u - g) < .85)) continue; axis === 'x' ? block(u, c, .25, 1, ng) : block(c, u, .25, 1); } };
+  wl('x', -1.2, -1.8, 5, [0, 3.4], true);          // parede do corredor (fundos)
+  wl('x', .6, -1.8, 5, [3, -.4], true);              // parede do corredor (frente)
+  wl('z', -1.8, -3.7, -1.25, []); wl('z', 1.8, -3.7, -1.25, []);   // divisórias dos quartos de trás
+  wl('z', -1.8, .7, 3.65, []); wl('z', 1.8, .7, 3.65, []);         // divisórias da frente
+  for (let u = -5; u <= 5.01; u += .9) { block(u, 3.9, .4, 1); block(u, -3.8, .4, 1); }   // parede da frente/fundos
+  for (let v = -3.8; v <= 3.81; v += .9) { block(5, v, .4, 1); block(-5, v, .2, 1); }
+  [-1.07, 2.5].forEach(bx => block(bx, -2.75, .75, 1));      // camas dos fundos
+  [2.5, -1.07].forEach(bx => block(bx, 2.65, .75, 1));             // camas da frente
+  block(-4.4, 3.35, .45, 1); block(-3.6, 3.35, .45, 1); block(-4.4, 2.45, .3, 1);   // mesa e cadeira
+  [-4.7, -4.0, -3.4].forEach(u => block(u, 1.85, .15, 1, true));              // proteção do vão
+  [-.45, .35, 1.15, 1.85].forEach(v => block(-2.8, v, .12, 1, true));      // guarda-corpo da escada
+  const pts = { keeper: [-.3, -1.6], talkAt: at(-.3 * K, -.1 * K), doorId: 'tavern-front' };
+  const lv = g => DR.filter(d => d.g === g).map(d => d.p);
+  [uB, uL, uR, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); bakeGroup(up, [uB, uL, uR, ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
+  const H = { x, z, th, K };
+  const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, undefined], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, undefined] };
+  DR.forEach(d => { const dd = addDoor(d, H); const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
+  refreshProps();
+  registerFloors({ x, z, th, K, hx: 5.4, hz: 4.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 3.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
   return { g: root, th, at, pts, front: at(-.3 * K, -1.6 * K) };
 }
