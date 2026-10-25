@@ -5,6 +5,7 @@ import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
 import { houseAt, HOUSES, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
+import { VIZ } from './steer.js';
 import { applyFull } from '../ui/fullscreen.js';
 import { doorTiles } from '../world/doors.js';
 import { saveGame } from './save.js';
@@ -63,15 +64,15 @@ function updateTrig() {
   imTrig.visible = on;
   if (!on) return;
   let n = 0;
-  const put = (x, z, th, y) => { if (n >= 64) return; _q.setFromAxisAngle(_u, th); _p.set(x, y, z); _m.compose(_p, _q, _s); imTrig.setMatrixAt(n++, _m); };
+  const put = (x, z, th, y, k = 1) => { if (n >= 64) return; _q.setFromAxisAngle(_u, th); _p.set(x, y, z); _s.set(k, 1, k); _m.compose(_p, _q, _s); imTrig.setMatrixAt(n++, _m); };
   doorTiles().forEach(t => {
     if (Math.hypot(t.x - P.x, t.z - P.z) > 30) return;
     const h = t.d.h, inside = houseAt(t.x, t.z, 0) === h, g = groundY(t.x, t.z);
     put(t.x, t.z, h.th, g + (t.d.lvl === 1 ? (h.Hf !== undefined ? h.Hf : 3.03 * h.K) + .06 : inside ? FLOOR_LIFT + .06 : .08));
   });
   const ph = houseAt(P.x, P.z, 0);
-  if (ph) { const st = stairTiles(ph); if (st) { const q = P.up ? st.up : st.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? (ph.Hf !== undefined ? ph.Hf : 3.03 * ph.K) + .06 : FLOOR_LIFT + .06)); } }
-  if (ph && ph.sc) castleStairTiles(ph).forEach(t => { const q = P.up ? t.up : t.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? ph.Hf + .06 : FLOOR_LIFT + .06)); });
+  if (ph) { const st = stairTiles(ph); if (st) { const q = P.up ? st.up : st.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? (ph.Hf !== undefined ? ph.Hf : 3.03 * ph.K) + .06 : FLOOR_LIFT + .06), 3); } }
+  if (ph && ph.sc) castleStairTiles(ph).forEach(t => { const q = P.up ? t.up : t.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? ph.Hf + .06 : FLOOR_LIFT + .06), 3); });
   imTrig.count = n; imTrig.instanceMatrix.needsUpdate = true;
 }
 function updateTiles() {
@@ -101,15 +102,32 @@ function placeTile(o, x, y, z) {
   } else { o.position.set(Math.floor(x) + .5, y, Math.floor(z) + .5); o.rotation.y = 0; o.scale.setScalar(1); }
 }
 /** A cada quadro: posiciona o tile no destino clicado e atualiza o contador de FPS */
+let pathLine = null;
+function updatePath() {
+  if (!pathLine) {
+    pathLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffe040, depthTest: false, transparent: true }));
+    pathLine.renderOrder = 9; pathLine.frustumCulled = false; scene.add(pathLine);
+  }
+  const wp = VIZ.wp, on = CFG.path && wp && !STAIR.on;
+  pathLine.visible = !!on;
+  if (!on) return;
+  const pts = [[P.x, P.z], wp];
+  const tg = P.tgt ? [P.tgt.x, P.tgt.z] : [P.tx, P.tz];
+  if (Math.hypot(tg[0] - wp[0], tg[1] - wp[1]) > .3) pts.push(tg);
+  const y = (P.up ? P.fy : groundY(P.x, P.z)) + .35, a = [];
+  pts.forEach(q => a.push(q[0], P.up || mapY(q) === null ? y : groundY(q[0], q[1]) + .35, q[1]));
+  pathLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(a, 3));
+}
+const mapY = () => null;
 export function updateSettings(dt) {
-  updateTiles(); updateDbg();
+  updateTiles(); updateDbg(); updatePath();
   if (!flashTile) {
     flashTile = new THREE.Group();
     flashTile.add(new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: .55, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false })));
     flashTile.children[0].renderOrder = 1001; flashTile.visible = false; scene.add(flashTile);
   }
   if (flash.t > 0) { flash.t -= dt; flashTile.visible = flash.t > 0 && (Math.floor(flash.t * 10) % 2 === 0); placeTile(flashTile, flash.x, flash.y + .05, flash.z); } else flashTile.visible = false;
-  const away = Math.hypot(mark.position.x - P.x, mark.position.z - P.z) > .7 || !CFG.hlhide;
+  const away = !STAIR.on && Math.hypot(mark.position.x - P.x, mark.position.z - P.z) > .7 || !CFG.hlhide;
   if (CFG.hl === 'tile') {
     mark.visible = false;
     tile.visible = away;
@@ -133,6 +151,7 @@ export function initSettings() {
   hl.onchange = () => { CFG.hl = hl.value; save(); };
   dg.checked = CFG.dbg; dg.onchange = () => { CFG.dbg = dg.checked; save(); };
   tl.checked = CFG.tiles; tl.onchange = () => { CFG.tiles = tl.checked; save(); };
+  const pt = $('gx-path'); pt.checked = !!CFG.path; pt.onchange = () => { CFG.path = pt.checked; save(); };
   hh.onchange = () => { CFG.hlhide = hh.checked; save(); };
   $('gx-switch').onclick = () => { saveGame(); location.reload(); };   // a tela de seleção abre a cada início
   const fu = $('gx-full'); fu.checked = CFG.full !== undefined ? !!CFG.full : matchMedia('(pointer:coarse)').matches; fu.onchange = () => { CFG.full = fu.checked; save(); applyFull(fu.checked); };

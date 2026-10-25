@@ -7,7 +7,7 @@ import { invalidateGrid } from '../systems/steer.js';
 import { openDoorById } from './doors.js';
 import { invalidateInterior } from './interior-nav.js';
 import { bakeGroup } from './merge.js';
-import { snapCell, inCell } from './imap.js';
+import { snapCell, inCell, inCellN } from './imap.js';
 import { DOORS } from './doors.js';
 
 export const HOUSES = [];
@@ -114,7 +114,7 @@ export function stairClick(x, z) {
     if (Math.abs(px) > (h.fx || 5.3) || Math.abs(pz) > (h.fz || 4.1)) continue;      // só quem já está dentro da casa
     const [lx, lz] = toL(h, x, z);
     if (h.sc) {
-      const hit = castleStairTiles(h).find(t => inCell(h, P.up ? t.up : t.down, x, z));   // só o tile de ativação (1 célula) sobe/desce
+      const hit = castleStairTiles(h).find(t => inCellN(h, P.up ? t.up : t.down, x, z, 3));   // só o tile de ativação (1 célula) sobe/desce
       if (!hit) continue;
       const r = h.sc(P.up ? hit.s * 5.9 : hit.s * 3.9, P.up ? -.5 : 9.7);
       if (!r) continue;
@@ -124,9 +124,9 @@ export function stairClick(x, z) {
     }
     if (lx < -5.6) continue;
     const stt = stairTiles(h);
-    if (!P.up && stt && inCell(h, stt.down, x, z)) {
+    if (!P.up && stt && inCellN(h, stt.down, x, z, 3)) {
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, 2.5), i: 0, pts: [[-4.3, 1.75], [-4.3, .05], [-4.3, -1.3], [-4.3, -1.75]].map(q => toW(h, ...q)) });
-    } else if (P.up && stt && inCell(h, stt.up, x, z)) {   // só a abertura da escada (antes era um círculo de 2,8 m que engolia o piso do andar)
+    } else if (P.up && stt && inCellN(h, stt.up, x, z, 3)) {   // só a abertura da escada (antes era um círculo de 2,8 m que engolia o piso do andar)
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, -1.75), i: 0, pts: [[-4.3, -1.3], [-4.3, .05], [-4.3, 1.75], [-4.3, 2.5]].map(q => toW(h, ...q)) });
     } else continue;
     P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];

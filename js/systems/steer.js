@@ -244,6 +244,7 @@ function findPath(sx, sz, gx, gz, r, bad) {
  * senão o próximo ponto de um caminho calculado (recalculado quando o destino muda ou a cada ~1 s).
  * `mem` é do dono (guarda o caminho).
  */
+export const VIZ = { wp: null };   // próximo ponto de passagem (para a linha de rota dos ajustes)
 export function navTarget(mem, x, z, gx, gz, r, now) {
   const d = Math.hypot(gx - x, gz - z);
   if (d < .5 || (!(mem.road && d > 14) && clear(x, z, Math.atan2(gx - x, gz - z), d, r))) { mem.path = null; return [gx, gz]; }

@@ -4,7 +4,7 @@ import { updateBedPending, animateBed, sleeping } from './bed.js';
 import { refreshTorch } from './inventory.js';
 import { snapInterior, interiorWaypoint } from '../world/interior-nav.js';
 import { houseNear, houseAt, descendThen, upperContains } from '../world/floors.js';
-import { steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
+import { VIZ, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
@@ -110,7 +110,7 @@ function stuckWatch(dt) {
   if (SW.n >= 2) { P.tx = P.x; P.tz = P.z; SW.n = 0; }                                               // não há caminho: para
 }
 
-const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
+export const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
 
 /** Anda até o destino/alvo, ataca ao chegar no alcance, colide com árvores/pedras e regenera */
 function moveAndAct(dt) {
@@ -131,11 +131,13 @@ function moveAndAct(dt) {
   // aceleração suave em direção ao destino
   // recarregando (mosquete): fica parado até terminar, mesmo que o alvo se afaste
   const want = d > rng && !reloading() && !swapping() ? Math.min(P.sp * P.swimK, Math.max((d - rng) * 4, .7)) : 0;
+  if (!(d > rng)) VIZ.wp = null;
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
     setSwim(true);
     setMapped(!!mapAt(P.x, P.z));
     const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? BODY_IN : .5);
+    VIZ.wp = [nx, nz];
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
     [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? BODY_IN : .5, STEER, Math.min(nd, d - rng));
     setSwim(false); setMapped(false);

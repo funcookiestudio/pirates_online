@@ -81,7 +81,6 @@ for(let x=-4.5;x<=4.5;x+=1.5)B(.2,.25,.8,x,2.9,3.6,TM,up);
 for(let i=0;i<10;i++)B(1.26,.3*(i+1),.3,-4.37,.125+.15*(i+1),1.7-i*.3,i%2?WOOD:WOOD2);
 B(.06,.9,3.0,-3.62,3.6,.35,TM,up);for(const z of[-1.15,.05,1.85])B(.1,1,.1,-3.62,3.65,z,TM,up);
 // tapetinhos que marcam onde clicar para subir (embaixo) e descer (em cima)
-for(const [y,g,z] of[[.125,S,2.3],[3.165,up,-1.55]]){B(1.5,.02,.8,-4.35,y,z,0x6e2a2a,g);B(1.34,.024,.64,-4.35,y,z,0x8a3a30,g);B(.98,.028,.3,-4.35,y,z,0xd2a45a,g);B(.8,.032,.16,-4.35,y,z,0x6e2a2a,g)}
 // telhado
 const L=Math.hypot(4.4,2.4),A=Math.atan2(2.4,4.4),RT=5.6+2.4,sc=[0x6a3e2e,0x7a4a38,0x5a3326,0x84523c];
 for(const s of[1,-1]){const g=new THREE.Group();g.position.set(0,RT,0);g.rotation.x=s*A;roof.add(g);
