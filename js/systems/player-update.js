@@ -17,7 +17,7 @@ import { updateStamina } from './stamina.js';
 import { applySwap, placeWeapons } from '../entities/holster.js';
 import { updateSwap } from './swap.js';
 import { rollMove, updateDodgeTimers, animateRoll } from './dodge.js';
-import { MOUNT, updateMount, mountPose, mountMult } from './mount.js';
+import { MOUNT, updateMount, mountPose, mountMult, startDismount } from './mount.js';
 
 const AXIS_X = new THREE.Vector3(1, 0, 0);
 
@@ -30,7 +30,7 @@ export function updatePlayer(dt) {
     updateAim(dt);
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
-    else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; P.tgt = null; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
+    else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
     else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
     else moveAndAct(dt);
   }
@@ -141,6 +141,7 @@ function moveAndAct(dt) {
   }
 
   // arma de fogo só dispara depois de mirar
+  if (MOUNT.on && !MOUNT.dis && MOUNT.t >= 1 && P.tgt && d <= rng + 4.5) startDismount();   // montado não ataca: desmonta um pouco antes do alvo
   if (d <= rng && P.tgt && P.cd <= 0 && !P.swap && !MOUNT.on && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
 
   clampToWorld();

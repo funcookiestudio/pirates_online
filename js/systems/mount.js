@@ -92,9 +92,9 @@ export function refreshMountButton() {
 const canRide = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && Math.hypot(P.x, P.z) > VILLAGE_R + 1 && !P.sit && !P.sitT && P.roll <= 0;
 
 /** Desmontar com animação: o cavalo para, o jogador passa a perna e desce pelo lado esquerdo */
-function startDismount() {
+export function startDismount() {
   MOUNT.dis = true; MOUNT.x = P.x; MOUNT.z = P.z; MOUNT.yaw = P.g.rotation.y;
-  P.tgt = null; P.vx = P.vz = 0;
+  P.vx = P.vz = 0;
 }
 function finishDismount() {
   MOUNT.dis = false;
@@ -145,7 +145,7 @@ function mountUp() {
 export function toggleMount() {
   if (!MOUNT.owned || P.dead) return;
   if (!MOUNT.on && (P.sit > 0 || P.sitT)) { standUp(); MOUNT.pending = true; return; }   // levanta primeiro, depois chama/monta
-  if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; startDismount(); return; }
+  if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; P.tgt = null; startDismount(); return; }
   if (!canRide()) { log('🐴 Chame o cavalo fora da vila, em terra firme'); return; }
   MOUNT.root.visible = true;
   if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) < 3.4) { mountUp(); return; }
