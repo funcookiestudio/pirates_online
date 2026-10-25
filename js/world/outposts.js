@@ -24,7 +24,7 @@ export function buildOutposts() {
     let lo = 99, hi = 0;
     team.forEach(([k, mode, rr], i) => {
       const t = ENEMY_KINDS[k], elite = !t.boss && Math.random() < eliteChance(TIER, ring);
-      const lv = t.lv + bonus + (t.boss ? 0 : Math.round(Math.random())) + (elite ? ELITE.lv : 0);
+      const lv = t.lv + (post.add || 0) + bonus + (t.boss ? 0 : Math.round(Math.random())) + (elite ? ELITE.lv : 0);
       lo = Math.min(lo, lv); hi = Math.max(hi, lv);
       const ang = (i / team.length) * Math.PI * 2 + Math.random() * .6;
       const x = cx + Math.cos(ang) * rr, z = cz + Math.sin(ang) * rr;

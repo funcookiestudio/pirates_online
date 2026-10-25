@@ -1,6 +1,5 @@
-/* Pontos de interesse do gerador de ilhas: Porto (cais), Caverna (entrada) e Tesouro (X no chão, com recompensa única). */
+/* Pontos de interesse do gerador de ilhas: Porto (cais) e as entradas de dungeon. */
 import { scene } from '../core/engine.js';
-import { charKey } from '../core/chars.js';
 import { props } from '../core/registry.js';
 import { M as M0 } from '../core/utils.js';
 import { xray } from './xray.js';
@@ -17,19 +16,17 @@ import { buildCaves, updateCaves, DUNGEONS } from './caves.js';
 import { cullTerrain } from './terrain-mesh.js';
 
 export const pois = [];   // { n, x, z, c } em coordenadas do jogo (c = cor no minimapa)
-const KEY = charKey('pirata-tesouro-v1' + (SEED === 'pirata' ? '' : '-' + SEED));   // o tesouro achado é por personagem
 let arrive = false; try { arrive = localStorage.getItem('pirata-chegada') === '1'; } catch (e) { /* ok */ }
-let treasure = null, got = false, near = '';
-try { got = localStorage.getItem(KEY) === '1'; } catch (e) { /* sem armazenamento */ }
+let near = '';
 
 const bx = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); return m; };
 const solid = (x, z, r) => props.push({ position: { x, z, y: 0 }, r });
 
 export function buildPois() {
-  const [po, , , tr] = isl.pois;
+  const [po] = isl.pois;
   const at = p => ({ x: p.x - VX, z: p.z - VZ });
-  const port = at(po), tre = at(tr);
-  pois.push({ n: 'Porto', ...port, c: '#4ad0e8', ic: '⚓' }, { n: 'Tesouro', ...tre, c: '#ffd840', ic: '💰' });
+  const port = at(po);
+  pois.push({ n: 'Porto', ...port, c: '#4ad0e8', ic: '⚓' });
 
   // cais: convés acima da água, estacas até o fundo, barqueiro na ponta (o convés vira chão pisável)
   const g = new THREE.Group(), yaw = Math.atan2(isl.port.dx, isl.port.dz), pdx = isl.port.dx, pdz = isl.port.dz;
@@ -60,20 +57,12 @@ export function buildPois() {
   const fer = makeNpc('guard', port.x + pdx * 12, port.z + pdz * 12, Math.atan2(-pdx, -pdz), [0xd8a880, 0x2a5a7a, 0x2a2a30, 0xc8b070], 5, FERRYMAN);
   fer.g.position.y = deckY;
   solid(port.x + pdx * 12, port.z + pdz * 12, .55);
-  // tesouro: baú pequeno + X vermelho + feixe de luz (animado: não é fundido)
-  const ty = groundY(tre.x, tre.z);
-  bx(g, .7, .45, .5, 0x7a4a20, tre.x, ty + .22, tre.z); bx(g, .72, .15, .52, 0xe0b030, tre.x, ty + .5, tre.z);
-  for (const s of [.785, -.785]) { const m = bx(g, 2, .04, .3, 0xc02020, tre.x, ty + .05, tre.z + 1.4); m.rotation.y = s; }
-  solid(tre.x, tre.z, .5);
   scene.add(g);
-  treasure = new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, 9, 6), new THREE.MeshBasicMaterial({ color: 0xffd840, transparent: true, opacity: .35 }));
-  treasure.position.set(tre.x, ty + 4.5, tre.z); treasure.userData.dyn = 1; treasure.visible = !got;
-  scene.add(treasure);
   buildCaves();
-  log('🗺 Porto, ' + DUNGEONS.length + ' cavernas e tesouro marcados no minimapa');
+  log('🗺 Porto, ' + DUNGEONS.length + ' dungeons marcados no minimapa');
 }
 
-/** Avisos de proximidade e coleta do tesouro (uma vez) */
+/** Avisos de proximidade */
 export function updatePois() {
   updateCaves();
   if (arrive && pois[0]) { arrive = false; try { localStorage.removeItem('pirata-chegada'); } catch (e) { /* ok */ } P.x = P.tx = pois[0].x - isl.port.dx * 3; P.z = P.tz = pois[0].z - isl.port.dz * 3; P.vx = P.vz = 0; }
@@ -83,10 +72,4 @@ export function updatePois() {
   if (n === near) return;
   near = n;
   if (n === 'Porto') log('⚓ Porto: de onde o barco parte (em breve)');
-  else if (n === 'Tesouro' && !got) {
-    got = true; treasure.visible = false;
-    const g = 150 + 25 * P.lv; P.gold += g;
-    log('💰 X marca o local! Tesouro: +' + g + ' ouro');
-    try { localStorage.setItem(KEY, '1'); } catch (e) { /* sem armazenamento */ }
-  }
 }

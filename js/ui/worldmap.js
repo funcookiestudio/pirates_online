@@ -48,7 +48,7 @@ function draw() {
   POST_DATA.forEach(p => tag(p.x, p.z, '#b02828', p.name, '⛺'));
   pois.forEach(p => tag(p.x, p.z, p.c, p.n, p.ic || '📍'));
   // legenda
-  const leg = [['🏘', 'Vila'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['⚓', 'Porto'], ['💰', 'Tesouro']];
+  const leg = [['🏘', 'Vila'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['🌾', 'Fazenda']];
   g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
   leg.forEach(([ic, t], i) => { const y = 16 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(8 * d, y - 10 * d, 150 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 14 * d, y); });
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';

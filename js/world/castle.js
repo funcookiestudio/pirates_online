@@ -57,7 +57,7 @@ export function buildCastle() {
   const { x, z, th } = CASTLE;
   pois.push({ n: 'Castelo', x, z, c: '#e0586a', ic: '🏰' });
   const root = new THREE.Group();
-  root.position.set(x, 0, z); root.rotation.y = th;
+  root.position.set(x, CASTLE.y || 0, z); root.rotation.y = th;
   const S = new THREE.Group(); root.add(S);
   const DR = [];
 
@@ -299,7 +299,7 @@ export function buildCastle() {
   wall('x', FZ, -FX, FX, [{ c: 0, w: 4.8, y0: 0, y1: 5.2 }], yD, 0, CH, 1.2);
   wall('z', -FX, HZ + 2.2, FZ, [], yD, 0, CH, 1.2); wall('z', FX, HZ + 2.2, FZ, [], yD, 0, CH, 1.2);
   // muros de ligação: da cortina do pátio até a muralha da vila (o castelo e a vila formam uma só praça-forte)
-  const VD = Math.hypot(CASTLE.x, CASTLE.z), LK = Math.max(0, VD - Math.sqrt(VILLAGE_R * VILLAGE_R - FX * FX) - FZ);
+  const VD = Math.hypot(CASTLE.x, CASTLE.z), LK = 0;   // o castelo fica no alto, longe da vila: sem muros de ligação
   if (LK > 1) {
     GP = S; wall('z', -FX, FZ, FZ + LK, [], S, 0, CH, 1.2); wall('z', FX, FZ, FZ + LK, [], S, 0, CH, 1.2);
     for (let v = FZ + 1.5; v <= FZ + LK; v += 1.5) { B(1.35, .95, .95, -FX, CH + .48, v, STONE3); B(1.35, .95, .95, FX, CH + .48, v, STONE3); }
@@ -322,12 +322,6 @@ export function buildCastle() {
   bakeGroup(yD);
   XR = false;
   // pátio livre: sem fonte, canteiros, lampiões nem canhões
-  // tapetinhos que marcam onde clicar para subir (no pé de cada escada) e descer (no patamar de cima)
-  for (const sd of [-1, 1]) {
-    for (const [px, pz, w, d, y, g] of [[sd * 5.9, 9.7, 2.1, 1.0, .06, S], [sd * 5.9, -.5, 1.6, 1.3, HF + .06, up]]) {
-      B(w, .02, d, px, y, pz, 0x6e2a2a, g); B(w - .18, .024, d - .18, px, y, pz, 0x8a3a30, g); B(w - .55, .028, d - .55, px, y, pz, 0xd2a45a, g); B(w - .8, .032, d - .8, px, y, pz, 0x6e2a2a, g);
-    }
-  }
   for (let k = 0; k < 4; k++) { const sd = k < 2 ? -1 : 1; B(.9, 2.9, .05, sd * (k & 1 ? 2.2 : 7.2), 4.2, FZ + .65, k & 1 ? RED : BLUE); B(.9, .07, .08, sd * (k & 1 ? 2.2 : 7.2), 5.65, FZ + .65, GOLD); }
 
   // ═════════════ GRANDE SALÃO ═════════════

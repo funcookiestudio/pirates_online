@@ -30,7 +30,7 @@ export function buildCaves() {
   const tb = tierBonus(tierOf(SEED));
   CAVES.forEach((c, i) => {
     const hs = hash(SEED + ':' + i), theme = THEMES[hs % 3], name = NAMES[theme][(hs >> 3) % 4];
-    const lv = tb + 3 + Math.round((c.d - 34) / 10);           // nível pela ilha (tier) e pela distância da vila
+    const lv = tb + 3 + Math.round((c.t || 0) * 17);         // nível pela ilha (tier) e pelo custo de caminho desde a vila (3 → 20)
     const D = { id: i, name, theme, seed: SEED + ':' + i, lv, x: c.x, z: c.z, dx: c.dx, dz: c.dz, info: null };
     DUNGEONS.push(D);
     pois.push({ n: name, x: c.x, z: c.z, c: '#a070ff', ic: '🕳' });

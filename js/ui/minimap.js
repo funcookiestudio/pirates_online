@@ -58,7 +58,7 @@ export function drawMinimap() {
     g.fillRect(q[0] - 1.5, q[1] - 1.5, 3, 3);
   });
 
-  // porto, caverna, tesouro
+  // porto, castelo, fazendas, dungeons
   if (!inD) pois.forEach(p => { const q = pt(p.x, p.z); g.fillStyle = p.c; g.fillRect(q[0] - 3, q[1] - 3, 6, 6); });
 
   // loot

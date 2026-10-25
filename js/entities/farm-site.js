@@ -72,27 +72,18 @@ function cost(s) {
 /** Escolhe os terrenos (antes de nascer a vegetação): junto às estradas, longe da vila, dos postos, da caverna, do porto, do tesouro e uns dos outros.
     Aplaina cada área e liga o portão à estrada com um ramal de terra. */
 export function chooseFarmSite(avoid = []) {
-  const rp = roadPts(), far = [...avoid, ...isl.pois.map(p => ({ x: p.x - VX, z: p.z - VZ }))];
+  // as fazendas já têm lugar escolhido pelo gerador do mapa (terreno plano e fértil, longe do cais, castelo e acampamentos) e uma estrada até elas
   const chosen = [];
+  const farms = (isl.layout.farms || []).map((fm, i) => ({ fm, road: isl.roads.find(r => r.n === 'Fazenda ' + (i + 1)) }))
+    .sort((a, b) => Math.hypot(a.fm.x - VX, a.fm.z - VZ) - Math.hypot(b.fm.x - VX, b.fm.z - VZ));
   VARIANTS.forEach((vr, vi) => {
-    let spot = null, best = 1e9;
-    for (let i = 0; i < rp.length; i += 3) {
-      const q = rp[i], q2 = rp[Math.min(rp.length - 1, i + 1)], q0 = rp[Math.max(0, i - 1)];
-      if (Math.hypot(q.x, q.z) < VILLAGE_R + 20) continue;
-      const tx = q2.x - q0.x, tz = q2.z - q0.z, tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
-      for (const side of [-1, 1]) for (const off of [14, 18, 23]) {
-        const s = { x: q.x + nx * side * off, z: q.z + nz * side * off, tx: q.x, tz: q.z, ty: groundY(q.x, q.z) };
-        if (Math.hypot(s.x, s.z) < VILLAGE_R + 38) continue;
-        if (isl.bridges.some(b => Math.hypot(b[0] - VX - s.x, b[1] - VZ - s.z) < 30)) continue;   // ponte antiga ficaria solta no ar
-        if (far.some(p => Math.hypot(p.x - s.x, p.z - s.z) < 30)) continue;
-        if (CASTLE.ok && Math.hypot(CASTLE.x - s.x, CASTLE.z - s.z) < 68) continue;                  // longe do castelo e do pátio dele
-        if (chosen.some(c => Math.hypot(c.x - s.x, c.z - s.z) < 50)) continue;                  // fazendas bem espaçadas
-        const c = cost(s) + off * .25;
-        if (c < best) { best = c; spot = s; }
-      }
-    }
-    if (location.hash === '#dev') console.log('fazenda', vr.id, spot && [Math.round(spot.x), Math.round(spot.z)], best);
-    if (!spot || best > 400) return;
+    const F = farms[vi]; if (!F) return;
+    const x = F.fm.x - VX, z = F.fm.z - VZ;
+    // o portão olha para a estrada: ponto dela a ~15 m do centro, no trecho que chega à fazenda
+    let tx = x, tz = z + 15;
+    if (F.road) { const pts = F.road.pts; for (let i = pts.length - 1; i >= 0; i--) { const px = pts[i][0] - VX, pz = pts[i][1] - VZ; if (Math.hypot(px - x, pz - z) >= 15) { tx = px; tz = pz; break; } } }
+    const spot = { x, z, tx, tz, ty: groundY(tx, tz) };
+    if (location.hash === '#dev') console.log('fazenda', vr.id, [Math.round(spot.x), Math.round(spot.z)]);
     const f = frame(spot);
     let sum = 0, n = 0;
     for (let lx = X0; lx <= X1; lx += 3) for (let lz = Z0; lz <= Z1; lz += 3) { const w = toWorld(spot, f, lx, lz); sum += groundY(w.x, w.z); n++; }

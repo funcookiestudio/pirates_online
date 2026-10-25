@@ -1,7 +1,8 @@
 import { VILLAGE_R } from '../core/village-const.js';
+import { planCore, planFields } from './layout.js';
 /* Gerador procedural de ilhas low poly (puro: sem THREE nem DOM). Terraços, rios, lagos, pontes, estradas, biomas e vegetação por semente.
    Portado do sistema de ilhas do Cristiano. Célula da grade = 1 m. */
-export const N=300,V=N+1,RD={half:2,sh:6,slope:.12};
+export const N=800,V=N+1,RD={half:2,sh:6,slope:.12};
 export function rngf(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 export function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
 function mkNoise(r){const G=new Float32Array(4096);for(let i=0;i<4096;i++)G[i]=r();
@@ -48,20 +49,8 @@ export function build(seed,type){
  let coast=cells.filter(k=>H[k]>.7&&H[k]<1.5&&sl(k)<.25&&coastOf(k));
  if(!coast.length)coast=cells.filter(k=>H[k]>.5&&coastOf(k));
  const pc=coast.length?coast:cells;let port=pc[ri(0,pc.length-1)];
- // 3) BFS (distâncias p/ escolher locais)
- const lb=src=>{const d=new Int32Array(NV).fill(-1),q=[src],O=[1,-1,V,-V];d[src]=0;
-  for(let n=0;n<q.length;n++){const c=q[n],s=ri(0,3);for(let t=0;t<4;t++){const k=c+O[(t+s)%4];if(k>=0&&k<NV&&d[k]<0&&H[k]>.3){d[k]=d[c]+1;q.push(k)}}}return{d,q}};
- const P=lb(port);
- let tre=port;for(const k of cells)if(H[k]>.8&&sl(k)<.3&&!wd[k]&&P.d[k]>P.d[tre])tre=k;
- let md=Math.max(1,P.d[tre]),dd=k=>P.d[k]/md;
- const pick=(f,g)=>{let a=cells.filter(f);if(!a.length)a=cells.filter(g);if(!a.length)a=cells;return a[ri(0,a.length-1)]};
- // vila no CENTRO da ilha: entre os terrenos planos, o mais próximo do centro de massa da terra
- let cmx=0,cmz=0;for(const k of cells){cmx+=k%V;cmz+=(k/V)|0}cmx/=cells.length;cmz/=cells.length;
- const cdist=k=>Math.hypot(k%V-cmx,(k/V|0)-cmz),flatOk=(f1,f2)=>{let a=cells.filter(f1);if(!a.length)a=cells.filter(f2);return a.length?a:cells};
- const vc=flatOk(k=>H[k]>.8&&H[k]<5&&sl(k)<.1&&!wd[k]&&P.d[k]>=0,k=>H[k]>.8&&sl(k)<.3&&!wd[k]);
- let vil=vc[0];for(const k of vc)if(cdist(k)<cdist(vil))vil=k;
- let cav=pick(k=>dd(k)>.4&&dd(k)<.85&&H[k]>2.5&&sl(k)<.1&&!wd[k],k=>dd(k)>.3&&H[k]>1.5&&!wd[k]);
-
+ const core=planCore({N,V,H,lab,mainL,sl,wd,coastOf,cells});if(!core)return build(seed+'x',type);port=core.port;
+ const vil=core.vil;
  // 3b) RIOS e LAGOS: superfície de água nivelada (W) + leito escavado; roads atravessam por pontes
  const H0=H.slice(),rn=new Float32Array(NV);for(let k=0;k<NV;k++)rn[k]=r()*.4;
  const bil=(x,y)=>{const i=Math.min(N-1,Math.max(0,Math.floor(x))),j=Math.min(N-1,Math.max(0,Math.floor(y))),fx=x-i,fy=y-j,a=H0[j*V+i],b=H0[j*V+i+1],c=H0[(j+1)*V+i],d=H0[(j+1)*V+i+1];return(a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+d*fx)*fy};
@@ -70,7 +59,7 @@ export function build(seed,type){
 
  const NB=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
  const W=new Float32Array(NV).fill(-99),rv=new Uint8Array(NV),lk=new Uint8Array(NV),pen=new Float32Array(NV),BANK=3.5;
- for(const p of[port,vil,cav,tre]){const px=p%V,pz=(p/V)|0;for(let j=Math.max(1,pz-26);j<=Math.min(N-1,pz+26);j++)for(let i=Math.max(1,px-26);i<=Math.min(N-1,px+26);i++)if(Math.hypot(i-px,j-pz)<=26)pen[j*V+i]=1}
+ for(const[px,pz,pr]of[[port%V,(port/V)|0,24],[vil%V,(vil/V)|0,52],[core.castle.x,core.castle.z,44],...core.farms.map(f=>[f.x,f.z,26])]){for(let j=Math.max(1,Math.floor(pz-pr));j<=Math.min(N-1,Math.ceil(pz+pr));j++)for(let i=Math.max(1,Math.floor(px-pr));i<=Math.min(N-1,Math.ceil(px+pr));i++)if(Math.hypot(i-px,j-pz)<=pr)pen[j*V+i]=1}
  const FD=new Float32Array(NV).fill(1e9),FP=new Int32Array(NV).fill(-1),fh=mkHeap();
  for(const k of cells)if(H[k]<1.6&&[1,-1,V,-V].some(o=>H[k+o]<=.3)){FD[k]=0;fh.push(0,k)}
  while(fh.n()){const c0=fh.top(),k=fh.pop();if(c0>FD[k])continue;const ci=k%V,cj=(k/V)|0;
@@ -132,9 +121,8 @@ export function build(seed,type){
   par.D=D;return par};
  const par=dij(gateCells),rc=k=>k===vil||isSrc.has(k)||par[k]>=0,rcl=cells.filter(rc);
  // destinos sempre alcançáveis pela malha de estradas (evita retas atravessando a ilha)
- if(!rc(port)){const a=pc.filter(rc);port=a.length?a[ri(0,a.length-1)]:rcl[ri(0,rcl.length-1)]}
- if(!rc(cav)){const a=rcl.filter(k=>H[k]>1.5&&sl(k)<.3&&!wd[k]);cav=a.length?a[ri(0,a.length-1)]:rcl[ri(0,rcl.length-1)]}
- if(!rc(tre)){tre=vil;const sc2=k=>par.D[k]+P.d[k];for(const k of rcl)if(H[k]>.8&&sl(k)<.3&&!wd[k]&&sc2(k)>sc2(tre))tre=k}
+ if(!rc(port))return build(seed+'x',type);
+ const FL=planFields({N,V,H,sl,wd,wk,rv,D:par.D,lab,mainL},core);
  const pathTo=dst=>{const a=[];let k=dst;for(;k!==-1&&k!==vil&&!isSrc.has(k);k=par[k])a.push(k);
   if(k!==-1&&k!==vil){a.push(k);const gx=k%V,gz=(k/V)|0,L=Math.max(Math.abs(gx-vx0),Math.abs(gz-vz0));for(let i=1;i<L;i++)a.push(Math.round(gz+(vz0-gz)*i/L)*V+Math.round(gx+(vx0-gx)*i/L))}
   a.push(vil);return a.reverse()};
@@ -154,12 +142,14 @@ export function build(seed,type){
   hs=sm(hs,5,2);
   const pl=pre?m:0,full={name,cp,xs:pre?pre.xs.slice(0,m).concat(xs):xs,zs:pre?pre.zs.slice(0,m).concat(zs):zs,hs:pre?pre.hs.slice(0,m).concat(hs):hs,sub:{xs,zs,hs}};
   roads.push(full);return full};
- const PR={P:3,C:4.5,T:3.5},rP=mkRoad('Porto',port,PR.P),rC=mkRoad('Caverna',cav,PR.C),rT=mkRoad('Tesouro',tre,PR.T);
- // trilhas extras: destinos bem espalhados (amostragem do mais distante), formando uma rede com cruzamentos
- const dests=[port,cav,tre,vil],RS=[rP,rC,rT];
- for(let n=0;n<3;n++){let bk=-1,bs=-1;
-  for(const k of rcl){if(H[k]<.8||sl(k)>.25||wd[k])continue;let m=1e9;for(const q of dests)m=Math.min(m,Math.hypot(k%V-q%V,(k/V|0)-(q/V|0)));if(m>bs){bs=m;bk=k}}
-  if(bk<0||bs<28)break;dests.push(bk);RS.push(mkRoad('Trilha',bk,3))}
+ // rede de estradas: tronco (porto e castelo), ramais (fazendas) e trilhas (acampamentos e dungeons), todas pelo caminho de menor esforço; trechos comuns se fundem
+ const RS=[],near4=(x,z)=>{x=Math.round(x);z=Math.round(z);let b=-1,bd=1e9;for(let a=-8;a<=8;a++)for(let c=-8;c<=8;c++){const k=(z+c)*V+x+a;if(k>0&&k<NV&&par[k]>=0&&H[k]>.8&&!wk[k]&&Math.hypot(a,c)<bd){bd=Math.hypot(a,c);b=k}}return b>=0?b:rcl.reduce((q,k)=>Math.hypot(k%V-x,(k/V|0)-z)<Math.hypot(q%V-x,(q/V|0)-z)?k:q)};
+ const addRoad=(name,x,z,half,pr1,kind)=>{const dst=near4(x,z);if(dst===vil)return null;const R=mkRoad(name,dst,pr1);R.half=half;R.pr=pr1;R.kind=kind;RS.push(R);return R};
+ const rP=addRoad('Porto',port%V,(port/V)|0,3.2,3,'tronco');
+ addRoad('Castelo',core.castle.x+Math.sin(core.castle.th)*29.5,core.castle.z+Math.cos(core.castle.th)*29.5,3.2,5,'tronco');
+ core.farms.forEach((f,i)=>{const R=addRoad('Fazenda '+(i+1),f.x,f.z,2.2,4,'ramal');if(R)f.k=R.cp[R.cp.length-1]});
+ FL.camps.forEach((q,i)=>addRoad('Acampamento '+(i+1),q.x,q.z,1.5,3.2,'trilha'));
+ FL.dungeons.forEach((q,i)=>addRoad('Dungeon '+(i+1),q.x+q.dx*4,q.z+q.dz*4,1.5,3,'trilha'));
  const pm=new Uint8Array(NV);
  const carve=(xs,zs,hs,half,sh,mk)=>{const R=half+sh,n=xs.length,bd=new Float32Array(NV).fill(1e9),bh=new Float32Array(NV);
   for(let s=0;s<Math.max(1,n-1);s++){const e=Math.min(s+1,n-1),ax=xs[s],az=zs[s],bx=xs[e],bz=zs[e],dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz;
@@ -169,8 +159,8 @@ export function build(seed,type){
    if(bd[k]<=half&&lf>.5){if(mk===1)pm[k]=1;else if(!pm[k])pm[k]=2}else if(bd[k]<=half+1.5&&lf>.5&&!pm[k])pm[k]=2}};
  const end=(R)=>{const n=R.sub.xs.length-1;return[R.sub.xs[n],R.sub.zs[n],R.sub.hs[n]]};
  carve([vx],[vz],[hv0],9,5,2);
- for(const R of RS){const[ex,ez,eh]=end(R);carve([ex],[ez],[eh],R===rP?PR.P:R===rC?PR.C:PR.T,4,2)}
- for(const R of RS)carve(R.sub.xs,R.sub.zs,R.sub.hs,RD.half,RD.sh,1);
+ for(const R of RS){const[ex,ez,eh]=end(R);carve([ex],[ez],[eh],R.pr,4,2)}
+ for(const R of RS)carve(R.sub.xs,R.sub.zs,R.sub.hs,R.half||RD.half,RD.sh,1);
  // 4b) PONTES onde a estrada cruza rio (convés nivelado acima da água) + convés caminhável
  const deck=new Float32Array(NV).fill(-99),bridges=[];
  for(const R of RS){const{xs,zs,hs}=R.sub,n=xs.length,wet=xs.map((x,i)=>wk[Math.round(zs[i])*V+Math.round(x)]===1);
@@ -188,8 +178,7 @@ export function build(seed,type){
   if(h<.85||wd[k])b=0;else if(h>6.2)b=5;else if(mo[k]>.66&&h<1.6)b=3;else if(mo[k]>.52)b=2;else if(mo[k]<.36)b=4;else b=1;bio[k]=b;if(h>.3)bc[b]++}
  const cx=k=>k%V-N/2,cz=k=>(k/V|0)-N/2;
  const sd=coastOf(port)||[0,1],dx=sd[0],dz=sd[1];
- const nC=rC.xs.length-1,k0=Math.max(0,nC-10);let gx=rC.xs[k0]-rC.xs[nC],gz=rC.zs[k0]-rC.zs[nC];const gl=Math.hypot(gx,gz)||1;
- const pois=[['Porto',port,'#4ad0e8'],['Vila',vil,'#f0a040'],['Caverna',cav,'#a070ff'],['Tesouro',tre,'#ffd840']].map(([n,k,c])=>({n,k,x:cx(k),z:cz(k),y:H[k],c}));
+ const pois=[['Porto',port,'#4ad0e8'],['Vila',vil,'#f0a040']].map(([n,k,c])=>({n,k,x:cx(k),z:cz(k),y:H[k],c}));
  // 5) vegetação por bioma (fora de estradas, praças e água)
  const veg={palms:[],pines:[],rocks:[],bushes:[]},near=(x,z)=>pois.some(p=>(p.x-x)**2+(p.z-z)**2<64);
  const DEN=[[.012,0,.004,.002],[0,.004,.02,.002],[0,.07,.035,.003],[0,.006,.06,.0008],[.014,.002,.03,.006],[0,.012,.004,.05]],BCOL=[0x6aa050,0x5fa04a,0x2f7a3a,0x4a5a30,0x9a9a45,0x6a7a5a];
@@ -202,5 +191,5 @@ export function build(seed,type){
  // 6) malha de navegação: bloqueia mar, água funda e paredões (convés das pontes é liberado)
  const nav=new Uint8Array(NV);for(let k=V+1;k<NV-V-1;k++)if(H[k]<-.1||(W[k]>-90&&W[k]-H[k]>.35)||sl(k)>.7)nav[k]=1;
  for(let k=0;k<NV;k++)if(deck[k]>-90)nav[k]=0;
- const out=R=>({n:R.name,pts:R.xs.map((x,i)=>[+(x-N/2).toFixed(2),+(R.zs[i]-N/2).toFixed(2),+R.hs[i].toFixed(2)])});
- return{H,pm,W,wk,mo,bio,nav,deck,bridges,pois,veg,seed,type,land:land/NV,port:{dx,dz},cave:{dx:gx/gl,dz:gz/gl},roads:RS.map(out),rivers,lakes,biomeShare:bc.map(v=>v/Math.max(1,land)),roadHalf:RD.half}}
+ const out=R=>({n:R.name,kind:R.kind,half:R.half,pts:R.xs.map((x,i)=>[+(x-N/2).toFixed(2),+(R.zs[i]-N/2).toFixed(2),+R.hs[i].toFixed(2)])});
+ return{H,pm,W,wk,mo,bio,nav,deck,bridges,pois,veg,seed,type,land:land/NV,port:{dx,dz},layout:{dock:{dx:core.dock[0],dz:core.dock[1]},castle:{x:core.castle.x-N/2,z:core.castle.z-N/2,th:core.castle.th},farms:core.farms.map(f=>({x:f.x-N/2,z:f.z-N/2,k:f.k})),camps:FL.camps.map(q=>({x:q.x-N/2,z:q.z-N/2,t:q.t,tier:q.tier})),dungeons:FL.dungeons.map(q=>({x:q.x-N/2,z:q.z-N/2,dx:q.dx,dz:q.dz,t:q.t})),dmax:FL.dmax},roads:RS.map(out),rivers,lakes,biomeShare:bc.map(v=>v/Math.max(1,land)),roadHalf:RD.half}}

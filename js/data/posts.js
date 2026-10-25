@@ -2,31 +2,22 @@
 import { KIND, ENEMY_KINDS } from './enemies.js';
 
 const K = KIND;
-const RAW = [
-  // Anel 1 · Nv 1–3 · perto da vila
-  [20,  30, 'Acampamento dos Náufragos', [[K.GRUMETE, 'p', 4], [K.GRUMETE, 'p', 4], [K.GRUMETE, 'p', 4.5], [K.SKELETON, 's', 2.6]]],
-  [110, 30, 'Cais Abandonado',           [[K.SKELETON, 'p', 4], [K.SKELETON, 'p', 4.5], [K.GRUMETE, 's', 2.6], [K.GRUMETE, 's', 3]]],
-  [200, 30, 'Posto dos Contrabandistas', [[K.GRUMETE, 'p', 4], [K.GRUMETE, 'p', 4], [K.CONTRA, 's', 2.6]]],
-  [290, 30, 'Ruínas do Farol',           [[K.SKELETON, 'p', 4], [K.SKELETON, 'p', 4.5], [K.SKELETON, 'p', 5], [K.GRUMETE, 's', 2.6]]],
-  // Anel 2 · Nv 3–5
-  [65,  42, 'Bivaque Fantasma',          [[K.GHOST, 'p', 4.5], [K.GHOST, 'p', 4.5], [K.SKELETON, 'p', 5], [K.GUERREIRO, 's', 2.6]]],
-  [155, 42, 'Esconderijo do Contrabando', [[K.CONTRA, 'p', 4], [K.CONTRA, 'p', 4.5], [K.GUERREIRO, 's', 2.6], [K.CONTRA, 's', 3]]],
-  [245, 42, 'Cova dos Esqueletos',       [[K.GUERREIRO, 'p', 4], [K.GUERREIRO, 'p', 4.5], [K.SKELETON, 'p', 5], [K.SKELETON, 'p', 5]]],
-  [335, 42, 'Vigia das Sombras',         [[K.SOMBRA, 'p', 4.5], [K.SOMBRA, 'p', 5], [K.GHOST, 's', 2.8], [K.CONTRA, 's', 3]]],
-  // Anel 3 · Nv 5–8 · borda da ilha
-  [40,  50, 'Fortim do Capitão Maldito', [[K.BOSS, 's', 2.2], [K.CORSARIO, 'p', 5], [K.CORSARIO, 'p', 5.5], [K.SOMBRA, 'p', 6]]],
-  [130, 50, 'Enseada dos Corsários',     [[K.CORSARIO, 'p', 4.5], [K.CORSARIO, 'p', 5], [K.GHOST, 'p', 5.5], [K.GUERREIRO, 's', 3]]],
-  [220, 50, 'Praia dos Naufragados',     [[K.BRUTO, 's', 2.4], [K.BRUTO, 'p', 5], [K.GUERREIRO, 'p', 5.5], [K.GHOST, 'p', 4.5]]],
-  [310, 50, 'Penhasco Sombrio',          [[K.SOMBRA, 'p', 4.5], [K.SOMBRA, 'p', 5], [K.CORSARIO, 'p', 5.5], [K.BRUTO, 's', 2.6]]],
+/* 8 acampamentos, do mais fácil (perto da vila, Nv ~1) ao mais difícil (ponto mais distante, chefe, Nv ~20).
+   A posição vem do gerador do mapa (js/world/layout.js) por custo de caminho desde a vila; `add` soma níveis aos arquétipos (data/enemies.js).
+   [nome, equipe[[tipo, 'p'atrulha | 's'entinela, raio]], níveis extras] */
+const CAMPS = [
+  ['Acampamento dos Náufragos',    [[K.GRUMETE, 'p', 4], [K.GRUMETE, 'p', 4], [K.GRUMETE, 'p', 4.5], [K.SKELETON, 's', 2.6]], 0],
+  ['Posto dos Contrabandistas',    [[K.GRUMETE, 'p', 4], [K.GRUMETE, 'p', 4], [K.CONTRA, 's', 2.6]], 1],
+  ['Cova dos Esqueletos',          [[K.GUERREIRO, 'p', 4], [K.GUERREIRO, 'p', 4.5], [K.SKELETON, 'p', 5], [K.SKELETON, 'p', 5]], 2],
+  ['Bivaque Fantasma',             [[K.GHOST, 'p', 4.5], [K.GHOST, 'p', 4.5], [K.SKELETON, 'p', 5], [K.GUERREIRO, 's', 2.6]], 4],
+  ['Vigia das Sombras',            [[K.SOMBRA, 'p', 4.5], [K.SOMBRA, 'p', 5], [K.GHOST, 's', 2.8], [K.CONTRA, 's', 3]], 6],
+  ['Enseada dos Corsários',        [[K.CORSARIO, 'p', 4.5], [K.CORSARIO, 'p', 5], [K.GHOST, 'p', 5.5], [K.GUERREIRO, 's', 3]], 8],
+  ['Praia dos Naufragados',        [[K.BRUTO, 's', 2.4], [K.BRUTO, 'p', 5], [K.GUERREIRO, 'p', 5.5], [K.GHOST, 'p', 4.5]], 10],
+  ['Fortim do Capitão Maldito',    [[K.BOSS, 's', 2.2], [K.CORSARIO, 'p', 5], [K.CORSARIO, 'p', 5.5], [K.SOMBRA, 'p', 6]], 8],
 ];
-
-// poucos postos, bem espalhados: 2 no anel 1, 3 no anel 2 e 2 no anel 3 (a posição final vem do relevo: terrain.js)
-const KEEP = [0, 2, 5, 6, 7, 8, 10];
-const ringOf = i => i >> 2;
-export const POST_DATA = KEEP.map((ri, i) => {
-  const [deg, r, name, crew] = RAW[ri];
-  const a = deg * Math.PI / 180, lvs = crew.map(c => ENEMY_KINDS[c[0]].lv);
-  return { id: i, ring: ringOf(ri), deg, r, name, crew, x: Math.cos(a) * r * 1.5, z: Math.sin(a) * r * 1.5, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };
+export const POST_DATA = CAMPS.map(([name, crew, add], i) => {
+  const lvs = crew.map(c => ENEMY_KINDS[c[0]].lv + add);
+  return { id: i, ring: Math.min(3, i >> 1), name, crew, add, x: 0, z: 0, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };   // x,z: definidos pelo relevo (terrain.js)
 });
 // ao morrer 2x num posto, volta para um posto do anel anterior (ou a vila, no anel 1)
 POST_DATA.forEach((p, i) => {
