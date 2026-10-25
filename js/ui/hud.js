@@ -45,8 +45,8 @@ let lastStatsRefresh = 0, mmTick = 0;
 export function updateOverlays(now) {
   updateLootTexts(P.x, P.z, performance.now());
   document.body.classList.toggle('ui-open', isPanelOpen() || dialogOpen()); // painel/diálogo aberto: esconde minimapa e avisos que ficariam por baixo
-  // barra de vida do último inimigo atingido (some após 4 s)
-  const e = P.tgt && !P.tgt.dead ? P.tgt : (state.lastE && now - state.lastT < 4000 ? state.lastE : null), eh = $('ehud');
+  // barra de vida do último inimigo atingido (só depois de causar dano; some após 4 s)
+  const e = state.lastE && now - state.lastT < 4000 ? state.lastE : null, eh = $('ehud');
   if (e && !e.dead) {
     eh.classList.toggle('boss', !!e.t.boss);
     eh.style.display = 'block';
