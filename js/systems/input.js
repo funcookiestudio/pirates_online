@@ -153,22 +153,32 @@ export function initInput() {
   $('pcl2x').onclick = closePanel;
 }
 
-/** Botões de câmera na tela (toque/mouse): girar, inclinar, aproximar/afastar e restaurar */
+/** Botões de câmera na tela (toque/mouse): girar, inclinar, aproximar/afastar e restaurar. O ícone 📷 mostra/oculta o painel. */
 function camButtons() {
-  const box = document.createElement('div');
-  box.id = 'camc';
-  box.style.cssText = 'position:fixed;right:8px;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:repeat(3,34px);gap:4px;z-index:6;user-select:none;touch-action:manipulation';
-  const B = (t, tip, f, rep) => {
+  const KEY = 'pirata-cam-ui';
+  const wrap = document.createElement('div');
+  wrap.id = 'camc';
+  wrap.style.cssText = 'position:fixed;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:4px;z-index:6;user-select:none;touch-action:manipulation';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,34px);gap:4px';
+  const style = 'width:34px;height:34px;font-size:16px;line-height:1;color:#f0d890;background:#2a1a10cc;border:1px solid #a07838;border-radius:6px;cursor:pointer;padding:0';
+  const B = (t, tip, f, rep, into = grid) => {
     const b = document.createElement('button');
-    b.textContent = t; b.title = tip;
-    b.style.cssText = 'width:34px;height:34px;font-size:16px;line-height:1;color:#f0d890;background:#2a1a10cc;border:1px solid #a07838;border-radius:6px;cursor:pointer;padding:0';
+    b.textContent = t; b.title = tip; b.style.cssText = style;
     let iv = null; const stop = () => { clearInterval(iv); iv = null; };
     b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); f(); if (rep) iv = setInterval(f, 90); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
-    box.append(b); return b;
+    into.append(b); return b;
   };
+  let open = true; try { open = localStorage.getItem(KEY) !== '0'; } catch (e) { /* sem armazenamento */ }
+  const tog = B('📷', 'Mostrar / ocultar os comandos de câmera', () => {
+    open = !open; grid.style.display = open ? 'grid' : 'none'; tog.style.opacity = open ? '1' : '.65';
+    try { localStorage.setItem(KEY, open ? '1' : '0'); } catch (e) { /* ok */ }
+  }, false, wrap);
   B('⟲', 'Girar câmera (←)', () => rotateBy(-.1), true); B('▲', 'Inclinar para cima (↑)', () => tiltBy(.06), true); B('⟳', 'Girar câmera (→)', () => rotateBy(.1), true);
   B('＋', 'Aproximar (+)', () => zoomBy(.92), true); B('▼', 'Inclinar para baixo (↓)', () => tiltBy(-.06), true); B('－', 'Afastar (−)', () => zoomBy(1.08), true);
   B('', '', () => {}).style.visibility = 'hidden'; B('⌂', 'Restaurar câmera (Home / 0)', resetCamera); B('', '', () => {}).style.visibility = 'hidden';
-  document.body.append(box);
+  grid.style.display = open ? 'grid' : 'none'; tog.style.opacity = open ? '1' : '.65';
+  wrap.append(grid);
+  document.body.append(wrap);
 }
