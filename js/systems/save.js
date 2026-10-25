@@ -9,10 +9,25 @@ import { PST } from '../pets/stats.js';
 import { setPet } from '../pets/manager.js';
 import { refreshPetButton } from '../ui/hotbar.js';
 import { MOUNT } from './mount.js';
+import { SEED } from '../world/terrain.js';
+import { VILLAGE_R } from '../core/village-const.js';
+import { pois } from '../world/pois.js';
+import { FARMSITE } from '../entities/farm-site.js';
+import { inDungeon } from '../dungeon/dungeon-scene.js';
 
 const KEY = 'pirata-arpg:save:v1';
-const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb', 'x', 'z'];
+const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
+
+/** Áreas seguras onde o personagem reaparece: vila, fazendas e porto */
+export function safeSpot(x, z) {
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+  if (Math.hypot(x, z) < VILLAGE_R + 1) return true;
+  if ((FARMSITE.sites || []).some(f => Math.hypot(x - f.x, z - f.z) < 17)) return true;
+  const po = pois[0]; return !!po && Math.hypot(x - po.x, z - po.z) < 18;
+}
+export let savedPos = null;      // última posição segura salva (null = começa sentado na vila)
+let lastSafe = null;
 
 let disabled = false; // true após apagar o progresso (evita salvar de novo antes de recarregar)
 
@@ -20,6 +35,7 @@ const validItem = it => it && ['wpn', 'arm'].includes(it.ty) && [it.q, it.v, it.
 
 export function saveGame() {
   if (disabled || P.dead) return;
+  if (!inDungeon() && safeSpot(P.x, P.z)) lastSafe = { x: +P.x.toFixed(2), z: +P.z.toFixed(2) };
   try {
     const pets = {};
     Object.keys(PST).forEach(id => {
@@ -28,6 +44,7 @@ export function saveGame() {
     localStorage.setItem(KEY, JSON.stringify({
       v: 1,
       t: Date.now(),
+      seed: SEED, pos: lastSafe,
       player: Object.fromEntries(PLAYER_FIELDS.map(f => [f, P[f]])),
       bag, chest, eq, act: P.act, pets,
       pet: state.pet.id,
@@ -50,8 +67,7 @@ export function loadGame() {
     P.xp = Math.min(P.xp, P.nxt - 1);
     P.hp = P.max;
     P.mp = P.mmax;
-    P.tx = P.x;
-    P.tz = P.z;
+    if (s.seed === SEED && s.pos && Number.isFinite(s.pos.x) && Number.isFinite(s.pos.z)) { savedPos = s.pos; lastSafe = s.pos; }
 
     chest.length = 0;
     (s.chest || []).filter(validItem).forEach(it => chest.push(it));

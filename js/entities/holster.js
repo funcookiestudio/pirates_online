@@ -24,9 +24,9 @@ export const DURATION = { blade: 1.5, hip: 1.2, back: 1.7 };
 /* Pose guardada: p = posição da empunhadura (espaço do corpo), d = para onde aponta a ponta da arma (-y do modelo),
    ref = lado do modelo que fica para fora (eixo `ax`). */
 const HOLSTER = {
-  blade: { p: new V(.34, .9, .03),   d: new V(.12, -.72, -.68), ref: new V(1, 0, 0),  ax: 'x' },
-  hip:   { p: new V(-.33, .9, .03),  d: new V(-.03, -.9, .4),   ref: new V(0, 0, 1),  ax: 'z' },
-  back:  { p: new V(-.19, 1, -.27),  d: new V(.5, .86, 0),      ref: new V(0, 0, -1), ax: 'z' },
+  blade: { p: new V(.5, .9, .04),   d: new V(.12, -.72, -.68), ref: new V(1, 0, 0),  ax: 'x' },
+  hip:   { p: new V(-.5, .9, .04),  d: new V(-.03, -.9, .4),   ref: new V(0, 0, 1),  ax: 'z' },
+  back:  { p: new V(-.19, 1.05, -.4),  d: new V(.5, .86, 0),      ref: new V(0, 0, -1), ax: 'z' },
 };
 
 /** Rotação do modelo: -y aponta em d e o eixo `ax` (x ou z) fica o mais perto de ref */

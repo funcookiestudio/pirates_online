@@ -1,23 +1,23 @@
 /* Personagens da vila: nome, ofício, falas piratas e (opcional) loja. */
 
 export const CITIZENS = [
-  { name: 'Barba-de-Ferro', title: 'Ferreiro', ic: '⚒', shop: 'smith',
+  { name: 'Barba-de-Ferro', title: 'Ferreiro', ic: '⚒', shop: 'smith', skin: ['ferreiro', 0],
     lines: ['Ahoy, marujo! Meu martelo já forjou lâmina que partiu mastro de fragata.', 'Aço bom não se acha em baú de náufrago. Aqui se forja de verdade!', 'Traga ouro e levará um sabre capaz de fazer um esqueleto pedir perdão.'] },
-  { name: 'Madame Rum', title: 'Taverneira', ic: '🍺', shop: 'tavern',
+  { name: 'Madame Rum', title: 'Taverneira', ic: '🍺', shop: 'tavern', skin: ['taberneiro', 1],
     lines: ['Entre, entre! O rum é forte e a fofoca é grátis, meu bem.', 'Dizem que o Capitão Maldito guarda um tesouro nas ruínas... mas ninguém volta pra contar.', 'Precisa de poção? Tenho de sobra, e curo até ressaca de três dias!'] },
-  { name: 'Velho Astrolábio', title: 'Cartógrafo', ic: '🧭',
+  { name: 'Velho Astrolábio', title: 'Cartógrafo', ic: '🧭', skin: ['cartografo', 0],
     lines: ['Já tracei todos os mares... menos o que tem o seu nome, jovem lobo-do-mar.', 'Esta ilha tem alma. Os mortos rondam a mata à noite — fique perto da muralha se estiver ferido.', 'O Capitão Maldito vaga pela costa leste. Leve pólvora e coragem em dobro.'] },
-  { name: 'Mestre Breu', title: 'Calafate', ic: '🔨',
+  { name: 'Mestre Breu', title: 'Calafate', ic: '🔨', skin: ['calafate', 0],
     lines: ['Casco furado é morte certa! Eu calafeto até navio fantasma.', 'Se um dia tiver navio, me procure. Breu e alcatrão nunca faltam.', 'Os guardas do portão? Bons rapazes. Nunca deixaram um esqueleto passar da muralha.'] },
-  { name: 'Pé-de-Pau Polly', title: 'Marujo aposentado', ic: '🦜',
+  { name: 'Pé-de-Pau Polly', title: 'Marujo aposentado', ic: '🦜', skin: ['marujo', 0],
     lines: ['Perdi a perna pro Kraken, mas ganhei histórias! Quer ouvir?', 'Um bom papagaio vale mais que um mapa. Cuide bem do seu companheiro!', 'Yo-ho-ho! Já enfrentei tempestade que arrancou a barba do Poseidon.'] },
-  { name: 'Capitã Sal', title: 'Mercadora', ic: '💰', shop: 'trader',
+  { name: 'Capitã Sal', title: 'Mercadora', ic: '💰', shop: 'trader', skin: ['mercadora', 1],
     lines: ['Compro de tudo que brilha e vendo o que ninguém precisa — e todo mundo compra!', 'Saque de naufrágio? Pago melhor que o ferreiro, e sem perguntas.', 'Negócio é negócio, marujo. Até pirata paga o que deve.'] },
-  { name: 'Zé Carrancudo', title: 'Marujo', ic: '🍻',
+  { name: 'Zé Carrancudo', title: 'Marujo', ic: '🍻', skin: ['taberneiro', 0],
     lines: ['Hmpf. Se não vai pagar uma caneca, não atrapalhe meu descanso.', 'Esses esqueletos... já foram marujos como eu. Não tenha pena.', 'Um grogue e um sono de baixo do poço... a vida é boa.'] },
 ];
 
-export const GUARD = { name: 'Guarda do Porto', title: 'Sentinela', ic: '💂',
+export const GUARD = { name: 'Guarda do Porto', title: 'Sentinela', ic: '💂', skin: ['guarda', 0],
   lines: ['Alto lá! Aqui é zona segura. Os mortos não passam deste portão.', 'Fique tranquilo, marujo. Enquanto eu empunhar esta lança, a vila está protegida.', 'Vá caçar esqueletos. Quando voltar ferido, o poço e a taverna esperam por você.'] };
 
 export const CHEST = { name: 'Baú do Porto', title: 'Guarde seus tesouros', ic: '📦', chest: true,
@@ -29,15 +29,15 @@ export const BOARD = { name: 'Mural de Missões', title: 'Cartazes de procurados
     'AVISO: Mortos-vivos rondam a ilha. Não saia da vila sem arma e poções, marujos!',
     'PROCURA-SE: Tripulantes corajosos para expedições. Falar com o Velho Astrolábio.'] };
 
-export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic: '⛵', ferry: true,
+export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic: '⛵', ferry: true, skin: ['barqueiro', 0],
   lines: ['Ahoy! Meu barco leva marujo a qualquer ilha do arquipélago... por uma moedinha.', 'O mar está calmo. Diga o destino e eu iço a vela!', 'Cada ilha tem seus perigos e seus tesouros. Boa viagem, marujo!'] };
 
-export const HORSEMAN = { name: 'Seu Tobias', title: 'Criador de cavalos', ic: '🐴', stable: true, shop: 'farm-gado',
+export const HORSEMAN = { name: 'Seu Tobias', title: 'Criador de cavalos', ic: '🐴', stable: true, skin: ['cavalarico', 0], shop: 'farm-gado',
   lines: ['Cavalo bom não se acha em qualquer curral, marujo. O meu corre mais que vento de tempestade!', 'Com ele você cruza a ilha na metade do tempo — mas cavalo não nada, hein.', 'Trate bem do bicho e ele nunca te deixa a pé. Assobie (tecla H) e ele vem.'] };
 
-export const FARMER_AVES = { name: 'Dona Marta', title: 'Criadora de aves', ic: '🐔', shop: 'farm-aves',
+export const FARMER_AVES = { name: 'Dona Marta', title: 'Criadora de aves', ic: '🐔', skin: ['avicultora', 1], shop: 'farm-aves',
   lines: ['Bom dia, marujo! As galinhas botaram bem hoje — ovo fresquinho não falta aqui.', 'Cuidado com o galo, ele é brigão! Já bicou até capitão.', 'Aqui a gente vive em paz. Só peço que não assustem as aves.'] };
-export const FARMER_GRANJA = { name: 'Seu Zé', title: 'Granjeiro', ic: '🐖', shop: 'farm-granja',
+export const FARMER_GRANJA = { name: 'Seu Zé', title: 'Granjeiro', ic: '🐖', skin: ['granjeiro', 0], shop: 'farm-granja',
   lines: ['Eita, visita! Chegue, que o porco tá gordo e a lã das ovelhas tá no ponto.', 'Roça é trabalho de sol a sol, mas não troco por mar nenhum.', 'Se ouvir barulho de ovelha à noite, é só o vento. Eu acho...'] };
 
 export const ISLANDS = [

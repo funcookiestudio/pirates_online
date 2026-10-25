@@ -3,6 +3,7 @@
 import { dIn, dWalk } from '../dungeon/dgrid.js';
 import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
+import { CASTLE, ZONES } from './reserve.js';
 
 /** Semente da ilha: padrão 'pirata'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
 const savedSeed = () => { try { return localStorage.getItem('pirata-ilha'); } catch (e) { return null; } };
@@ -35,6 +36,33 @@ export function initTerrain(posts = [], seed = SEED) {
 
   flatten(0, 0, VILLAGE_R + 5, VILLAGE_R + 17, 0);
 
+  // castelo: encostado na vila, de frente para um dos 4 portões (o pátio abre a ~4 m do portão); escolhe o portão de terreno mais firme e plano
+  {
+    let best = null;
+    const Dc = VILLAGE_R + 28;
+    const tryAt = (a, wide) => {
+      const cx = Math.cos(a) * Dc, cz = Math.sin(a) * Dc;
+      if (isl.pois.some((p, i) => i !== 1 && Math.hypot(p.x - VX - cx, p.z - VZ - cz) < 40)) return;
+      let cost = 0, low = 0;
+      for (let j = -32; j <= 32; j += 3) for (let i = -32; i <= 32; i += 3) {
+        if (Math.hypot(i, j) > 32) continue;
+        const gx = Math.round(cx + i + VX + E), gz = Math.round(cz + j + VZ + E);
+        if (gx < 2 || gz < 2 || gx >= N - 1 || gz >= N - 1) return;
+        const h = H[gz * V + gx];
+        if (h < SEA + 1.4) { if (++low > 8) return; cost += 60; continue; }   // um pouco de praia na borda é aterrado pelo nivelamento
+        cost += Math.abs(h);
+      }
+      if (!best || cost < best.cost) best = { cost, a, cx, cz };
+    };
+    for (let k = 0; k < 4; k++) tryAt(k * Math.PI / 2);
+    if (!best) for (let k = 0; k < 36; k++) tryAt(k / 36 * Math.PI * 2);   // nenhum portão serve: qualquer direção
+    if (best) {
+      flatten(best.cx, best.cz, 34, 48, 0);
+      CASTLE.x = best.cx; CASTLE.z = best.cz; CASTLE.th = Math.atan2(-Math.cos(best.a), -Math.sin(best.a)); CASTLE.ok = true;
+      ZONES.push({ x: best.cx, z: best.cz, fx: Math.sin(CASTLE.th), fz: Math.cos(CASTLE.th), x0: -20, x1: 20, z0: -15, z1: 36 });   // pegada do castelo (pátio incluído), no giro dele
+    }
+  }
+
   // área alcançável a pé a partir da vila (platôs isolados por paredões ficam de fora): postos só nascem nela
   REACH = new Uint8Array(V * V);
   {
@@ -55,7 +83,7 @@ export function initTerrain(posts = [], seed = SEED) {
   const cands = [];
   for (let z = -95 * KSC; z <= 95 * KSC; z += 2) for (let x = -95 * KSC; x <= 95 * KSC; x += 2) {
     const d = Math.hypot(x, z);
-    if (d > 44 * KSC && d < 92 * KSC && reach(x, z) && roomy(x, z, 6)) cands.push([x, z, d, Math.atan2(z, x)]);
+    if (d > 44 * KSC && d < 92 * KSC && reach(x, z) && roomy(x, z, 6) && !(CASTLE.ok && Math.hypot(x - CASTLE.x, z - CASTLE.z) < 52)) cands.push([x, z, d, Math.atan2(z, x)]);
   }
   // espalha os postos por pontos bem distantes entre si (e da vila), depois ordena pela distância: quanto mais longe, mais perigoso
   const chosen = [];
@@ -90,7 +118,9 @@ export function initTerrain(posts = [], seed = SEED) {
 /** Trilhas estreitas até cada acampamento e cada boca de caverna: caminho de menor esforço (poucas ladeiras) por terra alcançável,
     terminando na estrada ou na vila mais próxima. A textura de estrada limpa a vegetação ao redor (onRoad) e garante rota para o A*. */
 function carveTrails(posts) {
-  const targets = [...posts.map(p => [p.x, p.z]), ...CAVES.map(c => [c.x + c.dx * 3, c.z + c.dz * 3])]
+  // o castelo também é destino: a estrada de terra chega ao portão do pátio; fora disso a trilha contorna o castelo
+  const gate = CASTLE.ok ? [CASTLE.x + Math.sin(CASTLE.th) * 29.5, CASTLE.z + Math.cos(CASTLE.th) * 29.5] : null;
+  const targets = [...posts.map(p => [p.x, p.z]), ...CAVES.map(c => [c.x + c.dx * 3, c.z + c.dz * 3]), ...(gate ? [gate] : [])]
     .sort((a, b) => Math.hypot(a[0], a[1]) - Math.hypot(b[0], b[1]));
   const NV2 = V * V, dist = new Float32Array(NV2), from = new Int32Array(NV2), done = new Uint8Array(NV2);
   const gc = (x, z) => [Math.round(x + VX + E), Math.round(z + VZ + E)];
@@ -112,6 +142,7 @@ function carveTrails(posts) {
       for (const [a, b, w] of D8) {
         const x = i + a, y = j + b, q = y * V + x;
         if (x < 2 || y < 2 || x >= N - 1 || y >= N - 1 || done[q] || REACH[q] !== 1 || H[q] < SEA + 1 || isl.nav[q] !== 0) continue;
+        if (gate && Math.hypot(x - E - VX - CASTLE.x, y - E - VZ - CASTLE.z) < 33 && Math.hypot(x - E - VX - gate[0], y - E - VZ - gate[1]) > 9) continue;   // não atravessa o castelo
         const sl = Math.abs(H[q] - H[k]) / w;
         if (sl > .75) continue;
         const nd = d + w * (1 + sl * 8) + (isl.pm[q] === 1 ? -.5 * w : 0);
@@ -153,7 +184,7 @@ function pickCaves(posts) {
       if (heightAt(x - dx * 3, z - dz * 3) < h + 1) continue;                      // a montanha precisa subir atrás da boca
       if (!walkable(fx - dz * 1.5, fz + dx * 1.5) || !walkable(fx + dz * 1.5, fz - dx * 1.5)) continue;   // espaço à frente
       if (!openAt(fx, fz, 2.6) || !openAt(x + dx * 7, z + dz * 7, 2)) continue;          // corredor largo à frente (senão o A* não passa)
-      if (onRoad(x, z, 3) || onRoad(fx, fz, 2) || posts.some(p => Math.hypot(p.x - x, p.z - z) < 18)) continue;
+      if (onRoad(x, z, 3) || onRoad(fx, fz, 2) || posts.some(p => Math.hypot(p.x - x, p.z - z) < 18) || (CASTLE.ok && Math.hypot(x - CASTLE.x, z - CASTLE.z) < 50)) continue;
       let m = 99;
       for (const c of out) m = Math.min(m, Math.hypot(c.x - x, c.z - z));
       if (m < 26 * KSC) continue;

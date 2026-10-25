@@ -41,7 +41,7 @@ export function updateDoors(dt) {
   DOORS.forEach(d => {   // fecham sozinhas depois de alguns segundos, se ninguém estiver no vão
     if (!d.open) { d.t = 0; return; }
     d.t = (d.t || 0) + dt;
-    if (d.t > CLOSE_AFTER) { const [cx, cz] = toW(d.h, d.c, d.f); if (Math.hypot(P.x - cx, P.z - cz) > 1.6 * d.h.K) { d.open = false; refreshProps(); } }
+    if (d.t > CLOSE_AFTER) { const [cx, cz] = cen(d); if (Math.hypot(P.x - cx, P.z - cz) > 1.6 * d.h.K) { d.open = false; refreshProps(); } }
   });
   DOORS.forEach(d => { const tg = (d.base || 0) + (d.open ? d.openRot : 0); d.p.rotation.y += (tg - d.p.rotation.y) * Math.min(1, dt * 8); if (Math.abs(tg - d.p.rotation.y) < ANG_EPS) d.p.rotation.y = tg; });
   if (!pend) return;
@@ -85,7 +85,7 @@ export function doorClick(ray) {
   let d = hit && hit.object.userData.door;
   if (!d) {   // reserva: o raio passa perto do centro da porta (esfera de ~1,2 m)
     let best = 1.2;
-    DOORS.forEach(q => { if (q.lvl !== (P.up ? 1 : 0) || !visible(q.p)) return; const [qx, qz] = toW(q.h, q.c, q.f); const c = new THREE.Vector3(qx, groundY(qx, qz) + (P.up ? P.fy : 0) + 1.1 * q.h.K, qz); const dd = ray.ray.distanceToPoint(c); if (dd < best) { best = dd; d = q; } });
+    DOORS.forEach(q => { if (q.lvl !== (P.up ? 1 : 0) || !visible(q.p)) return; const [qx, qz] = cen(q); const c = new THREE.Vector3(qx, groundY(qx, qz) + (P.up ? P.fy : 0) + 1.1 * q.h.K, qz); const dd = ray.ray.distanceToPoint(c); if (dd < best) { best = dd; d = q; } });
   }
   if (!d) return false;
   const [cx, cz] = cen(d);
@@ -97,16 +97,16 @@ export function doorClick(ray) {
 /** Clique fora da casa estando dentro dela: vai até a porta de saída, abre e sai até o ponto clicado */
 export function exitClick(x, z) {
   if (P.up || anim) return false;
-  const inFoot = (h, px, pz) => { const [lx, lz] = toL(h, px, pz); return Math.abs(lx) < 5.3 && Math.abs(lz) < 4.2; };
+  const inFoot = (h, px, pz) => { const [lx, lz] = toL(h, px, pz); return Math.abs(lx) < (h.fx || 5.3) && Math.abs(lz) < (h.fz || 4.2); };
   let best = null, bd = 1e9;
   DOORS.forEach(d => {
-    if (d.room || d.open || !inFoot(d.h, P.x, P.z) || inFoot(d.h, x, z)) return;
-    const [cx, cz] = toW(d.h, d.c, d.f), dd = Math.hypot(cx - x, cz - z);
+    if (d.room || d.lvl !== 0 || d.open || !inFoot(d.h, P.x, P.z) || inFoot(d.h, x, z)) return;
+    const [cx, cz] = cen(d), dd = Math.hypot(cx - x, cz - z);
     if (dd < bd) { bd = dd; best = d; }
   });
   if (!best) return false;
-  const d = best, [cx, cz] = toW(d.h, d.c, d.f);
-  const [, lz] = toL(d.h, P.x, P.z), side = lz > d.f ? 1 : -1, [ax, az] = toW(d.h, d.c, d.f + side * 1.5);
+  const d = best, [cx, cz] = cen(d);
+  const side = sideOf(d), [ax, az] = cen(d, side * 1.5);
   if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d, { x, z }); return true; }
   P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az, final: { x, z } };
   return true;

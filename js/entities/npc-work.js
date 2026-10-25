@@ -1,5 +1,6 @@
 /* Animações de trabalho dos NPCs. Cada ofício controla os braços, o tronco e a cabeça do mesmo esqueleto do personagem. */
 import { scene } from '../core/engine.js';
+import { hideSword } from './character.js';
 import { M } from '../core/utils.js';
 
 const ease = t => t * t * (3 - 2 * t);
@@ -66,7 +67,7 @@ export function initSmith(n, at, th, pts) {
   bx(.2, .2, .36, 0x55585e, 0, -.86, 0, hm);
   bx(.22, .06, .38, 0x3a3c40, 0, -.86, 0, hm);
   g.arm.fa.add(hm);
-  g.arm.fa.children.forEach(c => { if (c.geometry && c.geometry.parameters.height === .95) c.visible = false; });
+  hideSword(g);
   // caneca (para o descanso)
   const mug = bx(.13, .16, .13, 0x8a6a3a, 0, -.38, .1, g.arm.fa); mug.visible = false;
   // pinça: pivô na mão livre (inclina para baixo para mergulhar a espada)

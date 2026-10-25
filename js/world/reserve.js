@@ -1,4 +1,5 @@
 /* Zonas reservadas (fazendas): a vegetação e as árvores sorteadas não nascem aqui (sem imports para evitar ciclos). */
+export const CASTLE = { x: 0, z: 0, th: 0, ok: false };   // castelo: posição/ângulo escolhidos pelo terreno (fachada voltada para a vila)
 export const ZONES = [];   // { x, z, fx, fz, x0, x1, z0, z1 } em coordenadas locais da fazenda
 /** true se (x,z) cai dentro de alguma zona (com folga `m`) */
 export function reserved(x, z, m = 0) {

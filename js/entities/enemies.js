@@ -6,7 +6,7 @@ import { enemies, respawns } from '../core/registry.js';
 import { turnTo } from '../core/utils.js';
 import { ENEMY_KINDS, KIND } from '../data/enemies.js';
 import { P, hurtP } from './player.js';
-import { person } from './character.js';
+import { enemyModel } from './character.js';
 import { gait, gaitSpeed } from './gait.js';
 import { hit } from '../systems/combat.js';
 import { puff } from '../systems/effects.js';
@@ -24,7 +24,7 @@ const RESPAWN_TIME = 43.8;
     `o` = { lv (nível; padrão = o do arquétipo), elite }: vida, dano e XP vêm do nível (scaling.js) */
 export function spawn(k, x, z, pat, o = {}) {
   const t = ENEMY_KINDS[k], lv = o.lv || t.lv, elite = !!o.elite && !t.boss, st = enemyStats(t, lv, elite);
-  const g = person(...t.c);
+  const g = enemyModel(t);
   if (t.boss) g.scale.setScalar(1.7); else g.scale.setScalar((t.sc || 1) * (elite ? ELITE.scale : 1));
   g.position.set(x, groundY(x, z), z);
   scene.add(g);

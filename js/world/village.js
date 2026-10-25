@@ -78,7 +78,7 @@ export function buildVillage() {
   const ground = new THREE.Mesh(new THREE.CircleGeometry(VILLAGE_R + 3, 24).rotateX(-Math.PI / 2), M(0x9a8a62));
   ground.position.y = .012;
   scene.add(ground);
-  // buildWall();   // muralhas removidas por enquanto (só os portões ficam)
+  buildWall();
   for (let k = 0; k < 4; k++) buildGate(k * Math.PI / 2);
 
   // fogueira no centro da vila (substitui o antigo poço)
@@ -99,7 +99,7 @@ export function buildVillage() {
     } else { makeChest(x, z, ry, CHEST); blocker(x, z, 1.0); }
   });
   SLOTS.forEach(([kind, deg]) => {
-    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ smith: 5.9, tavern: 6.0 }[kind] || 3.7), k = IDX[kind];
+    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ tavern: 7 }[kind] || 5.9), k = IDX[kind];
     const [fx, fz, th, at, pts] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
     if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[k], { kind: 'smith', at, th, pts }, k); }
     else citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId } : undefined, k);

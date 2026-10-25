@@ -4,7 +4,7 @@ import { openDoorById } from '../world/doors.js';
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
 import { P } from './player.js';
-import { person } from './character.js';
+import { person, hideSword } from './character.js';
 import { gait, gaitSpeed } from './gait.js';
 import { collide, steer, navTarget } from '../systems/steer.js';
 import { tickClock } from '../core/clock.js';
@@ -23,67 +23,38 @@ export const npcByShop = kind => list.find(n => n.info && n.info.shop === kind &
 export const npcChest = () => list.find(n => n.role === 'chest' && n.info && n.info.chest);
 const turn = (a, b, k) => { let d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); };
 
-/** Peças do chapéu em g.head.children: 0 rosto (fundido) · 1-2 olhos · 3 aba · 4 copa · 5 caveira · 6 pena */
-function hatStyle(g, kind, col) {
-  const [, , , brim, top, skull, plume] = g.head.children;
-  const set = (m, c) => m.material.color.set(c);
-  if (kind === 'pirate') return; // mantém o chapéu do personagem
-  skull.visible = plume.visible = false;
-  if (kind === 'straw') { set(brim, 0xd8bc70); brim.scale.set(1.25, 1, 1.25); set(top, 0xc8a85a); }
-  else if (kind === 'bandana') { brim.visible = false; top.scale.set(1.05, .45, 1.05); top.position.y -= .06; set(top, col); }
-  else if (kind === 'cap') { set(brim, col); brim.scale.set(.7, 1, .7); set(top, col); top.scale.set(1, .6, 1); top.position.y -= .04; }
-  else if (kind === 'hair') { brim.visible = false; set(top, col); top.scale.set(1.05, .55, 1.05); top.position.y -= .03; }
-  else if (kind === 'helmet') {
-    brim.visible = false;
-    set(top, 0x9aa0a8); top.scale.set(1.18, 1.25, 1.18); top.position.y += .02;
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(.06, .3, .04), M(0x8a9098));
-    nose.position.set(0, top.position.y - .22, .21);
-    const crest = new THREE.Mesh(new THREE.BoxGeometry(.08, .22, .4), M(0xb02020));
-    crest.position.set(0, top.position.y + .26, 0);
-    g.head.add(nose, crest);
-  }
+/** Skin do NPC: a da ficha (info.skin = [skin, feminino?, ajustes]) ou, na falta dela, uma pelo índice de variação */
+const FALL = [['fazendeiro', 0], ['taberneiro', 1], ['ferreiro', 0], ['alquimista', 0], ['pirata', 1]];
+function specFor(role, v, info, cols) {
+  const s = (info && info.skin) || (role === 'guard' ? ['guarda', 0] : FALL[v % FALL.length]);
+  return { sk: s[0], f: !!s[1], ov: Object.assign({ skin: cols[0] }, s[2] || {}) };
 }
 
-/** Roupa extra em cima do corpo base */
-function dress(g, role, v) {
-  const box = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y - .72, z); g.up.add(m); return m; };
-  if (role === 'guard') {
-    hatStyle(g, 'helmet');
-    box(.7, .55, .46, 0x9aa0a8, 0, 1.22, 0);          // peitoral
-    box(.3, .62, .04, 0xb02020, 0, 1.1, .25);          // tabardo
-    box(.3, .22, .3, 0x8a9098, -.44, 1.55, 0);         // ombreiras
-    box(.3, .22, .3, 0x8a9098, .44, 1.55, 0);
-    // escudo no braço livre
-    const sh = new THREE.Mesh(new THREE.BoxGeometry(.06, .6, .46), M(0x4a5a7a));
-    sh.position.set(.14, -.3, .06);
-    g.armL.fa.add(sh);
-    const em = new THREE.Mesh(new THREE.BoxGeometry(.07, .2, .2), M(0xe0b030));
-    em.position.set(.16, -.3, .06);
-    g.armL.fa.add(em);
-    // lança na mão da arma (a espada do modelo base some)
-    g.arm.fa.children.forEach(c => { if (c.geometry.parameters.height === .95) c.visible = false; });
-    const sp = new THREE.Group();
-    sp.add(new THREE.Mesh(new THREE.BoxGeometry(.06, 2.5, .06), M(0x6a4a2a)));
-    const tip = new THREE.Mesh(new THREE.ConeGeometry(.1, .4, 4), M(0xd8dce0));
-    tip.position.y = 1.45;
-    sp.add(tip);
-    sp.position.set(0, .3, .02);
-    g.arm.fa.add(sp);
-  } else {
-    g.arm.fa.children.forEach(c => { if (c.geometry.parameters.height === .95) c.visible = false; });
-    const kinds = ['straw', 'bandana', 'cap', 'hair'];
-    hatStyle(g, kinds[v % 4], [0xc84a3a, 0x3a6a9a, 0x6a4a2a, 0x2a2018][v % 4]);
-    if (v % 2 === 0) box(.5, .55, .04, 0xe8e0c8, 0, 1.0, .21);   // avental
-    if (v % 3 === 0) box(.64, .1, .4, 0x6a4a2a, 0, 1.52, 0);      // colete/alça
-  }
+/** Armadura do guarda (corpo novo, maior): elmo, peitoral, ombreiras, tabardo, escudo e lança */
+function dress(g, soldier) {
+  if (!soldier) { hideSword(g); return; }
+  const box = (w, h, d, c, x, y, z, p) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); p.add(m); return m; };
+  // escudo no braço livre
+  box(.06, .6, .46, 0x4a5a7a, .22, -.3, .06, g.armL.fa);
+  box(.07, .2, .2, 0xe0b030, .24, -.3, .06, g.armL.fa);
+  // lança na mão da arma (a espada do modelo base some)
+  hideSword(g);
+  const sp = new THREE.Group();
+  sp.add(new THREE.Mesh(new THREE.BoxGeometry(.06, 2.5, .06), M(0x6a4a2a)));
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(.1, .4, 4), M(0xd8dce0));
+  tip.position.y = 1.45;
+  sp.add(tip);
+  sp.position.set(0, .3, .02);
+  g.arm.fa.add(sp);
 }
 
 /** Cria um NPC: role 'guard' (fica no posto, olhando para fora) ou 'citizen' (passeia perto de casa) */
 export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
-  const g = person(...cols);
+  const sp = specFor(role, v, info, cols);
+  const g = person(cols[0], cols[1], cols[2], cols[3], sp);
   g.position.set(x, 0, z);
   g.rotation.y = ry;
-  dress(g, role, v);
+  dress(g, sp.sk === 'guarda');
   scene.add(g);
   let lab = null;
   if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }

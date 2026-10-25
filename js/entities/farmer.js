@@ -2,6 +2,7 @@
    acendem os lampiões e dormem. Cada tarefa é uma lista de pontos (com ação e tempo de parada) percorrida em ciclo;
    a tarefa só muda quando o fazendeiro volta a um ponto seguro (pátio), para não atravessar cercas. */
 import { M } from '../core/utils.js';
+import { hideSword } from './character.js';
 import { cropGeo, stageOf } from './crops.js';
 import { hourNow, CLOCK } from '../core/clock.js';
 
@@ -11,7 +12,7 @@ const box = (w, h, d, c, x, y, z, p) => { const m = new THREE.Mesh(new THREE.Box
 /** Ferramentas na mão: enxada (direita), cesto/balde (esquerda) */
 export function initFarmer(n, rt) {
   const g = n.g;
-  g.arm.fa.children.forEach(c => { if (c.geometry && c.geometry.parameters.height === .95) c.visible = false; });
+  hideSword(g);
   const hoe = new THREE.Group();
   box(.05, 1.3, .05, 0x7a5430, 0, -.1, .1, hoe); box(.3, .05, .14, 0x8a8a90, 0, -.74, .1, hoe);
   hoe.position.set(0, -.32, 0); hoe.rotation.x = -.6; hoe.visible = false; g.arm.fa.add(hoe);

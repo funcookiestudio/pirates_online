@@ -1,6 +1,6 @@
 /* Retrato 3D no painel (personagem e companheiro): modelo em animação de espera (idle) que o jogador gira arrastando.
    Usa um renderizador único fora da tela e copia o quadro para o canvas visível. */
-import { person } from '../entities/character.js';
+import { person, hideSword } from '../entities/character.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { mkParrot, mkRaven, mkDog, mkMonkey, mkRat } from '../pets/models.js';
@@ -95,7 +95,7 @@ function idlePlayer(g, t) {
 function buildPlayer() {
   const g = person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a);
   const fa = g.arm.fa;
-  [2, 3].forEach(i => { if (fa.children[i]) fa.children[i].visible = false; }); // tira a espada padrão
+  hideSword(g); // tira a espada padrão
   const W = WEAPONS[P.wid];
   if (W) {
     const w = W.build();
@@ -112,7 +112,7 @@ const QCOL = [0, 0x8a6a44, 0x3a6ab0, 0xd8a820];   // cor da armadura por qualida
 function buildItem(it) {
   if (it.ty === 'arm') {            // armadura: o personagem vestindo a peça
     const g = person(0xe0b48a, QCOL[it.q] || 0x8a6a44, 0x2e3a5a, 0x1a1a1a);
-    [2, 3].forEach(i => { if (g.arm.fa.children[i]) g.arm.fa.children[i].visible = false; });
+    hideSword(g);
     return g;
   }
   const W = WEAPONS[it.w], w = W.build(), box = new THREE.Box3().setFromObject(w);

@@ -5,6 +5,7 @@ import { scene, cam, ren } from './core/engine.js';
 import { state } from './core/state.js';
 import { buildWorld } from './world/world.js';
 import { buildVillage } from './world/village.js';
+import { buildCastle } from './world/castle.js';
 import { initDialog } from './ui/dialog.js';
 import { updateNpcs, npcList } from './entities/npc.js';
 import { updatePerf } from './systems/perf.js';
@@ -23,7 +24,7 @@ import { updateCamera } from './systems/camera.js';
 import { separate } from './systems/separation.js';
 import { updateXray } from './world/xray.js';
 import { initInput } from './systems/input.js';
-import { loadGame, initSave } from './systems/save.js';
+import { loadGame, initSave, savedPos, safeSpot } from './systems/save.js';
 import { MOUNT, initMount, toggleMount, giveHorse } from './systems/mount.js';
 import { CLOCK } from './core/clock.js';
 import { dodge } from './systems/dodge.js';
@@ -85,6 +86,7 @@ function frame(now) {
 const worldBefore = new Set(scene.children);
 buildWorld();
 buildVillage();
+buildCastle();
 initInput();
 initWorldMap();
 initCaves();
@@ -106,7 +108,8 @@ if (location.hash === '#dev') console.log('merge', mr);
 buildFarm();
 initMount(MOUNT.owned, MOUNT.coat);   // cavalo comprado espera junto ao portão leste   // animais de fazenda (enfeite) — criados depois da fusão para continuarem animáveis
 // o jogo sempre começa na vila, com o personagem sentado descansando (clicar no mundo o levanta)
-P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw;
+if (savedPos && safeSpot(savedPos.x, savedPos.z)) { P.x = P.tx = savedPos.x; P.z = P.tz = savedPos.z; P.sit = P.sitT = 0; }   // volta onde parou (vila, fazenda ou porto)
+else { P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw; }
 initSave();
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)

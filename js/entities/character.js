@@ -1,137 +1,40 @@
-/* Construção do corpo "de blocos" usado pelo jogador e pelos inimigos. */
-import { M } from '../core/utils.js';
+/* Corpo "de blocos" usado pelo jogador, NPCs e inimigos: humanos com skins e esqueleto (ver human.js). */
+import { buildHuman, buildSkeleton, SKM, SKF, hideSword } from './human.js';
+export { hideSword };
 
 /**
- * Cria um humanoide pirata.
- * Retorna um Group com: legL, legR (pernas com .knee), arm (braço da espada, com .fa),
- * armL (braço livre, com .fa), up (grupo do tronco, pivô no quadril).
+ * Cria um humanoide.
+ *  person(pele, camisa, calça, chapéu)           → pirata masculino (jogador); `camisa` pinta o casaco
+ *  person(pele, camisa, calça, chapéu, spec)     → spec = { sk: 'pirata'|'taberneiro'|'ferreiro'|'fazendeiro'|'alquimista', f: feminino?, ov: {…} sobrescreve a skin }
+ * Retorna um Group com: legL, legR (com .knee e .foot), arm (braço da arma, .fa), armL (braço livre, .fa),
+ * up (tronco, pivô no quadril), head, eyeL, eyeR, feather.
  */
-export function person(skin, shirt, pants, hat) {
-  const g = new THREE.Group();
-  const box = (w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
-    m.position.set(x, y, z);
-    return m;
-  };
-  const bc = new THREE.Color(skin).multiplyScalar(.35);
-
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(.58, .58, .05, 3), M(hat));
-  brim.position.y = 2.04;
-  brim.rotation.y = Math.PI / 2;
-
-  // tronco, cinto e lenço
-  g.add(
-    box(.62, .78, .38, shirt, 0, 1.15, 0),
-    box(.66, .1, .42, 0x3a2412, 0, .8, 0),
-    box(.14, .12, .05, 0xe0b030, 0, .8, .21),
-    box(.5, .1, .42, 0xb02020, 0, 1.55, 0)
-  );
-
-  // cabeça (grupo com pivô no pescoço: inclina para mirar). eyeL/eyeR = olhos (o esquerdo é o de +x)
-  const hd = new THREE.Group();
-  hd.position.y = 1.6;
-  const eyeR = box(.07, .07, .02, 0x111111, -.1, 1.85, .215);
-  const eyeL = box(.07, .07, .02, 0x111111, .1, 1.85, .215);
-  const plume = box(.06, .3, .06, 0xc02020, .22, 2.25, 0);
-  [
-    box(.42, .42, .42, skin, 0, 1.8, 0), eyeR, eyeL,
-    box(.3, .16, .08, bc, 0, 1.63, .2),
-    box(.12, .05, .02, bc, 0, 1.74, .215),
-    brim,
-    box(.38, .2, .38, hat, 0, 2.15, 0),
-    box(.1, .1, .02, 0xf0f0f0, 0, 2.15, .2),
-    plume
-  ].forEach(m => { m.position.y -= 1.6; hd.add(m); });
-  g.add(hd);
-  g.head = hd;
-  g.eyeL = eyeL;
-  g.eyeR = eyeR;
-  g.feather = plume;
-
-  // pernas (coxa + joelho/canela)
-  const leg = x => {
-    const l = new THREE.Group();
-    l.position.set(x, .72, 0);
-    const k = new THREE.Group();
-    k.position.y = -.25;
-    const f = new THREE.Group();          // pé: pivô no tornozelo (rola na marcha)
-    f.position.y = -.26;
-    f.add(box(.25, .22, .32, 0x2a1a10, 0, -.11, .03));
-    k.add(box(.21, .25, .23, pants, 0, -.125, 0), f);
-    l.add(box(.21, .25, .23, pants, 0, -.125, 0), k);
-    l.knee = k;
-    l.foot = f;
-    g.add(l);
-    return l;
-  };
-  g.legL = leg(-.16);
-  g.legR = leg(.16);
-
-  // braço da arma (com espada padrão no antebraço)
-  const a = new THREE.Group();
-  a.position.set(-.4, 1.45, 0);
-  const fa = new THREE.Group();
-  fa.position.y = -.25;
-  fa.add(
-    box(.16, .25, .16, shirt, 0, -.125, 0),
-    box(.15, .15, .15, skin, 0, -.32, 0),
-    box(.07, .95, .05, 0xd8dce0, 0, -.85, 0),
-    box(.32, .06, .09, 0xb08a30, 0, -.41, 0)
-  );
-  a.add(box(.16, .25, .16, shirt, 0, -.125, 0), fa);
-  a.fa = fa;
-  g.add(a);
-  g.arm = a;
-
-  // braço livre
-  const al = new THREE.Group();
-  al.position.set(.4, 1.45, 0);
-  const fl = new THREE.Group();
-  fl.position.y = -.25;
-  fl.add(box(.16, .25, .16, shirt, 0, -.125, 0), box(.15, .15, .15, skin, 0, -.32, 0));
-  al.add(box(.16, .25, .16, shirt, 0, -.125, 0), fl);
-  al.fa = fl;
-  g.add(al);
-  g.armL = al;
-
-  // Parte de cima (tronco, cabeça, braços) agrupada no quadril: permite inclinar o tronco ao sentar/levantar.
-  // Com rotação 0 tudo continua nas mesmas coordenadas de antes (a origem do grupo é `userData.off`).
-  const up = new THREE.Group();
-  up.position.y = .72;
-  up.userData.off = new THREE.Vector3(0, .72, 0);
-  [...g.children].filter(c => c !== g.legL && c !== g.legR).forEach(c => { c.position.y -= .72; up.add(c); });
-  g.add(up);
-  g.up = up;
-
-  // desempenho: funde as caixas de cada segmento rígido em uma malha só (cores nos vértices) = menos chamadas de desenho
-  const keep = new Set([g.eyeL, g.eyeR, ...a.fa.children, ...hd.children.slice(5)]);   // olho (pisca), braço da espada e peças do chapéu: ficam soltos (o NPC altera o chapéu)
-  g.traverse(n => { if (n.isGroup && n !== g) fuse(n, keep); });
-
-  return g;
+export function person(skin, shirt, pants, hat, spec) {
+  if (spec) {
+    const d = Object.assign({}, (spec.f ? SKF : SKM)[spec.sk || 'pirata'] || (spec.f ? SKM : SKF)[spec.sk], spec.ov || {});
+    if (spec.ov && spec.ov.skin === undefined && skin !== undefined && spec.useSkin) d.skin = skin;
+    return buildHuman(!!spec.f, d);
+  }
+  const d = Object.assign({}, SKM.pirata, { skin });
+  if (shirt !== 0x8b2e2e) Object.assign(d, { t: shirt, fl: shirt, u: shirt, f: shirt });
+  return buildHuman(false, d);
 }
 
-/** Funde as malhas diretas de `grp` (menos as de `keep`) em uma só, usando cor por vértice */
-function fuse(grp, keep) {
-  const meshes = grp.children.filter(c => c.isMesh && !keep.has(c));
-  if (meshes.length < 2) return;
-  const pos = [], nor = [], col = [];
-  meshes.forEach(m => {
-    m.updateMatrix();
-    const geo = m.geometry.clone().toNonIndexed().applyMatrix4(m.matrix), n = geo.attributes.position.count, c = m.material.color;
-    pos.push(...geo.attributes.position.array);
-    nor.push(...geo.attributes.normal.array);
-    for (let i = 0; i < n; i++) col.push(c.r, c.g, c.b);
-    geo.dispose();
-    grp.remove(m);
-    m.geometry.dispose();
-  });
-  const bg = new THREE.BufferGeometry();
-  bg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  bg.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  bg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  bg.parameters = {};
-  grp.add(new THREE.Mesh(bg, new THREE.MeshLambertMaterial({ vertexColors: true })));
-  grp.children.unshift(grp.children.pop()); // fica no índice 0: os índices das peças soltas só deslocam o rosto
+/** Inimigo do tipo `t` (ENEMY_KINDS): esqueletos usam o esqueleto; os demais, humanos pintados com as cores do tipo */
+export function enemyModel(t) {
+  const [sk, sh, pa, ht] = t.c;
+  if (/Esqueleto/.test(t.n)) return buildSkeleton({ bone: sk, armor: /Guerreiro/.test(t.n) });
+  const base = { skin: sk, t: sh, fl: undefined, u: sh, f: sh, pa, st: pa, sh: 0x1d1d22, hc: ht, hair: ht, belt: 0x2a2018, buck: 0, cuff: 0, vest: 0, ex: [] };
+  const look = {
+    'Pirata Fantasma': { hat: 'tri', fl: sh, ex: ['jabot'] },
+    'Capitão Maldito': { hat: 'tri', fl: sh, vest: 0xe9d9a8, cuff: 0xe0b84a, buck: 1, ex: ['jabot', 'patch', 'mo'] },
+    'Grumete Zumbi': { hat: 'cap', ex: ['neck'] },
+    'Contrabandista': { hat: 'hood', ex: ['bag'] },
+    'Sombra das Ondas': { hat: 'hood', ex: [] },
+    'Corsário Amaldiçoado': { hat: 'tri', fl: sh, cuff: 0xe0b84a, ex: ['jabot', 'mo'] },
+    'Brutamontes Naufragado': { hat: 'band', bd: [0x2b2018, .32], ex: ['soot'] },
+  }[t.n] || { hat: 'band', ex: [] };
+  return buildHuman(false, Object.assign(base, look));
 }
 
 /** Dobra os joelhos e o braço livre conforme a fase do passo (ph) e a intensidade (m) */
