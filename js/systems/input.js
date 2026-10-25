@@ -8,7 +8,7 @@ import { P, mark } from '../entities/player.js';
 import { spin, bomb, potion } from './combat.js';
 import { togAuto } from './auto.js';
 import { dodge } from './dodge.js';
-import { zoomBy, rotateBy, tiltBy, resetCamera } from './camera.js';
+import { CAMUI, zoomBy, rotateBy, tiltBy, resetCamera } from './camera.js';
 import { toggleSit, standUp } from './rest.js';
 import { togglePet } from '../pets/manager.js';
 import { freePoint } from './steer.js';
@@ -117,7 +117,14 @@ export function initInput() {
   cv.addEventListener('contextmenu', e => e.preventDefault());
   cv.addEventListener('wheel', e => { e.preventDefault(); if (e.shiftKey) tiltBy(-e.deltaY * .002); else zoomBy(Math.exp(e.deltaY * .0015)); }, { passive: false });
 
+  let cg = null, cd = 0;   // modo câmera: arrasto de um dedo (faixa de baixo = girar · lateral direita = inclinar) e pinça = zoom
+  const camZone = e => e.clientX > innerWidth * .78 ? 'tilt' : e.clientY > innerHeight * .62 ? 'rot' : null;
   cv.addEventListener('pointerdown', e => {
+    if (CAMUI.open) {
+      pts.set(e.pointerId, e); down = false;
+      if (pts.size === 2) { cg = null; cd = pair().d; } else cg = { m: camZone(e), x: e.clientX, y: e.clientY };
+      return;
+    }
     if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX, y: e.clientY }; return; }
     pts.set(e.pointerId, e);
     if (pts.size === 2) { clearTimeout(wait); down = false; P.tgt = null; P.tx = P.x; P.tz = P.z; cancelStair(); cancelDoor(); gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
@@ -128,6 +135,13 @@ export function initInput() {
   });
 
   cv.addEventListener('pointermove', e => {
+    if (CAMUI.open) {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, e);
+      if (pts.size === 2) { const n = pair().d; if (cd > 0 && n > 0) zoomBy(cd / n); cd = n; }
+      else if (cg && cg.m) { if (cg.m === 'rot') rotateBy(-(e.clientX - cg.x) * .008); else tiltBy((e.clientY - cg.y) * .006); cg.x = e.clientX; cg.y = e.clientY; }
+      return;
+    }
     if (orbit) { if (e.buttons & 6) { rotateBy(-(e.clientX - orbit.x) * .008); tiltBy((e.clientY - orbit.y) * .006); orbit.x = e.clientX; orbit.y = e.clientY; } return; }
     if (pts.has(e.pointerId)) pts.set(e.pointerId, e);
     if (pts.size === 2 && gest) {
@@ -146,6 +160,7 @@ export function initInput() {
   });
 
   const end = e => {
+    if (CAMUI.open) { pts.delete(e.pointerId); cg = null; down = false; return; }
     if (e.button === 1 || e.button === 2) orbit = null;
     pts.delete(e.pointerId);
     if (pts.size < 2) gest = null;
@@ -216,7 +231,7 @@ function camButtons() {
   };
   let open = false;   // os comandos sempre começam ocultos
   const tog = B('📷', 'Mostrar / ocultar os comandos de câmera', () => {
-    open = !open; grid.style.display = open ? 'grid' : 'none'; tog.style.opacity = open ? '1' : '.65';
+    open = !open; CAMUI.open = open; if (open) { P.tgt = null; P.tx = P.x; P.tz = P.z; cancelStair(); cancelDoor(); } grid.style.display = open ? 'grid' : 'none'; tog.style.opacity = open ? '1' : '.65';
   }, false, wrap);
   tog.style.cssText = 'width:40px;height:40px;font-size:18px;color:#fff;background:#1c1208e0;border:2px solid #a07a3a;border-radius:4px;cursor:pointer;padding:0';
   B('⟲', 'Girar câmera (←)', () => rotateBy(-.1), true); B('▲', 'Inclinar para cima (↑)', () => tiltBy(.06), true); B('⟳', 'Girar câmera (→)', () => rotateBy(.1), true);

@@ -12,6 +12,8 @@ let pitchT = P0, pitch = P0;
 let fogK = 1;                   // névoa e alcance acompanham o zoom (quanto mais longe, mais se enxerga)
 
 /** Gira a câmera em volta do jogador (rad; positivo gira no sentido horário visto de cima) */
+/** painel de câmera aberto: os gestos na tela só mexem na câmera (sem cliques de movimento/ativação) */
+export const CAMUI = { open: false };
 export function rotateBy(a) { yawT += a; }
 
 /** Aproxima (f<1) ou afasta (f>1) a câmera, limitado entre ZMIN e ZMAX */
