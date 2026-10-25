@@ -9,7 +9,7 @@ import { debugGrid, navVersion } from '../world/interior-nav.js';
 import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
 
 const KEY = 'pirata-ajustes';
-export const CFG = { q: 'auto', fps: false, hl: 'tile', hlhide: true, tiles: false, dbg: false, vis: true };
+export const CFG = { diag: '', q: 'auto', fps: false, hl: 'tile', hlhide: true, tiles: false, dbg: false, vis: true };
 try { Object.assign(CFG, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* sem armazenamento: usa o padrão */ }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(CFG)); } catch (e) { /* ignora */ } };
 
@@ -107,6 +107,7 @@ export function initSettings() {
   dg.checked = CFG.dbg; dg.onchange = () => { CFG.dbg = dg.checked; save(); };
   tl.checked = CFG.tiles; tl.onchange = () => { CFG.tiles = tl.checked; save(); };
   hh.onchange = () => { CFG.hlhide = hh.checked; save(); };
+  const dg2 = $('gx-diag'); dg2.onchange = () => { CFG.diag = dg2.value; };   /* não é salvo: volta ao normal ao recarregar */
   const vs = $('gx-vis'); vs.checked = CFG.vis !== false; vs.onchange = () => { CFG.vis = vs.checked; save(); };
   const tabs = document.querySelectorAll('#acfg .atabs span'), setTab = t => { tabs.forEach(e => e.classList.toggle('on', e.dataset.t === t)); ['gx', 'jg', 'au'].forEach(k => { $('at-' + k).hidden = k !== t; }); try { localStorage.setItem(KEY + '-aba', t); } catch (e) { /* ignora */ } };
   tabs.forEach(e => { e.onclick = () => setTab(e.dataset.t); });

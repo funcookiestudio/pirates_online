@@ -78,6 +78,7 @@ function tick(now) {
   // 1) jogo
   updatePerf(rawDt);
   updateSettings(realDt);
+  if (CFG.diag === 'draw') { const a = performance.now(); ren.render(scene, cam); DIAG.rend += ((performance.now() - a) - DIAG.rend) * .1; DIAG.js = 0; DIAG.calls = ren.info.render.calls; DIAG.tris = ren.info.render.triangles; return; }   // diagnóstico: só desenho
   updatePlayer(dt);
   updateEnemies(dt);
   updateLod(realDt);
@@ -106,7 +107,7 @@ function tick(now) {
   updateVision(realDt, inDungeon());
   updateVisionOverlay(inDungeon());   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
   const tR = performance.now();
-  ren.render(scene, cam);
+  if (CFG.diag !== 'logic') ren.render(scene, cam);   // diagnóstico 'logic': só lógica, sem desenhar
   const tE = performance.now(), k = .1;
   DIAG.js += ((tR - tJs) - DIAG.js) * k; DIAG.rend += ((tE - tR) - DIAG.rend) * k;
   DIAG.calls = ren.info.render.calls; DIAG.tris = ren.info.render.triangles;
