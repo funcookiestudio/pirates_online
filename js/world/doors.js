@@ -80,7 +80,7 @@ export function updateDoors(dt) {
   const [cx, cz] = cen(d);
   if (Math.hypot(P.tx - cx, P.tz - cz) > 3) { pend = null; return; }   // clicou em outro lugar (o ponto de chegada pode ser ajustado pelo jogo)
   const at = Math.hypot(P.x - pend.ax, P.z - pend.az);
-  if (at < .5 || (at < 1.6 && Math.hypot(P.vx, P.vz) < .3) || (Math.hypot(P.x - cx, P.z - cz) < 3.2 && Math.hypot(P.vx, P.vz) < .05)) { const fin = pend.final; pend = null; if (d.open && !d.room) startPass(d, fin); else { P.tx = P.x; P.tz = P.z; useDoor(d, fin); } }
+  if (at < .5 || (at < 2.2 && Math.hypot(P.vx, P.vz) < .3) || (Math.hypot(P.x - cx, P.z - cz) < 3.2 && Math.hypot(P.vx, P.vz) < .05)) { const fin = pend.final; pend = null; if (d.open && !d.room) startPass(d, fin); else { P.tx = P.x; P.tz = P.z; useDoor(d, fin); } }
 }
 
 /** Porta aberta: atravessa pelo eixo do vão — 1º o tile do outro lado (alinhado), depois o destino */
@@ -171,18 +171,22 @@ export function doorTileClick(x, z) {
 /** Clique fora da casa estando dentro dela: vai até a porta de saída, abre e sai até o ponto clicado */
 export function exitClick(x, z) {
   if (P.up || anim) return false;
-  const inFoot = (h, px, pz) => { const [lx, lz] = toL(h, px, pz); return Math.abs(lx) < (h.fx || 5.3) && Math.abs(lz) < (h.fz || 4.2); };
+  const sameHouse = (q, h) => q && h && q.x === h.x && q.z === h.z;
+  const h = houseAt(P.x, P.z, .2);
+  if (!h || sameHouse(houseAt(x, z, .2), h)) return false;   // fora de casa, ou o destino é dentro da mesma casa
   let best = null, bd = 1e9;
-  DOORS.forEach(d => {
-    if (d.room || d.lvl !== 0 || d.open || !inFoot(d.h, P.x, P.z) || inFoot(d.h, x, z)) return;
-    const [cx, cz] = cen(d), dd = Math.hypot(cx - x, cz - z);
+  DOORS.forEach(d => {   // portas externas do térreo (abertas ou fechadas): a mais perto do destino, de preferência a da frente
+    if (d.room || d.lvl !== 0 || !sameHouse(d.h, h)) return;
+    const [cx, cz] = cen(d), dd = Math.hypot(cx - x, cz - z) + (String(d.id).includes('front') ? 0 : 6);
     if (dd < bd) { bd = dd; best = d; }
   });
   if (!best) return false;
-  const d = best, [cx, cz] = cen(d);
-  const side = sideOf(d), [ax, az] = tileAt(d, side);
-  if (Math.hypot(P.x - ax, P.z - az) < .5) { P.tgt = null; useDoor(d, { x, z }); return true; }
-  P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az, final: { x, z } };
+  const d = best, inn = sideOf(d), [tlx, tlz] = toL(d.h, x, z);
+  if (((d.ax === 'z' ? tlx : tlz) > d.f ? 1 : -1) === inn) return false;   // o destino está do mesmo lado do plano da porta: não precisa atravessá-la
+  const [ax, az] = tileAt(d, inn);   // tile de DENTRO da casa, alinhado com a porta
+  P.tgt = null; pend = { d, ax, az, final: { x, z } };
+  if (Math.hypot(P.x - ax, P.z - az) < .5) { pend = null; if (d.open) startPass(d, { x, z }); else useDoor(d, { x, z }); return true; }
+  P.tx = ax; P.tz = az;
   return true;
 }
 /** Clique em ponto do outro lado de uma porta de quarto fechada (entrar ou sair do quarto): vai à porta, abre e segue até o ponto */
@@ -214,7 +218,7 @@ export function enterClick(x, z) {
   DOORS.forEach(d => { if (d.h.x !== h.x || d.h.z !== h.z || d.room || d.lvl !== 0) return; const [cx, cz] = cen(d), dd = Math.hypot(cx - P.x, cz - P.z) + (String(d.id).includes('front') ? 0 : 60);   // porta da frente de preferência (a dos fundos pode dar num quintal sem caminho)
     if (dd < bd) { bd = dd; best = d; } });
   if (!best) return false;
-  const d = best, out = (q => q && q.x === h.x && q.z === h.z)(houseAt(...tileAt(d, 1), .2)) ? -1 : 1, [ax, az] = tileAt(d, out);
+  const d = best, out = sideOf(d), [ax, az] = tileAt(d, out);
   P.tgt = null; pend = { d, ax, az, final: { x, z } };
   if (Math.hypot(P.x - ax, P.z - az) < .5) { pend = null; if (d.open) startPass(d, { x, z }); else useDoor(d, { x, z }); return true; }
   P.tx = ax; P.tz = az;
@@ -222,3 +226,6 @@ export function enterClick(x, z) {
 }
 export const cancelDoor = () => { pend = null; thru = null; };
 export const doorDbg = () => ({ pend: pend && { id: pend.d.id, ax: pend.ax, az: pend.az }, thru, anim: !!anim });
+
+/** Há uma passagem de porta em andamento (ir ao tile, abrir, atravessar)? */
+export const doorBusy = () => !!(pend || thru || anim);

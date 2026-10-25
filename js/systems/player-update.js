@@ -8,7 +8,7 @@ import { VIZ, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js
 import { groundY, slideTo } from '../world/terrain.js';
 import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
-import { updateDoors, applyDoorReach, exitClick } from '../world/doors.js';
+import { updateDoors, applyDoorReach, exitClick, doorBusy } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
@@ -121,7 +121,8 @@ function moveAndAct(dt) {
 
   if (!P.tgt && (P.tx !== STEER.gx || P.tz !== STEER.gz)) {
     // destino novo: tira de dentro de obstáculos e zera o controle de progresso
-    if (!STAIR.on) { const sn = snapInterior(P.x, P.z, P.tx, P.tz); if (sn === null) { P.tx = P.x; P.tz = P.z; } else if (sn) { P.tx = sn[0]; P.tz = sn[1]; } else { const f = freePoint(P.tx, P.tz, .7); P.tx = f.x; P.tz = f.z; } }   // (o ponto da escada não é movido)
+    if (!STAIR.on && !P.up && !doorBusy()) exitClick(P.tx, P.tz);   // dentro de casa e destino fora (clique, conversa, auto): vai antes à porta, nunca atravessa a parede
+    if (!STAIR.on && !doorBusy()) { const sn = snapInterior(P.x, P.z, P.tx, P.tz); if (sn === null) { P.tx = P.x; P.tz = P.z; } else if (sn) { P.tx = sn[0]; P.tz = sn[1]; } else { const f = freePoint(P.tx, P.tz, .7); P.tx = f.x; P.tz = f.z; } }   // (o ponto da escada não é movido)
     STEER.gx = P.tx; STEER.gz = P.tz; STEER.bd = 1e9; STEER.bt = 0; STEER.path = null;   // destino novo: refaz o caminho (senão seguia o caminho antigo)
   }
   const tx = P.tgt ? P.tgt.x : P.tx, tz = P.tgt ? P.tgt.z : P.tz;
