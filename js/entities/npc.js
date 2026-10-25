@@ -103,6 +103,7 @@ function tnScript(n, dt, tn) {
   const wait = ph => { if (n.dro) { face(doorW[0], doorW[1]); return false; } return true; };
   const hold = id => npcOpenDoor(id, 6);
   switch (q.ph) {
+    case 'in': npcOpenDoor('tavern-front', 4); if (walked(1.1)) go(STAIR_UP.map(a => W(a[0], a[1])), 'up'); break;
     case 'up': if (walked(.9)) go(planTo(cur(), W(tn.rin[2], tn.rin[3]), 1), 'cor', 1); break;
     case 'cor': if (walked(1.1)) { n.dro = { id: tn.rid, t: 0, done: false, force: true }; q.ph = 'open'; } break;
     case 'open': hold(tn.rid); if (wait()) go([...planTo(cur(), W(tn.rin[0], tn.rin[1]), 1), tn.bf], 'bed'); break;
@@ -228,6 +229,7 @@ export function makeBoard(x, z, ry, info) {
   list.push({ info, lab, g, role: 'chest', ly: 3.1 });
 }
 
+let frameNo = 0;
 export function updateNpcs(dt, now) {
   const t0 = now / 1000;
   tickClock(dt * SLEEP.fast);
@@ -243,7 +245,13 @@ export function updateNpcs(dt, now) {
     else if (d > 1.5) { const k = Math.min(1, dt * 2.5 / (d - 1.5)); P.x -= dx / d * (d - 1.5) * k; P.z -= dz / d * (d - 1.5) * k; P.tx = P.x; P.tz = P.z; }
     P.rumYaw = Math.atan2(cx - P.x, cz - P.z);
   }
-  list.forEach(n => {
+  frameNo++;
+  list.forEach((n, ix) => {   // longe do jogador (e sem script): atualiza 1 quadro a cada 3, com o tempo acumulado
+    const far = !n.q && Math.hypot(P.x - n.g.position.x, P.z - n.g.position.z) > 26 && talking !== n;
+    if (far) { n.acc = (n.acc || 0) + dt; if ((frameNo + ix) % 3) return; npcStep(n, n.acc); n.acc = 0; }
+    else { n.acc = 0; npcStep(n, dt); }
+  });
+  function npcStep(n, dt) {
     const g = n.g, t = t0 + n.ph;
     if (n.lab) {
       v3.set(g.position.x, n.ly || 2.7, g.position.z).project(cam);
@@ -310,9 +318,13 @@ export function updateNpcs(dt, now) {
         if (night) {
           const dd = Math.hypot(g.position.x - tn.door[0], g.position.z - tn.door[1]);
           if (dd < 2.4 && !n.dro && doorClosed(tn.dr)) n.dro = { id: tn.dr, t: 0, done: false };   // estende a mão direita e abre
-          const inside = Math.hypot(g.position.x - tn.sb[0], g.position.z - tn.sb[1]);
-          n.tx = tn.sb[0]; n.tz = tn.sb[1];
-          if (inside < 1.1) { n.lvl = 0; n.vx = n.vz = 0; n.q = { ph: 'up', pts: STAIR_UP.map(a => tn.at(a[0] * tn.K, a[1] * tn.K)), i: 0 }; return; }
+          const [lx, lz] = loc(tn, g.position.x, g.position.z), inTav = Math.abs(lx) < 4.9 && lz > -4.9 && lz < 4.6;
+          const F0 = doorFront('tavern-front', 1.7).p, F1 = doorFront('tavern-front', -1.5).p;
+          if (inTav) { n.lvl = 0; n.vx = n.vz = 0; npcOpenDoor('tavern-front', 4); n.q = { ph: 'in', pts: planTo([g.position.x, g.position.z], tn.sb, 0), i: 0 }; return; }
+          // de fora: vai até o ponto diante da porta, abre e atravessa (nunca em linha reta contra a parede)
+          const nearF0 = Math.hypot(g.position.x - F0[0], g.position.z - F0[1]) < 1.2;
+          const tg = nearF0 && !doorClosed(tn.dr) ? F1 : F0;
+          n.tx = tg[0]; n.tz = tg[1];
         } else if (n.t <= 0 || ((n.st = (n.st || 0) + dt) > 12)) {   // novo ponto de passeio: praça, ruas da vila
           n.t = 6 + Math.random() * 8; n.st = 0;
           const a = Math.random() * 6.28, r = 3 + Math.random() * (VILLAGE_R - 17);
@@ -371,5 +383,5 @@ export function updateNpcs(dt, now) {
       if (D.t > .9) n.dro = null;
     }
     if (n.role === 'guard') g.head.rotation.y += Math.sin(t * .4) * .5;   // sentinela varre o olhar
-  });
+  }
 }
