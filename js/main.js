@@ -7,10 +7,10 @@ import { buildWorld } from './world/world.js';
 import { buildVillage } from './world/village.js';
 import { buildCastle } from './world/castle.js';
 import { initDialog } from './ui/dialog.js';
-import { updateNpcs, npcList } from './entities/npc.js';
+import { updateNpcs, npcList, talkTo } from './entities/npc.js';
 import { updatePerf, DIAG } from './systems/perf.js';
 import { updateSettings, initSettings, CFG, PICKDBG } from './systems/settings.js';
-import { DOORS } from './world/doors.js';
+import { DOORS, doorDbg } from './world/doors.js';
 import { updateLod } from './systems/lod.js';
 import { updateEnemyLabels } from './ui/enemy-labels.js';
 import { updateVision, canSee, VIS } from './systems/vision.js';
@@ -154,5 +154,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, unequipPet, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, unequipPet, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

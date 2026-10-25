@@ -3,10 +3,11 @@ import { scene } from '../core/engine.js';
 import { particles } from '../core/registry.js';
 
 /** Solta `n` fragmentos coloridos em (x,y,z); `s` = força da explosão */
+const OCT = [.15, .22, .3].map(r => { const g = new THREE.OctahedronGeometry(r, 0); g.userData.shared = true; return g; });   // geometrias compartilhadas (criar uma por faísca gerava lixo de GPU e travava o desenho nas lutas)
 export function puff(x, y, z, c, s, n) {
   for (let i = 0; i < n; i++) {
     const m = new THREE.Mesh(
-      new THREE.OctahedronGeometry(.15 + Math.random() * .2, 0),
+      OCT[(Math.random() * 3) | 0],
       new THREE.MeshBasicMaterial({ color: c, transparent: true })
     );
     m.position.set(x, y, z);
@@ -42,6 +43,7 @@ export function updateParticles(dt) {
     f.m.material.opacity = Math.max(0, f.t);
     if (f.t <= 0) {
       scene.remove(f.m);
+      f.m.material.dispose(); if (!f.m.geometry.userData.shared) f.m.geometry.dispose();
       particles.splice(i, 1);
     }
   }

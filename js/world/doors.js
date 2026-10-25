@@ -5,7 +5,7 @@ import { props } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { CLOCK } from '../core/clock.js';
 import { log } from '../ui/notify.js';
-import { refreshProps } from './floors.js';
+import { refreshProps, houseAt } from './floors.js';
 import { bakeGroup } from './merge.js';
 import { snapCell, inCell } from './imap.js';
 
@@ -46,6 +46,9 @@ export function addDoor(d, h) { if (d.p && !d.p.userData.dyn) bakeGroup(d.p);   
 let pend = null;
 /** Centro da porta (deslocado `off` m perpendicularmente ao plano dela) e lado em que o personagem está (portas em planos x ou z da casa) */
 const cen = (d, off = 0) => d.ax === 'z' ? toW(d.h, d.f + off, d.c) : toW(d.h, d.c, d.f + off);
+/** Centro do tile de acionamento (azul) de um lado da porta: ponto de alinhamento para passar pelo vão sem raspar em parede/batente */
+const tileAt = (d, side) => snapCell(d.h, ...cen(d, side * 1.1));
+let thru = null;   // passagem em andamento: depois do tile do outro lado segue ao ponto final
 const sideOf = d => { const [lx, lz] = toL(d.h, P.x, P.z); return (d.ax === 'z' ? lx : lz) > d.f ? 1 : -1; };
 const CLOSE_AFTER = 6;   // segundos abertas
 const ANG_EPS = .02;
@@ -58,7 +61,7 @@ export function updateDoors(dt) {
     if (!anim.done && anim.t >= .35) { anim.done = true; toggleDoor(anim.d); }
     if (anim.t >= .85) {   // porta aberta: o personagem atravessa
       const a = anim; anim = null;
-      if (a.d.open) { const sd = sideOf(a.d), [tx, tz] = a.final ? [a.final.x, a.final.z] : cen(a.d, -sd * (a.d.room ? 1.1 : 2.2)); P.tgt = null; P.tx = tx; P.tz = tz; }
+      if (a.d.open) startPass(a.d, a.final);
     }
   }
   DOORS.forEach(d => {   // fecham sozinhas depois de alguns segundos, se ninguém estiver no vão
@@ -68,13 +71,23 @@ export function updateDoors(dt) {
     if (d.t > CLOSE_AFTER) { const [cx, cz] = cen(d); if (Math.hypot(P.x - cx, P.z - cz) > 1.6 * d.h.K) { d.open = false; refreshProps(); } }
   });
   DOORS.forEach(d => { const tg = (d.base || 0) + (d.open ? d.openRot : 0); d.p.rotation.y += (tg - d.p.rotation.y) * Math.min(1, dt * 8); if (Math.abs(tg - d.p.rotation.y) < ANG_EPS) d.p.rotation.y = tg; });
+  if (thru) {
+    if (Math.hypot(P.tx - thru.x, P.tz - thru.z) > 1.5) thru = null;           // clicou em outro lugar
+    else if (Math.hypot(P.x - thru.x, P.z - thru.z) < .45 || Math.hypot(P.vx, P.vz) < .05 && Math.hypot(P.x - thru.x, P.z - thru.z) < 1.2) { P.tx = thru.fx; P.tz = thru.fz; thru = null; }
+  }
   if (!pend) return;
   const d = pend.d;
   const [cx, cz] = cen(d);
   if (Math.hypot(P.tx - cx, P.tz - cz) > 3) { pend = null; return; }   // clicou em outro lugar (o ponto de chegada pode ser ajustado pelo jogo)
-  if (Math.hypot(P.x - cx, P.z - cz) < 1.9 || (Math.hypot(P.x - cx, P.z - cz) < 3.2 && Math.hypot(P.vx, P.vz) < .3)) { const fin = pend.final; pend = null; P.tx = P.x; P.tz = P.z; useDoor(d, fin); }
+  const at = Math.hypot(P.x - pend.ax, P.z - pend.az);
+  if (at < .5 || (at < 1.6 && Math.hypot(P.vx, P.vz) < .3) || (Math.hypot(P.x - cx, P.z - cz) < 3.2 && Math.hypot(P.vx, P.vz) < .05)) { const fin = pend.final; pend = null; if (d.open && !d.room) startPass(d, fin); else { P.tx = P.x; P.tz = P.z; useDoor(d, fin); } }
 }
 
+/** Porta aberta: atravessa pelo eixo do vão — 1º o tile do outro lado (alinhado), depois o destino */
+function startPass(d, final) {
+  const sd = sideOf(d), [tx, tz] = final ? [final.x, final.z] : cen(d, -sd * (d.room ? 1.1 : 2.2)), [wx, wz] = tileAt(d, -sd);
+  P.tgt = null; P.tx = wx; P.tz = wz; thru = { x: wx, z: wz, fx: tx, fz: tz };
+}
 let anim = null;   // animação do braço esquerdo empurrando a porta
 function useDoor(d, final) {
   if (anim) return;
@@ -137,8 +150,8 @@ export function doorClick(ray) {
 /** Vai até a porta (ou usa direto, se já estiver perto) */
 function approach(d) {
   const [cx, cz] = cen(d);
-  if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d); return true; }
-  const side = sideOf(d), [ax, az] = cen(d, side * 1.5);
+  const side = sideOf(d), [ax, az] = tileAt(d, side);
+  if (Math.hypot(P.x - ax, P.z - az) < .5) { P.tgt = null; useDoor(d); return true; }
   P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az };
   return true;
 }
@@ -167,8 +180,8 @@ export function exitClick(x, z) {
   });
   if (!best) return false;
   const d = best, [cx, cz] = cen(d);
-  const side = sideOf(d), [ax, az] = cen(d, side * 1.5);
-  if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d, { x, z }); return true; }
+  const side = sideOf(d), [ax, az] = tileAt(d, side);
+  if (Math.hypot(P.x - ax, P.z - az) < .5) { P.tgt = null; useDoor(d, { x, z }); return true; }
   P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az, final: { x, z } };
   return true;
 }
@@ -188,9 +201,24 @@ export function roomClick(x, z) {
     if (dd < bd) { bd = dd; best = d; }
   });
   if (!best) return false;
-  const d = best, [cx, cz] = cen(d), side = sideOf(d), [ax, az] = cen(d, side * 1.5);
-  if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d, { x, z }); return true; }
+  const d = best, [cx, cz] = cen(d), side = sideOf(d), [ax, az] = tileAt(d, side);
+  if (Math.hypot(P.x - ax, P.z - az) < .5) { P.tgt = null; useDoor(d, { x, z }); return true; }
   P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az, final: { x, z } };
   return true;
 }
-export const cancelDoor = () => { pend = null; };
+/** Destino dentro de uma casa e o personagem fora dela: vai ao tile de fora da porta, abre, passa alinhado e segue até o ponto (em vez de tentar o caminho reto pela parede) */
+export function enterClick(x, z) {
+  if (P.up || anim) return false;
+  const h = houseAt(x, z, .2); if (!h || houseAt(P.x, P.z, .2) === h) return false;
+  let best = null, bd = 1e9;
+  DOORS.forEach(d => { if (d.h.x !== h.x || d.h.z !== h.z || d.room || d.lvl !== 0) return; const [cx, cz] = cen(d), dd = Math.hypot(cx - P.x, cz - P.z) + (String(d.id).includes('front') ? 0 : 60);   // porta da frente de preferência (a dos fundos pode dar num quintal sem caminho)
+    if (dd < bd) { bd = dd; best = d; } });
+  if (!best) return false;
+  const d = best, out = (q => q && q.x === h.x && q.z === h.z)(houseAt(...tileAt(d, 1), .2)) ? -1 : 1, [ax, az] = tileAt(d, out);
+  P.tgt = null; pend = { d, ax, az, final: { x, z } };
+  if (Math.hypot(P.x - ax, P.z - az) < .5) { pend = null; if (d.open) startPass(d, { x, z }); else useDoor(d, { x, z }); return true; }
+  P.tx = ax; P.tz = az;
+  return true;
+}
+export const cancelDoor = () => { pend = null; thru = null; };
+export const doorDbg = () => ({ pend: pend && { id: pend.d.id, ax: pend.ax, az: pend.az }, thru, anim: !!anim });

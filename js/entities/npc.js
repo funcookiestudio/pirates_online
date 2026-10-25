@@ -1,6 +1,7 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
-import { openDoorById, doorClosed, tickRent, setDoorLock, npcOpenDoor, doorFront } from '../world/doors.js';
+import { houseAt } from '../world/floors.js';
+import { enterClick, openDoorById, doorClosed, tickRent, setDoorLock, npcOpenDoor, doorFront } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
@@ -137,8 +138,11 @@ export function talkTo(n) {
   if (n.doorId) openDoorById(n.doorId);   // abre a porta da casa dele (se não estiver trancada)
   if (n.talkAt) { P.tx = n.talkAt[0]; P.tz = n.talkAt[1]; }   // NPC dentro de casa: vai ao ponto livre diante dele (pela porta)
   else { P.tx = n.g.position.x + dx / d * 2.3; P.tz = n.g.position.z + dz / d * 2.3; }
-  if (d < 3.4) arrive(n);
+  if (behindWall(n)) enterClick(P.tx, P.tz);   // NPC dentro da casa: entra pela porta, alinhado ao tile
+  else if (d < 3.4) arrive(n);
 }
+/** O NPC está dentro de uma casa e o personagem fora dela? (não dá para conversar através da parede) */
+const behindWall = n => { const h = houseAt(n.g.position.x, n.g.position.z, .2); return !!h && !P.up && houseAt(P.x, P.z, .2) !== h; };
 
 function arrive(n) {
   want = null;
@@ -236,7 +240,7 @@ export function updateNpcs(dt, now) {
   tickClock(dt * SLEEP.fast);
   tickRent();
   updateSparks(dt);
-  if (want && Math.hypot(P.x - want.g.position.x, P.z - want.g.position.z) < 3.4) arrive(want);
+  if (want && Math.hypot(P.x - want.g.position.x, P.z - want.g.position.z) < 3.4 && !behindWall(want)) arrive(want);
   if (talking && (P.dead || Math.hypot(P.x - talking.g.position.x, P.z - talking.g.position.z) > 7.5 || !dialogOpen())) { talking = null; closeDialog(); }
   const ct = talking && talking.lid ? talking : null;
   P.rumOn = !!ct;
