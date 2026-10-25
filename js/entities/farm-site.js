@@ -12,7 +12,7 @@ import { N, V } from '../world/islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { pois } from '../world/pois.js';
 import { makeNpc } from './npc.js';
-import { HORSEMAN } from '../data/npcs.js';
+import { HORSEMAN, FARMER_AVES, FARMER_GRANJA } from '../data/npcs.js';
 import { ZONES } from '../world/reserve.js';
 import { H } from '../world/terrain.js';
 const E = N / 2;
@@ -22,9 +22,9 @@ export const FARMSITE = { ok: false, sites: [] };
 // área de cada fazenda (coordenadas locais: +z = lado da estrada / portão)
 const X0 = -15, X1 = 15, Z0 = -16, Z1 = 11;
 const VARIANTS = [
-  { id: 'aves', n: 'Sítio das Aves', ic: '🐔' },
-  { id: 'granja', n: 'Granja', ic: '🐖' },
-  { id: 'gado', n: 'Fazenda do Gado', ic: '🐄' },
+  { id: 'aves', n: 'Sítio das Aves', ic: '🐔', npc: FARMER_AVES, v: 1, cols: [0xe0b090, 0xb04a6a, 0x6a4a30, 0xe8d8a0] },
+  { id: 'granja', n: 'Granja', ic: '🐖', npc: FARMER_GRANJA, v: 2, cols: [0xd89c78, 0x4a6aa8, 0x3a3a50, 0x9a7a3a] },
+  { id: 'gado', n: 'Fazenda do Gado', ic: '🐄', npc: HORSEMAN, v: 4, cols: [0xd8a880, 0x5a7a3a, 0x5a4020, 0xc8a050] },
 ];
 
 /** Orientação: o portão (+z local) olha para o ponto `t` (estrada mais próxima) */
@@ -147,6 +147,7 @@ function buildOne(spot) {
     for (const s of [-1, 1]) { const r = bx(5.6, .25, 7, 0x4a3426, BX + s * 2.45, 5.35, BZ); r.rotation.z = -s * .62; }
     bx(7.9, 2.2, .2, 0xa8321f, BX, 4.6, BZ + 3).scale.set(1, .35, 1);
     bx(1.2, 1, .12, 0x2a1a10, BX, 4.4, BZ + 3.1);
+    weather(BX, 6.6, BZ);
     solid(BX - 3, BZ, 2.3); solid(BX, BZ, 2.6); solid(BX + 3, BZ, 2.3);
   };
   const silo = (SX, SZ) => {
@@ -163,8 +164,22 @@ function buildOne(spot) {
     bx(.9, 1.7, .1, 0x5a3a22, HX + .8, 1.15, HZ + 2.03);
     bx(.8, .8, .1, 0x8ec8e8, HX - 1.1, 2, HZ + 2.03); bx(.9, .1, .12, 0x5a3a22, HX - 1.1, 1.55, HZ + 2.06);
     bx(.7, 1.6, .7, 0x7a5a48, HX - 1.6, 4.1, HZ - .7);
+    bx(2.2, .18, .9, 0x8a8a86, HX + .8, .09, HZ + 2.55);                                             // degrau da porta
+    bx(.14, .9, .5, 0x4a7a4a, HX - 1.9, 2, HZ + 2.1); bx(.14, .9, .5, 0x4a7a4a, HX - .3, 2, HZ + 2.1);   // venezianas
+    bx(1, .22, .3, 0x6a4a2a, HX - 1.1, 1.45, HZ + 2.25); bx(.9, .14, .22, 0xd85a8a, HX - 1.1, 1.62, HZ + 2.25);   // jardineira com flores
+    bx(5.2, .2, .22, 0x6a3a28, HX, 3.3, HZ + 2.1);                                                      // beiral
     solid(HX - 1.3, HZ, 1.5); solid(HX + 1.3, HZ, 1.5);
   };
+  const barrel = (x, z) => { cyl(.42, .42, .8, 0x7a5430, x, .4, z, 10); cyl(.44, .44, .08, 0x3a3a3a, x, .22, z, 10); cyl(.44, .44, .08, 0x3a3a3a, x, .6, z, 10); solid(x, z, .5); };
+  const crate = (x, z, h = .8) => { bx(.8, h, .8, 0xb8864a, x, h / 2, z, .2); bx(.84, .08, .84, 0x6a4a2a, x, h, z, .2); solid(x, z, .55); };
+  const wood = (x, z) => { for (let i = 0; i < 3; i++) for (let k = 0; k < 3 - i; k++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, 1.6, 7), M(0x8a5a30)); m.rotation.z = Math.PI / 2; m.position.set(x, .18 + i * .3, z + (k - (2 - i) / 2) * .34); g.add(m); } solid(x, z, 1); };
+  const lamp = (x, z) => { bx(.14, 2.6, .14, 0x4a3a2a, x, 1.3, z); bx(.34, .4, .34, 0xf0c040, x, 2.75, z); bx(.5, .1, .5, 0x3a2a1a, x, 3.02, z); solid(x, z, .3); };
+  const arch = (z, name, c) => {      // portal de entrada com a placa da fazenda
+    for (const sx of [-1, 1]) { bx(.34, 3.4, .34, 0x6a4a2a, sx * 2.9, 1.7, z); bx(.5, .2, .5, 0x8a8a86, sx * 2.9, .1, z); solid(sx * 2.9, z, .4); }
+    bx(6.2, .3, .3, 0x6a4a2a, 0, 3.5, z); bx(3.4, .8, .12, c, 0, 3.0, z + .05);
+    bx(3.0, .5, .14, 0xf2e8d0, 0, 3.0, z + .08);
+  };
+  const weather = (x, y, z) => { bx(.06, 1.2, .06, 0x2a2a2a, x, y + .6, z); bx(.9, .14, .05, 0x2a2a2a, x, y + 1.1, z); bx(.2, .3, .05, 0x2a2a2a, x + .45, y + 1.1, z); };
   const well = (x, z) => {
     cyl(.9, .9, .9, 0x8a8a86, x, .45, z, 12); cyl(.65, .65, .05, 0x2a6aa0, x, .85, z, 12);
     bx(.14, 1.8, .14, 0x6a4a2a, x - .8, 1.5, z); bx(.14, 1.8, .14, 0x6a4a2a, x + .8, 1.5, z); bx(1.9, .14, 1.1, 0x6a3a28, x, 2.45, z);
@@ -247,11 +262,17 @@ function buildOne(spot) {
     bx(2.9, .12, 2.3, 0x4a3426, b.x0 + 2, 1.85, b.z0 + 1.5); solid(b.x0 + 2, b.z0 + 1.5, 1.4);
     trough(b.x0 + 2.2, b.z1 - 1.2);
     field(4.5, 4.5 + 3 * 1.5 - 1, -2, 9, 3);
-    const fm = toWorld(spot, f, 0, -4.2);   // criador de cavalos (vende a montaria), no pátio
-    makeNpc('citizen', fm.x, fm.z, Math.atan2(f.fx, f.fz), [0xd8a880, 0x5a7a3a, 0x5a4020, 0xc8a050], 4, HORSEMAN);
     pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spotsIn(a, 4) });
     pens.push({ kinds: ['horse', 'horse'], at: spotsIn(b, 2) });
   }
+  // ---- detalhes comuns (fora do pátio e do corredor de estrada) ----
+  arch(Z1 + 1.5, vr.n, vr.id === 'aves' ? 0xe8c040 : vr.id === 'granja' ? 0xe88aa0 : 0x4a90d8);
+  lamp(-13.8, -8.9); lamp(13.8, -8.9);
+  barrel(-12.4, -9.6); crate(-13.4, -9.4); wood(-13.2, -15);
+  if (vr.id !== 'aves') { crate(14, -9.2); barrel(14.1, -7.4); }
+  // fazendeiro próprio de cada fazenda (no pátio)
+  const farmer = vr.npc, fp = toWorld(spot, f, vr.id === 'gado' ? 0 : -1, -4.6);
+  makeNpc('citizen', fp.x, fp.z, Math.atan2(f.fx, f.fz), vr.cols, vr.v, farmer);
   FARMSITE.sites.push({ x: spot.x, z: spot.z, pens: pens.map(pn => ({ kinds: pn.kinds, pts: pn.at.map(([lx, lz]) => toWorld(spot, f, lx, lz)) })) });
   pois.push({ n: vr.n, x: spot.x, z: spot.z, c: '#9ad060', ic: vr.ic });
 }
