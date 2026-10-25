@@ -8,7 +8,7 @@ import { P, mark } from '../entities/player.js';
 import { spin, bomb, potion } from './combat.js';
 import { togAuto } from './auto.js';
 import { dodge } from './dodge.js';
-import { zoomBy, rotateBy } from './camera.js';
+import { zoomBy, rotateBy, tiltBy, resetCamera } from './camera.js';
 import { toggleSit, standUp } from './rest.js';
 import { togglePet } from '../pets/manager.js';
 import { freePoint } from './steer.js';
@@ -75,10 +75,10 @@ export function initInput() {
   };
 
   cv.addEventListener('contextmenu', e => e.preventDefault());
-  cv.addEventListener('wheel', e => { e.preventDefault(); zoomBy(Math.exp(e.deltaY * .0015)); }, { passive: false });
+  cv.addEventListener('wheel', e => { e.preventDefault(); if (e.shiftKey) tiltBy(-e.deltaY * .002); else zoomBy(Math.exp(e.deltaY * .0015)); }, { passive: false });
 
   cv.addEventListener('pointerdown', e => {
-    if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX }; return; }
+    if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX, y: e.clientY }; return; }
     pts.set(e.pointerId, e);
     if (pts.size === 2) { clearTimeout(wait); down = false; gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
     if (e.pointerType === 'touch') {
@@ -88,7 +88,7 @@ export function initInput() {
   });
 
   cv.addEventListener('pointermove', e => {
-    if (orbit) { if (e.buttons & 6) { rotateBy(-(e.clientX - orbit.x) * .008); orbit.x = e.clientX; } return; }
+    if (orbit) { if (e.buttons & 6) { rotateBy(-(e.clientX - orbit.x) * .008); tiltBy((e.clientY - orbit.y) * .006); orbit.x = e.clientX; orbit.y = e.clientY; } return; }
     if (pts.has(e.pointerId)) pts.set(e.pointerId, e);
     if (pts.size === 2 && gest) {
       const n = pair(), da = Math.atan2(Math.sin(n.a - gest.a), Math.cos(n.a - gest.a));
@@ -130,6 +130,9 @@ export function initInput() {
     if (e.code === 'Escape') closePanel();
     if (e.code === 'ArrowLeft') rotateBy(-.12);
     if (e.code === 'ArrowRight') rotateBy(.12);
+    if (e.code === 'ArrowUp') { e.preventDefault(); tiltBy(.08); }
+    if (e.code === 'ArrowDown') { e.preventDefault(); tiltBy(-.08); }
+    if (e.code === 'Home' || e.code === 'Digit0') resetCamera();
     if (e.code === 'Equal' || e.code === 'NumpadAdd') zoomBy(.8);
     if (e.code === 'Minus' || e.code === 'NumpadSubtract') zoomBy(1.25);
   });
@@ -146,5 +149,26 @@ export function initInput() {
   $('gwl').onclick = () => openTab('char');
   $('gwr').onclick = () => openTab('pets');
   $('pcl').onclick = closePanel;
+  camButtons();
   $('pcl2x').onclick = closePanel;
+}
+
+/** Botões de câmera na tela (toque/mouse): girar, inclinar, aproximar/afastar e restaurar */
+function camButtons() {
+  const box = document.createElement('div');
+  box.id = 'camc';
+  box.style.cssText = 'position:fixed;right:8px;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:repeat(3,34px);gap:4px;z-index:6;user-select:none;touch-action:manipulation';
+  const B = (t, tip, f, rep) => {
+    const b = document.createElement('button');
+    b.textContent = t; b.title = tip;
+    b.style.cssText = 'width:34px;height:34px;font-size:16px;line-height:1;color:#f0d890;background:#2a1a10cc;border:1px solid #a07838;border-radius:6px;cursor:pointer;padding:0';
+    let iv = null; const stop = () => { clearInterval(iv); iv = null; };
+    b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); f(); if (rep) iv = setInterval(f, 90); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
+    box.append(b); return b;
+  };
+  B('⟲', 'Girar câmera (←)', () => rotateBy(-.1), true); B('▲', 'Inclinar para cima (↑)', () => tiltBy(.06), true); B('⟳', 'Girar câmera (→)', () => rotateBy(.1), true);
+  B('＋', 'Aproximar (+)', () => zoomBy(.92), true); B('▼', 'Inclinar para baixo (↓)', () => tiltBy(-.06), true); B('－', 'Afastar (−)', () => zoomBy(1.08), true);
+  B('', '', () => {}).style.visibility = 'hidden'; B('⌂', 'Restaurar câmera (Home / 0)', resetCamera); B('', '', () => {}).style.visibility = 'hidden';
+  document.body.append(box);
 }
