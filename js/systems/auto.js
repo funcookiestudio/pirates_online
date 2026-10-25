@@ -9,8 +9,14 @@ import { townStep } from './town.js';
 import { autoWeapon } from './swap.js';
 import { spin, bomb, potion } from './combat.js';
 import { dodge } from './dodge.js';
+import { MOUNT, toggleMount } from './mount.js';
+import { VILLAGE_R } from '../core/village-const.js';
 import { setAuto, danger } from './stamina.js';
+import { dungeonGimmicks } from '../dungeon/dungeon-scene.js';
+import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
+const STUCK = { x: 0, z: 0, t: 0 };
+let MT = 0; // intervalo para tentar montar
 let AT = 0; // intervalo para reavaliar o alvo
 let AI = 0; // intervalo para checar equipamentos melhores
 
@@ -26,6 +32,22 @@ export function autoThink(dt) {
   AI -= dt;
   if (state.autoHold > 0) return;
 
+  // travado (querendo andar e sem sair do lugar): tenta um ponto livre ao redor
+  STUCK.t += dt;
+  if (Math.hypot(P.x - STUCK.x, P.z - STUCK.z) > .6 || Math.hypot(P.tx - P.x, P.tz - P.z) < 1.2 || P.sit || P.sitT) { STUCK.x = P.x; STUCK.z = P.z; STUCK.t = 0; }
+  else if (STUCK.t > 3) {
+    STUCK.t = 0; AT = 0;
+    const a = Math.random() * 6.28;
+    P.tgt = null; P.tx = P.x + Math.cos(a) * 5; P.tz = P.z + Math.sin(a) * 5;
+    state.autoHold = .8;
+  }
+  // cavalo: fora da vila e sem combate, se o caminho é longo, monta sozinho
+  MT -= dt;
+  if (MT <= 0 && MOUNT.owned && !MOUNT.on && !MOUNT.dis && MOUNT.st !== 'come' && !P.dead && !P.swimming && !P.sit && !P.sitT && P.roll <= 0 &&
+      Math.hypot(P.x, P.z) > VILLAGE_R + 2 && Math.hypot(P.tx - P.x, P.tz - P.z) > 32 &&
+      !enemies.some(e => !e.dead && (e.ag || Math.hypot(e.x - P.x, e.z - P.z) < 10) && Math.hypot(e.x - P.x, e.z - P.z) < 14)) {
+    MT = 6; toggleMount();
+  } else if (MT <= 0) MT = .6;
   const alive = enemies.filter(e => !e.dead);
   const dist = e => Math.hypot(e.x - P.x, e.z - P.z);
   const thr = alive.filter(e => (e.ag || dist(e) < 6) && dist(e) < 20); // ameaças
@@ -110,6 +132,12 @@ export function autoThink(dt) {
   // escolhe o melhor alvo; sem inimigos, pega loot; sem loot, procura inimigos
   if (AT <= 0 || !t || t.dead) {
     AT = .35;
+    // dungeon: a chave caída e a porta trancada vêm antes de procurar mais inimigos (sem ameaça por perto)
+    const goal = gimmickGoal(dungeonGimmicks());
+    if (goal && !alive.some(e => e.ag && dist(e) < 7)) {
+      P.tgt = null; P.tx = goal.x; P.tz = goal.z;
+      return;
+    }
     let best = null, bs = -1e9;
     alive.forEach(e => {
       const d = dist(e);

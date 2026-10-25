@@ -91,46 +91,52 @@ export function buildGimmicks(ctx) {
     if (gm.door && Math.hypot(x - gm.door.mid.x, z - gm.door.mid.z) < 4) continue;
     cand.push({ x, z });
   }
-  const mp = new THREE.MeshBasicMaterial({ color: 0x9a3a22 }), ms = new THREE.MeshBasicMaterial({ color: 0xc0c8d0 });
-  const mp2 = new THREE.MeshBasicMaterial({ color: 0x120a0a });
-  const cg = new THREE.ConeGeometry(.09, .7, 4);
+  const ms = new THREE.MeshBasicMaterial({ color: 0xc0c8d0 }), mh = new THREE.MeshBasicMaterial({ color: 0x0a0606 }), mr = new THREE.MeshBasicMaterial({ color: 0x4a4650 });
+  const cg = new THREE.ConeGeometry(.09, .7, 4), hg = new THREE.BoxGeometry(.2, .03, .2), rg = new THREE.BoxGeometry(.27, .02, .27);
   for (let i = 0; i < n && cand.length; i++) {
     const c = cand.splice(Math.floor(R() * cand.length), 1)[0];
     if (traps(gm).some(t => Math.hypot(t.x - c.x, t.z - c.z) < 5)) { i--; if (cand.length < 5) break; continue; }
-    const t = new THREE.Group(), pl = new THREE.Mesh(new THREE.BoxGeometry(1.5, .06, 1.5), mp);
-    pl.position.y = .02; t.add(pl);
-    for (const rz of [Math.PI / 4, -Math.PI / 4]) { const bar = new THREE.Mesh(new THREE.BoxGeometry(1.9, .02, .16), mp2); bar.position.y = .07; bar.rotation.y = rz; t.add(bar); }   // X escuro sobre a placa
-    const sp = new THREE.Group();
-    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const q = new THREE.Mesh(cg, ms); q.position.set(a * .42, .35, b * .42); sp.add(q); }
-    sp.scale.y = .01; t.add(sp);
+    // armadilha escondida: igual ao piso. Só ao ser pisada mostra os furos e sobem os espinhos
+    const t = new THREE.Group(), holes = new THREE.Group(), sp = new THREE.Group();
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
+      const rim = new THREE.Mesh(rg, mr); rim.position.set(a * .42, .006, b * .42); holes.add(rim);
+      const h = new THREE.Mesh(hg, mh); h.position.set(a * .42, .012, b * .42); holes.add(h);
+      const q = new THREE.Mesh(cg, ms); q.position.set(a * .42, .35, b * .42); sp.add(q);
+    }
+    holes.visible = false; sp.scale.y = .01; sp.visible = false; t.add(holes, sp);
     t.position.set(c.x, 0, c.z); g.add(t);
-    gm.traps.push({ x: c.x, z: c.z, t, sp, pl, ph: R() * 3.4, hit: false });
+    gm.traps.push({ x: c.x, z: c.z, t, sp, holes, st: 0, tm: 0, cool: 0, hit: false });
   }
   return gm;
 }
 const traps = gm => gm.traps;
 const dCellOf = (x, z, ctx) => Math.floor((z - ctx.oz) / ctx.C) * ctx.W + Math.floor((x - ctx.ox) / ctx.C);
 
-/** Ciclo da armadilha (3,4 s): parada → aviso (espinhos sobem um pouco, placa brilha) → subida (dano) → recolhe */
-const CYC = 3.4;
+/** Armadilha: escondida → (pisou) furos aparecem → espinhos sobem (dano) → recolhem; os furos ficam à mostra */
+const ARM = .45, UP = .9, DOWN = .35;
 
 export function updateGimmicks(gm, dt, t, D) {
-  // armadilhas
   gm.traps.forEach(tr => {
-    const u = (t + tr.ph) % CYC;
-    let h = 0, warn = 0;
-    if (u > 1.8 && u < 2.4) { h = .25 * (u - 1.8) / .6; warn = 1; }
-    else if (u >= 2.4 && u < 3.1) h = 1;
-    else if (u >= 3.1) h = Math.max(0, 1 - (u - 3.1) / .3);
-    tr.sp.scale.y = Math.max(.01, h);
-    tr.pl.material.color.setHex(warn ? 0xff7030 : 0x9a3a22);
-    if (u >= 2.4 && u < 3.1) {
-      if (!tr.hit && Math.hypot(P.x - tr.x, P.z - tr.z) < .95) {
-        tr.hit = true;
-        hurtP(Math.round(P.max * .06 + D.lv * 2), 0, 0);
-        puff(P.x, .4, P.z, 0xc0c8d0, 3, 5);
+    const d = Math.hypot(P.x - tr.x, P.z - tr.z);
+    tr.cool = Math.max(0, tr.cool - dt);
+    if (tr.st === 0) {
+      if (d < .8 && tr.cool <= 0 && !P.dead) { tr.st = 1; tr.tm = 0; tr.holes.visible = true; puff(tr.x, .1, tr.z, 0x8a8478, 2, 3); }
+    } else {
+      tr.tm += dt;
+      if (tr.st === 1) { if (tr.tm >= ARM) { tr.st = 2; tr.tm = 0; tr.sp.visible = true; tr.hit = false; } }
+      else if (tr.st === 2) {
+        tr.sp.scale.y = Math.min(1, .15 + tr.tm / .12);
+        if (!tr.hit && Math.hypot(P.x - tr.x, P.z - tr.z) < 1.05) {
+          tr.hit = true;
+          hurtP(Math.round(P.max * .06 + D.lv * 2), 0, 0);
+          puff(P.x, .4, P.z, 0xc0c8d0, 3, 5);
+        }
+        if (tr.tm >= UP) { tr.st = 3; tr.tm = 0; }
+      } else if (tr.st === 3) {
+        tr.sp.scale.y = Math.max(.01, 1 - tr.tm / DOWN);
+        if (tr.tm >= DOWN) { tr.st = 0; tr.sp.visible = false; tr.cool = 1.2; }
       }
-    } else tr.hit = false;
+    }
   });
 
   // chave: aparece onde o guardião morreu
@@ -158,7 +164,7 @@ export function updateGimmicks(gm, dt, t, D) {
   if (!d) return;
   gm.warn = Math.max(0, gm.warn - dt);
   if (!d.open) {
-    if (Math.hypot(P.x - d.mid.x, P.z - d.mid.z) < 3.4 + Math.sqrt(d.cells.length)) {
+    if (d.cells.some(c => Math.hypot(P.x - c.x, P.z - c.z) < 3.2)) {   // perto de qualquer lajota da porta
       if (gm.hasKey) {
         d.open = .01;
         d.cells.forEach(c => { DG.grid[c.k] = 1; });
@@ -183,4 +189,15 @@ export function gimmickMarks(gm, seen) {
   if (gm.door && !gm.door.open && seen[dCell(gm.door.mid.x, gm.door.mid.z)]) out.push({ x: gm.door.mid.x, z: gm.door.mid.z, c: '#ff5040' });
   if (gm.keyObj && seen[dCell(gm.keyObj.position.x, gm.keyObj.position.z)]) out.push({ x: gm.keyObj.position.x, z: gm.keyObj.position.z, c: '#ffe060' });
   return out;
+}
+
+/** Objetivo das mecânicas para o auto combate: a chave caída ou, com a chave na mão, a porta ainda fechada */
+export function gimmickGoal(gm) {
+  if (!gm) return null;
+  if (gm.keyObj) return { x: gm.keyObj.position.x, z: gm.keyObj.position.z };
+  if (gm.hasKey && gm.door && !gm.door.open) {
+    // célula da porta mais próxima do centro, de onde o jogador consegue chegar
+    return { x: gm.door.mid.x, z: gm.door.mid.z, door: true };
+  }
+  return null;
 }
