@@ -39,7 +39,9 @@ const CSS = `
 #cs .modal{position:absolute;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:14px}
 #cs .modal.on{display:flex}
 #cs .dlg{position:relative;width:min(440px,100%);max-height:100%;overflow:auto;padding:24px 18px 18px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(#1b1210,#120b09);border:1px solid #6b4a2a;border-radius:4px;box-shadow:0 0 0 1px #000,0 12px 40px #000}
-#cs .modal{background:#0008}
+#cs.ed .L,#cs.ed .R,#cs.ed .bar{display:none}
+#cs .modal{background:transparent;pointer-events:none}
+#cs .modal .dlg{pointer-events:auto}
 #cs .modal .dlg{max-height:100%}
 #cs .ap{display:flex;flex-direction:column;gap:9px}
 #cs .ar{display:flex;align-items:center;gap:8px}
@@ -50,7 +52,7 @@ const CSS = `
 #cs .sw{flex:1;display:flex;flex-wrap:wrap;gap:5px}
 #cs .sw b{width:26px;height:26px;border-radius:50%;border:2px solid #3a2a1c;cursor:pointer;touch-action:manipulation}
 #cs .sw b.on{border-color:#fff;box-shadow:0 0 0 1px #000}
-@media (orientation:portrait),(max-width:700px){#cs .modal{align-items:flex-end;padding:0}#cs .modal .dlg{width:100%;max-height:56%;border-radius:10px 10px 0 0}}
+@media (orientation:portrait),(max-width:700px){#cs .modal{align-items:flex-end;padding:0}#cs .modal .dlg{width:100%;max-height:42%;border-radius:10px 10px 0 0;padding:12px 12px calc(10px + env(safe-area-inset-bottom,0px));gap:8px}#cs .modal .dlg h2{display:none}#cs .modal .gen button{padding:6px;font-size:12px}#cs .modal .gen button i{display:inline;font-size:16px;margin-right:6px}#cs .modal .ap{gap:5px}#cs .modal .ar label{flex-basis:62px;font-size:10px}#cs .modal .sw b{width:22px;height:22px}#cs .modal .ar .st button{height:28px;width:32px}#cs .modal input{font-size:15px;padding:6px 10px}#cs .modal .btn{padding:9px}}
 @media (orientation:landscape) and (min-width:701px){#cs .modal{justify-content:flex-start}#cs .modal .dlg{max-height:100%}}
 #cs .gen{display:flex;gap:10px}
 #cs .gen button{flex:1;appearance:none;font:inherit;color:#cdb98f;background:#1a110d;border:2px solid #4a3220;border-radius:4px;padding:12px 6px;cursor:pointer;font-size:14px;letter-spacing:.1em;text-transform:uppercase;touch-action:manipulation}
@@ -157,6 +159,11 @@ export function runCharSelect() {
       cam.fov = portrait ? 32 : 28;
       cam.position.set(0, portrait ? 1.6 : 1.5, portrait ? 8.4 : 7.4);
       cam.lookAt(0, portrait ? .55 : 1.0, 0);
+      cam.zoom = 1; cam.clearViewOffset();
+      if (root.classList.contains('ed')) {   // editando: o painel ocupa parte da tela; o personagem vai para a área livre
+        if (portrait) { const dh = h * .42; cam.zoom = .66; cam.setViewOffset(w, h, 0, dh * .5, w, h); }
+        else { const dw = Math.min(440, w * .5); cam.zoom = .9; cam.setViewOffset(w, h, -dw * .5, 0, w, h); }
+      }
       cam.updateProjectionMatrix();
     }
     addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 200));
@@ -232,15 +239,15 @@ export function runCharSelect() {
     function setGender(g) { gender = g; root.querySelectorAll('.gen button').forEach(b => b.classList.toggle('on', b.dataset.g === g)); look = defaultLook(g === 'f'); buildAp(); refreshAp(); }
     root.querySelectorAll('.gen button').forEach(b => { b.onclick = () => setGender(b.dataset.g); });
     $('dice').onclick = () => { $('name').value = pick(NAMES[gender]); };
-    function openCreate() { if (chars().length >= MAX_CHARS) return; $('err').textContent = ''; $('modal').classList.add('on'); setGender('m'); $('name').value = pick(NAMES.m); $('cancel').style.display = chars().length ? '' : 'none'; }
+    function openCreate() { if (chars().length >= MAX_CHARS) return; $('err').textContent = ''; $('modal').classList.add('on'); root.classList.add('ed'); resize(); setGender('m'); $('name').value = pick(NAMES.m); $('cancel').style.display = chars().length ? '' : 'none'; }
     $('new').onclick = openCreate;
-    $('cancel').onclick = () => { $('modal').classList.remove('on'); render(); };
+    $('cancel').onclick = () => { $('modal').classList.remove('on'); root.classList.remove('ed'); resize(); render(); };
     $('ok').onclick = () => {
       const nm = $('name').value.trim();
       if (nm.length < 2) { $('err').textContent = 'O nome precisa ter pelo menos 2 letras.'; return; }
       const c = createChar(nm, gender === 'f', look);
       if (!c) { $('err').textContent = 'Não há vagas livres.'; return; }
-      sel = c.id; $('modal').classList.remove('on'); render();
+      sel = c.id; $('modal').classList.remove('on'); root.classList.remove('ed'); resize(); render();
     };
     $('name').onkeydown = e => { if (e.key === 'Enter') $('ok').click(); e.stopPropagation(); };
 
