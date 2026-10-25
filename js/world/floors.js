@@ -6,9 +6,35 @@ import { cam } from '../core/engine.js';
 import { invalidateGrid } from '../systems/steer.js';
 import { openDoorById } from './doors.js';
 import { invalidateInterior } from './interior-nav.js';
+import { bakeGroup } from './merge.js';
+import { DOORS } from './doors.js';
 
 export const HOUSES = [];
-export function registerFloors(h) { HOUSES.push(h); }
+export function registerFloors(h) { HOUSES.push(h); splitInterior(h); }
+
+/** Separa o mobiliário/piso do térreo (peças estáticas dentro da planta) num grupo `h.inner`, fundido em poucas malhas.
+    Fica oculto por fora: só aparece com o personagem dentro ou com uma porta externa aberta (menos desenho, e ninguém espia pela janela). */
+function splitInterior(h) {
+  const root = h.roof && h.roof.parent; if (!root || h.noInner) return;
+  root.updateWorldMatrix(true, true);
+  const base = new THREE.Vector3().setFromMatrixPosition(root.matrixWorld).y, top = base + (h.Hf !== undefined ? h.Hf : 3.03 * h.K) - .1;
+  const hx = (h.hx || 4.2) * h.K - .5, hz = (h.hz || 3.2) * h.K - .5, c = Math.cos(h.th), sn = Math.sin(h.th), v = new THREE.Vector3(), pick = [];
+  const walk = o => {
+    if (o.userData && o.userData.dyn) return;
+    if (o.isMesh && o.geometry.attributes.position && !Array.isArray(o.material) && !o.isSkinnedMesh) {
+      v.setFromMatrixPosition(o.matrixWorld);
+      const dx = v.x - h.x, dz = v.z - h.z, u = dx * c - dz * sn, w = dx * sn + dz * c;
+      if (Math.abs(u) < hx && Math.abs(w) < hz && v.y < top) pick.push(o);
+    }
+    o.children.slice().forEach(walk);
+  };
+  walk(root);
+  if (!pick.length) return;
+  const inner = new THREE.Group(); root.add(inner);
+  pick.forEach(m => inner.attach(m));
+  bakeGroup(inner);
+  h.inner = inner;
+}
 
 /** O ponto está dentro (ou junto) de uma casa? Lá dentro o corpo é mais fino e o caminho usa uma grade fina */
 export function houseAt(x, z, pad = .6) {
@@ -45,9 +71,10 @@ export function floorOffset(x, z) {
     const H = h.Hf !== undefined ? h.Hf : 3.03 * h.K;
     const stair = lx >= -5.1 && lx <= -3.6 && lz >= -1.75 && lz <= 1.85;
     if (stair) {
-      if (lz < -1.15 && !P.up) { P.up = true; setLevel(true); }
-      else if (lz > 1.55 && P.up) { P.up = false; setLevel(false); }
-      return H * Math.max(0, Math.min(1, (1.85 - lz) / 3));
+      const pr = Math.max(0, Math.min(1, (1.85 - lz) / 3));
+      const half = pr >= .5;   // até a metade da escada vale o andar de baixo; da metade para cima, o de cima
+      if (half !== !!P.up) { P.up = half; setLevel(half); }
+      return H * pr;
     }
     return P.up ? H : 0;
   }
@@ -119,9 +146,10 @@ export function updateCutaway() {
     const inside = Math.abs(px) < h.hx && Math.abs(pz) < h.hz;
     if (inside) INSIDE = true;
     h.roof.visible = !inside;
+    if (h.inner) h.inner.visible = inside || DOORS.some(d => d.open && !d.room && d.h.x === h.x && d.h.z === h.z);
     if (h.up) h.up.visible = !inside || !!P.up;
     const [cx, cz] = toL(h, cam.position.x, cam.position.z);
-    const inY = !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;
+    const inY = inside && !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;   // paredes só somem com o personagem dentro
     const cd = Math.hypot(cx - px, cz - pz) || 1;   // direção da câmera vista do personagem: esconde também as paredes na linha de visão em diagonal
     h.walls.forEach(w => { w.g.visible = !((inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K * .35 || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)); });
   }

@@ -15,11 +15,11 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(CFG)); } cat
 // tile: quadrado de 1 m alinhado à grade do mundo, com contorno
 const tile = new THREE.Group();
 {
-  const fill = new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe0a458, transparent: true, opacity: .3, depthWrite: false, depthTest: false }));
+  const fill = new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xe0a458, transparent: true, opacity: .3, depthWrite: false, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
   const s = .47, pts = [[-s, -s], [s, -s], [s, s], [-s, s]].map(([x, z]) => new THREE.Vector3(x, .01, z));
-  const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe0a0, depthTest: false }));
+  const line = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe0a0, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
   fill.renderOrder = 998; line.renderOrder = 999; tile.add(fill, line); tile.visible = false;
-  mark.material.depthTest = false; mark.renderOrder = 999;   // marcadores sempre visíveis (o piso de madeira das casas ficava por cima)
+  mark.material.depthTest = true; mark.material.polygonOffset = true; mark.material.polygonOffsetFactor = -4; mark.material.polygonOffsetUnits = -4; mark.renderOrder = 999;   // marcadores sempre visíveis (o piso de madeira das casas ficava por cima)
   scene.add(tile);
 }
 let fpsEl = null, ft = 0;
@@ -27,9 +27,9 @@ let fpsEl = null, ft = 0;
 /** Ponto bruto do clique (onde o raio da câmera acertou) — guardado por input.js a cada clique */
 export const PICKDBG = { x: 0, y: 0, z: 0, on: false, up: false };
 const ringG = new THREE.RingGeometry(.22, .34, 20).rotateX(-Math.PI / 2);
-const mkRing = col => { const m = new THREE.Mesh(ringG, new THREE.MeshBasicMaterial({ color: col, depthTest: false, transparent: true })); m.renderOrder = 1000; m.visible = false; scene.add(m); return m; };
+const mkRing = col => { const m = new THREE.Mesh(ringG, new THREE.MeshBasicMaterial({ color: col, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, transparent: true })); m.renderOrder = 1000; m.visible = false; scene.add(m); return m; };
 const dRaw = mkRing(0x20e0ff), dFin = mkRing(0xff30e0);
-const dLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false }));
+const dLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
 dLine.renderOrder = 1000; dLine.visible = false; dLine.frustumCulled = false; scene.add(dLine);
 function updateDbg() {
   const on = CFG.dbg && PICKDBG.on;
@@ -46,7 +46,7 @@ export function flashBlocked(x, y, z) { flash.t = .7; flash.x = x; flash.y = y; 
 
 // mapa de tiles da casa (depuração/visualização): verde = livre, vermelho = bloqueado
 const MAXC = 7000, cg = new THREE.PlaneGeometry(.41, .41).rotateX(-Math.PI / 2);
-const mkInst = col => { const m = new THREE.InstancedMesh(cg, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .38, depthTest: false, depthWrite: false }), MAXC); m.count = 0; m.frustumCulled = false; m.renderOrder = 990; m.visible = false; scene.add(m); return m; };
+const mkInst = col => { const m = new THREE.InstancedMesh(cg, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .38, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false }), MAXC); m.count = 0; m.frustumCulled = false; m.renderOrder = 990; m.visible = false; scene.add(m); return m; };
 const imFree = mkInst(0x40e070), imBlk = mkInst(0xf03838);
 let tkey = '';
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _u = new THREE.Vector3(0, 1, 0);
@@ -55,7 +55,7 @@ function updateTiles() {
   imFree.visible = imBlk.visible = !!d;
   if (!d) { tkey = ''; return; }
   const key = HOUSES.indexOf(d.h) + ':' + d.L + ':' + navVersion();
-  const y = P.g.position.y + .08;
+  const y = P.g.position.y + .06 + (!P.up && d.h ? FLOOR_LIFT : 0);
   if (key !== tkey) {
     tkey = key; _q.setFromAxisAngle(_u, d.h.th);
     let a = 0, b = 0;
@@ -65,12 +65,13 @@ function updateTiles() {
   imFree.position.y = imBlk.position.y = y;
 }
 
+const FLOOR_LIFT = .26;   // o piso de madeira do térreo fica ~.13–.18 m acima do terreno
 function placeTile(o, x, y, z) {
   const h = houseAt(x, z, 0);
   if (h) {   // dentro de uma casa o tile segue a orientação e a escala dela (grade da própria casa), não a do terreno
     const c = Math.cos(h.th), sn = Math.sin(h.th), dx = x - h.x, dz = z - h.z;
     const lx = Math.floor((dx * c - dz * sn) / h.K) + .5, lz = Math.floor((dx * sn + dz * c) / h.K) + .5;
-    o.position.set(h.x + (lx * c + lz * sn) * h.K, y, h.z + (-lx * sn + lz * c) * h.K);
+    o.position.set(h.x + (lx * c + lz * sn) * h.K, y + (P.up ? 0 : FLOOR_LIFT), h.z + (-lx * sn + lz * c) * h.K);
     o.rotation.y = h.th; o.scale.setScalar(h.K);
   } else { o.position.set(Math.floor(x) + .5, y, Math.floor(z) + .5); o.rotation.y = 0; o.scale.setScalar(1); }
 }
@@ -79,7 +80,7 @@ export function updateSettings(dt) {
   updateTiles(); updateDbg();
   if (!flashTile) {
     flashTile = new THREE.Group();
-    flashTile.add(new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: .55, depthTest: false, depthWrite: false })));
+    flashTile.add(new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: .55, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false })));
     flashTile.children[0].renderOrder = 1001; flashTile.visible = false; scene.add(flashTile);
   }
   if (flash.t > 0) { flash.t -= dt; flashTile.visible = flash.t > 0 && (Math.floor(flash.t * 10) % 2 === 0); placeTile(flashTile, flash.x, flash.y + .05, flash.z); } else flashTile.visible = false;
@@ -87,7 +88,7 @@ export function updateSettings(dt) {
   if (CFG.hl === 'tile') {
     mark.visible = false;
     tile.visible = away;
-    placeTile(tile, mark.position.x, mark.position.y + .03, mark.position.z);
+    placeTile(tile, mark.position.x, mark.position.y + .05, mark.position.z);
   } else { tile.visible = false; mark.visible = CFG.hl === 'ring' && away; }
   if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res'; }
 }

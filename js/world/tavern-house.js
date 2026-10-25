@@ -4,7 +4,8 @@ import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
-import { registerFloors, refreshProps } from './floors.js';
+import { registerFloors, refreshProps, HOUSES } from './floors.js';
+import { addRect } from './imap.js';
 import { addDoor, roomRented } from './doors.js';
 import { addBed } from './beds.js';
 import { addCabinet } from './cabinets.js';
@@ -184,8 +185,11 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
     
     const o = new THREE.Object3D(); const [wx, wz] = at(lx * K, lz * K); o.position.set(wx, 0, wz); o.r = r * K; if (ng) o.ng = true; if (dr) o.dr = dr;
     if (lvl !== undefined) { o.lvl = lvl; o.hx = wx; o.hz = wz; if (lvl === 1) { o.position.x = 1e5; o.position.z = 1e5; } }
+    o.map = true;   // o jogador usa o mapa de retângulos (imap.js); o círculo fica só para NPCs/inimigos
     props.push(o);
   };
+  const RC = [];   // retângulos [andar, u0, v0, u1, v1, id da porta?] (unidades locais)
+  const R = (l, u0, v0, u1, v1, door) => RC.push([l, u0, v0, u1, v1, door]);
   // paredes (a da frente tem o vão da porta)
   [-5, -4.1, -3.2, -2.35].forEach(u => { block(u, 3.6, .45, 0, u < -3); block(-u, 3.6, .45, 0); });   // paredes do térreo valem só no térreo (antes bloqueavam também o piso de cima)
   block(-1.5, 3.6, .5, 0); block(1.5, 3.6, .5, 0);
@@ -244,8 +248,31 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   [uB, uL, uR, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); bakeGroup(up, [uB, uL, uR, ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
   const H = { x, z, th, K };
   const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, 0], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, 0] };
-  DR.forEach(d => { const dd = addDoor(d, H); const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
+  const ddm = {};
+  DR.forEach(d => { const dd = addDoor(d, H); ddm[d.id] = dd; const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
   refreshProps();
   registerFloors({ x, z, th, K, Hf: 3.15 * K, inBox: (lx, lz) => Math.abs(lx) <= 4.95 && Math.abs(lz) <= 4.95, upOK: (lx, lz) => !(lx > -5.15 && lx < -3.55 && lz > -1.75 && lz < 1.85), links: [{ l: 0, x: -4.3, z: 2.5 }, { l: 1, x: -4.3, z: -1.75 }], door: 'tavern-front', fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
+  const FH = HOUSES[HOUSES.length - 1], TW = .12;
+  // ── mapa de retângulos (térreo) ──
+  R(0, -5.2, 3.35, -.8, 3.85); R(0, .8, 3.35, 5.2, 3.85); R(0, -.8, 3.35, .8, 3.85, 'tavern-front');
+  R(0, -5.2, -3.85, 3.2, -3.35); R(0, 4.4, -3.85, 5.2, -3.35); R(0, 3.2, -3.85, 4.4, -3.35, 'tavern-back');
+  R(0, 4.75, -3.85, 5.25, 3.85); R(0, -5.2, -3.85, -4.8, 3.85);
+  R(0, -3.0, -1.9, -.6, -1.1); R(0, -4.75, -3.4, -3.95, -1.6); R(0, 3.95, -2.65, 4.85, .05);
+  R(0, 2.95, .65, 4.85, 2.35);
+  R(0, -5.0, -2.3, -3.1, -1.7); R(0, -2.92, -.57, -2.68, 1.27);
+  R(0, 4.05, 3.95, 6.25, 5.05);
+  // ── andar de cima ──
+  const seg = (z, xs, w) => xs.forEach(([a, b]) => R(1, a, z - w, b, z + w));
+  seg(-1.7, [[-1.9, -.55], [.55, 2.85], [3.95, 5.1]], TW);
+  seg(1.45, [[-1.9, -.95], [.15, 2.45], [3.55, 5.1]], TW);
+  [-1.8, 1.8].forEach(xx => { R(1, xx - TW, -4.9, xx + TW, -1.7); R(1, xx - TW, 1.45, xx + TW, 4.9); });
+  R(1, -5.12, -5.02, -4.88, 5.02); R(1, 4.88, -5.02, 5.12, 5.02); R(1, -5.12, 4.78, 5.12, 5.02); R(1, -5.12, -5.02, 5.12, -4.78);
+  [-1.07, 2.5].forEach(bx => R(1, bx - .6, -4.55, bx + .6, -1.95));
+  [4.3, 1.1].forEach(bx => R(1, bx - .6, 1.9, bx + .6, 4.45));
+  R(1, .72, -4.85, 1.78, -4.25); R(1, -1.78, 4.1, -.72, 4.7);
+  R(1, -4.8, 3.9, -3.5, 4.5); R(1, -4.6, 3.25, -4.2, 3.65);
+  R(1, -4.5, 1.75, -3.5, 1.95); R(1, -3.85, -.65, -3.65, 1.95);
+  RC.forEach(([l, a, b, c, d, id]) => addRect(FH, l, a, b, c, d, id ? ddm[id] : undefined));
+  DR.forEach(d => { if (d.room) addRect(FH, 1, d.c - .55, d.f - TW, d.c + .55, d.f + TW, ddm[d.id]); });
   return { g: root, th, at, pts, front: at(-.3 * K, -1.6 * K) };
 }

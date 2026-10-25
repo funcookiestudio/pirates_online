@@ -4,6 +4,7 @@
 import { props } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { HOUSES } from './floors.js';
+import { rectsOf } from './imap.js';
 
 const CS = .45, R = .33, MAXSNAP = 1.0;   // R: raio do corpo dentro de casas (.3 de colisão + folga) — ver BODY_IN em player-update.js                       // célula (m) e raio do corpo do personagem
 const cache = new Map();                       // `${casa}:${andar}` → grade
@@ -22,6 +23,7 @@ function build(h, L) {
   const cx = i => -hx + (i + .5) * CS, cz = j => -hz + (j + .5) * CS;
   const rad = hx * hx + hz * hz;
   for (const p of props) {
+    if (p.map && h.rects) continue;   // a casa tem mapa de retângulos: os círculos são só para NPCs
     if (p.lvl !== undefined && p.lvl !== L) continue;
     if (p.dr && p.dr.open) continue;
     const px = p.hx !== undefined ? p.hx : p.position.x, pz = p.hz !== undefined ? p.hz : p.position.z;
@@ -32,11 +34,21 @@ function build(h, L) {
     const j0 = Math.max(0, Math.floor((v - m + hz) / CS)), j1 = Math.min(d - 1, Math.floor((v + m + hz) / CS));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) { const a = cx(i) - u, b = cz(j) - v; if (a * a + b * b < m * m) blk[j * w + i] = 1; }
   }
+  const occ = blk.slice();   // ocupação real (sem a folga do corpo), só para exibir
+  if (h.rects) for (const q of rectsOf(h, L)) {
+    for (let j = 0; j < d; j++) { const z = cz(j); if (z < q.v0 - .22 || z > q.v1 + .22) continue; for (let i = 0; i < w; i++) { const x = cx(i); if (x >= q.u0 - .22 && x <= q.u1 + .22) occ[j * w + i] = 1; } }
+    const i0 = Math.max(0, Math.floor((q.u0 - R + hx) / CS)), i1 = Math.min(w - 1, Math.floor((q.u1 + R + hx) / CS));
+    const j0 = Math.max(0, Math.floor((q.v0 - R + hz) / CS)), j1 = Math.min(d - 1, Math.floor((q.v1 + R + hz) / CS));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const a = cx(i) - Math.max(q.u0, Math.min(cx(i), q.u1)), b = cz(j) - Math.max(q.v0, Math.min(cz(j), q.v1));
+      if (a * a + b * b < R * R) blk[j * w + i] = 1;
+    }
+  }
   if (L === 1 && h.upOK) for (let j = 0; j < d; j++) for (let i = 0; i < w; i++) {   // andar de cima: onde não há piso (vão da escada, salão do castelo) não se pisa
     const lx = cx(i) / h.K, lz = cz(j) / h.K;
     if (Math.abs(lx) < (h.fx || 5.3) - .3 && Math.abs(lz) < (h.fz || 4.1) - .1 && !h.upOK(lx, lz)) {
       // a borda do vão também é barrada (o corpo tem raio)
-      blk[j * w + i] = 1;
+      blk[j * w + i] = 1; occ[j * w + i] = 1;
     }
   }
   (h.links || []).forEach(k => {   // pé/topo das escadas: sempre alcançáveis
@@ -44,7 +56,7 @@ function build(h, L) {
     const [u, v] = [k.x * h.K, k.z * h.K];
     for (let j = 0; j < d; j++) for (let i = 0; i < w; i++) { const a = cx(i) - u, b = cz(j) - v; if (a * a + b * b < .8 * .8) blk[j * w + i] = 0; }
   });
-  const g = { h, L, w, d, hx, hz, blk, ver };
+  const g = { h, L, w, d, hx, hz, blk, occ, ver };
   cache.set(key, g);
   return g;
 }
@@ -147,6 +159,6 @@ export const navVersion = () => ver;
 export function debugGrid() {
   const g = gridAt(P.x, P.z); if (!g) return null;
   const cells = [];
-  for (let j = 0; j < g.d; j++) for (let i = 0; i < g.w; i++) { const [x, z] = toW(g.h, ...center(g, i, j)); cells.push({ x, z, free: !g.blk[j * g.w + i] }); }
+  for (let j = 0; j < g.d; j++) for (let i = 0; i < g.w; i++) { const [x, z] = toW(g.h, ...center(g, i, j)); cells.push({ x, z, free: !(g.h.rects ? g.occ : g.blk)[j * g.w + i] }); }
   return { h: g.h, L: g.L, cells, size: CS };
 }

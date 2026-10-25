@@ -13,6 +13,8 @@ import { VILLAGE_R } from '../core/village-const.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
 import { props } from '../core/registry.js';
+import { mapAt, pushOut } from '../world/imap.js';
+import { setMapped } from './steer.js';
 import { turnTo } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
@@ -132,10 +134,11 @@ function moveAndAct(dt) {
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
     setSwim(true);
+    setMapped(!!mapAt(P.x, P.z));
     const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? BODY_IN : .5);
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
     [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? BODY_IN : .5, STEER, Math.min(nd, d - rng));
-    setSwim(false);
+    setSwim(false); setMapped(false);
   }
   const k = 1 - Math.exp(-dt * (want > Math.hypot(P.vx, P.vz) ? 6 : 9));
   P.vx += (wx - P.vx) * k;
@@ -191,8 +194,9 @@ const BODY_IN = .3;
 /** Colisão com árvores e pedras e limite da ilha */
 let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
-  const inH = houseNear(P.x, P.z, .3);
+  const inH = houseNear(P.x, P.z, .3), mh = !MOUNT.on && mapAt(P.x, P.z);
   props.forEach(p => {
+    if (mh && p.map) return;   // dentro de casa com mapa: colisão por retângulos (abaixo)
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
     const rr = p.r + (MOUNT.on ? .9 : inH ? BODY_IN : .5);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
     if (dd < rr) {
@@ -200,6 +204,7 @@ function clampToWorld() {
       P.z = p.position.z + ez / dd * rr;
     }
   });
+  if (mh) [P.x, P.z] = pushOut(mh, P.up ? 1 : 0, P.x, P.z, BODY_IN);
   // mar e paredões: desliza pela margem ou volta ao último ponto firme
   [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z, true);
   lastX = P.x; lastZ = P.z;

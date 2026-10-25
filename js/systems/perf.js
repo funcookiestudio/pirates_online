@@ -3,7 +3,7 @@
 import { ren } from '../core/engine.js';
 
 const touch = matchMedia('(pointer: coarse)').matches;
-const MAX = Math.min(devicePixelRatio || 1, touch ? 1.5 : 2), MIN = .8, STEP = .1;   // nunca abaixo de 80%: abaixo disso a imagem fica serrilhada
+const MAX = Math.min(devicePixelRatio || 1, touch ? 1.25 : 2), MIN = touch ? .6 : .8, STEP = .1;   // nunca abaixo de 80%: abaixo disso a imagem fica serrilhada
 let ratio = MAX, ema = 1 / 60, t = 0, cool = 3, mode = 'auto';
 const NATIVE = devicePixelRatio || 1;
 const FIXED = { max: () => Math.min(NATIVE, 2.5), high: () => MAX, mid: () => Math.min(MAX, 1), low: () => Math.min(MAX, .75) };

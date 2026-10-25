@@ -9,6 +9,9 @@ import { walkable, swimmable, nearObstacle, roadAt, heightAt } from '../world/te
 /** O jogador pode passar por água (nadar); inimigos e pets não */
 let SW = false;
 export const setSwim = v => { SW = v; };
+/** Jogador dentro de casa com mapa de retângulos: o desvio ignora os círculos antigos da casa */
+let MAPPED = false;
+export const setMapped = v => { MAPPED = v; };
 
 const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 
@@ -22,7 +25,8 @@ function clear(x, z, a, len, r) {
   }
   const mg = houseNear(x, z) ? .03 : .15;   // dentro de casa a folga é menor (corredores e portas estreitos)
   for (let i = 0; i < props.length; i++) {
-    const p = props[i], px = p.position.x - x, pz = p.position.z - z;
+    const p = props[i]; if (MAPPED && p.map) continue;
+    const px = p.position.x - x, pz = p.position.z - z;
     const t = Math.max(0, Math.min(len, px * dx + pz * dz));
     const cx = px - dx * t, cz = pz - dz * t;
     const m = p.r + r + mg;

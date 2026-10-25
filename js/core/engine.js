@@ -6,8 +6,8 @@ scene.fog = new THREE.Fog(0x1b2a30, 30, 60);
 
 export const cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, .1, 72);
 
-export const ren = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-ren.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer: coarse)').matches ? 1.5 : 2));
+export const ren = new THREE.WebGLRenderer({ antialias: !matchMedia('(pointer: coarse)').matches, powerPreference: 'high-performance' })   // celular: sem MSAA (caro em GPU móvel);
+ren.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer: coarse)').matches ? 1.25 : 2));
 ren.setSize(innerWidth, innerHeight);
 document.body.prepend(ren.domElement);
 
