@@ -7,9 +7,16 @@ import { enemies } from '../core/registry.js';
 import { FARM } from '../entities/farm.js';
 import { HOUSES } from '../world/floors.js';
 import { toU } from '../world/imap.js';
+import { hemi, torch } from '../core/engine.js';
+import { CFG } from './settings.js';
 
 export const VIS = { on: true, nearNpc: 4, nearEnemy: 6, every: .1 };
-let acc = 0;
+let acc = 0, RANGE = 72;
+/** Alcance da visão: de dia vai até onde a névoa deixa ver; à noite cai para ~22 m (com tocha ~33 m) */
+function sightRange() {
+  const dark = Math.max(0, Math.min(1, (.85 - hemi.intensity) / .55));
+  return (72 - 50 * dark) * (torch.distance > 30 ? 1.5 : 1);
+}
 
 /** O segmento (a→b) cruza o retângulo [u0,u1]×[v0,v1]? (método das "placas") */
 function hits(au, av, bu, bv, u0, v0, u1, v1) {
@@ -25,6 +32,7 @@ function hits(au, av, bu, bv, u0, v0, u1, v1) {
 export function canSee(tx, tz, near) {
   const dx = tx - P.x, dz = tz - P.z, d2 = dx * dx + dz * dz;
   if (d2 < near * near) return true;                       // percepção: o que está colado sempre aparece
+  if (d2 > RANGE * RANGE) return false;                    // além do alcance (noite)
   const L = P.up ? 1 : 0;
   for (let i = 0; i < HOUSES.length; i++) {
     const h = HOUSES[i];
@@ -51,7 +59,7 @@ const hide = (g, vis) => { if (g && !vis) g.visible = false; };
 /** A cada quadro depois de tudo se mexer: atualiza (a cada 0,1 s) quem é visto e esconde o resto */
 export function updateVision(dt, skip) {
   acc += dt;
-  const re = acc >= VIS.every; if (re) acc = 0;
+  const re = acc >= VIS.every; if (re) { acc = 0; RANGE = sightRange(); VIS.on = CFG.vis !== false; }
   for (let i = 0; i < npcList.length; i++) {
     const n = npcList[i];
     if (re) n.inHid = VIS.on && !skip && !canSee(n.g.position.x, n.g.position.z, VIS.nearNpc);
