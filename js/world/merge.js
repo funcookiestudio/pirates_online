@@ -8,10 +8,10 @@ const CELL = 20;
 
 /** Material único com cor por vértice (opaco, sem brilho próprio): permite fundir TODAS as cores numa só malha (poucas chamadas de desenho) */
 const vcCache = new Map();
-const vcMat = (xr, side) => { const k = xr + '|' + side; let m = vcCache.get(k); if (!m) { m = new THREE.MeshLambertMaterial({ vertexColors: true, side }); if (xr) xray(m); vcCache.set(k, m); } return m; };
+export const vcMat = (xr, side) => { const k = xr + '|' + side; let m = vcCache.get(k); if (!m) { m = new THREE.MeshLambertMaterial({ vertexColors: true, side }); if (xr) xray(m); vcCache.set(k, m); } return m; };
 /** A peça pode ir para a malha de cor por vértice? (não: vidros, brilhos e materiais que o jogo altera em tempo real) */
 const mergeable = mat => mat.type === 'MeshLambertMaterial' && !mat.transparent && !mat.map && (!mat.emissive || mat.emissive.getHex() === 0) && !mat.vertexColors;
-const colorsOf = (geo, mat) => { const n = geo.attributes.position.count, a = new Float32Array(n * 3), c = mat.color; for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } return a; };
+export const colorsOf = (geo, mat) => { const n = geo.attributes.position.count, a = new Float32Array(n * 3), c = mat.color; for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } return a; };
 
 /** `before` = filhos da cena antes do mundo ser construído · `skip` = Set de objetos dinâmicos (NPCs, inimigos...) */
 export function mergeStatics(before, skip) {

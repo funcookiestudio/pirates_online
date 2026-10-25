@@ -23,3 +23,7 @@ ${js}
 </script>
 `);
 console.log('preview/preview.html', Math.round((css.length + body.length + js.length) / 1024) + ' KB');
+
+// version.json (lido pelo jogo para saber se há atualização): mesma versão de js/core/version.js
+const ver = readFileSync('js/core/version.js', 'utf8').match(/VERSION = '([^']+)'/)[1];
+writeFileSync('version.json', JSON.stringify({ v: ver }) + '\n');
