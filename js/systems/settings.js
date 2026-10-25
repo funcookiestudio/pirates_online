@@ -52,6 +52,7 @@ const MAXC = 7000, cg = new THREE.PlaneGeometry(.41, .41).rotateX(-Math.PI / 2);
 const mkInst = col => { const m = new THREE.InstancedMesh(cg, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .38, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false }), MAXC); m.count = 0; m.frustumCulled = false; m.renderOrder = 990; m.visible = false; scene.add(m); return m; };
 const imFree = mkInst(0x40e070), imBlk = mkInst(0xf03838), imTrig = mkInst(0x3a7bff);
 imTrig.material.opacity = .6; imTrig.renderOrder = 3;
+imTrig.geometry = new THREE.PlaneGeometry(.45, .45).rotateX(-Math.PI / 2);   // célula inteira = a área que ativa ao clicar
 let tkey = '';
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _u = new THREE.Vector3(0, 1, 0);
 /** Tiles azuis de acionamento: portas (dentro e fora) e escadas (pé e topo). Só no andar em que o personagem está */
