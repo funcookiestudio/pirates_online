@@ -20,7 +20,7 @@ const E = N / 2;
 export const FARMSITE = { ok: false, sites: [] };
 
 // área de cada fazenda (coordenadas locais: +z = lado da estrada / portão)
-const X0 = -15, X1 = 15, Z0 = -16, Z1 = 8;
+const X0 = -15, X1 = 15, Z0 = -16, Z1 = 11;
 const VARIANTS = [
   { id: 'aves', n: 'Sítio das Aves', ic: '🐔' },
   { id: 'granja', n: 'Granja', ic: '🐖' },
@@ -179,7 +179,7 @@ function buildOne(spot) {
     for (let z = FZ0 - .5; z <= FZ1 + .5; z += 2) { bx(.14, .7, .14, 0x6a4a2a, FX0 - .6, .35, z); bx(.14, .7, .14, 0x6a4a2a, FX1 + .6, .35, z); }
   };
 
-  // ---- cercados: ficam ATRÁS das construções, com portão voltado para o pátio (+z) ----
+  // ---- layout em "T": casa e celeiro ao fundo, pátio de terra, corredor central até o portão; cercados à esquerda, lavoura à direita ----
   const post = (x, z, big) => { bx(big ? .3 : .2, big ? 1.5 : 1.2, big ? .3 : .2, 0x6a4a2a, x, .6, z); solid(x, z, .3); };
   const rail = (x0, z0, x1, z1) => {
     const L = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0);
@@ -190,51 +190,60 @@ function buildOne(spot) {
     for (let i = 0; i <= n; i++) post(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n, false);
     rail(x0, z0, x1, z1);
   };
-  const PZ0 = -15, PZ1 = -7.5;     // fundo e frente dos cercados
-  const penBox = (x0, x1, sign) => {
-    const cx = (x0 + x1) / 2, gw = .95;
-    side(x0, PZ0, x1, PZ0); side(x0, PZ0, x0, PZ1); side(x1, PZ0, x1, PZ1);
-    side(x0, PZ1, cx - gw, PZ1); side(cx + gw, PZ1, x1, PZ1);
-    post(cx - gw, PZ1, true); post(cx + gw, PZ1, true);
-    bx(2 * gw + .5, .14, .14, 0xd8c8a0, cx, 1.65, PZ1);
-    bx(1.5, .42, .08, sign, cx, 2.0, PZ1 + .05);
-    bx(x1 - x0 - .2, .03, PZ1 - PZ0 - .2, 0x6aa24a, cx, .02, (PZ0 + PZ1) / 2);
-    return cx;
-  };
   const trough = (x, z) => { bx(2.2, .42, .8, 0x7a5430, x, .25, z); bx(1.9, .08, .5, 0x4a90c8, x, .46, z); };
-  const spots = (cx, n, w = 4.2) => Array.from({ length: n }, (_, i) => [cx + ((i % 3) - 1) * w / 3 + (i > 2 ? .6 : 0), PZ0 + 2.6 + Math.floor(i / 3) * 2.2 + ((i * 7) % 3) * .2]);
+  const GW = .95;
+  /** Cercado retangular com portão no lado leste (voltado para o corredor central) */
+  const pen = (x0, x1, z0, z1, sign) => {
+    const cz = (z0 + z1) / 2;
+    side(x0, z0, x1, z0); side(x0, z1, x1, z1); side(x0, z0, x0, z1);
+    side(x1, z0, x1, cz - GW); side(x1, cz + GW, x1, z1);
+    post(x1, cz - GW, true); post(x1, cz + GW, true);
+    bx(.14, .14, 2 * GW + .5, 0xd8c8a0, x1, 1.65, cz);
+    bx(.08, .42, 1.5, sign, x1 + .05, 2.0, cz);
+    bx(x1 - x0 - .2, .03, z1 - z0 - .2, 0x6aa24a, (x0 + x1) / 2, .02, cz);
+    return { x0, x1, z0, z1, cx: (x0 + x1) / 2, cz };
+  };
+  const spotsIn = (r, n) => Array.from({ length: n }, (_, i) => {
+    const c = i % 3, rw = Math.floor(i / 3), rows = Math.ceil(n / 3);
+    return [r.x0 + 2.4 + (c + .5 * (rw % 2)) * ((r.x1 - r.x0 - 4.8) / 2.5), r.z0 + 1.8 + (rw + .5) * ((r.z1 - r.z0 - 3.6) / rows) + ((i * 7) % 3) * .25];
+  });
+  // pátio de terra e corredor até o portão
+  bx(28, .05, 5.4, 0x9a6a44, 0, .03, -5.9);
+  bx(4, .05, Z1 + 9.6, 0x9a6a44, 0, .045, (Z1 - 8.6) / 2);
+  const A = [-14, -3.4, -2.4, 3.4], B = [-14, -3.4, 4.4, 10.2];   // cercados da esquerda [x0,x1,z0,z1]
   const pens = [];
 
   if (vr.id === 'aves') {
-    house(-6, 1.5); well(-11.5, 5.5); hayPile(0.5, 3);
-    const c1 = penBox(-12, -2, 0xe8c040);
-    bx(2.2, 1.3, 1.5, 0xb8864a, c1 - 2.2, .65, PZ0 + 1.3);
-    bx(2.5, .12, 1.8, 0x7a3a28, c1 - 2.2, 1.4, PZ0 + 1.3).rotation.z = .12;
-    bx(.5, .5, .06, 0x2a1a10, c1 - 2.2, .5, PZ0 + 2.1);
-    bx(1.2, .22, .5, 0x7a5430, c1 + 2.2, .2, PZ0 + 1.5); bx(1, .06, .36, 0xd8c070, c1 + 2.2, .34, PZ0 + 1.5);
-    solid(c1 - 2.2, PZ0 + 1.3, 1.2);
-    field(5, 12, -13, -3, 5);
-    pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster', 'duck', 'duck', 'turkey', 'peacock'], at: spots(c1, 9, 6.5) });
+    house(-8, -12); well(0, -10.5); hayPile(8, -12.5); roll(12, -10);
+    const a = pen(...A, 0xe8c040), b = pen(...B, 0xd8a050);
+    bx(2.2, 1.3, 1.5, 0xb8864a, a.x0 + 2.2, .65, a.z0 + 1.5);                       // galinheiro
+    bx(2.5, .12, 1.8, 0x7a3a28, a.x0 + 2.2, 1.4, a.z0 + 1.5).rotation.z = .12;
+    bx(.5, .5, .06, 0x2a1a10, a.x0 + 2.2, .5, a.z0 + 2.3); solid(a.x0 + 2.2, a.z0 + 1.5, 1.2);
+    bx(1.2, .22, .5, 0x7a5430, a.x1 - 1.8, .2, a.z1 - 1.2); bx(1, .06, .36, 0xd8c070, a.x1 - 1.8, .34, a.z1 - 1.2);
+    bx(3.4, .05, 2.2, 0x4a90c8, b.cx - 1, .05, b.cz + .6);                           // lagoa dos patos
+    field(4.5, 4.5 + 6 * 1.5 - 1, -2, 9, 5);
+    pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster'], at: spotsIn(a, 5) });
+    pens.push({ kinds: ['duck', 'duck', 'turkey', 'peacock'], at: spotsIn(b, 4) });
   } else if (vr.id === 'granja') {
-    barn(-3, 1.5); hayPile(-10.5, 4); roll(11, 4);
-    const c1 = penBox(-13, -3.5, 0xe88aa0), c2 = penBox(-1, 9, 0xf0f0f0);
-    bx(3.6, .04, 2.6, 0x5a4030, c1 + 1, .04, PZ0 + 3);
-    trough(c1 - 2.5, PZ0 + 1.2); trough(c2 + 2.5, PZ0 + 1.2);
-    bx(1.2, .6, 1, 0xd8b848, c2 - 3, .3, PZ0 + 1.2);
-    pens.push({ kinds: ['pig', 'pig', 'pig'], at: spots(c1, 3, 6) });
-    pens.push({ kinds: ['sheep', 'sheep', 'sheep', 'sheep'], at: spots(c2, 4, 6) });
+    house(-8, -12); barn(8, -12); well(0, -10); hayPile(-13, -8.5);
+    const a = pen(...A, 0xe88aa0), b = pen(...B, 0xf0f0f0);
+    bx(3.8, .04, 2.8, 0x5a4030, a.cx + 1, .04, a.cz); trough(a.x0 + 2.2, a.z0 + 1.2);   // lamaçal e cocho
+    trough(b.x0 + 2.2, b.z1 - 1.2); bx(1.2, .6, 1, 0xd8b848, b.x1 - 1.8, .3, b.z0 + 1.2);
+    field(4.5, 4.5 + 4 * 1.5 - 1, -2, 9, 4);
+    pens.push({ kinds: ['pig', 'pig', 'pig'], at: spotsIn(a, 3) });
+    pens.push({ kinds: ['sheep', 'sheep', 'sheep', 'sheep'], at: spotsIn(b, 4) });
   } else {
-    barn(-5, 1.5); silo(7.5, 2.5); roll(12, 4.5); well(-11.5, 5.5);
-    const c1 = penBox(-13, -3.5, 0x4a90d8), c2 = penBox(-1, 9, 0x8a5a3a);
-    trough(c1 - 2.5, PZ0 + 1.2); trough(c2 + 2.5, PZ0 + 1.2);
-    bx(1.6, .9, 1.2, 0xd8b848, c1 + 2.5, .45, PZ0 + 1.3);
-    bx(2.6, 1.8, 2, 0x8a6238, c2 - 3, .9, PZ0 + 1.5);                                       // cocheira
-    bx(2.9, .12, 2.3, 0x4a3426, c2 - 3, 1.85, PZ0 + 1.5);
-    solid(c2 - 3, PZ0 + 1.5, 1.4);
-    const fm = toWorld(spot, f, 2, 6);   // criador de cavalos (vende a montaria), de frente para a estrada
+    house(-8, -12); barn(8, -12); silo(-0.5, -13.5); roll(13, -6.4);
+    const a = pen(...A, 0x4a90d8), b = pen(...B, 0x8a5a3a);
+    trough(a.x0 + 2.2, a.z0 + 1.2); bx(1.6, .9, 1.2, 0xd8b848, a.x1 - 1.6, .45, a.z1 - 1.2);
+    bx(2.6, 1.8, 2, 0x8a6238, b.x0 + 2, .9, b.z0 + 1.5);                              // cocheira
+    bx(2.9, .12, 2.3, 0x4a3426, b.x0 + 2, 1.85, b.z0 + 1.5); solid(b.x0 + 2, b.z0 + 1.5, 1.4);
+    trough(b.x0 + 2.2, b.z1 - 1.2);
+    field(4.5, 4.5 + 3 * 1.5 - 1, -2, 9, 3);
+    const fm = toWorld(spot, f, 0, -4.2);   // criador de cavalos (vende a montaria), no pátio
     makeNpc('citizen', fm.x, fm.z, Math.atan2(f.fx, f.fz), [0xd8a880, 0x5a7a3a, 0x5a4020, 0xc8a050], 4, HORSEMAN);
-    pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spots(c1, 4, 6.5) });
-    pens.push({ kinds: ['horse', 'horse'], at: spots(c2, 2, 6) });
+    pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spotsIn(a, 4) });
+    pens.push({ kinds: ['horse', 'horse'], at: spotsIn(b, 2) });
   }
   FARMSITE.sites.push({ x: spot.x, z: spot.z, pens: pens.map(pn => ({ kinds: pn.kinds, pts: pn.at.map(([lx, lz]) => toWorld(spot, f, lx, lz)) })) });
   pois.push({ n: vr.n, x: spot.x, z: spot.z, c: '#9ad060', ic: vr.ic });
