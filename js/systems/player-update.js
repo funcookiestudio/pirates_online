@@ -137,7 +137,7 @@ function moveAndAct(dt) {
     setSwim(true);
     setMapped(!!mapAt(P.x, P.z));
     const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? BODY_IN : .5);
-    VIZ.wp = [nx, nz];
+    VIZ.wp = [nx, nz]; VIZ.path = STEER.path;
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
     [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? BODY_IN : .5, STEER, Math.min(nd, d - rng));
     setSwim(false); setMapped(false);

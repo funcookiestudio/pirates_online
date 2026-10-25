@@ -4,14 +4,14 @@ import { VERSION } from '../core/version.js';
 import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
-import { houseAt, HOUSES, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
+import { houseAt, HOUSES, floorLevelH, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
 import { inCellN } from '../world/imap.js';
 import { VIZ } from './steer.js';
 import { applyFull } from '../ui/fullscreen.js';
 import { doorTiles } from '../world/doors.js';
 import { saveGame } from './save.js';
 import { groundY } from '../world/terrain.js';
-import { debugGrid, navVersion } from '../world/interior-nav.js';
+import { debugGrid, navVersion, interiorRoute } from '../world/interior-nav.js';
 import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
 
 const KEY = 'pirata-ajustes';
@@ -40,7 +40,7 @@ const dLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE
 dLine.renderOrder = 1000; dLine.visible = false; dLine.frustumCulled = false; scene.add(dLine);
 function updateDbg() {
   const on = CFG.dbg && PICKDBG.on;
-  dRaw.visible = dFin.visible = dLine.visible = on;
+  dRaw.visible = dFin.visible = on; dLine.visible = false;
   if (!on) return;
   const y = PICKDBG.y + .1;
   dRaw.position.set(PICKDBG.x, y, PICKDBG.z); dFin.position.set(P.tx, y, P.tz);
@@ -106,22 +106,34 @@ function placeTile(o, x, y, z) {
 }
 /** A cada quadro: posiciona o tile no destino clicado e atualiza o contador de FPS */
 let pathLine = null;
+/** Caminho que o personagem vai fazer agora: escada em curso, plano da casa ou caminho ao ar livre, até o destino; muda junto com ele */
+function routePts() {
+  const pts = [[P.x, P.z]];
+  if (STAIR.on) { if (!STAIR.run) pts.push(STAIR.A); STAIR.pts.slice(STAIR.run ? STAIR.i : 0).forEach(q => pts.push(q)); return pts; }
+  const tg = P.tgt ? [P.tgt.x, P.tgt.z] : [P.tx, P.tz];
+  if (Math.hypot(tg[0] - P.x, tg[1] - P.z) < .3) return null;
+  const ir = interiorRoute(tg[0], tg[1]);
+  if (ir) ir.forEach(q => pts.push(q));
+  else if (VIZ.path && VIZ.path.length) VIZ.path.forEach(q => pts.push(q));
+  else if (VIZ.wp && Math.hypot(VIZ.wp[0] - tg[0], VIZ.wp[1] - tg[1]) > .3) pts.push(VIZ.wp);
+  pts.push(tg);
+  return pts;
+}
+function drawRoute(line, pts) {
+  const lift = P.up ? floorLevelH() : (houseAt(P.x, P.z, 0) ? FLOOR_LIFT : 0), a = [];
+  pts.slice(0, 60).forEach(q => a.push(q[0], groundY(q[0], q[1]) + lift + .2, q[1]));
+  line.geometry.setAttribute('position', new THREE.Float32BufferAttribute(a, 3));
+  line.geometry.computeBoundingSphere();
+}
 function updatePath() {
   if (!pathLine) {
     pathLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffe040, depthTest: false, transparent: true }));
     pathLine.renderOrder = 9; pathLine.frustumCulled = false; scene.add(pathLine);
   }
-  const wp = VIZ.wp, on = CFG.path && wp && !STAIR.on;
-  pathLine.visible = !!on;
-  if (!on) return;
-  const pts = [[P.x, P.z], wp];
-  const tg = P.tgt ? [P.tgt.x, P.tgt.z] : [P.tx, P.tz];
-  if (Math.hypot(tg[0] - wp[0], tg[1] - wp[1]) > .3) pts.push(tg);
-  const y = (P.up ? P.fy : groundY(P.x, P.z)) + .35, a = [];
-  pts.forEach(q => a.push(q[0], P.up || mapY(q) === null ? y : groundY(q[0], q[1]) + .35, q[1]));
-  pathLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(a, 3));
+  const pts = (CFG.path || CFG.dbg) ? routePts() : null;
+  pathLine.visible = !!pts;
+  if (pts) drawRoute(pathLine, pts);
 }
-const mapY = () => null;
 export function updateSettings(dt) {
   updateTiles(); updateDbg(); updatePath();
   if (!flashTile) {

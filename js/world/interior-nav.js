@@ -154,6 +154,12 @@ export function interiorWaypoint(x, z, tx, tz) {
   return q || [tx, tz];
 }
 
+/** Resto do caminho que o personagem está seguindo dentro da casa até (tx,tz) (para o diagnóstico); null se não há plano ativo */
+export function interiorRoute(tx, tz) {
+  const g = gridAt(P.x, P.z); if (!g) return null;
+  const key = tx.toFixed(1) + ',' + tz.toFixed(1) + ',' + HOUSES.indexOf(g.h) + ',' + (P.up ? 1 : 0);
+  return FOLLOW.key === key && FOLLOW.ver === ver ? FOLLOW.pts.slice(FOLLOW.i) : null;
+}
 export const navVersion = () => ver;
 /** Para o modo de depuração: células do andar atual da casa onde o personagem está { h, cells:[{x,z,free}], size } ou null */
 export function debugGrid() {
