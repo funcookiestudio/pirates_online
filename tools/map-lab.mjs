@@ -62,6 +62,20 @@ for (const seed of seeds) {
   for (const c of L.camps) if (hAt(c) < .8) bad.push('acampamento na água');
   // crescimento do perigo: t (custo de caminho normalizado) deve subir com a ordem
   for (let i = 1; i < L.camps.length; i++) if (L.camps[i].t < L.camps[i - 1].t) bad.push('perigo fora de ordem');
+  // castelo: pico da ilha, alcançável a pé pela rampa, e nenhuma estrada além da dele entra na mesa
+  { let mx = -9; for (let k = 0; k < V * V; k++) if (r.H[k] > mx) mx = r.H[k];
+    const ch = hAt(L.castle); if (mx - ch > 3) bad.push('castelo ' + (mx - ch).toFixed(1) + ' m abaixo do pico');
+    const near = q => q.pts.some(p => Math.hypot(p[0] - L.castle.x, p[1] - L.castle.z) < 38);
+    const ro = r.roads.filter(near); if (ro.length !== 1 || ro[0].n !== 'Castelo') bad.push('estradas na mesa: ' + ro.map(q => q.n).join(','));
+    const seen = new Uint8Array(V * V), st = [Math.round(vil.z + N / 2) * V + Math.round(vil.x + N / 2)]; seen[st[0]] = 1;
+    while (st.length) { const c = st.pop(); for (const o of [1, -1, V, -V]) { const t = c + o; if (t > 0 && t < V * V && !seen[t] && !r.nav[t]) { seen[t] = 1; st.push(t); } } }
+    if (!seen[Math.round(L.castle.z + N / 2) * V + Math.round(L.castle.x + N / 2)]) bad.push('castelo inalcançável');
+    // sem a rampa (corredor +-0.3 rad voltado à vila) a mesa precisa ficar isolada
+    const ra = Math.atan2(Math.cos(L.castle.th), Math.sin(L.castle.th)), seen2 = new Uint8Array(V * V); st.push(Math.round(vil.z + N / 2) * V + Math.round(vil.x + N / 2)); seen2[st[0]] = 1;
+    const cx0 = L.castle.x + N / 2, cz0 = L.castle.z + N / 2;
+    const cut = t => { const i = t % V, j = (t / V) | 0, d = Math.hypot(i - cx0, j - cz0); if (d < 36 || d > 100) return false; let a = Math.abs(Math.atan2(j - cz0, i - cx0) - ra); a = Math.min(a, 6.2832 - a); return a < .3; };
+    while (st.length) { const c = st.pop(); for (const o of [1, -1, V, -V]) { const t = c + o; if (t > 0 && t < V * V && !seen2[t] && !r.nav[t] && !cut(t)) { seen2[t] = 1; st.push(t); } } }
+    if (seen2[Math.round(cz0) * V + Math.round(cx0)]) bad.push('mesa alcançável fora da rampa'); }
   // declive das estradas
   let maxS = 0; for (const road of r.roads) for (let i = 1; i < road.pts.length; i++) { const a = road.pts[i - 1], b = road.pts[i], d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; maxS = Math.max(maxS, Math.abs(a[2] - b[2]) / d); }
   if (maxS > .45) bad.push('declive de estrada ' + maxS.toFixed(2));

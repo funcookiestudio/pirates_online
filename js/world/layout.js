@@ -44,20 +44,20 @@ export function planCore(c) {
     if (depth < 12) continue;
     let sea = 0; for (let t = 8; t <= 40; t += 8) if (inside(px + d[0] * t, pz + d[1] * t, 2) && H[at(px + d[0] * t, pz + d[1] * t)] < -.1) sea++;
     if (sea < 4) continue;
-    // castelo: planalto firme, mais alto que a vila, 85–150 m, de preferência atrás e ao lado
+    // castelo: o ponto mais alto da ilha (picos suavizados), 90–260 m da vila e longe do cais; o gerador cria a mesa de penhascos em volta
     let cs = null;
-    for (let a = 0; a < 24; a++) for (const R of [90, 110, 130, 150]) {
-      const ang = a / 24 * 6.2832, cx = vx + Math.cos(ang) * R, cz = vz + Math.sin(ang) * R;
-      const dc = dev(cx, cz, 28);
-      if (dc > 1.3) continue;
-      const up = H[at(cx, cz)] - H[at(vx, vz)];
-      if (up < 1.2 || up > 11) continue;
-      if (Math.hypot(cx - px, cz - pz) < 80) continue;                    // longe do cais
-      const sc = up * 1.2 - dc * 3 + (Math.cos(ang) * -d[0] + Math.sin(ang) * -d[1]) * 1.5;   // quanto mais alto e mais atrás da vila, melhor
-      if (!cs || sc > cs.sc) cs = { x: cx, z: cz, sc, ang };
+    for (let cz = 80; cz < N - 80; cz += 8) for (let cx = 80; cx < N - 80; cx += 8) {
+      const dvl = Math.hypot(cx - vx, cz - vz); if (dvl < 90 || dvl > 260 || Math.hypot(cx - px, cz - pz) < 90) continue;
+      let ok = true, hs = 0;
+      for (let a = 0; a < 12 && ok; a++) { const qx = cx + Math.cos(a / 12 * 6.2832) * 62, qz = cz + Math.sin(a / 12 * 6.2832) * 62; if (!land(qx, qz) || wd[at(qx, qz)]) ok = false; }
+      if (!ok || !land(cx, cz)) continue;
+      for (let a = -8; a <= 8; a += 4) for (let b = -8; b <= 8; b += 4) hs += H[at(cx + a, cz + b)];
+      const hh = hs / 25, sc = hh + hashN(cx, cz) * .3;
+      if (hh < H[at(vx, vz)] + 1.5) continue;
+      if (!cs || sc > cs.sc) cs = { x: cx, z: cz, sc, ang: Math.atan2(cz - vz, cx - vx) };
     }
     if (!cs) continue;
-    const score = (1.4 - dv) * 3 + cs.sc + depth * .15 + hashN(k, 3);
+    const score = (1.4 - dv) * 3 + cs.sc * .5 + depth * .15 + hashN(k, 3);
     if (!best || score > best.score) best = { k, d, vx, vz, cs, score };
   }
   if (!best) return null;
@@ -125,6 +125,8 @@ export function planFields(c, core) {
     }
     if (bk) camps.push({ x: bk[0], z: bk[1], t: bk[2], tier: i });
   }
+  camps.sort((a, b) => a.t - b.t); camps.forEach((q, i) => { q.tier = i; });
+  camps.sort((a, b) => a.t - b.t); camps.forEach((q, i) => { q.tier = i; });
   // dungeons: bocas em encostas (pedra que sobe atrás, terreno firme à frente), uma por faixa
   const tD = [.28, .46, .62, .78, .94];
   for (const t of tD) {

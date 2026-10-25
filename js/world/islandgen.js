@@ -51,6 +51,20 @@ export function build(seed,type){
  const pc=coast.length?coast:cells;let port=pc[ri(0,pc.length-1)];
  const core=planCore({N,V,H,lab,mainL,sl,wd,coastOf,cells});if(!core)return build(seed+'x',type);port=core.port;
  const vil=core.vil;
+ // 2b) MESA DO CASTELO: platô no pico, penhascos em volta e uma única rampa voltada para a vila
+ const MR=38,cwx=core.castle.x,cwz=core.castle.z,cra=Math.atan2(Math.cos(core.castle.th),Math.sin(core.castle.th)),cb=new Uint8Array(NV);
+ {const sstep=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
+  let hc=-9;for(let j=-MR;j<=MR;j+=3)for(let i=-MR;i<=MR;i+=3)if(i*i+j*j<=MR*MR)hc=Math.max(hc,H[Math.round(cwz+j)*V+Math.round(cwx+i)]);
+  const hr=H[Math.round(cwz+Math.cos(cra+0)*0+Math.sin(cra)*(MR+30))*V+Math.round(cwx+Math.cos(cra)*(MR+30))],wR=Math.min(46,Math.max(16,(hc-hr)/.2)),RO=MR+wR+3;
+  const H1=H.slice();
+  for(let j=Math.max(2,Math.floor(cwz-RO));j<=Math.min(N-2,Math.ceil(cwz+RO));j++)for(let i=Math.max(2,Math.floor(cwx-RO));i<=Math.min(N-2,Math.ceil(cwx+RO));i++){
+   const d=Math.hypot(i-cwx,j-cwz),k=j*V+i;if(d>RO||lab[k]!==mainL)continue;
+   let ad=Math.abs(Math.atan2(j-cwz,i-cwx)-cra);ad=Math.min(ad,6.2832-ad);const rw=d<MR?1:1-sstep(.14,.26,ad);
+   if(d<=MR){H[k]=hc;continue}
+   const w=5+(wR-5)*rw,t=sstep(MR,MR+w,d),tgt=H1[k]*rw+Math.min(H1[k],hc-4.5)*(1-rw);
+   H[k]=Math.max(.9,hc*(1-t)+tgt*t);
+   if(rw<.02&&d<MR+w+2)cb[k]=1}
+  for(let j=Math.max(2,Math.floor(cwz-RO));j<=Math.min(N-2,Math.ceil(cwz+RO));j++)for(let i=Math.max(2,Math.floor(cwx-RO));i<=Math.min(N-2,Math.ceil(cwx+RO));i++){const d=Math.hypot(i-cwx,j-cwz);if(d>=MR-1&&d<=RO&&!cb[j*V+i]){let ad=Math.abs(Math.atan2(j-cwz,i-cwx)-cra);ad=Math.min(ad,6.2832-ad);if(ad>.26)cb[j*V+i]=1}}}
  // 3b) RIOS e LAGOS: superfície de água nivelada (W) + leito escavado; roads atravessam por pontes
  const H0=H.slice(),rn=new Float32Array(NV);for(let k=0;k<NV;k++)rn[k]=r()*.4;
  const bil=(x,y)=>{const i=Math.min(N-1,Math.max(0,Math.floor(x))),j=Math.min(N-1,Math.max(0,Math.floor(y))),fx=x-i,fy=y-j,a=H0[j*V+i],b=H0[j*V+i+1],c=H0[(j+1)*V+i],d=H0[(j+1)*V+i+1];return(a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+d*fx)*fy};
@@ -59,7 +73,7 @@ export function build(seed,type){
 
  const NB=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.414],[1,-1,1.414],[-1,1,1.414],[-1,-1,1.414]];
  const W=new Float32Array(NV).fill(-99),rv=new Uint8Array(NV),lk=new Uint8Array(NV),pen=new Float32Array(NV),BANK=3.5;
- for(const[px,pz,pr]of[[port%V,(port/V)|0,24],[vil%V,(vil/V)|0,52],[core.castle.x,core.castle.z,44],...core.farms.map(f=>[f.x,f.z,26])]){for(let j=Math.max(1,Math.floor(pz-pr));j<=Math.min(N-1,Math.ceil(pz+pr));j++)for(let i=Math.max(1,Math.floor(px-pr));i<=Math.min(N-1,Math.ceil(px+pr));i++)if(Math.hypot(i-px,j-pz)<=pr)pen[j*V+i]=1}
+ for(const[px,pz,pr]of[[port%V,(port/V)|0,24],[vil%V,(vil/V)|0,52],[core.castle.x,core.castle.z,MR+34],...core.farms.map(f=>[f.x,f.z,26])]){for(let j=Math.max(1,Math.floor(pz-pr));j<=Math.min(N-1,Math.ceil(pz+pr));j++)for(let i=Math.max(1,Math.floor(px-pr));i<=Math.min(N-1,Math.ceil(px+pr));i++)if(Math.hypot(i-px,j-pz)<=pr)pen[j*V+i]=1}
  const FD=new Float32Array(NV).fill(1e9),FP=new Int32Array(NV).fill(-1),fh=mkHeap();
  for(const k of cells)if(H[k]<1.6&&[1,-1,V,-V].some(o=>H[k+o]<=.3)){FD[k]=0;fh.push(0,k)}
  while(fh.n()){const c0=fh.top(),k=fh.pop();if(c0>FD[k])continue;const ci=k%V,cj=(k/V)|0;
@@ -115,7 +129,7 @@ export function build(seed,type){
  const dij=srcs=>{const D=new Float32Array(NV).fill(1e9),par=new Int32Array(NV).fill(-1),hp=mkHeap();
   for(const src of srcs){D[src]=0;hp.push(0,src)}
   while(hp.n()){const c0=hp.top(),k=hp.pop();if(c0>D[k])continue;const ci=k%V,cj=(k/V)|0;
-   for(const[a,b,ds]of NB){const ni=ci+a,nj=cj+b;if(ni<1||nj<1||ni>=N||nj>=N)continue;const t=nj*V+ni;if(lab[t]!==mainL||wk[t]===2||(H[t]<.5&&!wk[t]))continue;
+   for(const[a,b,ds]of NB){const ni=ci+a,nj=cj+b;if(ni<1||nj<1||ni>=N||nj>=N)continue;const t=nj*V+ni;if(lab[t]!==mainL||wk[t]===2||cb[t]||(H[t]<.5&&!wk[t]))continue;
     const dh=Math.abs(H0[t]-H0[k]),c=D[k]+ds*(1+rn[t]+(wd[t]?6:0)+(wk[t]?14:0))+dh*6+Math.max(0,dh/ds-.2)*60;
     if(c<D[t]){D[t]=c;par[t]=k;hp.push(c,t)}}}
   par.D=D;return par};
@@ -129,7 +143,7 @@ export function build(seed,type){
  const vx=vil%V,vz=(vil/V)|0,hv0=avg(vx,vz,3),roads=[];
  const mkRoad=(name,dst,pr1)=>{
   const cp=pathTo(dst);let m=0,pre=null;
-  for(const q of roads){let t=0;while(t+1<q.cp.length&&t+1<cp.length&&q.cp[t+1]===cp[t+1])t++;if(t>m){m=t;pre=q}}
+  for(const q of roads){if(q.noM)continue;let t=0;while(t+1<q.cp.length&&t+1<cp.length&&q.cp[t+1]===cp[t+1])t++;if(t>m){m=t;pre=q}}
   const sub=cp.slice(m);let xs=sub.map(k=>k%V),zs=sub.map(k=>(k/V)|0),h0=hv0;
   if(pre){xs[0]=pre.xs[m];zs[0]=pre.zs[m];h0=pre.hs[m]}
   xs=sm(xs,6,3);zs=sm(zs,6,3);const n=xs.length,seg=[0];for(let i=1;i<n;i++)seg.push(Math.hypot(xs[i]-xs[i-1],zs[i]-zs[i-1])||1e-3);
@@ -146,7 +160,7 @@ export function build(seed,type){
  const RS=[],near4=(x,z)=>{x=Math.round(x);z=Math.round(z);let b=-1,bd=1e9;for(let a=-8;a<=8;a++)for(let c=-8;c<=8;c++){const k=(z+c)*V+x+a;if(k>0&&k<NV&&par[k]>=0&&H[k]>.8&&!wk[k]&&Math.hypot(a,c)<bd){bd=Math.hypot(a,c);b=k}}return b>=0?b:rcl.reduce((q,k)=>Math.hypot(k%V-x,(k/V|0)-z)<Math.hypot(q%V-x,(q/V|0)-z)?k:q)};
  const addRoad=(name,x,z,half,pr1,kind)=>{const dst=near4(x,z);if(dst===vil)return null;const R=mkRoad(name,dst,pr1);R.half=half;R.pr=pr1;R.kind=kind;RS.push(R);return R};
  const rP=addRoad('Porto',port%V,(port/V)|0,3.2,3,'tronco');
- addRoad('Castelo',core.castle.x+Math.sin(core.castle.th)*29.5,core.castle.z+Math.cos(core.castle.th)*29.5,3.2,5,'tronco');
+ const rC=addRoad('Castelo',core.castle.x+Math.sin(core.castle.th)*29.5,core.castle.z+Math.cos(core.castle.th)*29.5,3.2,5,'tronco');if(rC)rC.noM=1;
  core.farms.forEach((f,i)=>{const R=addRoad('Fazenda '+(i+1),f.x,f.z,2.2,4,'ramal');if(R)f.k=R.cp[R.cp.length-1]});
  FL.camps.forEach((q,i)=>addRoad('Acampamento '+(i+1),q.x,q.z,1.5,3.2,'trilha'));
  FL.dungeons.forEach((q,i)=>addRoad('Dungeon '+(i+1),q.x+q.dx*4,q.z+q.dz*4,1.5,3,'trilha'));
@@ -189,7 +203,7 @@ export function build(seed,type){
   else if(p<c2){if(veg.bushes.length<7000)veg.bushes.push([x,z,.5+r()*.5,0,r()*6,BCOL[b]])}
   else if(p<c3||(sl(k)>.18&&p>.97)){if(veg.rocks.length<2500)veg.rocks.push([x,z,.5+r()*.9,0,r()*6])}}
  // 6) malha de navegação: bloqueia mar, água funda e paredões (convés das pontes é liberado)
- const nav=new Uint8Array(NV);for(let k=V+1;k<NV-V-1;k++)if(H[k]<-.1||(W[k]>-90&&W[k]-H[k]>.35)||sl(k)>.7)nav[k]=1;
+ const nav=new Uint8Array(NV);for(let k=V+1;k<NV-V-1;k++)if(cb[k]||H[k]<-.1||(W[k]>-90&&W[k]-H[k]>.35)||sl(k)>.7)nav[k]=1;
  for(let k=0;k<NV;k++)if(deck[k]>-90)nav[k]=0;
  const out=R=>({n:R.name,kind:R.kind,half:R.half,pts:R.xs.map((x,i)=>[+(x-N/2).toFixed(2),+(R.zs[i]-N/2).toFixed(2),+R.hs[i].toFixed(2)])});
  return{H,pm,W,wk,mo,bio,nav,deck,bridges,pois,veg,seed,type,land:land/NV,port:{dx,dz},layout:{dock:{dx:core.dock[0],dz:core.dock[1]},castle:{x:core.castle.x-N/2,z:core.castle.z-N/2,th:core.castle.th},farms:core.farms.map(f=>({x:f.x-N/2,z:f.z-N/2,k:f.k})),camps:FL.camps.map(q=>({x:q.x-N/2,z:q.z-N/2,t:q.t,tier:q.tier})),dungeons:FL.dungeons.map(q=>({x:q.x-N/2,z:q.z-N/2,dx:q.dx,dz:q.dz,t:q.t})),dmax:FL.dmax},roads:RS.map(out),rivers,lakes,biomeShare:bc.map(v=>v/Math.max(1,land)),roadHalf:RD.half}}

@@ -39,7 +39,6 @@ export function initTerrain(posts = [], seed = SEED) {
   // castelo: no alto, num planalto escolhido pelo gerador (layout), de frente para a vila; o platô é nivelado na altura dele
   {
     const cs = isl.layout.castle, cx = cs.x - VX, cz = cs.z - VZ, cy = heightAt(cx, cz);
-    flatten(cx, cz, 34, 48, cy);
     CASTLE.x = cx; CASTLE.z = cz; CASTLE.y = cy; CASTLE.th = cs.th; CASTLE.ok = true;
     ZONES.push({ x: cx, z: cz, fx: Math.sin(CASTLE.th), fz: Math.cos(CASTLE.th), x0: -20, x1: 20, z0: -15, z1: 36 });   // pegada do castelo (pátio incluído), no giro dele
   }
