@@ -7,6 +7,7 @@ import { CLOCK } from '../core/clock.js';
 import { log } from '../ui/notify.js';
 import { refreshProps } from './floors.js';
 import { bakeGroup } from './merge.js';
+import { snapCell, inCell } from './imap.js';
 
 export const DOORS = [];
 export const ROOM_PRICE = 40;
@@ -137,13 +138,13 @@ const doorOK = d => d.lvl === (P.up ? 1 : 0) && !(d.room && d.open) && visible(d
 /** Tiles de acionamento (azuis): um de cada lado do vão, a 1,1 m dele. Devolve [{ d, x, z }] das portas do andar do personagem */
 export function doorTiles() {
   const out = [];
-  DOORS.forEach(d => { if (!doorOK(d)) return; [1.1, -1.1].forEach(o => { const [x, z] = cen(d, o); out.push({ d, x, z }); }); });
+  DOORS.forEach(d => { if (!doorOK(d)) return; [1.1, -1.1].forEach(o => { const [x, z] = snapCell(d.h, ...cen(d, o)); out.push({ d, x, z }); }); });
   return out;
 }
 /** Clique num tile de acionamento: abre/fecha a porta (indo até ela se preciso) */
 export function doorTileClick(x, z) {
   if (anim) return false;
-  const t = doorTiles().find(q => Math.hypot(q.x - x, q.z - z) < .5);
+  const t = doorTiles().find(q => inCell(q.d.h, [q.x, q.z], x, z));
   return t ? approach(t.d) : false;
 }
 /** Clique fora da casa estando dentro dela: vai até a porta de saída, abre e sai até o ponto clicado */

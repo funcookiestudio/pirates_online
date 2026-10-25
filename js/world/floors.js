@@ -7,6 +7,7 @@ import { invalidateGrid } from '../systems/steer.js';
 import { openDoorById } from './doors.js';
 import { invalidateInterior } from './interior-nav.js';
 import { bakeGroup } from './merge.js';
+import { snapCell, inCell } from './imap.js';
 import { DOORS } from './doors.js';
 
 export const HOUSES = [];
@@ -66,7 +67,8 @@ export const onStairMid = () => MID;
 /** Tiles de acionamento da escada (pé e topo), em coordenadas do mundo. Castelo e casas sem escada: null */
 export function stairTiles(h) {
   if (h.noStair || h.sc || h.hf) return null;
-  return { down: toW(h, -4.3, 2.5), up: toW(h, -4.3, -1.75) };
+  const f = q => snapCell(h, ...toW(h, ...q));   /* alinhado à grade: o tile é uma célula só */
+  return { down: f([-4.3, 2.5]), up: f([-4.3, -1.75]) };
 }
 export function floorOffset(x, z) {
   for (const h of HOUSES) {
@@ -113,9 +115,10 @@ export function stairClick(x, z) {
       return true;
     }
     if (lx < -5.6) continue;
-    if (!P.up && (Math.hypot(lx + 4.2, lz - 1.8) < 2.8 || (lx <= -2.9 && lz >= .15 && lz <= 2.8))) {
+    const stt = stairTiles(h);
+    if (!P.up && stt && inCell(h, stt.down, x, z)) {
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, 2.5), i: 0, pts: [[-4.3, 1.75], [-4.3, .05], [-4.3, -1.3], [-4.3, -1.75]].map(q => toW(h, ...q)) });
-    } else if (P.up && lx >= -5.3 && lx <= -3.35 && lz >= -2.3 && lz <= 1.9) {   // só a abertura da escada (antes era um círculo de 2,8 m que engolia o piso do andar)
+    } else if (P.up && stt && inCell(h, stt.up, x, z)) {   // só a abertura da escada (antes era um círculo de 2,8 m que engolia o piso do andar)
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, -1.75), i: 0, pts: [[-4.3, -1.3], [-4.3, .05], [-4.3, 1.75], [-4.3, 2.5]].map(q => toW(h, ...q)) });
     } else continue;
     P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];

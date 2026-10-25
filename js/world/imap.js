@@ -61,3 +61,15 @@ export function shellRects(h, door, dd, furn, extra = []) {
   furn.forEach(([u, v, r]) => addRect(h, 0, u - r * .7, v - r * .7, u + r * .7, v + r * .7));
   extra.forEach(e => addRect(h, 0, ...e));
 }
+
+/** Tile de acionamento: UMA célula da grade da casa (a mesma do mapa de tiles, 0,45 m). `snapCell` devolve o centro da célula que contém (x,z). */
+export const CELL = .45;
+export function snapCell(h, x, z) {
+  const hx = (h.hx || 4.2) * h.K + .9, hz = (h.hz || 3.2) * h.K + .9, [u, v] = toU(h, x, z);
+  return toW(h, -hx + (Math.floor((u + hx) / CELL) + .5) * CELL, -hz + (Math.floor((v + hz) / CELL) + .5) * CELL);
+}
+/** (x,z) cai exatamente dentro da célula centrada em c = [cx, cz]? */
+export function inCell(h, c, x, z) {
+  const [u, v] = toU(h, x, z), [cu, cv] = toU(h, c[0], c[1]);
+  return Math.abs(u - cu) <= CELL / 2 && Math.abs(v - cv) <= CELL / 2;
+}
