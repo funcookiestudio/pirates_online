@@ -55,5 +55,5 @@ export function updateDayNight(inDungeon) {
   // janelas das casas acendem ao entardecer (vidros de cor 0xbfe0f0: materiais fundidos por quadra, coletados uma vez)
   if (!glass) { glass = new Set(); scene.traverse(o => { const m = o.isMesh && o.material; if (m && !Array.isArray(m) && m.transparent && m.emissive && m.color.getHex() === 0xbfe0f0) glass.add(m); }); }
   const gl = stars.material.opacity;
-  glass.forEach(m => { m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .4 + gl * .45; });
+  glass.forEach(m => { m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; /* quase opacos: não dá para espiar o interior por fora */ });
 }

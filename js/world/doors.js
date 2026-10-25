@@ -6,6 +6,7 @@ import { P } from '../entities/player.js';
 import { CLOCK } from '../core/clock.js';
 import { log } from '../ui/notify.js';
 import { refreshProps } from './floors.js';
+import { bakeGroup } from './merge.js';
 
 export const DOORS = [];
 export const ROOM_PRICE = 40;
@@ -38,7 +39,8 @@ const toW = (h, lx, lz) => [h.x + lx * h.K * Math.cos(h.th) + lz * h.K * Math.si
 const toL = (h, x, z) => { const dx = x - h.x, dz = z - h.z; return [(dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K]; };
 
 /** Registra uma porta. `d`: { p (folha), openRot, c (centro), f (plano z do vão), w, lvl, room, id } · `h`: casa · `cols`: colisores já criados com d */
-export function addDoor(d, h) { d.openRot = Math.sign(d.openRot || 1) * 95 * Math.PI / 180; d.h = h; d.open = false; DOORS.push(d); return d; }
+export function addDoor(d, h) { if (d.p && !d.p.userData.dyn) bakeGroup(d.p);   // a folha da porta vira poucas malhas (menos chamadas de desenho); o pivô continua girando
+  d.openRot = Math.sign(d.openRot || 1) * 95 * Math.PI / 180; d.h = h; d.open = false; DOORS.push(d); return d; }
 
 let pend = null;
 /** Centro da porta (deslocado `off` m perpendicularmente ao plano dela) e lado em que o personagem está (portas em planos x ou z da casa) */

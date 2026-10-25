@@ -150,8 +150,15 @@ function vegetation(posts) {
 let vegGroup = null, terrGroup = null;
 /** Corte por distância: quadras de vegetação e blocos de terreno longe do jogador não são desenhados */
 export function cullTerrain(x, z) {
-  if (vegGroup) vegGroup.children.forEach(q => { q.visible = Math.hypot(q.userData.c[0] - x, q.userData.c[1] - z) < 76; });
-  if (terrGroup) terrGroup.children.forEach(m => { const s = m.geometry.boundingSphere; m.visible = Math.hypot(s.center.x - x, s.center.z - z) - s.radius < 74; });
+  if (vegGroup) vegGroup.children.forEach(q => {
+    // some a 76 m do centro da quadra; as quadras mais afastadas (56 m+, já na névoa) desenham metade das instâncias
+    const d = Math.hypot(q.userData.c[0] - x, q.userData.c[1] - z);
+    q.visible = d < 76;
+    if (!q.visible) return;
+    const far = d > 56;
+    if (q.userData.far !== far) { q.userData.far = far; q.children.forEach(m => { if (m.userData.n === undefined) m.userData.n = m.count; m.count = far ? Math.ceil(m.userData.n / 2) : m.userData.n; }); }
+  });
+  if (terrGroup) terrGroup.children.forEach(m => { const s = m.geometry.boundingSphere; m.visible = Math.hypot(s.center.x - x, s.center.z - z) - s.radius < 64; /* a névoa cobre tudo a partir de 60 m */ });
 }
 
 /** Cria chão, mar, água doce, pontes e vegetação */
