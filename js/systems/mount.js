@@ -187,7 +187,11 @@ function updateBreath(dt) {
   if (MOUNT.en <= 0 && !MOUNT.tired) { MOUNT.tired = true; if (MOUNT.on) log('🐴 O cavalo está cansado: ande um pouco para ele recuperar o fôlego'); }
   else if (MOUNT.tired && MOUNT.en > .35) MOUNT.tired = false;
   const b = $('sm') && $('sm').querySelector('b');
-  if (b) { b.style.width = (MOUNT.en * 100) + '%'; b.style.background = MOUNT.tired ? '#d8503a' : MOUNT.en < .3 ? '#e0b030' : '#7ad84a'; }
+  if (b) {   // só escreve quando muda (1%): reescrever todo quadro força o navegador a repintar a barra
+    const w = Math.round(MOUNT.en * 100) + '%', bg = MOUNT.tired ? '#d8503a' : MOUNT.en < .3 ? '#e0b030' : '#7ad84a';
+    if (MOUNT.bw !== w) { MOUNT.bw = w; b.style.width = w; }
+    if (MOUNT.bc !== bg) { MOUNT.bc = bg; b.style.background = bg; }
+  }
 }
 
 /** Todo frame (antes do movimento do jogador) */

@@ -83,8 +83,9 @@ const mmss = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart
 function updateStaminaRing() {
   const st = state.stam, recovering = !state.autoOn || state.autoRest;
   const v = $('sar');
-  v.style.strokeDasharray = st * 100 + ' 100';
-  v.setAttribute('class', 'val ' + (recovering ? 'rec' : st < LOW ? 'low' : st < .4 ? 'mid' : ''));
+  put('sar.d', (st * 100).toFixed(1), () => { v.style.strokeDasharray = st * 100 + ' 100'; });   /* só quando muda (repintar o SVG todo quadro pesa no celular) */
+  const cls = 'val ' + (recovering ? 'rec' : st < LOW ? 'low' : st < .4 ? 'mid' : '');
+  put('sar.c', cls, () => v.setAttribute('class', cls));
   txt('ai', state.autoRest ? '💤' : '🤖');
   // número no canto: tempo de auto restante, ou quanto falta para recarregar
   const left = state.autoOn && !state.autoRest ? st * AUTO_TIME
