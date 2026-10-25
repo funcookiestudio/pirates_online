@@ -21,7 +21,7 @@ function plan() {
 
 /** Retorna true quando este frame foi usado para ir ao NPC / comprar (o resto do auto fica parado) */
 export function refillStep() {
-  if (!state.autoCfg.refill || state.seek || state.autoRest || state.clearing) { state.trip = null; return false; }
+  if (!state.autoCfg.refill) { state.trip = null; return false; }
   const pl = plan();
   if (!pl || (pl.pot <= 0 && pl.bomb <= 0)) { state.trip = null; return false; }
   if (danger()) return false;                              // inimigo perto: luta primeiro

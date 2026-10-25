@@ -8,7 +8,7 @@ import { dialogOpen } from './dialog.js';
 import { nearestPost } from '../data/posts.js';
 import { updateLootTexts } from './notify.js';
 import { ROLL_CD } from '../systems/dodge.js';
-import { AUTO_TIME, REST_TIME, LOW, WAKE } from '../systems/stamina.js';
+import { autoCost, autoMinutes } from '../systems/stamina.js';
 import { PST, pmax, PDN } from '../pets/stats.js';
 import { renderStats } from './panel.js';
 import { treeShowsActivePet } from './pet-panel.js';
@@ -79,17 +79,12 @@ export function updateOverlays(now) {
 
 const mmss = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 
-/** Anel do botão de auto combate: tempo de auto restante (verde → amarelo → vermelho) ou recarga (azul) */
+/** Anel do botão de auto combate: minutos de ouro restantes (verde → amarelo → vermelho); cheio = grátis */
 function updateStaminaRing() {
-  const st = state.stam, recovering = !state.autoOn || state.autoRest;
-  const v = $('sar');
-  put('sar.d', (st * 100).toFixed(1), () => { v.style.strokeDasharray = st * 100 + ' 100'; });   /* só quando muda (repintar o SVG todo quadro pesa no celular) */
-  const cls = 'val ' + (recovering ? 'rec' : st < LOW ? 'low' : st < .4 ? 'mid' : '');
+  const c = autoCost(P.lv), mins = autoMinutes(), fr = c ? Math.min(1, mins / 10) : 1, v = $('sar');
+  put('sar.d', (fr * 100).toFixed(1), () => { v.style.strokeDasharray = fr * 100 + ' 100'; });   /* só quando muda (repintar o SVG todo quadro pesa no celular) */
+  const cls = 'val ' + (!c ? '' : mins < 1 ? 'low' : mins < 3 ? 'mid' : '');
   put('sar.c', cls, () => v.setAttribute('class', cls));
-  txt('ai', state.autoRest ? '💤' : '🤖');
-  // número no canto: tempo de auto restante, ou quanto falta para recarregar
-  const left = state.autoOn && !state.autoRest ? st * AUTO_TIME
-    : state.autoRest ? Math.max(0, WAKE - st) * REST_TIME
-    : (1 - st) * REST_TIME;
-  txt('at', left >= 1 ? mmss(left) : '');
+  txt('ai', state.fleeing ? '🏃' : '🤖');
+  txt('at', !c ? '' : state.autoOn ? mmss(mins * 60) : '-' + c + '💰');   // ligado: tempo que o ouro paga · desligado: custo por minuto
 }

@@ -29,7 +29,7 @@ function goTo(n, kind) {
 /** true = este frame foi usado para ir ao ferreiro/baú */
 export function townStep() {
   const c = state.autoCfg;
-  if ((!c.sellMax && !c.storeMin) || state.seek || state.autoRest || state.clearing) { active = false; return false; }
+  if ((!c.sellMax && !c.storeMin)) { active = false; return false; }
   const sell = toSell(), store = toStore().slice(0, Math.max(0, CHEST_MAX - chest.length));
   if (!sell.length && !store.length) { active = false; if (state.trip === 'sell' || state.trip === 'chest') state.trip = null; return false; }
   if (!active && bag.length < c.bagAt) return false;

@@ -1,20 +1,23 @@
-/* Fôlego do auto combate. Ligado, o fôlego (state.stam, 0..1) gasta; desligado ou descansando, recupera.
-   Fôlego baixo e nenhum inimigo por perto → o jogador para, senta e descansa até WAKE ou até um inimigo chegar.
-   Fôlego zero → o auto combate desliga sozinho. (Tempos curtos de propósito, para testar.) */
+/* Auto combate pago: cobra ouro por minuto (só fora da vila). Sem ouro para a próxima moeda, ele para de atacar e foge para a vila.
+   O custo sobe com o nível do personagem (acompanha o ouro que os inimigos dão) e é grátis até o nível FREE_LV. */
 import { state } from '../core/state.js';
 import { enemies } from '../core/registry.js';
-import { $, turnTo } from '../core/utils.js';
+import { $ } from '../core/utils.js';
 import { P } from '../entities/player.js';
-import { sitDown, standUp } from './rest.js';
+import { standUp } from './rest.js';
 import { log } from '../ui/notify.js';
-import { POST_DATA } from '../data/posts.js';
+import { goldAt } from '../data/scaling.js';
+import { VILLAGE_R } from '../core/village-const.js';
+import { MOUNT, toggleMount } from './mount.js';
+import { potion } from './combat.js';
 
-export const AUTO_TIME = 120; // s de auto combate com o fôlego cheio
-export const REST_TIME = 60;  // s para recuperar do zero ao cheio
-export const LOW = .3;        // abaixo disso, sem inimigos por perto, ele para e descansa
-export const WAKE = .999;      // descansando: volta ao combate ao chegar aqui
-export const MIN_START = .1;  // fôlego mínimo para ligar o auto combate
-const SAFE = 14;              // sem inimigo a menos de SAFE m (nem perseguindo a menos de 25 m) = seguro descansar
+export const FREE_LV = 5;     // até este nível o auto combate é grátis
+const SAFE = 14;              // sem inimigo a menos de SAFE m (nem perseguindo a menos de 25 m) = área segura
+
+/** Ouro cobrado por minuto de auto combate (0 = grátis) para um personagem de nível L */
+export const autoCost = L => L <= FREE_LV ? 0 : Math.round(.45 * goldAt(L)) + 1;
+/** Minutos de auto que o ouro atual paga (Infinity se for grátis) */
+export const autoMinutes = () => { const c = autoCost(P.lv); return c ? P.gold / c : Infinity; };
 
 /** Há algum inimigo perigoso por perto? */
 export function danger() {
@@ -27,67 +30,40 @@ export function danger() {
 
 /** Liga/desliga o auto combate (botão e tecla T) */
 export function setAuto(on) {
-  if (on && state.stam < MIN_START) { log('😮‍💨 Sem fôlego para o auto combate — descanse um pouco'); return; }
+  const c = autoCost(P.lv);
+  if (on && c && P.gold < c) { log('💰 Sem ouro para o auto combate — custa ' + c + ' por minuto (grátis até o nível ' + FREE_LV + ')'); return; }
   state.autoOn = on;
-  state.autoHold = 0;
-  if (on && P.sitT && !state.autoRest) standUp(); // estava sentado: levanta para lutar
-  if (!on && state.autoRest) { state.autoRest = false; standUp(); }
+  state.autoHold = 0; state.fleeing = false; state.autoDebt = 0; state.autoWarn = false;
+  if (on && P.sitT) standUp();   // estava sentado: levanta para lutar
   $('sa').classList.toggle('on', on);
-  log(on ? '🤖 Auto combate ligado (clique para assumir por 2,5s)' : '🤖 Auto combate desligado');
+  log(on ? '🤖 Auto combate ligado' + (c ? ' · -' + c + ' ouro por minuto fora da vila' : ' (grátis até o nível ' + FREE_LV + ')') + ' · clique para assumir por 2,5s' : '🤖 Auto combate desligado');
 }
 
-/** Fogueira mais próxima do jogador (os postos e a praça da vila) */
-function nearestFire() {
-  let best = { id: -1, x: 0, z: 0, d: Math.hypot(P.x, P.z) }; // fogueira da vila
-  POST_DATA.forEach(p => { const d = Math.hypot(p.x - P.x, p.z - P.z); if (d < best.d) best = { id: p.id, x: p.x, z: p.z, d }; });
-  return best;
-}
-
-/** Gasta/recupera o fôlego. Com fôlego baixo o jogador procura a fogueira mais próxima:
- *  se a área estiver segura, vai até lá e descansa até encher; se não, limpa a área antes (continua lutando). */
+/** Cobra o auto combate (fora da vila) e, sem ouro, manda o jogador fugir para a vila */
 export function updateStamina(dt) {
-  if (P.dead) return;
-  const resting = !state.autoOn || state.autoRest;
-  state.stam = Math.min(1, Math.max(0, state.stam + (resting ? dt / REST_TIME : -dt / AUTO_TIME)));
-  if (state.autoRest) {
-    P.hp = Math.min(P.max, P.hp + P.max * .05 * dt);
-    if (state.restFire) { const y = Math.atan2(state.restFire.x - P.x, state.restFire.z - P.z); turnTo(P.g, y, 7, dt); P.ay = P.g.rotation.y; } // de frente para a fogueira
-  }
-  if (!state.autoOn) { state.seek = null; state.clearing = false; return; }
-
-  if (state.stam <= 0 && !state.clearing) {
-    log('😮‍💨 Fôlego acabou: auto combate desligado');
-    setAuto(false);
+  if (P.dead || !state.autoOn) { state.fleeing = false; return; }
+  if (state.fleeing) {
+    if (Math.hypot(P.x, P.z) < VILLAGE_R - 4) { state.fleeing = false; setAuto(false); log('🏠 Cheguei na vila: ganhe ouro e volte quando quiser'); }
     return;
   }
-
-  if (state.autoRest) {
-    if (!P.sitT) state.autoRest = false;                 // o jogador levantou por conta própria
-    else if (state.stam >= WAKE) { state.autoRest = false; standUp(); log('🤖 Descansado: voltando ao combate'); }
-    else if (danger()) { state.autoRest = false; standUp(true); log('⚠ Inimigo por perto: levantando!'); }
-    return;
+  const c = autoCost(P.lv);
+  if (!c || Math.hypot(P.x, P.z) < VILLAGE_R + 1) return;   // grátis, ou na vila (compras, vendas e baú não são cobrados)
+  state.autoDebt = (state.autoDebt || 0) + c * dt / 60;
+  if (state.autoDebt >= 1) {
+    const pay = Math.floor(state.autoDebt);
+    state.autoDebt -= pay;
+    if (P.gold >= pay) P.gold -= pay;
+    else { P.gold = 0; log('💰 Acabou o ouro do auto combate: fugindo para a vila!'); state.fleeing = true; P.tgt = null; return; }
   }
+  if (!state.autoWarn && autoMinutes() < 1) { state.autoWarn = true; log('⚠ Ouro para menos de 1 minuto de auto combate'); }
+  else if (state.autoWarn && autoMinutes() > 1.5) state.autoWarn = false;
+}
 
-  if (state.stam >= LOW || state.autoHold > 0 || P.roll || P.sit) { if (state.stam >= LOW) { state.seek = null; state.clearing = false; } return; }
-
-  // fôlego baixo: escolhe a fogueira
-  const f = nearestFire();
-  const campSafe = !enemies.some(e => !e.dead && Math.hypot(e.x - f.x, e.z - f.z) < 13);
-  if (!campSafe) {
-    if (!state.clearing) log('⚔ Fogueira ocupada: limpando a área antes de descansar');
-    state.clearing = true; state.seek = null;
-    state.stam = Math.max(state.stam, .03);               // continua lutando mesmo cansado
-    return;
-  }
-  state.clearing = false;
-  const d = Math.hypot(P.x - f.x, P.z - f.z), k = 2.3 / (d || 1);
-  if (!state.seek) { log('🔥 Indo descansar na fogueira'); state.seek = { x: f.x + (P.x - f.x) * k, z: f.z + (P.z - f.z) * k }; } // ponto fixo, no lado de quem chega
-  const sx = state.seek.x, sz = state.seek.z;
-  if (danger()) return;                                   // inimigo no caminho: o auto cuida dele primeiro
-  if (Math.hypot(P.x - sx, P.z - sz) < .6) {
-    state.autoRest = true; state.seek = null; state.restFire = { x: f.x, z: f.z };
-    P.tgt = null; P.tx = P.x; P.tz = P.z;
-    sitDown();
-    log('💤 Descansando na fogueira até recuperar tudo…');
-  } else { P.tgt = null; P.tx = sx; P.tz = sz; }
+/** Movimento de fuga (chamado pelo auto no lugar da luta): poção se precisar, monta se tiver cavalo e corre para a vila */
+export function fleeStep() {
+  const thr = enemies.some(e => !e.dead && e.ag && Math.hypot(e.x - P.x, e.z - P.z) < 12);
+  if (P.hp < P.max * .4 && P.pot > 0 && thr) potion();
+  if (MOUNT.owned && !MOUNT.dismissed && !MOUNT.on && !MOUNT.dis && !P.swimming && !P.sit && !P.sitT) toggleMount(true);
+  P.tgt = null;
+  if (Math.hypot(P.tx, P.tz) > 12) { P.tx = 0; P.tz = 0; }   // só (re)define o destino quando ele muda (o jogo ajusta o ponto para um lugar livre)
 }

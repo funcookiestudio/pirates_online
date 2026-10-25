@@ -5,8 +5,8 @@ export const state = {
   HS: 0,            // "hit-stop": tempo restante de câmera lenta num golpe forte
   SHK: 0,           // intensidade do tremor de câmera
   autoOn: false,    // auto combate ligado?
-  stam: 1,          // fôlego do auto combate (0..1): gasta ligado, recupera desligado ou descansando
-  autoRest: false,  // auto ligado mas parado, sentado descansando
+  fleeing: false,   // auto combate sem ouro: fugindo para a vila
+  autoDebt: 0,      // ouro devido do auto combate (fração)
   trip: null,       // indo comprar poções/bombas
   seek: null,       // ponto de descanso (fogueira) para onde o auto está indo
   clearing: false,  // limpando inimigos da fogueira antes de descansar

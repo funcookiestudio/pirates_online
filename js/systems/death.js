@@ -50,7 +50,6 @@ function revive() {
   P.x = x; P.z = z; P.tx = x; P.tz = z; P.vx = P.vz = 0;
   P.hp = P.max; P.mp = P.mmax; P.tgt = null; P.dead = false;
   if (state.cp >= 0) { P.sit = 0; P.sitT = 0; standUp(true); }
-  state.stam = Math.max(state.stam, .5);
   enemies.forEach(e => { if (!e.dead) { e.ag = false; e.hp = e.max; e.st = 'chase'; } });
   $('msg').style.display = 'none';
   log('Renasceu em ' + nameOf(state.cp));
@@ -61,7 +60,6 @@ function reviveSafe() {
   const { x, z } = freePoint(state.safeAt.x, state.safeAt.z, .8);
   P.x = x; P.z = z; P.tx = x; P.tz = z; P.vx = P.vz = 0; P.up = !!state.safeAt.up;
   P.hp = P.max; P.mp = P.mmax; P.tgt = null; P.dead = false; P.sit = 0; P.sitT = 0; standUp(true);
-  state.stam = Math.max(state.stam, .5);
   enemies.forEach(e => { if (!e.dead) { e.ag = false; e.hp = e.max; e.st = 'chase'; } });
   $('msg').style.display = 'none';
   log('Renasceu no último ponto seguro');

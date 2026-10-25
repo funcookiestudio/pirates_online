@@ -11,7 +11,7 @@ import { spin, bomb, potion } from './combat.js';
 import { dodge } from './dodge.js';
 import { MOUNT, toggleMount } from './mount.js';
 import { VILLAGE_R } from '../core/village-const.js';
-import { setAuto, danger } from './stamina.js';
+import { setAuto, fleeStep } from './stamina.js';
 import { dungeonGimmicks } from '../dungeon/dungeon-scene.js';
 import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
@@ -30,6 +30,7 @@ export function autoThink(dt) {
   state.autoHold -= dt;
   AT -= dt;
   AI -= dt;
+  if (state.fleeing) { fleeStep(); return; }   // sem ouro: foge para a vila (o clique do jogador também pode assumir)
   if (state.autoHold > 0) return;
 
   // travado (querendo andar e sem sair do lugar): tenta um ponto livre ao redor
@@ -64,9 +65,6 @@ export function autoThink(dt) {
   if (refillStep()) return;
   // mochila cheia: vende no ferreiro e guarda no baú
   if (townStep()) return;
-
-  // indo para a fogueira com caminho livre: o movimento é decidido em updateStamina
-  if (state.seek && !danger()) return;
 
   // esquiva (rolamento para trás): golpe pesado/especial sendo preparado perto, ou vida abaixo de 20% com inimigo colado
   if (state.autoCfg.dodge && P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) {
