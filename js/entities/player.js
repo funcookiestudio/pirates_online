@@ -2,7 +2,7 @@
 import { xpToNext } from '../data/scaling.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
-import { person } from './character.js';
+import { person, hideSword } from './character.js';
 import { puff } from '../systems/effects.js';
 import { log, banner } from '../ui/notify.js';
 import { emit } from '../core/events.js';
@@ -36,6 +36,7 @@ export const P = {
   hl: { p: new THREE.Vector3(0, -.32, 0), q: new THREE.Quaternion() },
   swap: null, wb: 0,
 };
+hideSword(P.g);   // só aparece a arma equipada no inventário (sem a espada padrão do modelo)
 scene.add(P.g);
 P.g.rotation.order = 'YXZ';
 

@@ -4,6 +4,15 @@ import { cam, ren } from '../core/engine.js';
 import { P } from '../entities/player.js';
 import { groundY } from './terrain.js';
 import { insideHouse } from './floors.js';
+import { CASTLE } from './reserve.js';
+
+/** Vila + castelo + pátio e muros de ligação formam um só lugar: sem raio-x */
+function inTown(x, z) {
+  if (Math.hypot(x, z) < VILLAGE_R + .5) return true;
+  if (!CASTLE.ok) return false;
+  const cx = CASTLE.x, cz = CASTLE.z, L2 = cx * cx + cz * cz || 1, t = Math.max(0, Math.min(1, (x * cx + z * cz) / L2));   // faixa da vila ao castelo
+  return Math.hypot(x - t * cx, z - t * cz) < 18 || Math.hypot(x - cx, z - cz) < 36;
+}
 import { VILLAGE_R } from '../core/village-const.js';
 
 const U = {
@@ -45,5 +54,5 @@ export function updateXray() {
   const s = ren.getDrawingBufferSize(new THREE.Vector2());
   U.uPS.value.set((v.x * .5 + .5) * s.x, (v.y * .5 + .5) * s.y);
   U.uPD.value = d;
-  U.uR.value = (insideHouse() || Math.hypot(P.x, P.z) < VILLAGE_R + .5) ? 0 : s.y * .4;   // raio fixo em fração da tela: o círculo ocupa ~80% da altura em qualquer zoom
+  U.uR.value = (insideHouse() || inTown(P.x, P.z)) ? 0 : s.y * .4;   // raio fixo em fração da tela: o círculo ocupa ~80% da altura em qualquer zoom
 }

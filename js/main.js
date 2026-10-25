@@ -24,6 +24,11 @@ import { updateCamera } from './systems/camera.js';
 import { separate } from './systems/separation.js';
 import { updateXray } from './world/xray.js';
 import { initInput } from './systems/input.js';
+import * as FLOORS from './world/floors.js';
+import { updateRoyals } from './entities/royals.js';
+import { refreshProps } from './world/floors.js';
+import { updateDayNight } from './world/daynight.js';
+import { initBackground } from './systems/background.js';
 import { loadGame, initSave, savedPos, safeSpot } from './systems/save.js';
 import { MOUNT, initMount, toggleMount, giveHorse } from './systems/mount.js';
 import { CLOCK } from './core/clock.js';
@@ -49,6 +54,10 @@ let last = 0;
 
 function frame(now) {
   requestAnimationFrame(frame);
+  tick(now);
+}
+
+function tick(now) {
 
   let dt = Math.min(.05, (now - (last || now)) / 1000);
   last = now;
@@ -61,8 +70,10 @@ function frame(now) {
   updatePerf(realDt);
   updatePlayer(dt);
   updateEnemies(dt);
+  updateDayNight(inDungeon());
   updateNpcs(realDt, now);
   updateFarm(realDt);
+  updateRoyals(realDt);
   separate();
   updateLoot(dt, now);
   updateBombs(dt);
@@ -108,10 +119,11 @@ if (location.hash === '#dev') console.log('merge', mr);
 buildFarm();
 initMount(MOUNT.owned, MOUNT.coat);   // cavalo comprado espera junto ao portão leste   // animais de fazenda (enfeite) — criados depois da fusão para continuarem animáveis
 // o jogo sempre começa na vila, com o personagem sentado descansando (clicar no mundo o levanta)
-if (savedPos && safeSpot(savedPos.x, savedPos.z)) { P.x = P.tx = savedPos.x; P.z = P.tz = savedPos.z; P.sit = P.sitT = 0; }   // volta onde parou (vila, fazenda ou porto)
+if (savedPos && safeSpot(savedPos.x, savedPos.z)) { P.x = P.tx = savedPos.x; P.z = P.tz = savedPos.z; P.sit = P.sitT = 0; if (savedPos.up) { P.up = true; refreshProps(); } }   // volta onde parou (vila, fazenda ou porto)
 else { P.x = P.tx = VILLAGE_SEAT.x; P.z = P.tz = VILLAGE_SEAT.z; P.sit = P.sitT = 1; P.g.rotation.y = P.ay = VILLAGE_SEAT.yaw; }
 initSave();
+initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

@@ -9,7 +9,7 @@ import { tierBonus } from '../data/scaling.js';
 import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
 import { saveGame } from '../systems/save.js';
-import { ROOM_PRICE, roomRented, rentRoom } from '../world/doors.js';
+import { ROOM_PRICE, roomRented, rentRoom, cancelRent, rentDue } from '../world/doors.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
@@ -161,10 +161,12 @@ function buttons() {
   }
   if (cur.chest) add('📦 Abrir baú', openShop);
   if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : FARM_GOODS[cur.shop] ? '🧺 Produtos da fazenda' : '🛒 Ver mercadoria', openShop);
-  if (cur.shop === 'tavern') add('🛏 Alugar quarto (' + ROOM_PRICE + ' ouro · 1 dia)', () => {
-    if (roomRented()) { say('Você já tem um quarto alugado, marujo! É só subir a escada.'); return; }
-    if (P.gold < ROOM_PRICE) { say('Faltam moedas, marujo! Um quarto custa ' + ROOM_PRICE + ' de ouro.'); return; }
-    P.gold -= ROOM_PRICE; rentRoom(); log('🛏 Quarto alugado por um dia: as portas do andar de cima estão destrancadas'); say('Aqui está a chave! Os quartos ficam no andar de cima, pela escada. Use qualquer um por um dia.'); buttons();
+  if (cur.shop === 'tavern' && !roomRented()) add('🛏 Alugar quarto (' + ROOM_PRICE + ' ouro por dia)', () => {
+    if (P.gold < ROOM_PRICE) { say('Faltam moedas, marujo! A diária do quarto é ' + ROOM_PRICE + ' de ouro.'); return; }
+    P.gold -= ROOM_PRICE; rentRoom(); log('🛏 Quarto alugado: diária de ' + ROOM_PRICE + ' ouro, cobrada a cada dia'); say('Aqui está a chave! Dois quartos do andar de cima são seus (os outros são do Mestre Breu e da Polly). Cobro ' + ROOM_PRICE + ' de ouro por dia, e se quiser sair é só devolver a chave.'); buttons();
+  });
+  if (cur.shop === 'tavern' && roomRented()) add('🔑 Devolver a chave (cancelar aluguel)', () => {
+    cancelRent(); log('🔑 Chave devolvida: aluguel cancelado'); say('Certo, marujo! Quarto liberado, sem mais cobranças. Volte quando precisar!'); buttons();
   });
   if (cur.shop === 'tavern') add('🍺 Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('🍺 Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });
   if (cur.ferry) ISLANDS.forEach(i => {

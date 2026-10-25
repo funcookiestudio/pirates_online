@@ -10,22 +10,14 @@ import { setPet } from '../pets/manager.js';
 import { refreshPetButton } from '../ui/hotbar.js';
 import { MOUNT } from './mount.js';
 import { SEED } from '../world/terrain.js';
-import { VILLAGE_R } from '../core/village-const.js';
-import { pois } from '../world/pois.js';
-import { FARMSITE } from '../entities/farm-site.js';
+import { safeSpot } from './safe.js';
 import { inDungeon } from '../dungeon/dungeon-scene.js';
 
 const KEY = 'pirata-arpg:save:v1';
 const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
 
-/** Áreas seguras onde o personagem reaparece: vila, fazendas e porto */
-export function safeSpot(x, z) {
-  if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
-  if (Math.hypot(x, z) < VILLAGE_R + 1) return true;
-  if ((FARMSITE.sites || []).some(f => Math.hypot(x - f.x, z - f.z) < 17)) return true;
-  const po = pois[0]; return !!po && Math.hypot(x - po.x, z - po.z) < 18;
-}
+export { safeSpot };
 export let savedPos = null;      // última posição segura salva (null = começa sentado na vila)
 let lastSafe = null;
 
@@ -35,7 +27,7 @@ const validItem = it => it && ['wpn', 'arm'].includes(it.ty) && [it.q, it.v, it.
 
 export function saveGame() {
   if (disabled || P.dead) return;
-  if (!inDungeon() && safeSpot(P.x, P.z)) lastSafe = { x: +P.x.toFixed(2), z: +P.z.toFixed(2) };
+  if (!inDungeon() && safeSpot(P.x, P.z)) lastSafe = { x: +P.x.toFixed(2), z: +P.z.toFixed(2), up: !!P.up };
   try {
     const pets = {};
     Object.keys(PST).forEach(id => {

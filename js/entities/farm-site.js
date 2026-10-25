@@ -97,7 +97,7 @@ export function chooseFarmSite(avoid = []) {
     const y0 = sum / n, cen = toWorld(spot, f, (X0 + X1) / 2, (Z0 + Z1) / 2 + 1);
     flatten(cen.x, cen.z, 19, 36, y0);
     // ramal de terra do portão até a estrada (só pinta o caminho: não mexe na altura)
-    const G = toWorld(spot, f, 0, Z1 + 1), len = Math.hypot(spot.tx - G.x, spot.tz - G.z);
+    const G = toWorld(spot, f, spot.v && spot.v.id === 'aves' ? .6 : 0, Z1 + 1), len = Math.hypot(spot.tx - G.x, spot.tz - G.z);
     for (let t = 0; t <= len; t += .5) {
       const u = t / len, x = G.x + (spot.tx - G.x) * u, z = G.z + (spot.tz - G.z) * u;
       const gx = Math.round(x + VX + E), gz = Math.round(z + VZ + E);
@@ -236,13 +236,13 @@ function buildOne(spot) {
   const trough = (x, z) => { bx(2.2, .42, .8, 0x7a5430, x, .25, z); bx(1.9, .08, .5, 0x4a90c8, x, .46, z); };
   const GW = 1.35;
   /** Cercado retangular com portão no lado leste (voltado para o corredor central) */
-  const pen = (x0, x1, z0, z1, sign) => {
+  const pen = (x0, x1, z0, z1, sign, shared) => {
     const cz = (z0 + z1) / 2;
-    side(x0, z0, x1, z0); side(x0, z1, x1, z1); side(x0, z0, x0, z1);
+    if (!shared) side(x0, z0, x1, z0);
+    side(x0, z1, x1, z1); side(x0, z0, x0, z1);
     side(x1, z0, x1, cz - GW); side(x1, cz + GW, x1, z1);
     post(x1, cz - GW, true); post(x1, cz + GW, true);
-    bx(.14, .14, 2 * GW + .5, 0xd8c8a0, x1, 1.65, cz);
-    bx(.08, .42, 1.5, sign, x1 + .05, 2.0, cz);
+    if (vr.id !== 'aves') { bx(.14, .14, 2 * GW + .5, 0xd8c8a0, x1, 1.65, cz); bx(.08, .42, 1.5, sign, x1 + .05, 2.0, cz); }   // viga e placa só nas outras fazendas
     bx(x1 - x0 - .2, .03, z1 - z0 - .2, 0x6aa24a, (x0 + x1) / 2, .02, cz);
     return { x0, x1, z0, z1, cx: (x0 + x1) / 2, cz };
   };
@@ -250,18 +250,20 @@ function buildOne(spot) {
     const c = i % 3, rw = Math.floor(i / 3), rows = Math.ceil(n / 3);
     return [r.x0 + 2.4 + (c + .5 * (rw % 2)) * ((r.x1 - r.x0 - 4.8) / 2.5), r.z0 + 1.8 + (rw + .5) * ((r.z1 - r.z0 - 3.6) / rows) + ((i * 7) % 3) * .25];
   });
-  const A = [-14, -3.4, -2.4, 3.4], B = [-14, -3.4, 4.4, 10.2];   // cercados da esquerda [x0,x1,z0,z1]
+  const A = [-14, -3.4, -2.4, 3.4], B = [-14, -3.4, 3.4, 10.2];   // B encosta em A: uma só cerca separa os dois (sem corredor)   // cercados da esquerda [x0,x1,z0,z1]
   const pens = [];
   let PA, PB;
 
   if (vr.id === 'aves') {
-    const a = pen(...A, 0xe8c040), b = pen(...B, 0xd8a050); PA = a; PB = b;
-    { const hw = toWorld(spot, f, -8, -12); buildAvesHouse(hw.x, hw.z, f.th, by); }
+    const a = pen(...A, 0xe8c040), b = pen(...B, 0xd8a050, true); PA = a; PB = b;
+    { const hw = toWorld(spot, f, -8, -12); spot.bed = buildAvesHouse(hw.x, hw.z, f.th, by).bed; }
     buildAvesDecor({ g, solid, M });                                                  // casa, pombal, galinheiro, lagoa, portão... (farm-aves.js)
-    bx(1.2, .22, .5, 0x7a5430, a.x1 - 1.8, .2, a.z1 - 1.2); bx(1, .06, .36, 0xd8c070, a.x1 - 1.8, .34, a.z1 - 1.2);   // cocho de milho
     field(4.5, 4.5 + 6 * 1.5 - 1, -2, 9, 5, [['Milho', 1.3, .8], ['Alface', .7, 1], ['Trigo', 1.3, .65], ['Couve', .9, .9], ['Girassol', 1.3, .8]]);
-    pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster'], at: spotsIn(a, 5) });
-    pens.push({ kinds: ['duck', 'duck', 'turkey', 'peacock'], at: spotsIn(b, 4) });
+    pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster'], at: spotsIn(a, 5),
+      den: (() => { const b = toWorld(spot, f, -12.95, 1.28), t = toWorld(spot, f, -12.95, -.38); return { bx: b.x, bz: b.z, tx: t.x, tz: t.z, h: .95 }; })() });   // rampa do galinheiro: as galinhas sobem, ficam e saem
+    pens.push({ kinds: ['duck', 'duck', 'turkey', 'peacock'], at: spotsIn(b, 4),
+      pond: (() => { const q = toWorld(spot, f, -10.2, 5.7); return { cx: q.x, cz: q.z, fx: f.fx, fz: f.fz, rx: 2.0, rz: .85 }; })(),
+      perch: (() => { const q = toWorld(spot, f, -5.2, 9.3); return { x: q.x, z: q.z, h: 1.85, ry: f.th + Math.atan2(-5, -3.6) }; })() });   // poleiro do pavão
   } else if (vr.id === 'granja') {
     house(-8, -12); barn(8, -12); well(0, -10); hayPile(-13, -8.5);
     const a = pen(...A, 0xe88aa0), b = pen(...B, 0xf0f0f0); PA = a; PB = b;
@@ -296,12 +298,14 @@ function buildOne(spot) {
   const W = (lx, lz, o = {}) => Object.assign(toWorld(spot, f, lx, lz), o);
   const yard = W(-1, -5, { safe: true, dw: 1 }), doorP = W(-7, -7.7);
   const gate = p => [W(-1.2, p.cz), W(-3.4, p.cz, { ns: true })], inside = p => W(p.cx + 2.5, p.cz, { ns: true });
-  const visit = (p, act, dw, offs) => [...gate(p), inside(p), ...offs.map(o => W(p.cx + o[0], p.cz + o[1], { act, dw, ns: true })), ...gate(p).reverse()];
+  const visit = (p, act, dw, offs, face) => [...gate(p), inside(p), ...offs.map(o => W(p.cx + o[0], p.cz + o[1], face == null ? { act, dw, ns: true } : { act, dw, ns: true, face })), ...gate(p).reverse()];
   const faceW = -Math.PI / 2 + f.th, barnP = W(8, -8.4, { act: 'store', dw: 5, drop: true, face: f.th + Math.PI });
   const fieldSpots = (act, extra) => { const o = []; for (let k = 0; k < 2; k++) for (let r = 0; r < FLD.rows; r++) { const lz = [0, 3.5, 7][(r + k * 2) % 3] + (k ? 1 : 0); o.push(W(FLD.FX0 + 1.75 + r * 1.5, lz, Object.assign({ act, dw: 6, face: faceW }, extra ? extra(r) : {}))); } return o; };
   const sched = [
     { h0: 6, h1: 6.5, kind: 'wake', pts: [yard] },
-    { h0: 6.5, h1: 8.5, kind: 'feed', pts: [yard, ...visit(PA, 'pour', 8, [[-2, 1]]), ...visit(PB, 'pour', 8, [[-2, 1]]), yard] },
+    { h0: 6.5, h1: 8.5, kind: 'feed', pts: vr.id === 'aves'
+      ? [yard, W(5.6, -8, { act: 'store', dw: 3, face: f.th + Math.PI, take: true }), yard, ...visit(PA, 'throw', 7, [[3.1, -.5]], -Math.PI / 2 + f.th), ...visit(PB, 'throw', 7, [[3.1, -.5]], -Math.PI / 2 + f.th), yard, W(5.6, -8, { act: 'store', dw: 3, face: f.th + Math.PI, drop: true }), yard]   // pega o cesto na casa de legumes, joga milho às aves e devolve
+      : [yard, ...visit(PA, 'pour', 8, [[-2, 1]]), ...visit(PB, 'pour', 8, [[-2, 1]]), yard] },
     { h0: 8.5, h1: 11, kind: 'tend', pts: [yard, ...fieldSpots('tend'), yard] },
     { h0: 11, h1: 12.5, kind: 'harvest', pts: [yard, ...fieldSpots('pick', r => ({ cut: r, take: true })), barnP, yard] },
     { h0: 12.5, h1: 14, kind: 'lunch', pts: [yard, W(-2, -8.8, { act: 'eat', dw: 40, face: f.th }), yard] },
@@ -310,7 +314,7 @@ function buildOne(spot) {
     { h0: 18, h1: 19, kind: 'lamps', pts: [yard, W(-12.6, -7.8, { act: 'light', dw: 4, face: f.th - Math.PI / 2 }), yard, W(12.6, -7.8, { act: 'light', dw: 4, face: f.th + Math.PI / 2 }), yard] },
     { h0: 19, h1: 6, kind: 'home', pts: [yard, Object.assign({}, doorP, { hide: true, safe: true })] },
   ];
-  initFarmer(fn, { sched, door: doorP, fld: FLD, cutRow: r => { FLD.cut[r] = CLOCK.total; fn.rfT = 0; } });
-  FARMSITE.sites.push({ x: spot.x, z: spot.z, pens: pens.map(pn => ({ kinds: pn.kinds, pts: pn.at.map(([lx, lz]) => toWorld(spot, f, lx, lz)) })) });
+  initFarmer(fn, { sched, bed: spot.bed || null, door: doorP, fld: FLD, cutRow: r => { FLD.cut[r] = CLOCK.total; fn.rfT = 0; } });
+  FARMSITE.sites.push({ x: spot.x, z: spot.z, pens: pens.map(pn => ({ kinds: pn.kinds, den: pn.den, perch: pn.perch, pond: pn.pond, pts: pn.at.map(([lx, lz]) => toWorld(spot, f, lx, lz)) })) });
   pois.push({ n: vr.n, x: spot.x, z: spot.z, c: '#9ad060', ic: vr.ic });
 }

@@ -71,6 +71,14 @@ Object.assign(SKF, {
   mercadora: { b: 0x2a6a4a, lace: 1, fi: 0xe9d9a8, belt: 0xb08a30, sk: 0x4a2a2a, hem: GOLD, u: 0x2a6a4a, ruf: 0xe9d9a8, f: 0, cuff: GOLD, st: WHITE, sh: 0x3b2a1c, buck: 1, hat: 'tri', hc: 0x2a2a30, hair: 0x2a1f1a, ex: ['earring', 'purse'] },
   avicultora: { b: 0xb04a6a, lace: 1, fi: WHITE, belt: 0x5a3a28, sk: 0x7a3a5a, u: WHITE, f: 0, st: WHITE, sh: 0x5a3a28, hat: 'bonnet', hc: WHITE, hair: 0xd8a84a, ap: WHITE, bib: 1, ex: [] },
 });
+/* Realeza: rei (azul real, ouro, arminho, barba grisalha) e rainha (púrpura e ouro, colar de rubi, tiara) */
+Object.assign(SKM, {
+  rei: { t: 0x1f3f7a, fl: 0x1f3f7a, vest: 0xd9b24a, belt: 0x5a1a1a, u: 0x1f3f7a, f: 0x1f3f7a, cuff: GOLD, pa: 0xe8dcc0, st: WHITE, sh: 0x1d1d22, buck: 1, hat: 'crown', hc: GOLD, hair: 0xb9ab97, mo: 0xb9ab97, bd: [0xb9ab97, .5], ex: ['jabot', 'ermine', 'cape', 'sash', 'medal'] },
+});
+Object.assign(SKF, {
+  rainha: { b: 0x5a2a7a, lace: 1, fi: WHITE, belt: GOLD, sk: 0x5a2a7a, hem: GOLD, u: 0x5a2a7a, ruf: WHITE, f: 0, cuff: GOLD, st: WHITE, sh: 0xd8b040, buck: 1, hat: 'tiara', hc: GOLD, hair: 0x2a1a14, ex: ['earring', 'necklace', 'ermine', 'cape'] },
+});
+
 
 /** Espada padrão na mão (some quando o jogo põe outra arma; ver hideSword) */
 function addSword(fa) {
@@ -133,6 +141,19 @@ export function buildHuman(F, d) {
     if (ex.includes('jabot')) put(B(.55, .36, .12, .05, WHITE), 0, 2.05, .44);
     if (ex.includes('susp')) [-.3, .3].forEach(x => put(B(.1, .9, .04, .02, 0x5a3a28), x, 1.65, .44));
   }
+  if (ex.includes('cape')) {
+    put(B(F ? 1.3 : 1.5, F ? 1.9 : 2.0, .12, .05, F ? 0x7a1c4a : 0x8a1c24), 0, F ? 1.35 : 1.3, -.56);
+    put(B(F ? 1.34 : 1.54, .22, .16, .05, 0xf4f0e6), 0, F ? .45 : .3, -.56);
+    [-.45, 0, .45].forEach(x => put(B(.1, .1, .18, .02, 0x15151a), x, F ? .45 : .3, -.56));
+  }
+  if (ex.includes('ermine')) {
+    put(B(F ? 1.2 : 1.5, .3, F ? .9 : 1.0, .1, 0xf4f0e6), 0, F ? 2.28 : 2.3, 0);
+    [-.5, -.2, .2, .5].forEach(x => put(B(.08, .14, .06, .02, 0x15151a), x * (F ? .9 : 1.1), F ? 2.25 : 2.3, F ? .46 : .52));
+    put(B(.2, .2, .08, .04, GOLD), 0, F ? 2.2 : 2.22, F ? .48 : .54);
+  }
+  if (ex.includes('sash') && !F) { const sh = put(B(.2, 1.5, .05, .02, 0xb02020), -.1, 1.65, .46); sh.rotation.z = -.55; }
+  if (ex.includes('medal') && !F) { put(B(.24, .24, .06, .03, GOLD), .38, 1.28, .5); put(B(.12, .12, .07, .03, 0x2a5ac2), .38, 1.28, .52); }
+  if (ex.includes('necklace') && F) { put(B(.8, .1, .06, .03, GOLD), 0, 2.12, .4); put(B(.64, .1, .06, .03, GOLD), 0, 1.98, .42); put(B(.16, .2, .08, .03, 0xc0203a), 0, 1.84, .44); }
   if (ex.includes('stripes') && !F) [1.3, 1.55, 1.8, 2.05].forEach(y => put(B(1.3, .08, .88, .03, 0x2a4a8a), 0, y, 0));
   if (ex.includes('armor') && !F) {
     put(B(1.36, .9, .92, .12, 0x9aa0a8), 0, 1.7, 0);
@@ -184,6 +205,19 @@ export function buildHuman(F, d) {
     put(B(.3, .34, .56, .06, hc), -.8, 1.28, -.2, head); put(B(.3, .34, .56, .06, hc), .8, 1.28, -.2, head); put(B(1.74, .05, 1.64, .02, GOLD), 0, 1.19, 0, head);
     feather = at(new THREE.Group(), .55, 1.5, .15); head.add(feather);   // pivô na base: a mola do chapéu balança a pena
     put(B(.1, .36, .1, .03, WHITE), 0, .12, 0, feather).rotation.z = -.4;
+  }
+  if (hat === 'crown') {
+    put(B(1.2, .2, 1.2, .06, 0xf4f0e6), 0, .93, 0, head); put(B(1.0, .3, 1.0, .1, 0x8a1c24), 0, 1.16, 0, head);
+    put(B(1.18, .2, 1.18, .05, GOLD), 0, 1.0, 0, head);
+    for (const [x, z] of [[-.46, .46], [.46, .46], [-.46, -.46], [.46, -.46], [0, .52], [0, -.52], [-.52, 0], [.52, 0]]) put(B(.16, .34, .16, .04, GOLD), x, 1.26, z, head);
+    put(B(.16, .16, .08, .03, 0xc0203a), 0, 1.02, .6, head); put(B(.12, .12, .08, .03, 0x2a5ac2), -.36, 1.02, .6, head); put(B(.12, .12, .08, .03, 0x2a9a5a), .36, 1.02, .6, head);
+    put(B(.12, .12, .12, .03, 0xc0203a), 0, 1.48, 0, head);
+  }
+  if (hat === 'tiara') {
+    put(B(1.16, .16, 1.1, .05, GOLD), 0, .98, 0, head);
+    put(B(.16, .42, .1, .03, GOLD), 0, 1.24, .54, head); put(B(.14, .3, .1, .03, GOLD), -.3, 1.2, .5, head); put(B(.14, .3, .1, .03, GOLD), .3, 1.2, .5, head);
+    put(B(.14, .14, .08, .03, 0x2a5ac2), 0, 1.42, .56, head); put(B(.12, .12, .08, .03, 0xc0203a), 0, .98, .58, head);
+    put(B(1.18, .1, .2, .03, GOLD), 0, 1.06, -.46, head);
   }
   if (hat === 'straw') { put(B(1.9, .08, 1.9, .04, hc), 0, 1.1, 0, head); put(B(1.0, .4, 1.0, .1, hc), 0, 1.3, 0, head); put(B(1.04, .1, 1.04, .03, 0xb23a3a), 0, 1.15, 0, head); }
   if (hat === 'cap') { put(B(1.2, .3, 1.1, .12, hc), 0, 1.02, -.02, head); put(B(1.26, .1, 1.16, .04, hc), 0, .86, -.02, head); }

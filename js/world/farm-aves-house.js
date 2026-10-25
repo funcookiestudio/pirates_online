@@ -7,6 +7,7 @@ import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
 import { registerFloors, refreshProps } from './floors.js';
 import { addDoor } from './doors.js';
+import { addBed } from './beds.js';
 
 export const AVES_HOUSE = { w: 8, d: 6 };      // dimensões externas (m): o resto do sítio se organiza em volta
 
@@ -182,5 +183,9 @@ export function buildAvesHouse(x, z, th, y0 = 0) {
   DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [0, .6, 1.2, 1.8].forEach(lx => block(lx * K, 3.1 * K, .55, dd)); });
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
-  return { g: root, at };
+  // cama de casal: o dorminhoco deita de costas, cabeça no travesseiro (fundo), pés para a frente
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(1.8, .7, 2.4), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(-3.0, .8, -1.75); hit.userData.dyn = 1; S.add(hit);
+  const bf = at(-3.0 * K, -.75 * K), ba = at(-2.3 * K, -.1 * K);
+  const bed = addBed({ x: bf[0], z: bf[1], y: y0 + .88 * K + .18, ry: th, ax: ba[0], az: ba[1], hit });
+  return { g: root, at, bed };
 }

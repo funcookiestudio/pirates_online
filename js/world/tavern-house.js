@@ -5,7 +5,8 @@ import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
 import { registerFloors, refreshProps } from './floors.js';
-import { addDoor } from './doors.js';
+import { addDoor, roomRented } from './doors.js';
+import { addBed } from './beds.js';
 
 export const TAVERN_SC = 1.22;
 
@@ -23,7 +24,7 @@ function B(w,h,d,x,y,z,c,p,e){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d
 function C(rt,rb,h,n,x,y,z,c,p,e){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,n),M(c,e));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||S).add(m);return m}
 function W(ax,f,u,y,l,h,t,c,g){return ax=='x'?B(l,h,t,u,y,f,c,g):B(t,h,l,f,y,u,c,g)}
 function tr(m,o){m.material=m.material.clone();m.material.transparent=true;m.material.opacity=o;return m}
-const front=new THREE.Group(),walls=new THREE.Group(),up=new THREE.Group(),roof=new THREE.Group();S.add(front,walls,up,roof);const wB=new THREE.Group(),wL=new THREE.Group(),wR=new THREE.Group(),uB=new THREE.Group(),uL=new THREE.Group(),uR=new THREE.Group();walls.add(wB,wL,wR);up.add(uB,uL,uR);
+const front=new THREE.Group(),walls=new THREE.Group(),up=new THREE.Group(),roof=new THREE.Group();roof.scale.z=1.23;S.add(front,walls,up,roof);const wB=new THREE.Group(),wL=new THREE.Group(),wR=new THREE.Group(),uB=new THREE.Group(),uL=new THREE.Group(),uR=new THREE.Group();walls.add(wB,wL,wR);up.add(uB,uL,uR);
 const T=.3,sc2=[0x7b786f,0x6a675f,0x8a867b,0x73706a,0x5f5c56];
 B(10.8,.4,7.8,0,-.1,0,STONE2);B(9.7,.1,6.7,0,.06,0,0x5a4430);
 for(let i=0;i<10;i++)B(.96,.03,6.7,-4.5+i,.115,0,i%2?0x6b5238:0x7a5e40);
@@ -65,18 +66,20 @@ wall('x',-3.5,-5,5,[{c:1.5,w:1.2,y0:1,y1:2.1},{c:3.8,w:1.2,y0:.12,y1:2.2}],wB,.1
 wall('z',-5,-3.5,3.5,[{c:-2.2,w:1.2,y0:1,y1:2.1}],wL,.12,2.9,true);win('z',-5,-2.2,1.2,1,2.1,wL);
 wall('z',5,-3.5,3.5,[{c:1.5,w:1.2,y0:1,y1:2.1}],wR,.12,2.9,true);win('z',5,1.5,1.2,1,2.1,wR);
 const uf=new THREE.Group();front.add(uf);
-wall('x',3.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uf,3.15,2.45,false);
-for(const c of[-3,0,3])win('x',3.9,c,1.1,3.8,4.8,uf);
-wall('x',-3.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uB,3.15,2.45,false);
-for(const c of[-3,0,3])win('x',-3.9,c,1.1,3.8,4.8,uB);
-wall('z',-5,-3.9,3.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],uL,3.15,2.45,false);win('z',-5,0,1.1,3.8,4.8,uL);
-wall('z',5,-3.9,3.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],uR,3.15,2.45,false);win('z',5,0,1.1,3.8,4.8,uR);
+wall('x',4.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uf,3.15,2.45,false);
+for(const c of[-3,0,3])win('x',4.9,c,1.1,3.8,4.8,uf);
+wall('x',-4.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uB,3.15,2.45,false);
+for(const c of[-3,0,3])win('x',-4.9,c,1.1,3.8,4.8,uB);
+wall('z',-5,-4.9,4.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],uL,3.15,2.45,false);win('z',-5,0,1.1,3.8,4.8,uL);
+wall('z',5,-4.9,4.9,[{c:0,w:1.1,y0:3.8,y1:4.8}],uR,3.15,2.45,false);win('z',5,0,1.1,3.8,4.8,uR);
 // piso do andar de cima, com abertura da escada
-B(8.65,.2,7.8,.725,3.05,0,WOOD2,up);B(1.5,.2,2.15,-4.35,3.05,-2.825,WOOD2,up);B(1.5,.2,2.05,-4.35,3.05,2.875,WOOD2,up);B(1.5,.2,.6,-4.35,3.05,-1.45,WOOD2,up);
-for(let x=-4.5;x<=4.6;x+=1.5)B(.22,.26,8.1,x,2.9,0,TM,up);
+B(8.65,.2,9.8,.725,3.05,0,WOOD2,up);B(1.5,.2,3.15,-4.35,3.05,-3.325,WOOD2,up);B(1.5,.2,3.05,-4.35,3.05,3.375,WOOD2,up);B(1.5,.2,.6,-4.35,3.05,-1.45,WOOD2,up);
+for(let x=-3;x<=4.6;x+=1.5)B(.22,.26,10.1,x,2.9,0,TM,up);   // (sem viga sob a escada: ela atravessava os degraus de cima)
 for(let x=-4.5;x<=4.5;x+=1.5)B(.2,.25,.8,x,2.9,3.6,TM,up);
 for(let i=0;i<10;i++)B(1.26,.3*(i+1),.3,-4.37,.125+.15*(i+1),1.7-i*.3,i%2?WOOD:WOOD2);
 B(.06,.9,3.0,-3.62,3.6,.35,TM,up);for(const z of[-1.15,.05,1.85])B(.1,1,.1,-3.62,3.65,z,TM,up);
+// tapetinhos que marcam onde clicar para subir (embaixo) e descer (em cima)
+for(const [y,g,z] of[[.125,S,2.3],[3.165,up,-1.55]]){B(1.5,.02,.8,-4.35,y,z,0x6e2a2a,g);B(1.34,.024,.64,-4.35,y,z,0x8a3a30,g);B(.98,.028,.3,-4.35,y,z,0xd2a45a,g);B(.8,.032,.16,-4.35,y,z,0x6e2a2a,g)}
 // telhado
 const L=Math.hypot(4.4,2.4),A=Math.atan2(2.4,4.4),RT=5.6+2.4,sc=[0x6a3e2e,0x7a4a38,0x5a3326,0x84523c];
 for(const s of[1,-1]){const g=new THREE.Group();g.position.set(0,RT,0);g.rotation.x=s*A;roof.add(g);
@@ -124,36 +127,36 @@ function bnc(x,z,w){B(w,.08,.35,x,.5,z,WOOD);for(const a of[-1,1])B(.08,.4,.3,x+
 for(const q of[[-3,2],[3,-.5],[-1.5,-1],[0,2.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);C(.1,0,.4,5,q[0],2.45,q[1],0x6a8f3a);C(.08,0,.3,5,q[0]+.15,2.5,q[1],0xb8a040)}
 XR=true;
 // andar de cima: camas, partições, mesa
-for(const bx of[-1.07,2.5]){const z0=-2.75;
+for(const bx of[-1.07,2.5]){const z0=-3.75;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0+.35,[0x7a2e2e,0x2e4a7a,0x3a6b3a][bx<-3?0:bx<0?1:2],up);B(.8,.12,.4,bx,3.95,z0-.8,0xf0ead8,up);
- B(1.3,1.1,.1,bx,4.0,-3.8,WOOD2,up);B(1.2,.5,.08,bx,3.65,-1.62,WOOD2,up);const cx=bx+(bx<-1?1.05:bx>1?1.0:1.15);B(.8,.45,.5,cx,3.38,-3.3,WOOD2,up);B(.82,.1,.52,cx,3.66,-3.3,WOOD,up);
+ B(1.3,1.1,.1,bx,4.0,-4.8,WOOD2,up);B(1.2,.5,.08,bx,3.65,-2.62,WOOD2,up);const cx=bx+(bx<-1?1.05:bx>1?1.0:1.15);B(.8,.45,.5,cx,3.38,-4.3,WOOD2,up);B(.82,.1,.52,cx,3.66,-4.3,WOOD,up);
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
 // divisórias entre os quartos, parede do corredor e portas
-for(const x of[-1.8,1.8]){B(.15,2.45,2.55,x,4.375,-2.475,PL,up);for(const z of[-3.7,-1.25])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,2.55,x,5.5,-2.475,TM,up);B(.2,.2,2.55,x,3.25,-2.475,TM,up)}
-wall('x',-1.2,-1.8,5,[{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
-const d2=c=>{const w=1,h=2.05,yb=3.15;W('x',-1.2,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',-1.2,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
- const p=new THREE.Group();p.position.set(c-w/2,yb,-1.18);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:.9,c,f:-1.2,w,lvl:1,room:true,id:'room-'+c});
+for(const x of[-1.8,1.8]){B(.15,2.45,2.95,x,4.375,-3.225,PL,up);for(const z of[-4.7,-1.75])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,2.95,x,5.5,-3.225,TM,up);B(.2,.2,2.95,x,3.25,-3.225,TM,up)}
+wall('x',-1.7,-1.8,5,[{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
+const d2=c=>{const w=1,h=2.05,yb=3.15;W('x',-1.7,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',-1.7,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
+ const p=new THREE.Group();p.position.set(c-w/2,yb,-1.68);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:.9,c,f:-1.7,w,lvl:1,room:true,id:'room-'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,.01,IRON,p);B(w,.1,.09,w/2,h-.4,.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,.07);p.add(r)};
 d2(0);d2(3.4);
 // quartos da frente (da direita para a esquerda), com corredor entre eles e os quartos dos fundos
-wall('x',.6,-1.8,5,[{c:3,w:1,y0:3.15,y1:5.2},{c:-.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
-for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',.6,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',.6,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
- const p=new THREE.Group();p.position.set(c-w/2,yb,.58);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:-.9,c,f:.6,w,lvl:1,room:true,id:'room-f'+c});
+wall('x',1.45,-1.8,5,[{c:3,w:1,y0:3.15,y1:5.2},{c:-.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
+for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',1.45,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',1.45,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
+ const p=new THREE.Group();p.position.set(c-w/2,yb,1.43);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:-.9,c,f:1.45,w,lvl:1,room:true,id:'room-f'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,-.01,IRON,p);B(w,.1,.09,w/2,h-.4,-.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,-.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,-.07);p.add(r)}
-for(const x of[-1.8,1.8]){B(.15,2.45,3.15,x,4.375,2.175,PL,up);for(const z of[.7,3.65])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,3.15,x,5.5,2.175,TM,up);B(.2,.2,3.15,x,3.25,2.175,TM,up)}
-for(const bx of[2.5,-1.07]){const z0=2.65;
+for(const x of[-1.8,1.8]){B(.15,2.45,3.15,x,4.375,3.125,PL,up);for(const z of[1.55,4.7])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,3.15,x,5.5,3.125,TM,up);B(.2,.2,3.15,x,3.25,3.125,TM,up)}
+for(const bx of[4.3,1.1]){const z0=3.65;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0-.35,bx>0?0x8a6a2e:0x2e6b6b,up);B(.8,.12,.4,bx,3.95,z0+.8,0xf0ead8,up);
- B(1.3,1.1,.1,bx,4.0,3.7,WOOD2,up);B(1.2,.5,.08,bx,3.65,1.62,WOOD2,up);
- const cx=bx+1.05;B(.8,.45,.5,cx,3.38,3.3,WOOD2,up);B(.82,.1,.52,cx,3.66,3.3,WOOD,up);
+ B(1.3,1.1,.1,bx,4.0,4.7,WOOD2,up);B(1.2,.5,.08,bx,3.65,2.62,WOOD2,up);
+ const cx=bx-1.05;B(.8,.45,.5,cx,3.38,4.3,WOOD2,up);B(.82,.1,.52,cx,3.66,4.3,WOOD,up);
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
-B(1.6,.08,.8,-4.0,3.95,3.35,WOOD,up);for(const a of[-1,1])for(const b of[-1,1])B(.1,.8,.1,-4.0+a*.7,3.55,3.35+b*.3,WOOD2,up);
-C(.03,.03,.14,6,-4.0,4.04,3.35,0xe8dcb0,up);
+B(1.6,.08,.8,-4.0,3.95,4.35,WOOD,up);for(const a of[-1,1])for(const b of[-1,1])B(.1,.8,.1,-4.0+a*.7,3.55,4.35+b*.3,WOOD2,up);
+C(.03,.03,.14,6,-4.0,4.04,4.35,0xe8dcb0,up);
 // cadeira puxada e girada, como se alguém tivesse levantado e deixado fora do lugar
-{const g=new THREE.Group();g.position.set(-4.4,3.15,2.45);g.rotation.y=1.05;up.add(g);B(.46,.06,.46,0,.5,0,WOOD,g);for(const a of[-.19,.19])for(const b of[-.19,.19])B(.05,.5,.05,a,.25,b,WOOD2,g);B(.46,.5,.05,0,.78,-.21,WOOD2,g);B(.4,.06,.05,0,1.05,-.21,WOOD,g)}
+{const g=new THREE.Group();g.position.set(-4.4,3.15,3.45);g.rotation.y=1.05;up.add(g);B(.46,.06,.46,0,.5,0,WOOD,g);for(const a of[-.19,.19])for(const b of[-.19,.19])B(.05,.5,.05,a,.25,b,WOOD2,g);B(.46,.5,.05,0,.78,-.21,WOOD2,g);B(.4,.06,.05,0,1.05,-.21,WOOD,g)}
 // proteção na borda sul do vão da escada
 B(1.5,.9,.06,-4.35,3.6,1.85,TM,up);B(.1,1,.1,-5.0,3.65,1.85,TM,up);
 XR=false;
@@ -198,18 +201,24 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   // fora
   block(-3.8, 5.8, .3, undefined); block(-4.2, 5.8, .3); block(-3.4, 5.8, .3); block(4.6, 4.5, .55); block(5.7, 4.5, .55);
   // ── andar de cima ──
-  const wl = (axis, c, a0, a1, gaps, ng) => { for (let u = a0; u <= a1 + .01; u += .5) { if (gaps.some(g => Math.abs(u - g) < .85)) continue; axis === 'x' ? block(u, c, .25, 1, ng) : block(c, u, .25, 1); } };
-  wl('x', -1.2, -1.8, 5, [0, 3.4], true);          // parede do corredor (fundos)
-  wl('x', .6, -1.8, 5, [3, -.4], true);              // parede do corredor (frente)
-  wl('z', -1.8, -3.7, -1.25, []); wl('z', 1.8, -3.7, -1.25, []);   // divisórias dos quartos de trás
-  wl('z', -1.8, .7, 3.65, []); wl('z', 1.8, .7, 3.65, []);         // divisórias da frente
-  for (let u = -5; u <= 5.01; u += .9) { block(u, 3.9, .4, 1); block(u, -3.8, .4, 1); }   // parede da frente/fundos
-  for (let v = -3.8; v <= 3.81; v += .9) { block(5, v, .4, 1); block(-5, v, .2, 1); }
-  [-1.07, 2.5].forEach(bx => block(bx, -2.75, .75, 1));      // camas dos fundos
-  [2.5, -1.07].forEach(bx => block(bx, 2.65, .75, 1));             // camas da frente
-  block(-4.4, 3.35, .45, 1); block(-3.6, 3.35, .45, 1); block(-4.4, 2.45, .3, 1);   // mesa e cadeira
+  const wl = (axis, c, a0, a1, gaps, ng) => { for (let u = a0; u <= a1 + .01; u += .3) { if (gaps.some(g => Math.abs(u - g) < .85)) continue; axis === 'x' ? block(u, c, .14, 1, ng) : block(c, u, .14, 1); } };
+  wl('x', -1.7, -1.8, 5, [0, 3.4], true);          // parede do corredor (fundos)
+  wl('x', 1.45, -1.8, 5, [3, -.4], true);              // parede do corredor (frente)
+  wl('z', -1.8, -4.7, -1.75, []); wl('z', 1.8, -4.7, -1.75, []);   // divisórias dos quartos de trás
+  wl('z', -1.8, 1.55, 4.7, []); wl('z', 1.8, 1.55, 4.7, []);         // divisórias da frente
+  for (let u = -5; u <= 5.01; u += .9) { block(u, 4.9, .22, 1); block(u, -4.9, .22, 1); }   // parede da frente/fundos
+  for (let v = -4.8; v <= 4.81; v += .9) { block(5, v, .22, 1); block(-5, v, .2, 1); }
+  [-1.07, 2.5].forEach(bx => block(bx, -3.75, .75, 1));      // camas dos fundos
+  [4.3, 1.1].forEach(bx => block(bx, 3.65, .75, 1));             // camas da frente
+  block(-4.5, 4.35, .3, 1); block(-3.8, 4.35, .3, 1); block(-4.4, 3.45, .25, 1);   // mesa (a janela da frente fica livre)   // mesa e cadeira
   [-4.7, -4.0, -3.4].forEach(u => block(u, 1.85, .15, 1, true));              // proteção do vão
-  [-.45, .35, 1.15, 1.85].forEach(v => block(-2.8, v, .12, 1, true));      // guarda-corpo da escada
+  [-.55, .25, 1.05, 1.85].forEach(v => block(-3.75, v, .1, 1, true));      // guarda-corpo da escada (na posição do corrimão visível)
+  // camas dos dois quartos alugáveis (os outros dois são do Mestre Breu e da Pé-de-Pau): só deita quem tem a chave
+  [[1.1, 3.65, true, -.35, 3.0], [-1.07, -3.75, false, .6, -3.2]].forEach(([bx, bz, front, axl, azl]) => {
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.3, .6, 2.3), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(bx, 3.95, bz); hit.userData.dyn = 1; up.add(hit);
+    const ft = at(bx * K, (bz + (front ? -.85 : .85)) * K), ac = at(axl * K, azl * K);
+    addBed({ x: ft[0], z: ft[1], y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), ax: ac[0], az: ac[1], hit, ok: roomRented });
+  });
   const pts = { keeper: [-.3, -1.6], talkAt: at(-.3 * K, -.1 * K), doorId: 'tavern-front' };
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);
   [uB, uL, uR, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); bakeGroup(up, [uB, uL, uR, ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
@@ -217,6 +226,6 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, undefined], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, undefined] };
   DR.forEach(d => { const dd = addDoor(d, H); const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
   refreshProps();
-  registerFloors({ x, z, th, K, hx: 5.4, hz: 4.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 3.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
+  registerFloors({ x, z, th, K, door: 'tavern-front', fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
   return { g: root, th, at, pts, front: at(-.3 * K, -1.6 * K) };
 }

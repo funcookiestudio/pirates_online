@@ -1,8 +1,11 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
+import { safeSpot } from './safe.js';
+import { updateBedPending, animateBed, sleeping } from './bed.js';
 import { refreshTorch } from './inventory.js';
+import { houseNear } from '../world/floors.js';
 import { steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
-import { floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
+import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
 import { updateDoors, applyDoorReach } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
@@ -32,7 +35,9 @@ export function updatePlayer(dt) {
     updateStamina(dt);
     updateSwap(dt);
     updateAim(dt);
+    updateBedPending();
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
+    else if (sleeping()) { P.vx = P.vz = 0; }   // deitado/dormindo: a cama conduz o corpo (bed.js)
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
     else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
     else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
@@ -98,8 +103,7 @@ function moveAndAct(dt) {
 
   if (!P.tgt && (P.tx !== STEER.gx || P.tz !== STEER.gz)) {
     // destino novo: tira de dentro de obstáculos e zera o controle de progresso
-    const f = freePoint(P.tx, P.tz, .7);
-    P.tx = f.x; P.tz = f.z;
+    if (!STAIR.on) { const f = freePoint(P.tx, P.tz, .7); P.tx = f.x; P.tz = f.z; }   // (o ponto da escada não é movido)
     STEER.gx = P.tx; STEER.gz = P.tz; STEER.bd = 1e9; STEER.bt = 0;
   }
   const tx = P.tgt ? P.tgt.x : P.tx, tz = P.tgt ? P.tgt.z : P.tz;
@@ -112,9 +116,9 @@ function moveAndAct(dt) {
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
     setSwim(true);
-    const [nx, nz] = navTarget(STEER, P.x, P.z, tx, tz, .5);
+    const [nx, nz] = navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? .4 : .5);
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
-    [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, .5, STEER, Math.min(nd, d - rng));
+    [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? .4 : .5, STEER, Math.min(nd, d - rng));
     setSwim(false);
   }
   const k = 1 - Math.exp(-dt * (want > Math.hypot(P.vx, P.vz) ? 6 : 9));
@@ -156,7 +160,7 @@ function moveAndAct(dt) {
   updateCutaway();
   updateDoors(dt);
   // dentro da vila (zona segura) o personagem guarda a arma no coldre; ela volta à mão ao sair
-  P.safe = Math.hypot(P.x, P.z) < VILLAGE_R - .3 && !dIn(P.x, P.z);
+  P.safe = safeSpot(P.x, P.z, VILLAGE_R - .3) && !dIn(P.x, P.z);   // vila, fazendas e porto: armas no coldre
   P.safeK = (P.safeK || 0) + ((P.safe ? 1 : 0) - (P.safeK || 0)) * Math.min(1, dt * 6);
 
   // intensidade da caminhada (0 parado … 1 correndo) e regeneração
@@ -168,9 +172,10 @@ function moveAndAct(dt) {
 /** Colisão com árvores e pedras e limite da ilha */
 let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
+  const inH = houseNear(P.x, P.z, .3);
   props.forEach(p => {
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
-    const rr = p.r + (MOUNT.on ? .9 : .5);   // montado ocupa mais espaço
+    const rr = p.r + (MOUNT.on ? .9 : inH ? .4 : .5);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
     if (dd < rr) {
       P.x = p.position.x + ex / dd * rr;
       P.z = p.position.z + ez / dd * rr;
@@ -183,6 +188,7 @@ function clampToWorld() {
 
 /** Pernas, balanço, inclinação do corpo e pose dos braços (golpe ou mira) */
 function animate(dt) {
+  if (sleeping() && animateBed(dt)) return;
   if (P.roll > 0) { animateRoll(); return; }
   if (P.sit > 0) { animateSit(dt); return; }
   P.rum = P.rum || 0;

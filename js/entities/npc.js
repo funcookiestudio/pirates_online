@@ -1,14 +1,18 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
-import { openDoorById } from '../world/doors.js';
+import { openDoorById, doorClosed, tickRent } from '../world/doors.js';
+import { VILLAGE_R } from '../core/village-const.js';
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
 import { P } from './player.js';
 import { person, hideSword } from './character.js';
 import { gait, gaitSpeed } from './gait.js';
 import { collide, steer, navTarget } from '../systems/steer.js';
-import { tickClock } from '../core/clock.js';
-import { farmerThink, farmerPose, refreshField } from './farmer.js';
+import { tickClock, hourNow } from '../core/clock.js';
+import { isEvening, isNight } from '../world/daynight.js';
+import { lieDown, standFromBed, makeZzz } from './sleep.js';
+import { SLEEP } from './sleep.js';
+import { farmerThink, farmerPose, farmerSleep, refreshField } from './farmer.js';
 import { initSmith, updateSmith, updateSparks } from './npc-work.js';
 import { cam } from '../core/engine.js';
 import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
@@ -60,6 +64,7 @@ export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
   if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }
   const n = { info, lab, g, role, hx: x, hz: z, ry, ph: Math.random() * 6, t: 2 + Math.random() * 4, tx: x, tz: z, vx: 0, vz: 0, sm: { side: 0 } };
   if (work && work.talkAt) { n.talkAt = work.talkAt; n.doorId = work.doorId; }
+  if (work && work.kind === 'tenant') n.tn = work.room;
   if (work && work.kind === 'smith') initSmith(n, work.at, work.th, work.pts);
   list.push(n);
   return n;
@@ -68,6 +73,7 @@ export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
 /** NPC mais perto do ponto (x,z) do mundo (para o clique) */
 export function npcAt(x, z) {
   let b = null, bd = 1.8;
+  if (P.up) return null;   // no andar de cima da taberna não se clica em NPCs
   list.forEach(n => { if (!n.g.visible) return; const d = Math.hypot(n.g.position.x - x, n.g.position.z - z); if (d < bd) { bd = d; b = n; } });
   return b;
 }
@@ -168,7 +174,8 @@ export function makeBoard(x, z, ry, info) {
 
 export function updateNpcs(dt, now) {
   const t0 = now / 1000;
-  tickClock(dt);
+  tickClock(dt * SLEEP.fast);
+  tickRent();
   updateSparks(dt);
   if (want && Math.hypot(P.x - want.g.position.x, P.z - want.g.position.z) < 3.4) arrive(want);
   if (talking && (P.dead || Math.hypot(P.x - talking.g.position.x, P.z - talking.g.position.z) > 7.5 || !dialogOpen())) { talking = null; closeDialog(); }
@@ -184,7 +191,7 @@ export function updateNpcs(dt, now) {
     const g = n.g, t = t0 + n.ph;
     if (n.lab) {
       v3.set(g.position.x, n.ly || 2.7, g.position.z).project(cam);
-      const vis = n.g.visible && v3.z < 1 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < 20;
+      const vis = n.g.visible && !P.up && v3.z < 1 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < 20;
       n.lab.style.display = vis ? 'block' : 'none';
       if (vis) { n.lab.style.left = (v3.x * .5 + .5) * innerWidth + 'px'; n.lab.style.top = (-v3.y * .5 + .5) * innerHeight + 'px'; }
     }
@@ -208,9 +215,48 @@ export function updateNpcs(dt, now) {
       if (n.rt) {   // fazendeiro: segue a rotina do dia
         n.rt.fld && ((n.rfT = (n.rfT || 0) - dt) <= 0) && (n.rfT = 1, refreshField(n.rt.fld));
         farmerThink(n, dt, talking === n || Math.hypot(P.x - g.position.x, P.z - g.position.z) < 2.5);
-        if (n.rt.hide) { g.visible = false; return; }
+        if (n.rt.hide) { if (n.rt.bed) farmerSleep(n, t, dt); else g.visible = false; return; }
+      } else if (n.tn) {   // inquilino da taberna: passeia pela vila de dia; à noite sobe para o seu quarto e dorme
+        const h = hourNow(), tn = n.tn, night = isEvening(h);
+        if (n.up) {
+          g.visible = !!P.up && Math.hypot(P.x - tn.x, P.z - tn.z) < 14;
+          if (night && !talking) {
+            n.sl = Math.min(1, (n.sl || 0) + dt / 1.6); g.position.set(tn.x, tn.y, tn.z); g.rotation.y = tn.ry; lieDown(g, n.sl, t);
+            const zz = n.zz || (n.zz = makeZzz()); zz.update(tn.x - Math.sin(tn.ry) * 1.7, tn.y + .55, tn.z - Math.cos(tn.ry) * 1.7, t, n.sl > .95);
+          } else {   // amanheceu: levanta e desce
+            n.sl = Math.max(0, (n.sl || 0) - dt / 1.2); lieDown(g, n.sl, t); if (n.zz) n.zz.update(0, 0, 0, t, false);
+            if (n.sl === 0) { standFromBed(g); n.up = false; g.position.set(tn.sb[0], groundY(tn.sb[0], tn.sb[1]), tn.sb[1]); g.visible = true; n.t = 0; }
+          }
+          return;
+        }
+        if (night) {
+          const dd = Math.hypot(g.position.x - tn.door[0], g.position.z - tn.door[1]);
+          if (dd < 2.4 && !n.dro && doorClosed(tn.dr)) n.dro = { id: tn.dr, t: 0, done: false };   // estende a mão direita e abre
+          const inside = Math.hypot(g.position.x - tn.sb[0], g.position.z - tn.sb[1]);
+          n.tx = tn.sb[0]; n.tz = tn.sb[1];
+          if (inside < 1.1) { n.up = true; n.sl = 0; n.vx = n.vz = 0; return; }
+        } else if (n.t <= 0 || ((n.st = (n.st || 0) + dt) > 12)) {   // novo ponto de passeio: praça, ruas da vila
+          n.t = 6 + Math.random() * 8; n.st = 0;
+          const a = Math.random() * 6.28, r = 3 + Math.random() * (VILLAGE_R - 17);
+          n.tx = Math.cos(a) * r; n.tz = Math.sin(a) * r;
+        }
+      } else if (isEvening(hourNow()) && !n.job) {   // anoitece: volta para casa; das 21h às 6h dorme
+        const h = hourNow(), awake = talking === n, sleepy = isNight(h) && !awake;
+        n.tx = n.hx; n.tz = n.hz;
+        if (sleepy && Math.hypot(g.position.x - n.hx, g.position.z - n.hz) < .7) {
+          n.sl = Math.min(1, (n.sl || 0) + dt / 1.6); n.vx = n.vz = 0;
+          g.position.set(n.hx, groundY(n.hx, n.hz), n.hz); g.rotation.y = n.ry;
+          lieDown(g, n.sl, t); const zz = n.zz || (n.zz = makeZzz());
+          zz.update(n.hx - Math.sin(n.ry) * 1.7, g.position.y + .55, n.hz - Math.cos(n.ry) * 1.7, t, n.sl > .95);
+          return;
+        }
+      } else if (n.sl > 0) {   // amanheceu: levanta
+        n.sl = Math.max(0, n.sl - dt / 1.2); lieDown(g, n.sl, t);
+        if (n.zz) n.zz.update(0, 0, 0, t, false);
+        if (n.sl === 0) standFromBed(g);
+        return;
       } else if (n.t <= 0) { n.t = 3 + Math.random() * 5; const a = Math.random() * 6.28, r = Math.random() * 3.2; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; }
-      const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !(n.rt ? talking === n : near) ? (n.rt ? 1.25 : 1.1) : 0;
+      const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !n.dro && !(n.rt ? talking === n : near) ? (n.rt ? 1.25 : 1.1) : 0;
       let wx = 0, wz = 0;
       if (want) {
         const [gx, gz] = navTarget(n.sm, g.position.x, g.position.z, n.tx, n.tz, .5, now);
@@ -220,6 +266,11 @@ export function updateNpcs(dt, now) {
       const k = 1 - Math.exp(-dt * 6);
       n.vx += (wx - n.vx) * k; n.vz += (wz - n.vz) * k;
       g.position.x += n.vx * dt; g.position.z += n.vz * dt;
+      // sem colisão rígida com o jogador: só afasta suavemente quem ficou no mesmo espaço
+      if (talking !== n && !P.dead) {
+        const sx = g.position.x - P.x, sz = g.position.z - P.z, sd = Math.hypot(sx, sz) || .01;
+        if (sd < .8) { const push = (.8 - sd) * Math.min(1, dt * 5) * .5; g.position.x += sx / sd * push; g.position.z += sz / sd * push; P.x -= sx / sd * push; P.z -= sz / sd * push; }
+      }
       collide(g.position, .5);
       const sp = Math.hypot(n.vx, n.vz), mv = Math.min(1, sp / 1.1);
       if (sp > .2) g.rotation.y = turn(g.rotation.y, Math.atan2(n.vx, n.vz), dt * 8);
@@ -232,6 +283,12 @@ export function updateNpcs(dt, now) {
     const gr = gait(g, dt, gaitSpeed(n.spd || 0), { sword: false });
     if (n.role === 'citizen') g.arm.rotation.x = -gr.w * gr.sw * .8;
     if (n.rt) farmerPose(n, t, dt);
+    if (n.dro) {   // abrindo uma porta: a mão direita (a do braço da arma) alcança e empurra
+      const D = n.dro; D.t += dt; const e = Math.sin(Math.min(1, D.t / .9) * Math.PI);
+      g.arm.rotation.x = -1.45 * e; g.arm.fa.rotation.x = -.35 * e; g.up.rotation.x = .08 * e;
+      if (!D.done && D.t > .35) { D.done = true; openDoorById(D.id); }
+      if (D.t > .9) n.dro = null;
+    }
     if (n.role === 'guard') g.head.rotation.y += Math.sin(t * .4) * .5;   // sentinela varre o olhar
   });
 }

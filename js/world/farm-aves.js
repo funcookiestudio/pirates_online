@@ -86,7 +86,7 @@ export function buildAvesDecor(c) {
     for (let z = Z0 - .2; z <= Z1 + .3; z += .7) {
       B(AH * 2 + .4, .1, .1, TRIM, AX, 2.7, z, g);
       for (let k = 0; k < 7; k++) { const q = S(.17 + (k % 2) * .05, k % 3 ? GREEN2 : 0x4a8a3a, AX - AH + .4 + k * (AH * 2 - .8) / 6, 2.78 + (k % 2) * .08, z + (k % 2) * .15, g, 1.1, .6, 1.1); }
-      for (let k = 0; k < 3; k++) S(.12, [0xe05a7a, 0xf4a0b8, 0xf6e0e8][(k + Math.round(z * 3)) % 3], AX - 2 + ((Math.round(z * 10) + k * 7) % 5) * .9, 2.9, z + (k - 1) * .2, g);
+      for (let k = 0; k < 3; k++) S(.12, [0xe05a7a, 0xf4a0b8, 0xf6e0e8][(k + Math.round(z * 3)) % 3], AX - 1.8 + ((((Math.round(z * 10) + k * 7) % 5) + 5) % 5) * .9, 2.9, z + (k - 1) * .2, g);
     }
     // canteiros de rosas nos cantos da frente e barris de chuva
     for (const sx of [-1, 1]) { const bx0 = HX + sx * (W / 2 + .6); B(1.2, .3, .7, 0x5a3a24, bx0, .15, HZ + D / 2 + 1.2); for (let i = -2; i <= 2; i++) S(.18, [0xe05a7a, 0xf6e0e8, 0xe8c040][(i + 2) % 3], bx0 + i * .22, .45, HZ + D / 2 + 1.2); }
@@ -137,19 +137,31 @@ export function buildAvesDecor(c) {
     solid(0, -11, 1.25);
   }
 
-  // ═════════════ GALINHEIRO sobre pernas (dentro do cercado A, em -11,8 / -0,9) ═════════════
+  // ═════════════ GALINHEIRO sobre palafitas (cercado das galinhas, encostado na cerca dos fundos: mundo x -12,4) ═════════════
   {
-    const hc = G(-11.8, 0, -.9);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) B(.14, .7, .14, WOODD, sx * 1.0, .35, sz * .6, hc);
-    B(2.4, 1.1, 1.6, 0xd8a890, 0, 1.25, 0, hc); B(2.5, .12, 1.7, TIMBER, 0, .72, 0, hc); B(2.5, .12, 1.7, TIMBER, 0, 1.8, 0, hc);
-    for (let i = -2; i <= 2; i++) B(.1, 1.0, .06, TIMBER, i * .5, 1.25, .83, hc);
-    B(.5, .55, .06, 0x2a1a10, .6, 1.1, .85, hc); B(.7, .08, .1, TRIM, .6, 1.42, .86, hc);
-    const rp = B(.5, .06, 1.3, WOODL, .6, .35, 1.3, hc); rp.rotation.x = -.5; for (let i = 0; i < 4; i++) B(.5, .04, .05, WOODD, .6, .22 + i * .1, 1.0 + i * .18, hc);
-    B(.7, .5, .5, WOODL, -1.55, 1.2, 0, hc); B(.74, .06, .54, ROOF2, -1.55, 1.52, 0, hc).rotation.z = .2;     // ninhos externos
-    B(.36, .3, .06, 0x2a1a10, -1.55, 1.2, .26, hc); S(.1, TRIM, -1.55, 1.05, .28, hc, 1, .8, .8);
-    gable(hc, 2.4, 1.6, 1.8, .6, .25, ROOF, ROOF2, 0xd8a890);
-    B(1.4, .08, .12, WOODD, -.1, .9, 1.25, hc);                                                  // poleiro
-    solid(-11.8, -.9, 1.35);
+    const hx = -12.4, hz = -1.1, hc = G(hx, 0, hz);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { B(.26, .3, .26, PLINTH, sx * 1.0, .15, sz * .62, hc); B(.16, .6, .16, WOODD, sx * 1.0, .6, sz * .62, hc); }
+    B(2.6, .14, 1.8, TIMBER, 0, .95, 0, hc); B(2.4, .06, 1.6, WOODL, 0, 1.03, 0, hc);                  // piso
+    B(2.4, 1.15, 1.6, 0xd8a890, 0, 1.65, 0, hc);                                                        // corpo de reboco rosado
+    for (const sx of [-1.2, 1.2]) B(.12, 1.2, 1.7, TIMBER, sx, 1.65, 0, hc);                           // enxaimel
+    for (const sz of [-.8, .8]) { B(2.5, .1, .12, TIMBER, 0, 2.2, sz, hc); B(2.5, .1, .12, TIMBER, 0, 1.1, sz, hc); }
+    for (let i = -2; i <= 2; i++) B(.08, 1.1, .1, TIMBER, i * .5, 1.65, .83, hc);
+    B(.5, .62, .08, 0x2a1a10, -.55, 1.55, .83, hc); B(.66, .1, .12, TRIM, -.55, 1.92, .86, hc); B(.06, .62, .12, TRIM, -.84, 1.55, .86, hc); B(.06, .62, .12, TRIM, -.26, 1.55, .86, hc);   // porta
+    B(.4, .36, .08, 0x9ac4d0, .5, 1.8, .83, hc); B(.5, .06, .12, TRIM, .5, 2.0, .86, hc); B(.5, .06, .14, WOODD, .5, 1.6, .88, hc);   // janelinha
+    for (const sx of [.2, .8]) B(.16, .36, .06, 0x4d8088, sx, 1.8, .88, hc);
+    gable(hc, 2.4, 1.6, 2.22, .62, .3, ROOF, ROOF2, 0xd8a890);
+    // rampa reta, com tábuas, guias laterais e degraus
+    const rp = G(-.55, .5, 1.55, 0, hc); rp.rotation.x = .5;
+    B(.55, .06, 1.9, WOODL, 0, 0, 0, rp); for (const sx of [-1, 1]) B(.06, .12, 1.9, WOODD, sx * .3, .06, 0, rp);
+    for (let k = -4; k <= 4; k++) B(.5, .05, .06, WOODD, 0, .05, k * .21, rp);
+    B(.5, .06, .3, WOODL, -.55, .98, .98, hc);                                                           // soleira da porta
+    // caixa de ovos na lateral leste (do lado oposto à rampa), com tampa e lastro de palha
+    B(.8, .6, .64, WOODL, 1.6, 1.25, 0, hc); B(.86, .08, .7, WOODD, 1.6, 1.0, 0, hc); B(.9, .07, .76, ROOF2, 1.6, 1.62, 0, hc).rotation.z = -.22;
+    B(.5, .34, .06, 0x2a1a10, 1.6, 1.22, .35, hc); for (const px of [-.1, .1]) S(.08, TRIM, 1.6 + px, 1.1, .34, hc, 1, 1.2, .8);
+    B(.4, .12, .24, STRAW, 1.6, .95, .5, hc);                                                            // cesto de coleta de ovos
+    B(1.3, .07, .1, WOODD, 0, 1.38, -.4, hc);                                                            // poleiro
+    B(.06, .5, .06, IRON, -1.15, 2.1, .9, hc); B(.2, .22, .2, 0xf0c040, -1.15, 1.9, .9, hc, 0x7a5a10);     // lampião
+    solid(hx, hz, 1.45);
   }
 
   // ═════════════ LAGOA DOS PATOS com cais, juncos, casinha e poleiro do pavão (cercado B: x -14…-3,4, z 4,4…10,2; a fazendeira passa por z≈7,3) ═════════════
@@ -159,13 +171,24 @@ export function buildAvesDecor(c) {
     for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2; B(.34, .2, .26, i % 3 ? PLINTH : PLINTH2, Math.cos(a) * 2.6, .1, Math.sin(a) * 1.2, pd).rotation.y = -a; }
     for (const [px, pz] of [[-1.2, .3], [.7, -.4], [1.5, .5]]) { C(.3, .3, .02, 0x4a9a3a, px, .1, pz, pd, 8); S(.08, 0xf4b0c8, px + .05, .14, pz, pd); }
     for (let i = 0; i < 7; i++) { const a = 3.3 + i * .22, rx = Math.cos(a) * 2.5, rz = Math.sin(a) * 1.1, hh = 1.0 + (i % 3) * .2; B(.05, hh, .05, 0x6a8a3a, rx, hh / 2, rz, pd); B(.09, .3, .09, 0x6a4a2a, rx, hh + .1, rz, pd); }
-    B(.9, .08, 2.2, WOODL, .4, .32, 1.1, pd);                                                   // cais de tábuas
-    for (const sz of [0.1, 2.1]) for (const sx of [-.4, 1.2]) B(.12, .6, .12, WOODD, sx, .15, sz, pd);
-    const dh = G(-2.4, 0, 3.5, -.3, pd);                                                        // casinha dos patos (mundo -12,6 / 9,2)
-    B(1.3, .9, 1.0, TRIM, 0, .55, 0, dh); B(1.4, .08, 1.1, TIMBER, 0, .1, 0, dh); B(.34, .4, .06, 0x2a1a10, 0, .5, .53, dh); gable(dh, 1.3, 1.0, 1.0, .5, .2, ROOF, ROOF2, TRIM);
-    solid(-12.6, 9.2, .9);
+    // casa dos patos: palafita baixa de reboco com enxaimel, porta redonda e rampa reta para a água (mundo -12,2 / 8,6, de frente para a lagoa)
+    const dh = G(-12.2, 0, 8.7, Math.atan2(2.0, -3.0));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { B(.22, .26, .22, PLINTH, sx * .85, .13, sz * .6, dh); B(.14, .3, .14, WOODD, sx * .85, .4, sz * .6, dh); }
+    B(2.1, .12, 1.5, TIMBER, 0, .62, 0, dh); B(1.96, .05, 1.36, WOODL, 0, .68, 0, dh);
+    B(1.9, 1.0, 1.3, 0xd8a890, 0, 1.2, 0, dh);
+    for (const sx of [-.95, .95]) B(.1, 1.05, 1.36, TIMBER, sx, 1.2, 0, dh);
+    for (const sz of [-.66, .66]) { B(1.95, .08, .1, TIMBER, 0, 1.68, sz, dh); B(1.95, .08, .1, TIMBER, 0, .76, sz, dh); }
+    B(.5, .62, .08, 0x2a1a10, -.35, 1.1, .67, dh); C(.25, .25, .08, 0x2a1a10, -.35, 1.4, .67, dh, 12).rotation.x = Math.PI / 2;   // porta redonda
+    B(.7, .08, .12, TRIM, -.35, .78, .7, dh); B(.06, .62, .12, TRIM, -.7, 1.1, .7, dh); B(.06, .62, .12, TRIM, 0, 1.1, .7, dh);
+    B(.36, .3, .06, 0x9ac4d0, .5, 1.3, .67, dh); B(.46, .06, .1, TRIM, .5, 1.47, .7, dh); B(.46, .06, .12, WOODD, .5, 1.12, .72, dh);
+    gable(dh, 1.9, 1.3, 1.7, .55, .25, ROOF, ROOF2, 0xd8a890);
+    const dr = G(-.35, .36, 1.38, 0, dh); dr.rotation.x = .38;                                      // rampa reta (desce para a frente)
+    B(.48, .05, 1.25, WOODL, 0, 0, 0, dr); for (let k = -2; k <= 2; k++) B(.42, .04, .05, WOODD, 0, .04, k * .24, dr);
+    B(.5, .05, .22, 0x3f86bc, .5, .72, .78, dh);                                                      // faixa azul sob a janela (tema da água)
+    B(.5, .14, .36, STRAW, .7, .76, 1.0, dh);                                                         // palha na entrada
+    solid(-12.2, 8.7, 1.1);
     const pc = G(-5.2, 0, 9.3);                                                                 // poleiro do pavão
-    B(.12, 2.0, .12, WOODD, 0, 1.0, 0, pc); B(1.0, .1, .1, WOODD, 0, 1.8, 0, pc); B(.8, .08, .1, WOODD, 0, 1.3, 0, pc);
+    B(.12, 2.0, .12, WOODD, 0, 1.0, 0, pc); B(1.2, .1, .12, WOODD, 0, 1.8, 0, pc); B(.8, .08, .1, WOODD, 0, 1.3, 0, pc); B(.5, .12, .5, PLINTH, 0, .06, 0, pc); B(.1, .1, .5, WOODD, .28, 1.5, 0, pc);
   }
 
   // ═════════════ CEREJEIRAS EM FLOR ═════════════
@@ -178,14 +201,18 @@ export function buildAvesDecor(c) {
 
   // ═════════════ PORTÃO DE PEDRA com placa pendurada, lampiões e mourões (z=12,5) ═════════════
   {
-    const gt = G(0, 0, 12.5);
+    const GX = .6, gt = G(GX, 0, 12.5);     // portão no eixo do corredor (cerca dos cercados ↔ lavoura), sob a pérgula
     for (const sx of [-1, 1]) {
       B(.9, 3.0, .9, PLINTH, sx * 3.1, 1.5, 0, gt); B(1.1, .24, 1.1, PLINTH2, sx * 3.1, 3.1, 0, gt); B(.7, .2, .7, PLINTH, sx * 3.1, 3.3, 0, gt); S(.28, PLINTH2, sx * 3.1, 3.65, 0, gt);
       B(1.0, .3, 1.0, PLINTH2, sx * 3.1, .15, 0, gt);
       B(.06, .5, .06, IRON, sx * 3.1 - sx * .62, 2.5, .3, gt); B(.26, .32, .26, 0xf0c040, sx * 3.1 - sx * .62, 2.15, .3, gt, 0x7a5a10);
-      const lf = B(1.5, 2.1, .08, DOOR, sx * 4.0, 1.1, .8, gt); lf.rotation.y = -sx * 1.2; B(1.5, .08, .1, IRON, sx * 4.0, 1.5, .8, gt).rotation.y = -sx * 1.2;
-      for (let k = 1; k <= 4; k++) { B(.9, .4, .9, PLINTH, sx * (3.1 + k * 1.15), .2, 0, gt); }                         // muretas baixas
-      solid(sx * 3.1, 12.5, .6);
+      // folha do portão: gonzo no pilar, aberta para dentro da propriedade (~63°)
+      const lp = G(sx * 2.65, 0, 0, -sx * 1.1, gt);
+      B(2.4, 1.9, .08, DOOR, -sx * 1.25, 1.15, 0, lp); B(2.5, .12, .12, IRON, -sx * 1.25, 1.85, 0, lp); B(2.5, .12, .12, IRON, -sx * 1.25, .55, 0, lp);
+      const br = B(2.9, .1, .1, WOODD, -sx * 1.25, 1.15, .06, lp); br.rotation.z = sx * .62;
+      for (let k = 0; k < 5; k++) B(.05, 1.9, .1, 0x553a20, -sx * (.25 + k * .5), 1.15, .02, lp);
+      B(.14, .3, .14, IRON, -sx * .06, 1.85, 0, lp); B(.14, .3, .14, IRON, -sx * .06, .55, 0, lp);
+      solid(GX + sx * 3.1, 12.5, .6);
     }
     B(6.0, .24, .3, TIMBER, 0, 3.2, 0, gt);
     B(.04, .8, .04, IRON, -1.2, 2.8, .1, gt); B(.04, .8, .04, IRON, 1.2, 2.8, .1, gt);
@@ -197,11 +224,21 @@ export function buildAvesDecor(c) {
     sn.position.set(0, 2.65, .05); sn.userData.dyn = 1; gt.add(sn);
   }
 
+  // ═════════════ MURO DE PEDRA DA FRENTE: do portão até as sebes das laterais ═════════════
+  for (const [xa, xb] of [[-3.1, -14.9], [4.3, 14.9]]) {
+    const n = Math.max(1, Math.round(Math.abs(xb - xa) / 1.8)), st = (xb - xa) / n;
+    for (let i = 0; i <= n; i++) {
+      const x = xa + st * i;
+      B(Math.abs(st) + .06, .9, .5, (i & 1) ? PLINTH : PLINTH2, x, .45, 12.5); B(Math.abs(st) + .1, .12, .62, PLINTH2, x, .96, 12.5);
+      if (i % 2 === 0) solid(x, 12.5, 1.0);
+    }
+  }
+
   // ═════════════ MURETAS, SEBES, CARRINHO, VARAL, FEIXES ═════════════
   for (let x = -14.4; x <= 14.5; x += 1.8) {                                                    // muro baixo de pedra ao fundo
     B(1.7, .8, .5, (Math.round(x * 3) & 1) ? PLINTH : PLINTH2, x, .4, -16.7); B(1.74, .12, .6, PLINTH2, x, .86, -16.7); if ((Math.round(x / 1.8)) % 2 === 0) solid(x, -16.7, 1.0);
   }
-  for (const sx of [-1, 1]) for (let z = -14; z <= 9; z += 1.5) { S(.62, (Math.round(z * 2) & 1) ? GREEN : GREEN2, sx * 14.9, .55, z, g, 1.1, .9, 1.4); if ((Math.round(z / 1.5)) % 2 === 0) solid(sx * 14.9, z, .8); }
+  for (const sx of [-1, 1]) for (let z = -14; z <= 12.2; z += 1.5) { S(.62, (Math.round(z * 2) & 1) ? GREEN : GREEN2, sx * 14.9, .55, z, g, 1.1, .9, 1.4); if ((Math.round(z / 1.5)) % 2 === 0) solid(sx * 14.9, z, .8); }
   {
     const ct = G(-2.6, 0, -13.2, .5);                                                           // carrinho de ovos
     B(1.7, .12, 1, WOODL, 0, .7, 0, ct); for (const sz of [-1, 1]) B(1.7, .4, .08, WOODD, 0, .9, sz * .5, ct); B(.08, .4, 1, WOODD, .85, .9, 0, ct);

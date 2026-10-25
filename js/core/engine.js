@@ -11,7 +11,8 @@ ren.setPixelRatio(Math.min(devicePixelRatio, matchMedia('(pointer: coarse)').mat
 ren.setSize(innerWidth, innerHeight);
 document.body.prepend(ren.domElement);
 
-scene.add(new THREE.HemisphereLight(0xaaccdd, 0x443322, .7));
+export const hemi = new THREE.HemisphereLight(0xaaccdd, 0x443322, .7);
+scene.add(hemi);
 
 /** Tocha que acompanha o jogador */
 export const torch = new THREE.PointLight(0xffb060, 1.2, 22);

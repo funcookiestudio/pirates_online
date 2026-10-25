@@ -44,6 +44,8 @@
   pointer-events: none;
 }
 #mm { width: 100%; height: 100%; }
+/* relógio sol/lua em volta do minimapa */
+#clk { position: absolute; top: calc(env(safe-area-inset-top, 0px) - 7px); right: -5px; width: 150px; height: 150px; pointer-events: none; }
 
 /* Missão */
 #quest {
@@ -140,6 +142,7 @@
 
 @media (max-width: 520px) {
   #mini { width: 90px; height: 90px; }
+  #clk { width: 120px; height: 120px; top: calc(env(safe-area-inset-top, 0px) - 7px); right: -5px; }
   #quest { top: 108px; width: 130px; }
 }
 #menu button + button { margin-left: 6px; }
@@ -194,13 +197,14 @@
 /* Celular deitado: minimapa e botão auto menores */
 @media (orientation: landscape) and (max-height: 500px) {
   #mini { width: 78px; height: 78px; right: calc(env(safe-area-inset-right, 0px) + 8px); }
+  #clk { width: 104px; height: 104px; top: calc(env(safe-area-inset-top, 0px) - 5px); right: calc(env(safe-area-inset-right, 0px) - 5px); }
   #quest { top: 98px; width: 120px; font-size: 11px; }
   #sawrap { transform: translateY(-50%) scale(.72); transform-origin: left center; }
 }
 
 /* Em telas pequenas, com painel ou diálogo aberto, o resto do HUD sai da frente (nada sobreposto) */
 @media (max-width: 900px), (max-height: 520px) {
-  body.ui-open #mini, body.ui-open #quest, body.ui-open #ehud, body.ui-open #log, body.ui-open #sawrap { visibility: hidden; }
+  body.ui-open #mini, body.ui-open #clk, body.ui-open #quest, body.ui-open #ehud, body.ui-open #log, body.ui-open #sawrap { visibility: hidden; }
 }
 
 /* Mapa completo da ilha */

@@ -3,6 +3,7 @@
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
 import { dIn, dPath } from '../dungeon/dgrid.js';
+import { houseNear } from '../world/floors.js';
 import { walkable, swimmable, nearObstacle, roadAt, heightAt } from '../world/terrain.js';
 
 /** O jogador pode passar por água (nadar); inimigos e pets não */
@@ -19,11 +20,12 @@ function clear(x, z, a, len, r) {
     const px = x + dx * Math.min(t, len), pz = z + dz * Math.min(t, len);
     if (!(SW ? swimmable : walkable)(px, pz) || nearObstacle(px, pz, r)) return false;
   }
+  const mg = houseNear(x, z) ? .03 : .15;   // dentro de casa a folga é menor (corredores e portas estreitos)
   for (let i = 0; i < props.length; i++) {
     const p = props[i], px = p.position.x - x, pz = p.position.z - z;
     const t = Math.max(0, Math.min(len, px * dx + pz * dz));
     const cx = px - dx * t, cz = pz - dz * t;
-    const m = p.r + r + .15;
+    const m = p.r + r + mg;
     if (cx * cx + cz * cz < m * m) return false;
   }
   return true;
@@ -121,9 +123,65 @@ function nearestFree(cx, cz) {
 /** (teste) caminho calculado */
 export const pathTo = (sx, sz, gx, gz, r = .5) => findPath(sx, sz, gx, gz, r);
 
+/** Caminho fino (células de 25 cm) para dentro e em volta de casas: enxerga paredes, móveis e portas de verdade */
+function localPath(sx, sz, gx, gz, r) {
+  const x0 = Math.min(sx, gx) - 3, z0 = Math.min(sz, gz) - 3, x1 = Math.max(sx, gx) + 3, z1 = Math.max(sz, gz) + 3;
+  if (x1 - x0 > 30 || z1 - z0 > 30) return null;
+  const S = .25, W = Math.ceil((x1 - x0) / S), H = Math.ceil((z1 - z0) / S);
+  const cand = props.filter(p => p.position.x > x0 - p.r - r && p.position.x < x1 + p.r + r && p.position.z > z0 - p.r - r && p.position.z < z1 + p.r + r);
+  const blk = new Uint8Array(W * H);
+  for (const p of cand) {
+    const R = p.r + r;
+    for (let cz = Math.max(0, Math.floor((p.position.z - R - z0) / S)); cz <= Math.min(H - 1, Math.floor((p.position.z + R - z0) / S)); cz++)
+      for (let cx = Math.max(0, Math.floor((p.position.x - R - x0) / S)); cx <= Math.min(W - 1, Math.floor((p.position.x + R - x0) / S)); cx++)
+        if (Math.hypot(x0 + (cx + .5) * S - p.position.x, z0 + (cz + .5) * S - p.position.z) < R) blk[cz * W + cx] = 1;
+  }
+  const ci = (x, z) => Math.max(0, Math.min(W - 1, Math.floor((x - x0) / S))) + Math.max(0, Math.min(H - 1, Math.floor((z - z0) / S))) * W;
+  const near = c => {   // célula livre mais perto (o início/fim pode estar "dentro" de uma margem)
+    if (!blk[c]) return c;
+    const cx = c % W, cz = (c / W) | 0;
+    for (let k = 1; k < 8; k++) for (let a = -k; a <= k; a++) for (let b = -k; b <= k; b++) {
+      if (Math.max(Math.abs(a), Math.abs(b)) !== k) continue;
+      const x = cx + a, z = cz + b; if (x >= 0 && z >= 0 && x < W && z < H && !blk[z * W + x]) return z * W + x;
+    }
+    return -1;
+  };
+  const s = near(ci(sx, sz)), g = near(ci(gx, gz));
+  if (s < 0 || g < 0) return null;
+  const gc = g % W, gr = (g / W) | 0, gS = new Float32Array(W * H).fill(1e9), from = new Int32Array(W * H).fill(-1), closed = new Uint8Array(W * H);
+  const heap = [[0, s]]; gS[s] = 0; let best = s, bh = 1e9, found = false;
+  const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const q = (i - 1) >> 1; if (heap[q][0] <= heap[i][0]) break; [heap[q], heap[i]] = [heap[i], heap[q]]; i = q; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (l + 1 < heap.length && heap[l + 1][0] < heap[m][0]) m = l + 1; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  while (heap.length) {
+    const [, c] = pop(); if (closed[c]) continue; closed[c] = 1;
+    if (c === g) { found = true; break; }
+    const cx = c % W, cz = (c / W) | 0, hh = Math.hypot(cx - gc, cz - gr); if (hh < bh) { bh = hh; best = c; }
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+      if (!dx && !dz) continue;
+      const x = cx + dx, z = cz + dz; if (x < 0 || z < 0 || x >= W || z >= H) continue;
+      const n = z * W + x; if (blk[n] || closed[n]) continue;
+      if (dx && dz && (blk[cz * W + x] || blk[z * W + cx])) continue;   // não corta quinas
+      const ng = gS[c] + (dx && dz ? 1.414 : 1);
+      if (ng < gS[n]) { gS[n] = ng; from[n] = c; push([ng + Math.hypot(x - gc, z - gr), n]); }
+    }
+  }
+  const end = found ? g : best; if (!found && best === s) return null;
+  const pts = []; for (let c = end; c !== -1; c = from[c]) pts.push([x0 + ((c % W) + .5) * S, z0 + (((c / W) | 0) + .5) * S]);
+  pts.reverse(); if (found) pts[pts.length - 1] = [gx, gz];
+  const seg = (ax, az, bx, bz) => {   // linha reta livre? (distância de cada obstáculo ao segmento)
+    const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
+    for (const p of cand) { const t = Math.max(0, Math.min(1, ((p.position.x - ax) * dx + (p.position.z - az) * dz) / L2)); if (Math.hypot(ax + dx * t - p.position.x, az + dz * t - p.position.z) < p.r + r - .02) return false; }
+    return true;
+  };
+  const out = []; let i = 0, cur = [sx, sz];
+  while (i < pts.length) { let j = pts.length - 1; for (; j > i; j--) if (seg(cur[0], cur[1], pts[j][0], pts[j][1])) break; out.push(pts[j]); cur = pts[j]; i = j + 1; }
+  return out;
+}
+
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
 function findPath(sx, sz, gx, gz, r, bad) {
   if (dIn(sx, sz)) return dPath(sx, sz, gx, gz);      // dentro da dungeon: caminho pela grade
+  if (houseNear(sx, sz) || houseNear(gx, gz)) { const lp = localPath(sx, sz, gx, gz, Math.min(r, .42)); if (lp) return lp; }   // casas: grade fina de 25 cm
   if (!grid || gridN !== props.length) buildGrid();
   const s = nearestFree(cell(sx), cell(sz)), g = nearestFree(Math.max(0, Math.min(N - 1, cell(gx))), Math.max(0, Math.min(N - 1, cell(gz))));
   if (s < 0 || g < 0) return null;

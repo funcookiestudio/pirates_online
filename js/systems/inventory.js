@@ -128,6 +128,8 @@ export function refreshTorch() {
 export function setWeapon(prefer) {
   const act = prefer || P.act;
   mountWeapons({ wpn: eq.wpn ? eq.wpn.w : 0, gun: eq.gun ? eq.gun.w : null }, act === 'gun' && !eq.gun ? 'wpn' : act);
+  if (P.models.wpn) P.models.wpn.visible = !!eq.wpn;      // sem arma equipada: mãos vazias (o modelo padrão só serve de base para os cálculos)
+  if (P.models.gun) P.models.gun.visible = !!eq.gun;
   applyWeaponBonus();
   refreshTorch();
 }

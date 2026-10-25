@@ -1,6 +1,7 @@
 /* Animais de fazenda (ambientação): galo, galinha, pato, peru, pavão, porco, ovelha, vaca, boi e cavalo.
    Só enfeite: não têm colisão, não são alvo e não entram em combate. Ficam em currais perto da vila e só animam quando o jogador está perto. */
 import { FARMSITE } from './farm-site.js';
+import { FEED } from './farmer.js';
 import { wb } from '../core/utils.js';
 import { groundY, walkable, nearObstacle, onRoad } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
@@ -534,7 +535,8 @@ export function createAnimator(root, g, kind) {
   const legs = g.legs || [];
   [g, g.head, g.neck, g.tail, g.earL, g.earR, g.wl, g.wr, ...legs, ...legs.map(l => l.knee), ...(g.tail ? g.tail.children : [])].forEach(base);
 
-  let th = th0, ph = Math.random() * TAU, sp = 0, act = 0, mode = 'idle', tm = rr(.5, 3), t = 0;
+  const ext = { flap: 0, disp: 0, swim: 0 };
+  let ctl = null, th = th0, ph = Math.random() * TAU, sp = 0, act = 0, mode = 'idle', tm = rr(.5, 3), t = 0;
   let lookT = 0, lookY = 0, lookTo = 0, flick = 0, flickT = rr(2, 5), flickSide = 1, flapT = rr(5, 10), flap = 0;
 
   function update(dt) {
@@ -545,12 +547,13 @@ export function createAnimator(root, g, kind) {
       if (mode === 'walk') { mode = Math.random() < .55 ? 'act' : 'idle'; tm = mode === 'act' ? rr(2.5, 4.5) : rr(1.5, 3.5); }
       else { mode = 'walk'; tm = rr(4, 8); }
     }
+    if (ctl) { mode = ctl.peck ? 'act' : (ctl.still ? 'idle' : 'walk'); tm = 3; }
     sp = damp(sp, mode === 'walk' ? 1 : 0, 2.5, dt);
     act = damp(act, mode === 'act' ? 1 : 0, 3, dt);
     ph += dt * c.freq * sp;
     th += dt * c.v * sp / R;
-    root.position.set(center.x + R * Math.cos(th), center.y, center.z + R * Math.sin(th));
-    root.rotation.y = -th;
+    if (ctl) { root.position.set(ctl.x, center.y + (ctl.y || 0), ctl.z); root.rotation.y = ctl.ry; }   // guiado (entra/sai do galinheiro)
+    else { root.position.set(center.x + R * Math.cos(th), center.y, center.z + R * Math.sin(th)); root.rotation.y = -th; }
 
     const A = c.amp * sp, s = Math.sin(ph), gb = g.userData.b;
     g.position.y = gb.y + Math.abs(s) * (c.bob || .03) * sp + Math.sin(t * 2.2) * .004 * (1 - sp);
@@ -626,6 +629,12 @@ export function createAnimator(root, g, kind) {
       }
     }
 
+    if (ext.swim > 0.01) {                // nadando: corpo afundado na água, pernas escondidas, balanço suave
+      g.position.y = gb.y - .17 * ext.swim + Math.sin(t * 2.3) * .012 * ext.swim;
+      g.rotation.z = gb.rz + Math.sin(t * 1.7) * .03 * ext.swim;
+      if (g.head) g.head.rotation.x = g.head.userData.b.rx + Math.sin(t * 1.4) * .06 * ext.swim;
+    }
+    legs.forEach(l => { l.visible = ext.swim < .5; });
     // asas: balançam ao andar e batem de vez em quando quando está parado
     if (g.wl) {
       flapT -= dt;
@@ -635,10 +644,15 @@ export function createAnimator(root, g, kind) {
       const sway = Math.sin(ph) * .03 * sp;
       g.wl.rotation.z = g.wl.userData.b.rz - fl - sway;
       g.wr.rotation.z = g.wr.userData.b.rz + fl + sway;
+      if (ext.flap > 0) { const f2 = (.6 + .4 * Math.sin(t * 34)) * 1.15 * ext.flap; g.wl.rotation.z = g.wl.userData.b.rz - f2; g.wr.rotation.z = g.wr.userData.b.rz + f2; }   // voo
+    }
+    if (ext.disp > 0 && g.tail) {        // pavão se exibindo: cauda erguida em leque aberto
+      g.tail.rotation.x = g.tail.userData.b.rx - ext.disp * 1.25;
+      g.tail.children.forEach(fe => { const fb = fe.userData.b; if (fb) fe.rotation.y = fb.ry * (1 + ext.disp * 1.7); });
     }
   }
 
-  return { update, get mode() { return mode; } };
+  return { update, get mode() { return mode; }, center, get th() { return th; }, R, setCtl(c) { ctl = c; }, ext };
 }
 
 export const FARM = [];
@@ -670,7 +684,7 @@ export function buildFarm() {
       const w = pn.pts[i % pn.pts.length], g = MK[kind](), root = new THREE.Group();
       g.scale.setScalar(SCALE[kind]); root.add(g);
       root.position.set(w.x, groundY(w.x, w.z), w.z); root.visible = false; scene.add(root);
-      FARM.push({ root, a: createAnimator(root, g, kind), ox: w.x, oz: w.z });
+      FARM.push({ root, a: createAnimator(root, g, kind), ox: w.x, oz: w.z, den: kind === 'hen' ? pn.den : null, perch: kind === 'peacock' ? pn.perch : null, pond: kind === 'duck' ? pn.pond : null, wy: groundY(w.x, w.z), pc: pn.pc || (pn.pc = pn.pts.reduce((o, q) => ({ x: o.x + q.x / pn.pts.length, z: o.z + q.z / pn.pts.length }), { x: 0, z: 0 })), st: 'out', tmr: rr(6, 50), ang: rr(0, 6.283), rad: .5 + Math.random() * 1.7 });
     })));
     return;
   }
@@ -698,13 +712,144 @@ export function buildFarm() {
   });
 }
 
+/** Galinhas entram no galinheiro (sobem a rampa), ficam um tempo lá dentro e saem — cada uma no seu momento */
+function denTick(f, dt) {
+  const d = f.den, a = f.a, c = a.center;
+  f.tmr -= dt;
+  const go = (tx, tz, sp) => { const dx = tx - f.px, dz = tz - f.pz, L = Math.hypot(dx, dz); if (L < .08) return true; const k = Math.min(1, sp * dt / L); f.px += dx * k; f.pz += dz * k; f.ry = Math.atan2(dx, dz); return false; };
+  if (f.st === 'out') {
+    if (f.tmr <= 0 && !FEED.on) { f.st = 'go'; f.px = f.root.position.x; f.pz = f.root.position.z; f.ry = f.root.rotation.y; f.x = f.px; f.z = f.pz; f.cy = 0; a.setCtl(f); }
+  } else if (f.st === 'go') {
+    if (go(d.bx, d.bz, 1.3)) { f.st = 'up'; }
+    f.x = f.px; f.z = f.pz; f.cy = 0;
+  } else if (f.st === 'up') {
+    const arrived = go(d.tx, d.tz, .9), L = Math.hypot(d.tx - d.bx, d.tz - d.bz), r = Math.max(0, Math.min(1, 1 - Math.hypot(d.tx - f.px, d.tz - f.pz) / L));
+    f.cy = r * d.h; f.x = f.px; f.z = f.pz;
+    if (arrived) { f.st = 'in'; f.tmr = rr(14, 40); a.setCtl(null); f.root.visible = false; }
+  } else if (f.st === 'in') {
+    f.root.visible = false;
+    if (f.tmr <= 0) { f.st = 'down'; f.px = d.tx; f.pz = d.tz; f.ry = Math.atan2(d.bx - d.tx, d.bz - d.tz); f.cy = d.h; f.x = f.px; f.z = f.pz; a.setCtl(f); f.root.visible = true; }
+  } else if (f.st === 'down') {
+    const arrived = go(d.bx, d.bz, .9), L = Math.hypot(d.tx - d.bx, d.tz - d.bz), r = Math.min(1, Math.hypot(d.bx - f.px, d.bz - f.pz) / L);
+    f.cy = r * d.h; f.x = f.px; f.z = f.pz;
+    if (arrived) { f.st = 'leave'; f.tx = f.ox + rr(-1, 1); f.tz = f.oz + rr(-1, 1); }
+  } else if (f.st === 'leave') {
+    f.cy = 0;
+    if (go(f.tx, f.tz, 1.2)) {   // volta a vaguear em torno do ponto de origem
+      f.st = 'out'; f.tmr = rr(25, 70); a.setCtl(null);
+      c.x = f.px - a.R * Math.cos(a.th); c.z = f.pz - a.R * Math.sin(a.th);
+    }
+    f.x = f.px; f.z = f.pz;
+  }
+}
+
+/** Pavão: caminha até perto do poleiro, bate as asas e sobe num salto; fica sentado, às vezes se exibe; depois desce e passeia */
+function perchTick(f, dt) {
+  const a = f.a, p = f.perch, e = a.ext;
+  const go = (tx, tz, sp) => { const dx = tx - f.px, dz = tz - f.pz, L = Math.hypot(dx, dz); if (L < .06) return true; const k = Math.min(1, sp * dt / L); f.px += dx * k; f.pz += dz * k; f.ry = Math.atan2(dx, dz); return false; };
+  const sync = () => { f.x = f.px; f.z = f.pz; };
+  e.disp = damp(e.disp, f.st === 'psit' && f.show > 0 ? 1 : 0, 2.2, dt);
+  if (f.st === 'out') {
+    f.tmr -= dt;
+    if (f.tmr <= 0 && !FEED.on) {
+      f.st = 'pwalk'; f.px = f.root.position.x; f.pz = f.root.position.z; f.ry = f.root.rotation.y; f.cy = 0; sync(); f.still = false; a.setCtl(f);
+      const dx = f.px - p.x, dz = f.pz - p.z, L = Math.hypot(dx, dz) || 1; f.sx = p.x + dx / L * 1.3; f.sz = p.z + dz / L * 1.3;   // ponto de decolagem a 1,3 m do poleiro
+    }
+  } else if (f.st === 'pwalk') {
+    sync(); if (go(f.sx, f.sz, .85)) { f.st = 'pflap'; f.tmr = 1.5; f.still = true; f.ry = Math.atan2(p.x - f.px, p.z - f.pz); }
+  } else if (f.st === 'pflap') {            // para, abre as asas e bate antes do salto
+    sync(); f.ry = Math.atan2(p.x - f.px, p.z - f.pz); e.flap = 1; f.tmr -= dt;
+    if (f.tmr <= 0) { f.st = 'pfly'; f.still = false; f.sx = f.px; f.sz = f.pz; }
+  } else if (f.st === 'pfly' || f.st === 'pdown') {
+    const up = f.st === 'pfly', tx = up ? p.x : f.dx, tz = up ? p.z : f.dz, L0 = Math.hypot(tx - f.sx, tz - f.sz) || 1;
+    const arrived = go(tx, tz, 1.6), r = Math.max(0, Math.min(1, 1 - Math.hypot(tx - f.px, tz - f.pz) / L0));
+    f.cy = (up ? r * p.h : (1 - r) * p.h) + Math.sin(Math.PI * r) * .55; sync(); e.flap = 1;
+    if (arrived) {
+      e.flap = 0;
+      if (up) { f.st = 'psit'; f.cy = p.h; f.still = true; f.ry = p.ry; f.tmr = rr(20, 45); f.show = 0; f.shT = rr(3, 8); }
+      else { f.st = 'pstroll'; f.cy = 0; f.still = false; f.tx = f.ox + rr(-1.2, 1.2); f.tz = f.oz + rr(-1, 1); }
+    }
+  } else if (f.st === 'psit') {
+    sync(); f.cy = p.h; f.ry = p.ry; f.tmr -= dt;
+    f.shT -= dt; if (f.shT <= 0) { if (f.show > 0) { f.show = 0; f.shT = rr(6, 14); } else { f.show = 1; f.shT = rr(4, 7); } }
+    if (f.tmr <= 0) { f.show = 0; if (e.disp < .1) { f.st = 'pdown'; f.sx = f.px; f.sz = f.pz; const dx = f.ox - p.x, dz = f.oz - p.z, L = Math.hypot(dx, dz) || 1; f.dx = p.x + dx / L * 1.3; f.dz = p.z + dz / L * 1.3; e.flap = 1; f.still = false; } }
+  } else if (f.st === 'pstroll') {
+    sync(); f.cy = 0;
+    if (go(f.tx, f.tz, .8)) { f.st = 'out'; a.setCtl(null); const c = a.center; c.x = f.px - a.R * Math.cos(a.th); c.z = f.pz - a.R * Math.sin(a.th); f.tmr = rr(35, 80); }
+  }
+}
+
+/** Patos: vão até a lagoa, entram na água e nadam (corpo afundado, pernas sob a água, marolas); depois saem */
+const RIPPLES = [];
+function rippleOf(f) {
+  if (!f.rip) { const m = new THREE.Mesh(new THREE.RingGeometry(.2, .26, 18), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); f.rip = m; f.rt = 0; }
+  return f.rip;
+}
+function duckTick(f, dt) {
+  const a = f.a, pd = f.pond, e = a.ext;
+  const go = (tx, tz, sp) => { const dx = tx - f.px, dz = tz - f.pz, L = Math.hypot(dx, dz); if (L < .06) return true; const k = Math.min(1, sp * dt / L); f.px += dx * k; f.pz += dz * k; f.ry = Math.atan2(dx, dz); return false; };
+  const toW = (lx, lz) => ({ x: pd.cx + pd.fz * lx + pd.fx * lz, z: pd.cz - pd.fx * lx + pd.fz * lz });
+  const rnd = () => { const t = Math.random() * 6.283, r = Math.sqrt(Math.random()) * .8; return toW(Math.cos(t) * r * pd.rx, Math.sin(t) * r * pd.rz); };
+  const inW = () => { const dx = f.px - pd.cx, dz = f.pz - pd.cz, lx = dx * pd.fz - dz * pd.fx, lz = dx * pd.fx + dz * pd.fz; return (lx / pd.rx) ** 2 + (lz / pd.rz) ** 2 < .95; };
+  const sync = () => { f.x = f.px; f.z = f.pz; };
+  if (f.st === 'out') {
+    f.tmr -= dt;
+    if (f.tmr <= 0 && !FEED.on) { f.st = 'dgo'; f.px = f.root.position.x; f.pz = f.root.position.z; f.ry = f.root.rotation.y; f.cy = 0; sync(); f.still = false; f.peck = false; a.setCtl(f); const q = rnd(); f.tx = q.x; f.tz = q.z; }
+  } else if (f.st === 'dgo' || f.st === 'dswim' || f.st === 'dexit') {
+    const sw = inW(); e.swim = damp(e.swim, sw ? 1 : 0, 5, dt);
+    sync(); f.cy = -.02 * e.swim;
+    const sp = sw ? .55 : 1.1;
+    if (go(f.tx, f.tz, sp)) {
+      if (f.st === 'dgo') { f.st = 'dswim'; f.swT = rr(20, 50); const q = rnd(); f.tx = q.x; f.tz = q.z; }
+      else if (f.st === 'dswim') { f.swT -= dt; if (f.swT <= 0) { f.st = 'dexit'; f.tx = f.ox + rr(-1, 1); f.tz = f.oz + rr(-1, 1); } else { const q = rnd(); f.tx = q.x; f.tz = q.z; f.pause = rr(.5, 3); } }
+      else { f.st = 'out'; e.swim = 0; a.setCtl(null); const c = a.center; c.x = f.px - a.R * Math.cos(a.th); c.z = f.pz - a.R * Math.sin(a.th); f.tmr = rr(25, 70); }
+    }
+    if (f.st === 'dswim') f.swT -= dt * .0;
+    // marola atrás do pato que nada
+    const rp = rippleOf(f);
+    if (e.swim > .5) { f.rt = (f.rt + dt * .7) % 1; rp.visible = true; rp.position.set(f.px, f.wy + .09, f.pz); rp.scale.setScalar(1 + f.rt * 2.2); rp.material.opacity = .5 * (1 - f.rt); }
+    else rp.visible = false;
+  }
+}
+
+/** Quando a fazendeira joga milho, as aves do cercado vão até o ponto de queda, cada uma num lugar diferente, e ficam bicando */
+function feedTick(f, dt) {
+  const F = FEED; F.on = performance.now() - F.t < 700;
+  const a = f.a, near = f.pc === feedPen;
+  const go = (tx, tz, sp) => { const dx = tx - f.px, dz = tz - f.pz, L = Math.hypot(dx, dz); if (L < .06) return true; const k = Math.min(1, sp * dt / L); f.px += dx * k; f.pz += dz * k; f.ry = Math.atan2(dx, dz); return false; };
+  if (f.st === 'out' && F.on && near && !f.fed) {
+    f.st = 'feed'; f.fed = true; f.px = f.root.position.x; f.pz = f.root.position.z; f.ry = f.root.rotation.y; f.x = f.px; f.z = f.pz; f.cy = 0; f.peck = false;
+    f.fx = F.x + Math.cos(f.ang) * f.rad; f.fz = F.z + Math.sin(f.ang) * f.rad; f.ang += 2.4; f.rad = .5 + Math.random() * 1.7;   // lugares diferentes a cada rodada
+    f.wait = rr(0, 1.2); a.setCtl(f);
+  } else if (f.st === 'feed') {
+    f.wait -= dt;
+    if (f.wait <= 0 && !f.peck && go(f.fx, f.fz, 1.5)) { f.peck = true; f.ry += rr(-.6, .6); }
+    f.x = f.px; f.z = f.pz; f.cy = 0;
+    if (f.peck) { f.pk = Math.max(f.pk || 0, 1); }
+    if (!F.on && (f.wait <= 0)) { f.rel = (f.rel == null ? rr(.5, 4) : f.rel) - dt; if (f.rel <= 0) { f.rel = null; f.st = 'back'; f.peck = false; f.tx = f.ox + rr(-1, 1); f.tz = f.oz + rr(-1, 1); } }
+  } else if (f.st === 'back') {
+    f.x = f.px; f.z = f.pz;
+    if (go(f.tx, f.tz, 1.2)) { f.st = 'out'; a.setCtl(null); const c = a.center; c.x = f.px - a.R * Math.cos(a.th); c.z = f.pz - a.R * Math.sin(a.th); f.fed = false; }
+  }
+  if (!F.on && f.st === 'out') f.fed = false;
+  if (f.st === 'feed' || f.st === 'back') f.root.position.y = groundY(f.root.position.x, f.root.position.z);
+}
+
 /** Anima os bichos próximos; os distantes ficam escondidos (não custam nada) */
+let feedPen = null;
 export function updateFarm(dt) {
+  feedPen = null;   // cercado mais próximo do ponto onde o milho cai
+  if (FEED.on || performance.now() - FEED.t < 700) { let bd = 1e9; for (const f of FARM) if (f.pc) { const d = Math.hypot(f.pc.x - FEED.x, f.pc.z - FEED.z); if (d < bd) { bd = d; feedPen = f.pc; } } }
   for (const f of FARM) {
     const near = Math.hypot(f.ox - P.x, f.oz - P.z) < SHOW;
     if (f.root.visible !== near) f.root.visible = near;
     if (!near) continue;
+    if (f.perch && (f.st === 'out' || f.st[0] === 'p')) perchTick(f, dt);
+    if (f.pond && (f.st === 'out' || f.st[0] === 'd')) duckTick(f, dt);
+    if ((!f.perch || f.st === 'out') && (!f.pond || f.st === 'out')) feedTick(f, dt);
+    if (f.den && f.st !== 'feed' && f.st !== 'back') denTick(f, dt);
     f.a.update(dt);
-    f.root.position.y = groundY(f.root.position.x, f.root.position.z);
+    if (f.st !== 'in') f.root.position.y = groundY(f.root.position.x, f.root.position.z) + (f.st === 'out' ? 0 : (f.cy || 0));
+    if (f.st === 'in') f.root.visible = false;
   }
 }

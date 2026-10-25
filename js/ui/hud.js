@@ -13,6 +13,7 @@ import { PST, pmax, PDN } from '../pets/stats.js';
 import { renderStats } from './panel.js';
 import { treeShowsActivePet } from './pet-panel.js';
 import { drawMinimap } from './minimap.js';
+import { drawDayClock } from './dayclock.js';
 
 /** Orbes de vida, cooldowns, status do topo e barra de XP */
 export function updateStatusBars() {
@@ -65,6 +66,7 @@ export function updateOverlays(now) {
     renderStats();
   }
 
+  drawDayClock();
   if ((mmTick = (mmTick + 1) % 3) === 0) drawMinimap(); // minimapa a ~20 fps
 }
 

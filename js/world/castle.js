@@ -10,10 +10,14 @@ import { registerFloors, refreshProps } from './floors.js';
 import { addDoor } from './doors.js';
 import { P } from '../entities/player.js';
 import { CASTLE } from './reserve.js';
-import { VILLAGE_R } from '../core/village-const.js';
+import { VILLAGE_R, CORRIDOR_W } from '../core/village-const.js';
 import { pois } from './pois.js';
+import { makeNpc } from '../entities/npc.js';
+import { GUARD } from '../data/npcs.js';
+import { makeRoyal } from '../entities/royals.js';
 
-const HX = 14, HZ = 11.5, HF = 4.4, HU = 8.8, SL = .3;   // meia-largura, meia-profundidade, piso de cima, topo das paredes
+const GX = 7 + CORRIDOR_W, RC = 13.3;   // parede da galeria e centro dos quartos (andar de cima)
+const HX = 15.6, HZ = 11.5, HF = 4.4, HU = 8.8, SL = .3;   // meia-largura, meia-profundidade, piso de cima, topo das paredes
 const DAIS_Z = -6.95;                                    // borda do palco (3 degraus de 0,2 m, 0,45 m de profundidade)
 const RAMP = { z0: 8.5, z1: .5, zl: -1.5 };              // escada: pé em z=8,5, topo em z=0,5, patamar até -1,5
 
@@ -41,9 +45,9 @@ function hf(lx, lz, setUp) {
 function sc(lx, lz) {
   const s = lx < 0 ? -1 : 1, ax = Math.abs(lx);
   if (!P.up && ax >= 3.6 && ax <= 7.4 && lz > 4.6 && lz < 10.6)
-    return { A: [s * 3.9, 9.7], pts: [[s * 5.9, 9.7], [s * 5.9, 8.4], [s * 5.9, .6], [s * 5.9, -.5], [s * 7.7, -.5], [s * 8.3, -.5]] };
-  if (P.up && ax >= 4.4 && ax <= 9.2 && lz > -2.4 && lz < 9)
-    return { A: [s * 8.3, -.5], pts: [[s * 7.7, -.5], [s * 5.9, -.5], [s * 5.9, .6], [s * 5.9, 8.4], [s * 5.9, 9.7], [s * 3.9, 9.7]] };
+    return { A: [s * 3.9, 9.7], pts: [[s * 5.9, 9.7], [s * 5.9, 8.4], [s * 5.9, .6], [s * 5.9, -.5]] };
+  if (P.up && ax >= 4.4 && ax <= 7.4 && lz > -2.4 && lz < 9)
+    return { A: [s * 5.9, -.5], pts: [[s * 5.9, .6], [s * 5.9, 8.4], [s * 5.9, 9.7], [s * 3.9, 9.7]] };
   return null;
 }
 
@@ -59,10 +63,10 @@ export function buildCastle() {
   // paleta
   const STONE = 0x8c8a82, STONE2 = 0x77756e, STONE3 = 0xa09e94, DSTONE = 0x5e5c56, PL = 0xd9ceb2, TM = 0x4a3320, WOOD = 0x8a6238, WOOD2 = 0x6e4d2c, DARK = 0x3f2a1a,
     IRON = 0x2b2b30, GOLD = 0xd4a830, RED = 0x9a1f24, RED2 = 0x6e1318, BLUE = 0x1f3a6a, ROOFC = [0x4a5260, 0x555d6b, 0x424a58, 0x5e6675];
-  let XR = false;
+  let XR = false, GP = null;
   const M = (c, e) => { const m = new THREE.MeshLambertMaterial({ color: c, emissive: e || 0 }); return XR ? xray(m) : m; };
-  const B = (w, h, d, x, y, z, c, p, e) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c, e)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; (p || S).add(m); return m; };
-  const C = (rt, rb, h, n, x, y, z, c, p, e) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, n), M(c, e)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; (p || S).add(m); return m; };
+  const B = (w, h, d, x, y, z, c, p, e) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c, e)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; (p || GP || S).add(m); return m; };
+  const C = (rt, rb, h, n, x, y, z, c, p, e) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, n), M(c, e)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; (p || GP || S).add(m); return m; };
   const W = (ax, f, u, y, l, h, t, c, g) => ax === 'x' ? B(l, h, t, u, y, f, c, g) : B(t, h, l, f, y, u, c, g);
   const tr = (m, o) => { m.material.transparent = true; m.material.opacity = o; return m; };
 
@@ -146,22 +150,26 @@ export function buildCastle() {
   for (const o of [-7.35, 0, 7.35]) { win('z', -HX, o, 1.2, HF + 1, HF + 3.2, uL, T); win('z', HX, o, 1.2, HF + 1, HF + 3.2, uR, T); }
   // divisórias de cima: janelas para o salão (galeria) e abertura do patamar da escada em z = -0,5
   const galO = [{ c: -0.5, w: 2.2, y0: HF, y1: HF + 2.8 }, { c: -8.5, w: 1.6, y0: HF + .9, y1: HF + 3.5 }, { c: -4.5, w: 1.6, y0: HF + .9, y1: HF + 3.5 }, { c: 4, w: 1.6, y0: HF + .9, y1: HF + 3.5 }, { c: 8, w: 1.6, y0: HF + .9, y1: HF + 3.5 }];
-  wall('z', -7, -HZ, HZ, galO, dUL, HF, HU, TD); wall('z', 7, -HZ, HZ, galO, dUR, HF, HU, TD);
-  for (const s of [-1, 1]) { const g = s < 0 ? dUL : dUR; for (const o of galO.slice(1)) W('z', s * 7, o.c, (o.y0 + o.y1) / 2, o.w + .4, .16, TD + .3, STONE3, g); }
+  // (sem parede de pedra no andar de cima: o corredor é aberto até a escada; só um corrimão de madeira no vão da escada)
 
   // laje do andar de cima (alas) com vigas à vista por baixo; patamares das escadas
   for (const s of [-1, 1]) {
-    B(6.8, SL, 2 * HZ - .8, s * 10.4, HF - SL / 2, 0, WOOD2, up);
-    for (let i = 0; i < 10; i++) B(.66, .05, 2 * HZ - .8, s * (7.2 + i * .68), HF + .025, 0, i & 1 ? 0x7a5a3a : 0x6a4c30, up);
-    for (let zz = -10.5; zz <= 10.6; zz += 2.1) B(6.8, .24, .26, s * 10.4, HF - SL - .12, zz, TM, up);
-    B(2.2, SL, 2.2, s * 5.9, HF - SL / 2, -.4, WOOD2, up);                                   // patamar
+    B(HX - .2 - 7, SL, 2 * HZ - .8, s * (7 + HX - .2) / 2, HF - SL / 2, 0, WOOD2, up);
+    B(2.3, SL, HZ + .7 - .4, s * 5.85, HF - SL / 2, (-HZ + .4 + .7) / 2, WOOD2, up); B(2.3, SL, HZ - .4 - 8.7, s * 5.85, HF - SL / 2, (8.7 + HZ - .4) / 2, WOOD2, up);   // faixa ao lado do vão da escada (patamar + frente)
+    // assoalho único e contínuo: tábuas longas do patamar ao fundo, só recortadas no vão da escada
+    for (let i = 0; i < 16; i++) {
+      const inner = i < 4, w = inner ? .575 : .7, xc = inner ? 4.7 + w * (i + .5) : 7 + w * (i - 4 + .5), col = i & 1 ? 0x7a5a3a : 0x6a4c30;
+      if (inner) { B(w, .05, HZ - .4 + .7, s * xc, HF + .025, (-HZ + .4 + .7) / 2, col, up); B(w, .05, HZ - .4 - 8.7, s * xc, HF + .025, (8.7 + HZ - .4) / 2, col, up); }
+      else B(w, .05, 2 * HZ - .8, s * xc, HF + .025, 0, col, up);
+    }
+    for (let zz = -10.5; zz <= 10.6; zz += 2.1) B(HX - .2 - 7, .24, .26, s * (7 + HX - .2) / 2, HF - SL - .12, zz, TM, up);
     for (let i = 0; i < 16; i++) { const h = (i + 1) * HF / 16; B(2.2, h, .5, s * 5.9, h / 2, RAMP.z0 - .25 - i * .5, i & 1 ? STONE2 : STONE, front); }
     // corrimão da escada (lado do salão)
     const L = Math.hypot(8, HF), ang = Math.atan2(HF, 8);
     const rl = B(.1, .1, L, s * 4.7, HF / 2 + 1, 4.5, DARK, front); rl.rotation.x = ang;
     for (let i = 0; i <= 16; i++) { const zz = RAMP.z0 - i * .5; B(.07, 1, .07, s * 4.7, (i * HF / 16) + .5, zz, WOOD2, front); }
-    B(.1, .1, 2.2, s * 4.7, HF + 1, -.4, DARK, up);
-    for (const zz of [-1.4, -.8, -.2]) B(.07, 1, .07, s * 4.7, HF + .5, zz, WOOD2, up);
+    B(.1, .1, 11.8, s * 4.7, HF + 1, -5.2, DARK, up); B(.1, .1, 2.4, s * 4.7, HF + 1, 9.9, DARK, up);
+    for (let zz = -10.6; zz <= 10.6; zz += 1) { if (zz > .8 && zz < 8.7) continue; B(.07, 1, .07, s * 4.7, HF + .5, zz, WOOD2, up); }
   }
 
   // ───── telhado mansarda de ardósia com cúpula central e frontão (estilo barroco, c. 1720–1750) ─────
@@ -218,7 +226,7 @@ export function buildCastle() {
   // ───── torres de canto redondas com cúpula de cobre (castelo de 1720–1750) ─────
   XR = true;
   const tower = (tx, tz, R, H, flagCol = RED) => {
-    const g = new THREE.Group(); g.position.set(tx, 0, tz); S.add(g);
+    const g = new THREE.Group(); g.position.set(tx, 0, tz); (GP || S).add(g);
     C(R + .35, R + .55, 1, 16, 0, .3, 0, DSTONE, g);
     C(R, R + .08, H, 16, 0, H / 2 + .5, 0, STONE, g);
     for (let y = 1.3; y < H; y += .75) { const r = C(R + .03, R + .03, .07, 16, 0, y, 0, DSTONE, g); r.scale.set(1.002, 1, 1.002); }
@@ -240,7 +248,9 @@ export function buildCastle() {
     }
     B(.1, 3, .1, 0, H + 2.4, 0, DARK, g); B(1.4, .85, .05, .75, H + 3.4, 0, flagCol, g); B(.4, .4, .06, .75, H + 3.4, 0, GOLD, g);
   };
-  [[-HX - 2.2, -HZ - 2.2], [HX + 2.2, -HZ - 2.2], [-HX - 2.2, HZ + 2.2], [HX + 2.2, HZ + 2.2]].forEach(([a, b]) => tower(a, b, 3.4, 11.8));
+  const yP = new THREE.Group(), yK = new THREE.Group(); root.add(yP, yK);   // frente (pórtico + torres) e fundos: somem quando a câmera está desse lado
+  GP = yK; [[-HX - 2.2, -HZ - 2.2], [HX + 2.2, -HZ - 2.2]].forEach(([a, b]) => tower(a, b, 3.4, 11.8));
+  GP = yP; [[-HX - 2.2, HZ + 2.2], [HX + 2.2, HZ + 2.2]].forEach(([a, b]) => tower(a, b, 3.4, 11.8));
   XR = false;
 
   // ───── pórtico de colunas jônicas, terraço com balaustrada e frontão com brasão ─────
@@ -257,40 +267,44 @@ export function buildCastle() {
   B(11.2, .14, .2, 0, 7.35, PZ - .35, STONE3); B(11.2, .14, .2, 0, 6.5, PZ - .35, STONE3);
   for (const s of [-1, 1]) for (let q = 0; q < 8; q++) C(.09, .12, .8, 6, s * 5.55, 6.9, HZ + .6 + q * .42, STONE3);
   { const sh = new THREE.Shape(); sh.moveTo(-5.6, 0); sh.lineTo(5.6, 0); sh.lineTo(0, 2.2);
-    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .6, bevelEnabled: false }), M(STONE3)); m.position.set(0, 7.55, HZ + .1); m.castShadow = true; S.add(m);
+    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .6, bevelEnabled: false }), M(STONE3)); m.position.set(0, 7.55, HZ + .1); m.castShadow = true; (GP || S).add(m);
     const sh2 = new THREE.Shape(); sh2.moveTo(-4.8, 0); sh2.lineTo(4.8, 0); sh2.lineTo(0, 1.85);
-    const m2 = new THREE.Mesh(new THREE.ExtrudeGeometry(sh2, { depth: .1, bevelEnabled: false }), M(STONE)); m2.position.set(0, 7.7, HZ + .72); S.add(m2);
+    const m2 = new THREE.Mesh(new THREE.ExtrudeGeometry(sh2, { depth: .1, bevelEnabled: false }), M(STONE)); m2.position.set(0, 7.7, HZ + .72); (GP || S).add(m2);
     B(1.5, 1.3, .12, 0, 8.7, HZ + .85, RED2); const cr3 = B(.9, .9, .14, 0, 8.7, HZ + .9, GOLD); cr3.rotation.z = Math.PI / 4; B(.5, .5, .16, 0, 8.7, HZ + .94, RED);
     const clk = C(.9, .9, .12, 20, 0, 6.65, HZ + .55, 0xeadfb8); clk.rotation.x = Math.PI / 2; B(.05, .6, .06, 0, 6.8, HZ + .65, IRON); B(.4, .05, .06, .2, 6.65, HZ + .65, IRON); }
   XR = false;
   for (const s of [-1, 1]) {
     B(.12, .12, .5, s * 2.9, 3.4, HZ + .6, IRON); C(.08, .05, .3, 6, s * 2.9, 3.6, HZ + .8, DARK);
-    const f = new THREE.Mesh(new THREE.ConeGeometry(.1, .3, 5), M(0xffa020, 0xff8a10)); f.position.set(s * 2.9, 3.9, HZ + .8); S.add(f);
+    const f = new THREE.Mesh(new THREE.ConeGeometry(.1, .3, 5), M(0xffa020, 0xff8a10)); f.position.set(s * 2.9, 3.9, HZ + .8); (GP || S).add(f);
     B(1.4, .5, 1.4, s * 6.6, .25, HZ + 2.6, STONE2); B(1, 1, 1.1, s * 6.6, 1, HZ + 2.6, STONE);
     B(.6, .5, .8, s * 6.6, 1.7, HZ + 2.6, STONE3); const hd = B(.7, .6, .4, s * 6.6, 1.9, HZ + 3.0, STONE3);
     B(.12, .12, .1, s * 6.45, 2.0, HZ + 3.22, 0x15191f); B(.12, .12, .1, s * 6.75, 2.0, HZ + 3.22, 0x15191f); hd.rotation.x = .1;
     B(1.1, 3.2, .06, s * 9.6, 5.9, HZ + .48, RED); B(1.1, .08, .08, s * 9.6, 7.55, HZ + .5, GOLD); B(.5, .5, .08, s * 9.6, 6.3, HZ + .52, GOLD).rotation.z = Math.PI / 4;
     C(.3, .3, .9, 8, s * 3.6, .75, HZ + 4.1, IRON); C(.5, .3, .25, 8, s * 3.6, 1.3, HZ + 4.1, 0x3a3a40);
-    const fb = new THREE.Mesh(new THREE.ConeGeometry(.3, .7, 6), M(0xff8a1a, 0xff6a00)); fb.position.set(s * 3.6, 1.7, HZ + 4.1); S.add(fb);
+    const fb = new THREE.Mesh(new THREE.ConeGeometry(.3, .7, 6), M(0xff8a1a, 0xff6a00)); fb.position.set(s * 3.6, 1.7, HZ + 4.1); (GP || S).add(fb);
   }
 
+  GP = null;
   // chaminé externa da cozinha
   B(2, 11.2, 3, HX + 1.1, 5.6, -8, STONE); B(2.3, .5, 3.3, HX + 1.1, 11.4, -8, STONE3); B(1.2, .8, 1.8, HX + 1.1, 12, -8, DSTONE);
 
   // ═════════════ PÁTIO DE ARMAS (muralha de cortina com guarita, bastiões e canhões) ═════════════
   XR = true;
-  const FZ = 24, FX = 16.4, CH = 6.2;
+  const FZ = 24, FX = 17.8, CH = 6.2;
+  const yD = new THREE.Group(); root.add(yD); GP = S;   // piso do pátio fica fixo; cortina, guarita e bastiões (yD) somem quando a câmera está na frente
   B(2 * FX + 2.4, .3, FZ - HZ + 1, 0, -.1, (FZ + HZ) / 2 + .6, DSTONE);
   for (let i = -14; i <= 14; i++) for (let j = 0; j < 9; j++) B(1.1, .05, 1.1, i * 1.1, .03, HZ + 3.3 + j * 1.1 + ((i & 1) ? .3 : 0), (i + j) & 1 ? 0x8a877e : 0x79766d);
-  wall('x', FZ, -FX, FX, [{ c: 0, w: 4.8, y0: 0, y1: 5.2 }], S, 0, CH, 1.2);
-  wall('z', -FX, HZ + 2.2, FZ, [], S, 0, CH, 1.2); wall('z', FX, HZ + 2.2, FZ, [], S, 0, CH, 1.2);
+  GP = yD;
+  wall('x', FZ, -FX, FX, [{ c: 0, w: 4.8, y0: 0, y1: 5.2 }], yD, 0, CH, 1.2);
+  wall('z', -FX, HZ + 2.2, FZ, [], yD, 0, CH, 1.2); wall('z', FX, HZ + 2.2, FZ, [], yD, 0, CH, 1.2);
   // muros de ligação: da cortina do pátio até a muralha da vila (o castelo e a vila formam uma só praça-forte)
   const VD = Math.hypot(CASTLE.x, CASTLE.z), LK = Math.max(0, VD - Math.sqrt(VILLAGE_R * VILLAGE_R - FX * FX) - FZ);
   if (LK > 1) {
-    wall('z', -FX, FZ, FZ + LK, [], S, 0, CH, 1.2); wall('z', FX, FZ, FZ + LK, [], S, 0, CH, 1.2);
+    GP = S; wall('z', -FX, FZ, FZ + LK, [], S, 0, CH, 1.2); wall('z', FX, FZ, FZ + LK, [], S, 0, CH, 1.2);
     for (let v = FZ + 1.5; v <= FZ + LK; v += 1.5) { B(1.35, .95, .95, -FX, CH + .48, v, STONE3); B(1.35, .95, .95, FX, CH + .48, v, STONE3); }
     B(6.4, .06, VD - VILLAGE_R - FZ + 1, 0, .03, FZ + (VD - VILLAGE_R - FZ) / 2 + .5, 0x8a877e);   // calçada do portão da vila ao portão do pátio
   }
+  GP = yD;
   // arco da guarita: ombreiras, fecho, grade levantada e lampiões
   for (const sd of [-1, 1]) { B(.7, 5.4, 1.6, sd * 2.75, 2.7, FZ, STONE3); }
   B(6.2, .7, 1.6, 0, 5.55, FZ, STONE3); B(.7, .9, 1.7, 0, 5.1, FZ, STONE2);
@@ -303,22 +317,15 @@ export function buildCastle() {
   for (let u = -3.4; u <= 3.41; u += 1.5) B(.95, .95, 1.35, u, CH + 1.0, FZ, STONE3);
   // bastiões: guarita (dois) e cantos
   [[-4.7, FZ, 2.2, 9.2], [4.7, FZ, 2.2, 9.2], [-FX, FZ, 2.9, 8.2], [FX, FZ, 2.9, 8.2]].forEach(([a, b, R, H]) => tower(a, b, R, H, a < 0 ? BLUE : RED));
+  GP = S;
+  bakeGroup(yD);
   XR = false;
-  // fonte central, canteiros, lampiões e canhões
-  C(1.9, 2.1, .6, 18, 0, .5, 19.6, STONE); C(1.7, 1.7, .1, 18, 0, .82, 19.6, 0x3a7fa8); tr(C(1.7, 1.7, .05, 18, 0, .85, 19.6, 0x3a7fa8), .7);
-  C(.35, .5, 1.6, 10, 0, 1.4, 19.6, STONE3); C(.7, .45, .2, 12, 0, 2.3, 19.6, STONE); C(.25, .1, .6, 8, 0, 2.7, 19.6, 0x9ad0f0).material.transparent = true;
-  const gb = new THREE.Mesh(new THREE.SphereGeometry(.22, 8, 6), M(GOLD)); gb.position.set(0, 3.1, 19.6); S.add(gb);
+  // pátio livre: sem fonte, canteiros, lampiões nem canhões
+  // tapetinhos que marcam onde clicar para subir (no pé de cada escada) e descer (no patamar de cima)
   for (const sd of [-1, 1]) {
-    B(5.2, .4, 2.4, sd * 9.2, .2, 19.6, 0x5a7a3a); B(5.4, .1, 2.6, sd * 9.2, .42, 19.6, STONE3);
-    for (let i = 0; i < 14; i++) { const fl = new THREE.Mesh(new THREE.SphereGeometry(.12, 5, 4), M([0xd84a5a, 0xf0c040, 0xd8d0f0, 0xe07040][i % 4])); fl.position.set(sd * 9.2 + (i % 7 - 3) * .65, .6, 19.6 + (i < 7 ? -.5 : .5)); S.add(fl); }
-    C(.07, .07, 2.6, 6, sd * 6, 1.3, 16.5, IRON); B(.3, .4, .3, sd * 6, 2.8, 16.5, 0xffd890, S, 0xffb040); B(.4, .08, .4, sd * 6, 3.05, 16.5, IRON);
-    C(.07, .07, 2.6, 6, sd * 6, 1.3, 22.4, IRON); B(.3, .4, .3, sd * 6, 2.8, 22.4, 0xffd890, S, 0xffb040); B(.4, .08, .4, sd * 6, 3.05, 22.4, IRON);
-    // canhão sobre reparo, voltado para o portão, com pilha de balas
-    const cg = new THREE.Group(); cg.position.set(sd * 10.8, 0, 22.3); cg.rotation.y = sd * .25; S.add(cg);
-    B(1.1, .35, 2.2, 0, .7, 0, WOOD2, cg); for (const w2 of [-.6, .6]) { const wh = C(.5, .5, .14, 12, w2, .5, .1, WOOD, cg); wh.rotation.z = Math.PI / 2; }
-    const bar = C(.26, .34, 2.6, 10, 0, 1.12, .2, 0x2b2b30, cg); bar.rotation.x = Math.PI / 2 - .08; C(.3, .3, .2, 10, 0, 1.12, -1.15, 0x2b2b30, cg);
-    for (let i = 0; i < 6; i++) { const bl = new THREE.Mesh(new THREE.SphereGeometry(.17, 6, 5), M(0x2b2b30)); bl.position.set(sd * 8.2 + (i % 3 - 1) * .34 + (i > 2 ? .17 : 0), .17 + (i > 2 ? .26 : 0), 22.3 + (i > 2 ? .15 : 0)); S.add(bl); }
-    B(.9, .3, .6, sd * 12.4, .25, 20.4, WOOD2); B(.8, .5, .5, sd * 12.4, .65, 20.4, 0x5a3a22);   // caixa de pólvora
+    for (const [px, pz, w, d, y, g] of [[sd * 5.9, 9.7, 2.1, 1.0, .06, S], [sd * 5.9, -.5, 1.6, 1.3, HF + .06, up]]) {
+      B(w, .02, d, px, y, pz, 0x6e2a2a, g); B(w - .18, .024, d - .18, px, y, pz, 0x8a3a30, g); B(w - .55, .028, d - .55, px, y, pz, 0xd2a45a, g); B(w - .8, .032, d - .8, px, y, pz, 0x6e2a2a, g);
+    }
   }
   for (let k = 0; k < 4; k++) { const sd = k < 2 ? -1 : 1; B(.9, 2.9, .05, sd * (k & 1 ? 2.2 : 7.2), 4.2, FZ + .65, k & 1 ? RED : BLUE); B(.9, .07, .08, sd * (k & 1 ? 2.2 : 7.2), 5.65, FZ + .65, GOLD); }
 
@@ -361,7 +368,7 @@ export function buildCastle() {
     B(.3, .18, .3, -.4 * k, .66, .1, 0xf0e8d0, g); B(.3, .18, .3, .4 * k, .66, .1, 0xf0e8d0, g);
     return g;
   };
-  throne(-2.1, true); throne(2.1, false);
+  throne(-1.3, true); throne(1.3, false);
   // candelabros e braseiros no palco, bandeiras nas colunas, tochas nas divisórias
   for (const s of [-1, 1]) {
     C(.07, .07, 1.6, 6, s * 4.6, 1.4, -9, IRON); for (let i = -1; i <= 1; i++) { C(.04, .04, .18, 6, s * 4.6 + i * .24, 2.3, -9, 0xe8dcb0); const f = new THREE.Mesh(new THREE.ConeGeometry(.04, .1, 4), M(0xffc040, 0xffa020)); f.position.set(s * 4.6 + i * .24, 2.45, -9); S.add(f); }
@@ -373,11 +380,6 @@ export function buildCastle() {
   for (const zz of [-9, -4, 4.5, 10]) for (const s of [-1, 1]) {
     B(.12, .12, .4, s * 6.55, 2.6, zz, IRON); C(.07, .05, .26, 6, s * 6.4, 2.75, zz, DARK);
     const f = new THREE.Mesh(new THREE.ConeGeometry(.09, .26, 5), M(0xffa020, 0xff8a10)); f.position.set(s * 6.4, 3.0, zz); S.add(f);
-  }
-  // mesas compridas com bancos junto às paredes do salão (entre a escada e o palco)
-  for (const s of [-1, 1]) { B(1.1, .1, 4, s * 5.7, .95, -3.8, WOOD); for (const dz of [-1.7, 1.7]) for (const dx of [-.45, .45]) B(.12, .9, .12, s * 5.7 + dx, .5, -3.8 + dz, WOOD2);
-    for (const dx of [-.95, .95]) { B(.4, .08, 4, s * 5.7 + dx, .55, -3.8, WOOD2); B(.35, .5, .1, s * 5.7 + dx, .3, -5.6, WOOD2); B(.35, .5, .1, s * 5.7 + dx, .3, -2, WOOD2); }
-    for (let i = 0; i < 4; i++) { C(.12, .1, .06, 8, s * 5.7 + ((i % 2) - .5) * .6, 1.03, -4.9 + i * .9, 0xcfcfd4); C(.06, .05, .22, 6, s * 5.7, 1.1, -4.6 + i * .8, 0x8a5030); }
   }
   // lustres de roda de carroça (velas acesas)
   for (const zz of [7, 1.5, -3.5]) {
@@ -417,21 +419,21 @@ export function buildCastle() {
   for (const s of [-1, 1]) {
     // parede da galeria e partições dos quartos (baixas, para a câmera enxergar por cima)
     const cg = s < 0 ? uL : uR;
-    wall('z', s * 9.4, -HZ + .4, HZ - .4, rz.map(c => ({ c, w: 1.3, y0: HF, y1: HF + 2.6 })), up, HF, HF + 3.4, .3, PL, 0xc9bda0);
-    for (const c of rz) { const w = 1.3; W('z', s * 9.4, c - w / 2 - .09, HF + 1.35, .16, 2.8, .4, TM, up); W('z', s * 9.4, c + w / 2 + .09, HF + 1.35, .16, 2.8, .4, TM, up); W('z', s * 9.4, c, HF + 2.75, w + .5, .22, .4, TM, up); }
+    wall('z', s * GX, -HZ + .4, HZ - .4, rz.map(c => ({ c, w: 1.3, y0: HF, y1: HF + 2.6 })), up, HF, HF + 3.4, .3, PL, 0xc9bda0);
+    for (const c of rz) { const w = 1.3; W('z', s * GX, c - w / 2 - .09, HF + 1.35, .16, 2.8, .4, TM, up); W('z', s * GX, c + w / 2 + .09, HF + 1.35, .16, 2.8, .4, TM, up); W('z', s * GX, c, HF + 2.75, w + .5, .22, .4, TM, up); }
     for (const zz of [-3.7, 3.7]) {
-      wall('x', zz, s < 0 ? -13.6 : 9.4, s < 0 ? -9.4 : 13.6, [], up, HF, HF + 3.2, .3, PL, 0xc9bda0);
-      for (let xx = 9.5; xx <= 13.6; xx += 1.4) B(.14, 3.2, .34, s * xx, HF + 1.6, zz, TM, up);
+      wall('x', zz, s < 0 ? -(HX - .4) : GX, s < 0 ? -GX : HX - .4, [], up, HF, HF + 3.2, .3, PL, 0xc9bda0);
+      for (let xx = GX + .1; xx <= HX - .4; xx += 1.4) B(.14, 3.2, .34, s * xx, HF + 1.6, zz, TM, up);
     }
     // tapete corrido e apliques de parede na galeria
-    B(1.1, .03, 2 * HZ - 1.6, s * 8.2, HF + .06, 0, RED, up); B(.08, .035, 2 * HZ - 1.6, s * 7.7, HF + .07, 0, GOLD, up); B(.08, .035, 2 * HZ - 1.6, s * 8.7, HF + .07, 0, GOLD, up);
-    for (const zz of [-9.5, -4.8, 4.8, 9.5]) { B(.3, .1, .1, s * 9.2, HF + 2.2, zz, IRON, up); const f = new THREE.Mesh(new THREE.ConeGeometry(.07, .2, 4), M(0xffa020, 0xff8a10)); f.position.set(s * 9.1, HF + 2.4, zz); up.add(f); }
+    B(1.1, .03, 2 * HZ - 1.6, s * 9.1, HF + .06, 0, RED, up); B(.08, .035, 2 * HZ - 1.6, s * 8.6, HF + .07, 0, GOLD, up); B(.08, .035, 2 * HZ - 1.6, s * 9.6, HF + .07, 0, GOLD, up);
+    for (const zz of [-9.5, -4.8, 4.8, 9.5]) { B(.3, .1, .1, s * (GX - .2), HF + 2.2, zz, IRON, up); const f = new THREE.Mesh(new THREE.ConeGeometry(.07, .2, 4), M(0xffa020, 0xff8a10)); f.position.set(s * (GX - .3), HF + 2.4, zz); up.add(f); }
     B(.5, .5, 1.6, s * 7.7, HF + .25, 9.6, WOOD2, up); B(.5, .5, 1.6, s * 7.7, HF + .25, -9.6, WOOD2, up);
   }
   const mkRoom = (s, zc, master) => {
-    const g = new THREE.Group(); g.position.set(s * 11.55, HF, zc); g.rotation.y = s < 0 ? Math.PI : 0; up.add(g);
+    const g = new THREE.Group(); g.position.set(s * RC, HF, zc); g.rotation.y = s < 0 ? Math.PI : 0; up.add(g);
     const royal = master ? (s < 0 ? 0x8a1c24 : 0x6a2a6a) : 0x2f4a6a;     // roupa de cama: rei vermelho, rainha púrpura, hóspedes azul
-    B(3.6, .03, 6.4, 0, .06, 0, royal === 0x2f4a6a ? 0x6a3a2a : royal); B(3.2, .035, 5.8, 0, .08, 0, 0xcdb67a);
+    B(4.1, .03, 7.0, -.1, .06, 0, royal === 0x2f4a6a ? 0x6a3a2a : royal); B(3.2, .035, 5.8, 0, .08, 0, 0xcdb67a);
     // cama de dossel
     const bx = 1.0 + (master ? .0 : 0), bz = -1.8, bw = master ? 1.9 : 1.4, bl = 2.3;
     B(bw, .35, bl, bx, .35, bz, WOOD2, g); B(bw - .1, .22, bl - .1, bx, .62, bz, 0xd6c394, g); B(bw - .1, .1, bl * .6, bx, .78, bz + .4, royal, g);
@@ -461,7 +463,7 @@ export function buildCastle() {
   };
   rz.forEach((c, i) => { mkRoom(-1, c, i === 1); mkRoom(1, c, i === 1); });
   // lampiões de teto nas galerias e no patamar
-  for (const s of [-1, 1]) for (const zz of [-6, 6]) { B(.02, .6, .02, s * 8.2, HF + 3.4, zz, 0x999999, up); B(.22, .3, .22, s * 8.2, HF + 3.0, zz, 0xffd890, up, 0xffb040); }
+  for (const s of [-1, 1]) for (const zz of [-6, 6]) { B(.02, .6, .02, s * 9.1, HF + 3.4, zz, 0x999999, up); B(.22, .3, .22, s * 9.1, HF + 3.0, zz, 0xffd890, up, 0xffb040); }
 
   // ═════════════ COLISÕES, PORTAS, REGISTRO ═════════════
   scene.add(root);
@@ -475,8 +477,7 @@ export function buildCastle() {
   [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => block(a * (HX + 2.2), b * (HZ + 2.2), 3.5));
   // pórtico, pedestais dos leões, pátio de armas (muralha de cortina, bastiões, fonte, canhões)
   for (const cx of [-4.4, -2.3, 2.3, 4.4]) block(cx, HZ + 2.7, .5);
-  for (const sd of [-1, 1]) { block(sd * 6.6, HZ + 2.6, .75); block(sd * 3.6, HZ + 4.1, .5); block(sd * 6, 16.5, .3); block(sd * 6, 22.4, .3); block(sd * 10.8, 22.3, .8); block(sd * 9.2, 19.6, 1.4); block(sd * 8.2, 22.3, .5); block(sd * 12.4, 20.4, .6); }
-  block(0, 19.6, 2.1);
+  for (const sd of [-1, 1]) { block(sd * 6.6, HZ + 2.6, .75); block(sd * 3.6, HZ + 4.1, .5); }
   for (let v = HZ + 3.1; v <= FZ + LK; v += .9) { block(-FX, v, .7); block(FX, v, .7); }
   for (let u = -FX; u <= FX + .01; u += .9) { if (Math.abs(u) > 2.9) block(u, FZ, .7); }
   [[-4.7, 2.3], [4.7, 2.3], [-FX, 3], [FX, 3]].forEach(([a2, r2]) => block(a2, FZ, r2));
@@ -488,24 +489,37 @@ export function buildCastle() {
   // escadas: bordas laterais (ng: a viagem roteirizada atravessa)
   for (const s of [-1, 1]) for (let v = RAMP.zl; v <= 8; v += .8) { block(s * 4.5, v, .2, 0, true); block(s * 4.5, v, .2, 1, true); }
   // divisórias de cima (abertura do patamar em z = -0,5)
-  for (const s of [-1, 1]) for (let v = -HZ; v <= HZ + .01; v += .8) { if (Math.abs(v + .5) < 1.5) continue; block(s * 7, v, .35, 1); }
+  for (const s of [-1, 1]) for (let v = .8; v <= 8.8; v += .6) block(s * 7, v, .3, 1, true);
   // galerias: parede dos quartos (ng) e partições
   for (const s of [-1, 1]) {
-    for (let v = -HZ + .4; v <= HZ - .39; v += .5) { if (rz.some(c => Math.abs(v - c) < .95)) continue; block(s * 9.4, v, .3, 1, true); }
-    for (const zz of [-3.7, 3.7]) for (let xx = 9.6; xx <= 13.6; xx += .6) block(s * xx, zz, .25, 1);
+    for (let v = -HZ + .4; v <= HZ - .39; v += .5) { if (rz.some(c => Math.abs(v - c) < .95)) continue; block(s * GX, v, .3, 1, true); }
+    for (const zz of [-3.7, 3.7]) for (let xx = GX + .2; xx <= HX - .4; xx += .6) block(s * xx, zz, .25, 1);
+  }
+  // andar de cima: vazio do salão fechado (corrimão contínuo) e bordas do patamar
+  for (const s of [-1, 1]) {
+    for (let v = -HZ; v <= HZ + .01; v += .5) block(s * 4.6, v, .22, 1, true);
   }
   // móveis do salão
   for (const zz of [8.2, 3.2, -1.8]) for (const s of [-1, 1]) block(s * 3.6, zz, .6, 0);
-  block(-2.1, -10.1, .75, 0); block(2.1, -10.1, .7, 0);
-  for (const s of [-1, 1]) { block(s * 5.6, -8.2, .45, 0); for (const zz of [-5.6, -4.6, -3.6, -2.6, -1.9]) block(s * 5.7, zz, .75, 0); }
+  for (const tx of [-1.3, 1.3]) for (const dx of [-.5, 0, .5]) for (const dz of [-.4, -.9]) block(tx + dx, -10.1 + dz, .5, 0);
+  for (let u = -3.4; u <= 3.41; u += .5) block(u, -10.8, .45, 0);
+  for (const s of [-1, 1]) { block(s * 5.6, -8.2, .45, 0); }
+  // soldados da guarda real: um ao lado de cada coluna do salão, de frente um para o outro
+  { let gi = 0; for (const zz of [8.2, 3.2, -1.8]) for (const s of [-1, 1]) {
+    const lx = s * 2.7, [wx, wz] = at(lx, zz), dx = -s * Math.cos(th), dz = s * Math.sin(th);
+    makeNpc('guard', wx, wz, Math.atan2(dx, dz), [0xd8a880, 0x3a4a6a, 0x2a2a30, 0x707880], gi++, GUARD);
+    block(lx, zz, .5, 0);
+  } }
+  // rei e rainha sentados nos tronos (almofada a .6 + .59 do chão; o trono olha para +z do castelo)
+  for (const [tx, kind] of [[-1.3, 'king'], [1.3, 'queen']]) { const [wx, wz] = at(tx, -10.1 + .02); makeRoyal(kind, wx, 1.19, wz, th); }
   // armaria e cozinha
   [[-13.3, -9], [-13.3, -7.8], [-13.3, -2.5], [-13.3, -1.3], [-13.3, 3], [-13.3, 4.2], [-11.2, -9.6], [-9.2, 8], [-12.4, 8.8], [-10.6, -6.4], [-9.7, -6.4], [-11.5, -6.4], [-12.8, 9.6], [-11.9, 10.2]]
     .forEach(([a, b]) => block(a, b, .5, 0));
   [[12.5, -9], [12.5, -8], [12.5, -7], [9.6, -2.2], [8.4, -2.2], [10.8, -2.2], [13, 4], [13, 5.1], [12.2, 9.8], [11, 9.6], [11.9, 9.6], [12.6, 6.7]].forEach(([a, b]) => block(a, b, .5, 0));
   // quartos: camas, baús, guarda-roupas e mesas
-  const rb = (s, zc, lx, lz, r) => block(s * (11.55 + (s < 0 ? -lx : lx)) * 1, zc + (s < 0 ? -lz : lz), r, 1);
+  const rb = (s, zc, lx, lz, r) => block(s * (RC + (s < 0 ? -lx : lx)) * 1, zc + (s < 0 ? -lz : lz), r, 1);
   for (const s of [-1, 1]) for (const zc of rz) {
-    const base = s * 11.55, sx = (lx) => base + (s < 0 ? -lx : lx), sz = (lz) => zc + (s < 0 ? -lz : lz);
+    const base = s * RC, sx = (lx) => base + (s < 0 ? -lx : lx), sz = (lz) => zc + (s < 0 ? -lz : lz);
     block(sx(1.0), sz(-1.8), .95, 1); block(sx(1.0), sz(.5), .5, 1); block(sx(1.5), sz(2.75), .55, 1); block(sx(-.1), sz(2.8), .6, 1); block(sx(.1), sz(-2.9), .4, 1);
   }
   void rb;
@@ -514,10 +528,10 @@ export function buildCastle() {
   const dFL = leaf({ ax: 'x', f: HZ, c: -.85, w: 1.7, h: 3.7, g: gF, id: 'castle-front-L', lvl: 0, openRot: 1, hinge: 'l' });
   const dFR = leaf({ ax: 'x', f: HZ, c: .85, w: 1.7, h: 3.7, g: gF, id: 'castle-front-R', lvl: 0, openRot: -1, hinge: 'r' });
   dFL.pair = dFR; dFR.pair = dFL;
-  for (const s of [-1, 1]) rz.forEach((c, i) => leaf({ ax: 'z', f: s * 9.4, c, w: 1.3, h: 2.6, yb: HF, g: up, id: 'castle-room-' + (s < 0 ? 'w' : 'e') + i, lvl: 1, openRot: s < 0 ? -1 : 1 }));
+  for (const s of [-1, 1]) rz.forEach((c, i) => leaf({ ax: 'z', f: s * GX, c, w: 1.3, h: 2.6, yb: HF, g: up, id: 'castle-room-' + (s < 0 ? 'w' : 'e') + i, lvl: 1, openRot: s < 0 ? -1 : 1 }));
 
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);
-  [gB, gL, gR, dGL, dGR, uF, uB, uL, uR, dUL, dUR].forEach(q => bakeGroup(q));
+  [gB, gL, gR, dGL, dGR, uF, uB, uL, uR, dUL, dUR, yP, yK].forEach(q => bakeGroup(q));
   bakeGroup(gF, lv(gF)); bakeGroup(front, [gF, gB, gL, gR, dGL, dGR]); bakeGroup(up, [uF, uB, uL, uR, dUL, dUR, ...lv(up)]); bakeGroup(roof);
   const H = { x, z, th, K: 1, fx: HX + 1, fz: HZ + 1 };
   DR.forEach(d => {
@@ -527,10 +541,10 @@ export function buildCastle() {
   });
   refreshProps();
   registerFloors({
-    x, z, th, K: 1, hx: HX + .6, hz: HZ + .6, fx: HX + 1, fz: HZ + 1, Hf: HF, roof, up, hf, sc,
+    x, z, th, K: 1, hx: HX + .6, hz: HZ + .6, ye: FZ, yx: FX, fx: HX + 1, fz: HZ + 1, Hf: HF, roof, up, hf, sc,
     walls: [{ g: gF, nx: 0, nz: 1, D: HZ }, { g: gB, nx: 0, nz: -1, D: HZ }, { g: gL, nx: -1, nz: 0, D: HX }, { g: gR, nx: 1, nz: 0, D: HX },
       { g: uF, nx: 0, nz: 1, D: HZ }, { g: uB, nx: 0, nz: -1, D: HZ }, { g: uL, nx: -1, nz: 0, D: HX }, { g: uR, nx: 1, nz: 0, D: HX },
-      { g: dGL, nx: -1, nz: 0, D: 7 }, { g: dGR, nx: 1, nz: 0, D: 7 }, { g: dUL, nx: -1, nz: 0, D: 7 }, { g: dUR, nx: 1, nz: 0, D: 7 }],
+      { g: yD, nx: 0, nz: 1, D: HZ, y: 1 }, { g: yP, nx: 0, nz: 1, D: HZ, y: 1 }, { g: yK, nx: 0, nz: -1, D: HZ }, { g: dGL, nx: -1, nz: 0, D: 7 }, { g: dGR, nx: 1, nz: 0, D: 7 }, { g: dUL, nx: -1, nz: 0, D: 7 }, { g: dUR, nx: 1, nz: 0, D: 7 }],
   });
   return { g: root, th, at };
 }

@@ -1,6 +1,7 @@
 /* Animações de trabalho dos NPCs. Cada ofício controla os braços, o tronco e a cabeça do mesmo esqueleto do personagem. */
 import { scene } from '../core/engine.js';
 import { hideSword } from './character.js';
+import { openDoorById } from '../world/doors.js';
 import { M } from '../core/utils.js';
 
 const ease = t => t * t * (3 - 2 * t);
@@ -184,6 +185,9 @@ export function updateSmith(n, dt, now, face, talking) {
       pos = [x, z]; walk = 1; hammer = hm; swordOn = carry ? 'hand' : 'none';
       yaw = u > .75 ? yawAnvil : hd;
       pose = mix(POSE[from], POSE[to], ease(u)); A = -.1; headX = .2;
+      // porta: o ferreiro abre com a mão direita (a esquerda carrega a peça), ao sair de casa e ao voltar
+      { const out = route[0] === J.door && u < .22, back = route[route.length - 1] === J.door && u > .78;
+        if (out || back) { const q = out ? u / .22 : (u - .78) / .22, e = Math.sin(clamp01(q) * Math.PI); A = -1.45 * e; F = -.35 * e; headX = .1; if (q > .35) openDoorById('smith-front'); } }
       J.away = route[route.length - 1] === J.door || route[0] === J.door ? true : J.away;
       J.handHold = !!carry;
       break;

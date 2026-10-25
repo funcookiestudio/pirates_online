@@ -4,9 +4,21 @@ import { props } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { cam } from '../core/engine.js';
 import { invalidateGrid } from '../systems/steer.js';
+import { openDoorById } from './doors.js';
 
-const HOUSES = [];
+export const HOUSES = [];
 export function registerFloors(h) { HOUSES.push(h); }
+
+/** O ponto está dentro (ou junto) de uma casa? Lá dentro o corpo é mais fino e o caminho usa uma grade fina */
+export function houseNear(x, z, pad = .6) {
+  for (const h of HOUSES) {
+    const dx = x - h.x, dz = z - h.z;
+    if (dx * dx + dz * dz > 400) continue;
+    const lx = (dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, lz = (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K;
+    if (Math.abs(lx) <= (h.hx || 4.2) + pad && Math.abs(lz) <= (h.hz || 3.2) + pad) return true;
+  }
+  return false;
+}
 
 /** Liga as colisões do andar atual e desliga as do outro (as desligadas vão para longe) */
 export function refreshProps() {
@@ -45,7 +57,7 @@ export function floorOffset(x, z) {
 export const STAIR = { on: false, run: false, h: null, A: null, pts: [], i: 0 };
 const toW = (h, lx, lz) => [h.x + lx * h.K * Math.cos(h.th) + lz * h.K * Math.sin(h.th), h.z - lx * h.K * Math.sin(h.th) + lz * h.K * Math.cos(h.th)];
 const toL = (h, x, z) => { const dx = x - h.x, dz = z - h.z; return [(dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K]; };
-export const cancelStair = () => { STAIR.on = false; STAIR.run = false; };
+export const cancelStair = () => { STAIR.on = false; STAIR.run = false; STAIR.then = null; };
 
 /** Clique em (x,z): se for nos primeiros degraus (embaixo, para subir) ou na escada vista de cima (para descer), liga a viagem */
 export function stairClick(x, z) {
@@ -62,10 +74,10 @@ export function stairClick(x, z) {
       return true;
     }
     if (lx < -5.6) continue;
-    if (!P.up && lx <= -2.9 && lz >= .15 && lz <= 2.8) {
-      Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -2.5, 1.45), i: 0, pts: [[-3.2, 1.55], [-4.3, 1.55], [-4.3, .05], [-4.3, -1.25], [-3.2, -1.25], [-2.5, -1.25]].map(q => toW(h, ...q)) });
-    } else if (P.up && lx <= -3 && lz >= -2.45 && lz <= 1.95) {
-      Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -2.5, -1.25), i: 0, pts: [[-3.2, -1.25], [-4.3, -1.25], [-4.3, .05], [-4.3, 1.55], [-3.2, 1.55], [-2.6, 1.45]].map(q => toW(h, ...q)) });
+    if (!P.up && (Math.hypot(lx + 4.2, lz - 1.8) < 2.8 || (lx <= -2.9 && lz >= .15 && lz <= 2.8))) {
+      Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, 2.5), i: 0, pts: [[-4.3, 1.75], [-4.3, .05], [-4.3, -1.3], [-4.3, -1.75]].map(q => toW(h, ...q)) });
+    } else if (P.up && (Math.hypot(lx + 4.2, lz + .2) < 2.8 || (lx <= -3 && lz >= -2.45 && lz <= 1.95))) {
+      Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, -1.75), i: 0, pts: [[-4.3, -1.3], [-4.3, .05], [-4.3, 1.75], [-4.3, 2.5]].map(q => toW(h, ...q)) });
     } else continue;
     P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];
     return true;
@@ -88,7 +100,7 @@ export function stairTick() {
 export function stairMove(dt) {
   if (!STAIR.on || !STAIR.run) return;
   const q = STAIR.pts[STAIR.i], dx = q[0] - P.x, dz = q[1] - P.z, d = Math.hypot(dx, dz), st = P.sp * .75 * dt;
-  if (d <= st) { P.x = q[0]; P.z = q[1]; if (++STAIR.i >= STAIR.pts.length) { cancelStair(); P.tx = P.x; P.tz = P.z; } }
+  if (d <= st) { P.x = q[0]; P.z = q[1]; if (++STAIR.i >= STAIR.pts.length) { const th = STAIR.then; cancelStair(); P.tx = th ? th[0] : P.x; P.tz = th ? th[1] : P.z; } }
   else { P.x += dx / d * st; P.z += dz / d * st; }
   const yaw = Math.atan2(dx, dz), da = Math.atan2(Math.sin(yaw - P.g.rotation.y), Math.cos(yaw - P.g.rotation.y));
   P.g.rotation.y += da * Math.min(1, dt * 12);
@@ -107,7 +119,8 @@ export function updateCutaway() {
     h.roof.visible = !inside;
     if (h.up) h.up.visible = !inside || !!P.up;
     const [cx, cz] = toL(h, cam.position.x, cam.position.z);
-    h.walls.forEach(w => { w.g.visible = !(inside && (cx * w.nx + cz * w.nz) * h.K > w.D * h.K * .35); });
+    const inY = !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;
+    h.walls.forEach(w => { w.g.visible = !((inside || (w.y && inY)) && (cx * w.nx + cz * w.nz) * h.K > w.D * h.K * .35); });
   }
 }
 
@@ -120,4 +133,37 @@ export function floorLevelH() {
     if (Math.abs(lx) < (h.fx || 5.3) + 1 && Math.abs(lz) < (h.fz || 4.1) + 1) return h.Hf !== undefined ? h.Hf : 3.03 * h.K;
   }
   return 0;
+}
+
+/** (x,z) está sobre o piso do andar de cima da casa onde o personagem está? */
+export function upperContains(x, z) {
+  if (!P.up) return false;
+  for (const h of HOUSES) {
+    if (h.noStair) continue;
+    const [px, pz] = toL(h, P.x, P.z);
+    if (Math.abs(px) > (h.fx || 5.3) || Math.abs(pz) > (h.fz || 4.1)) continue;
+    const [lx, lz] = toL(h, x, z);
+    return Math.abs(lx) <= (h.sc ? (h.fx || 5.3) - .3 : 5.1) && Math.abs(lz) <= (h.fz || 4.1) - .1;
+  }
+  return false;
+}
+
+/** Clicou fora da casa estando no andar de cima: vai à escada, desce, abre a porta e segue para (x,z) */
+export function descendThen(x, z) {
+  for (const h of HOUSES) {
+    if (h.noStair || !P.up) continue;
+    const [px, pz] = toL(h, P.x, P.z);
+    if (Math.abs(px) > (h.fx || 5.3) || Math.abs(pz) > (h.fz || 4.1)) continue;
+    if (h.sc) {   // casas com escadas roteirizadas (castelo): desce pela escada do lado em que está
+      const r = h.sc((px < 0 ? -1 : 1) * 5.9, 3); if (!r) continue;
+      Object.assign(STAIR, { on: true, run: false, h, A: toW(h, ...r.A), i: 0, then: [x, z], pts: r.pts.map(q => toW(h, ...q)) });
+      P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];
+      return true;
+    }
+    Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, -1.75), i: 0, then: [x, z], pts: [[-4.3, -1.3], [-4.3, .05], [-4.3, 1.75], [-4.3, 2.5]].map(q => toW(h, ...q)) });
+    if (h.door) openDoorById(h.door);
+    P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];
+    return true;
+  }
+  return false;
 }

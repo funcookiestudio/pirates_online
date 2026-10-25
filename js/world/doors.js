@@ -9,10 +9,27 @@ import { refreshProps } from './floors.js';
 
 export const DOORS = [];
 export const ROOM_PRICE = 40;
-const RENT = { until: 0 };
-export const roomRented = () => CLOCK.total < RENT.until;
-/** Aluga um quarto por um dia (24 h de jogo): destranca as portas dos quartos */
-export function rentRoom() { RENT.until = CLOCK.total + 24; }
+const RENT = { on: false, next: 0 };
+/** Quartos que já têm dono: nunca abrem para o jogador */
+export const ROOM_OWNERS = { 'room-f3': 'Mestre Breu', 'room-3.4': 'Pé-de-Pau Polly' };
+export const roomRented = () => RENT.on;
+/** Horas de jogo até a próxima cobrança da diária */
+export const rentDue = () => Math.max(0, RENT.next - CLOCK.total);
+const rentable = d => !d.room || (RENT.on && !ROOM_OWNERS[d.id]);
+/** Aluga um quarto: cobra a primeira diária (feita por quem chama) e destranca; as próximas saem sozinhas a cada 24 h */
+export function rentRoom() { RENT.on = true; RENT.next = CLOCK.total + 24; }
+/** Devolve a chave: tranca de novo os quartos e fecha as portas abertas */
+export function cancelRent() {
+  RENT.on = false;
+  DOORS.forEach(d => { if (d.room && d.open) { d.open = false; d.t = 0; } });
+  refreshProps();
+}
+/** A cada quadro: passada cada diária, cobra de novo; sem ouro, a chave volta para a Madame Rum */
+export function tickRent() {
+  if (!RENT.on || CLOCK.total < RENT.next) return;
+  if (P.gold >= ROOM_PRICE) { P.gold -= ROOM_PRICE; RENT.next += 24; log('🛏 Diária do quarto cobrada: -' + ROOM_PRICE + ' ouro'); }
+  else { cancelRent(); log('🔑 Sem ouro para a diária: a Madame Rum retomou a chave do quarto'); }
+}
 
 const toW = (h, lx, lz) => [h.x + lx * h.K * Math.cos(h.th) + lz * h.K * Math.sin(h.th), h.z - lx * h.K * Math.sin(h.th) + lz * h.K * Math.cos(h.th)];
 const toL = (h, x, z) => { const dx = x - h.x, dz = z - h.z; return [(dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K]; };
@@ -58,6 +75,7 @@ function useDoor(d, final) {
   P.tgt = null; P.tx = P.x; P.tz = P.z;
 }
 function toggleDoor(d) {
+  if (d.room && ROOM_OWNERS[d.id]) { log('🔒 Quarto de ' + ROOM_OWNERS[d.id] + ': trancado'); return; }
   if (d.room && !roomRented()) { log('🔒 Trancada. Alugue um quarto com a Madame Rum'); return; }
   d.open = !d.open; d.t = 0; if (d.pair) { d.pair.open = d.open; d.pair.t = 0; }
   refreshProps();
@@ -70,9 +88,17 @@ export function applyDoorReach() {
 }
 
 /** Abre (se estiver fechada e destrancada) a porta de id dado — ex.: para falar com a Madame Rum */
+/** Ponto do mundo diante da porta (id), `out` unidades locais para fora, e a direção para fora [fx, fz] */
+export function doorFront(id, out = 1.2) {
+  const d = DOORS.find(q => q.id === id); if (!d) return null;
+  const h = d.h, f = [Math.sin(h.th), Math.cos(h.th)];
+  return { p: toW(h, d.c, d.f + out), f };
+}
+/** A porta existe, está fechada e pode ser aberta? */
+export function doorClosed(id) { const d = DOORS.find(q => q.id === id); return !!d && !d.open && rentable(d); }
 export function openDoorById(id) {
   const d = DOORS.find(q => q.id === id);
-  if (d && !d.open && !(d.room && !roomRented())) { d.open = true; refreshProps(); }
+  if (d && !d.open && rentable(d)) { d.open = true; refreshProps(); }
 }
 
 const meshes = [];

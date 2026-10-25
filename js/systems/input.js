@@ -14,8 +14,10 @@ import { togglePet } from '../pets/manager.js';
 import { freePoint } from './steer.js';
 import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
-import { stairClick, cancelStair, floorLevelH } from '../world/floors.js';
+import { stairClick, cancelStair, floorLevelH, upperContains, descendThen } from '../world/floors.js';
 import { doorClick, cancelDoor, exitClick } from '../world/doors.js';
+import { bedClick } from '../world/beds.js';
+import { wakeUp } from './bed.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
 import { toggleMount, MOUNT } from './mount.js';
@@ -28,11 +30,13 @@ let down = false;
 /** Clique/toque na tela: seleciona um inimigo próximo ou define o destino no chão */
 function pick(cx, cy) {
   if (P.sit > 0 || P.sitT) standUp(); // clicar no mundo levanta o personagem
+  if (P.bed) wakeUp();                // …e acorda quem dorme
   MOUNT.want = false;   // clicar em outro lugar cancela a ida até o cavalo
   state.autoHold = 2.5; // assume o controle do auto combate por 2,5 s
   pointer.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(pointer, cam);
   ray.ray.intersectPlane(ground, aim);
+  const g0 = aim.clone();
   // relevo: avança pelo raio até o chão real (morros e cais), em vez do plano y=0
   { const o = ray.ray.origin, d = ray.ray.direction, LH = floorLevelH(); let hit = false;
     for (let t = 0; t < 400; t += 1) {
@@ -44,9 +48,23 @@ function pick(cx, cy) {
       }
     }
     void hit; }
+  // andar de cima: o clique mira o piso de cima; fora da casa vale o chão lá embaixo (desce a escada, abre a porta e sai)
+  if (P.up && floorLevelH() > 0) {
+    const o = ray.ray.origin, d = ray.ray.direction, t = (groundY(P.x, P.z) + floorLevelH() - o.y) / d.y;
+    if (t > 0) {
+      const ux = o.x + d.x * t, uz = o.z + d.z * t;
+      if (upperContains(ux, uz)) aim.set(ux, 0, uz);
+      else {
+        cancelStair(); cancelDoor();
+        const f = freePoint(g0.x, g0.z, .7);
+        if (descendThen(f.x, f.z)) { P.tgt = null; mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z); return; }
+      }
+    }
+  }
 
   cancelStair(); cancelDoor();
   if (doorClick(ray)) return;
+  if (bedClick(ray)) return;
   if (exitClick(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
   if (stairClick(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
   if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
