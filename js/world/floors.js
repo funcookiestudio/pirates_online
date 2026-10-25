@@ -173,6 +173,8 @@ export function updateCutaway() {
     const [cx, cz] = toL(h, cam.position.x, cam.position.z);
     const inY = inside && !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;   // paredes só somem com o personagem dentro
     const cd = Math.hypot(cx - px, cz - pz) || 1;   // direção da câmera vista do personagem: esconde também as paredes na linha de visão em diagonal
+    if (h.ch) { h.ch[0].visible = !inside || !P.up; h.ch[1].visible = !inside || !!P.up; }   // chaminé: por dentro, só a parte do andar do personagem
+    if (h.iw) h.iw.forEach(w => { const pc = w.plane === 'u' ? px : pz, cc = w.plane === 'u' ? cx : cz; w.g.visible = !(inside && P.up && (pc - w.c) * (cc - w.c) < 0); });   // paredes internas do quarto: somem só quando estão entre a câmera e o personagem
     h.walls.forEach(w => { w.g.visible = !((inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)); });
   }
 }

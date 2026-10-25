@@ -67,7 +67,7 @@ DI={id:'tavern-front'};door(3.5,0,1.4,2.3,front,1.0);win('x',3.5,-3.2,1.2,1,2.1,
 wall('x',-3.5,-5,5,[{c:1.5,w:1.2,y0:1,y1:2.1},{c:3.8,w:1.2,y0:.12,y1:2.2}],wB,.12,2.9,true);win('x',-3.5,1.5,1.2,1,2.1,wB);DI={id:'tavern-back'};door(-3.5,3.8,1.2,2.2,wB,.5);
 wall('z',-5,-3.5,3.5,[{c:-2.2,w:1.2,y0:1,y1:2.1}],wL,.12,2.9,true);win('z',-5,-2.2,1.2,1,2.1,wL);
 wall('z',5,-3.5,3.5,[{c:1.5,w:1.2,y0:1,y1:2.1}],wR,.12,2.9,true);win('z',5,1.5,1.2,1,2.1,wR);
-const uf=new THREE.Group();front.add(uf);
+const uf=new THREE.Group();up.add(uf);   // fachada do andar de cima: parte do andar (some com o térreo)
 wall('x',4.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uf,3.15,2.45,false);
 for(const c of[-3,0,3])win('x',4.9,c,1.1,3.8,4.8,uf);
 wall('x',-4.9,-5,5,[{c:-3,w:1.1,y0:3.8,y1:4.8},{c:0,w:1.1,y0:3.8,y1:4.8},{c:3,w:1.1,y0:3.8,y1:4.8}],uB,3.15,2.45,false);
@@ -99,7 +99,8 @@ XR=false;
 // lareira (parede direita) e chaminé externa
 B(.7,2.1,.4,4.5,1.15,-2.0,STONE);B(.7,2.1,.4,4.5,1.15,-.4,STONE);B(.7,.45,1.6,4.5,2.25,-1.2,STONE);B(.85,.1,1.9,4.45,2.55,-1.2,TM);
 B(.04,2.0,.8,4.82,1.1,-1.2,0x1b1512);B(1,.1,1.8,4.4,.18,-1.2,STONE2);B(1.8,.02,1.8,3.4,.14,-1.2,0x8a3b2e);
-B(.9,8.5,1.2,5.6,4.35,-1.2,STONE);B(1.1,.15,1.4,5.6,8.7,-1.2,STONE2);
+const chL=new THREE.Group(),chU=new THREE.Group();S.add(chL,chU);   // chaminé em duas partes (térreo / andar de cima): por dentro só aparece a do andar do personagem
+B(.9,3.15,1.2,5.6,1.575,-1.2,STONE,chL);B(.9,5.625,1.2,5.6,5.9625,-1.2,STONE,chU);B(1.1,.15,1.4,5.6,8.7,-1.2,STONE2,chU);bakeGroup(chL);bakeGroup(chU);
 const coals=[],fl=[];
 for(let i=0;i<5;i++)coals.push(B(.2,.1,.2,4.55,.28,-1.6+i*.2,0x8a2a08,S,0xff4a10));
 for(let i=0;i<3;i++){const f=new THREE.Mesh(new THREE.ConeGeometry(.12,.5,4),M(0xff8a1a,0xff6a00));f.position.set(4.55,.6,-1.5+i*.3);S.add(f);fl.push(f)}
@@ -135,20 +136,22 @@ for(const bx of[-1.07,2.5]){const z0=-3.45;
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
 // divisórias entre os quartos, parede do corredor e portas
-for(const x of[-1.8,1.8]){B(.15,2.45,2.95,x,4.375,-3.225,PL,up);for(const z of[-4.7,-1.75])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,2.95,x,5.5,-3.225,TM,up);B(.2,.2,2.95,x,3.25,-3.225,TM,up)}
-wall('x',-1.7,-1.8,5,[{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
-const d2=c=>{const w=1,h=2.05,yb=3.15;W('x',-1.7,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',-1.7,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
- const p=new THREE.Group();p.position.set(c-w/2,yb,-1.68);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:.9,c,f:-1.7,w,lvl:1,room:true,id:'room-'+c});
+const iW=[],mkW=(plane,c)=>{const g=new THREE.Group();up.add(g);iW.push({g,plane,c});return g};   // paredes internas do andar de cima: somem quando estão entre a câmera e o personagem
+const gP={'-1.8':mkW('u',-1.8),'1.8':mkW('u',1.8)},gCB=mkW('v',-1.7),gCF=mkW('v',1.45);
+for(const x of[-1.8,1.8]){const q=gP[x];B(.15,2.45,2.95,x,4.375,-3.225,PL,q);for(const z of[-4.7,-1.75])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,2.95,x,5.5,-3.225,TM,q);B(.2,.2,2.95,x,3.25,-3.225,TM,q)}
+wall('x',-1.7,-1.8,5,[{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],gCB,3.15,2.45,false);
+const d2=c=>{const w=1,h=2.05,yb=3.15;W('x',-1.7,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);W('x',-1.7,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);
+ const p=new THREE.Group();p.position.set(c-w/2,yb,-1.68);p.rotation.y=0;gCB.add(p);DR.push({p,g:gCB,openRot:.9,c,f:-1.7,w,lvl:1,room:true,id:'room-'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,.01,IRON,p);B(w,.1,.09,w/2,h-.4,.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,.07);p.add(r)};
 d2(0);d2(3.4);
 // quartos da frente (da direita para a esquerda), com corredor entre eles e os quartos dos fundos
-wall('x',1.45,-1.8,5,[{c:3,w:1,y0:3.15,y1:5.2},{c:-.4,w:1,y0:3.15,y1:5.2}],up,3.15,2.45,false);
-for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',1.45,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,up);W('x',1.45,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,up);
- const p=new THREE.Group();p.position.set(c-w/2,yb,1.43);p.rotation.y=0;up.add(p);DR.push({p,g:up,openRot:-.9,c,f:1.45,w,lvl:1,room:true,id:'room-f'+c});
+wall('x',1.45,-1.8,5,[{c:3,w:1,y0:3.15,y1:5.2},{c:-.4,w:1,y0:3.15,y1:5.2}],gCF,3.15,2.45,false);
+for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',1.45,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCF);W('x',1.45,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCF);
+ const p=new THREE.Group();p.position.set(c-w/2,yb,1.43);p.rotation.y=0;gCF.add(p);DR.push({p,g:gCF,openRot:-.9,c,f:1.45,w,lvl:1,room:true,id:'room-f'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,-.01,IRON,p);B(w,.1,.09,w/2,h-.4,-.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,-.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,-.07);p.add(r)}
-for(const x of[-1.8,1.8]){B(.15,2.45,3.15,x,4.375,3.125,PL,up);for(const z of[1.55,4.7])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,3.15,x,5.5,3.125,TM,up);B(.2,.2,3.15,x,3.25,3.125,TM,up)}
+for(const x of[-1.8,1.8]){const q=gP[x];B(.15,2.45,3.15,x,4.375,3.125,PL,q);for(const z of[1.55,4.7])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,3.15,x,5.5,3.125,TM,q);B(.2,.2,3.15,x,3.25,3.125,TM,q)}
 for(const bx of[4.3,1.1]){const z0=3.35;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0-.35,bx>0?0x8a6a2e:0x2e6b6b,up);B(.8,.12,.4,bx,3.95,z0+.8,0xf0ead8,up);
  B(1.3,1.1,.1,bx,4.0,4.4,WOOD2,up);B(1.2,.5,.08,bx,3.65,2.32,WOOD2,up);
@@ -245,13 +248,13 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   });
   const pts = { keeper: [-.3, -1.6], talkAt: at(-.3 * K, -.1 * K), doorId: 'tavern-front' };
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);
-  [uB, uL, uR, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); bakeGroup(up, [uB, uL, uR, ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
+  [uB, uL, uR, uf, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); iW.forEach(q => bakeGroup(q.g, lv(q.g))); bakeGroup(up, [uB, uL, uR, uf, ...iW.map(q => q.g), ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
   const H = { x, z, th, K };
   const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, 0], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, 0] };
   const ddm = {};
   DR.forEach(d => { const dd = addDoor(d, H); ddm[d.id] = dd; const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
   refreshProps();
-  registerFloors({ x, z, th, K, Hf: 3.15 * K, inBox: (lx, lz) => Math.abs(lx) <= 4.95 && Math.abs(lz) <= 4.95, upOK: (lx, lz) => !(lx > -5.15 && lx < -3.55 && lz > -1.75 && lz < 1.85), links: [{ l: 0, x: -4.3, z: 2.5 }, { l: 1, x: -4.3, z: -1.75 }], door: 'tavern-front', fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
+  registerFloors({ x, z, th, K, Hf: 3.15 * K, inBox: (lx, lz) => Math.abs(lx) <= 4.95 && Math.abs(lz) <= 4.95, upOK: (lx, lz) => !(lx > -5.15 && lx < -3.55 && lz > -1.75 && lz < 1.85), links: [{ l: 0, x: -4.3, z: 2.5 }, { l: 1, x: -4.3, z: -1.75 }], door: 'tavern-front', iw: iW, ch: [chL, chU], fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uf, nx: 0, nz: 1, D: 4.9 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
   const FH = HOUSES[HOUSES.length - 1], TW = .12;
   // ── mapa de retângulos (térreo) ──
   R(0, -5.2, 3.35, -.8, 3.85, 0, 1); R(0, .8, 3.35, 5.2, 3.85, 0, 1); R(0, -.8, 3.35, .8, 3.85, 'tavern-front');
