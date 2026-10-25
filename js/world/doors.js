@@ -13,7 +13,7 @@ export const DOORS = [];
 export const ROOM_PRICE = 40;
 const RENT = { on: false, next: 0 };
 /** Quartos que já têm dono: nunca abrem para o jogador */
-export const ROOM_OWNERS = { 'room-f3': 'Mestre Breu', 'room-3.4': 'Pé-de-Pau Polly' };
+export const ROOM_OWNERS = { 'room-0': 'Madame Rum', 'room-f3': 'Mestre Breu', 'room-3.4': 'Pé-de-Pau Polly' };
 export const roomRented = () => RENT.on;
 /** Persistência do aluguel: horas restantes (ou null) */
 export const getRent = () => RENT.on ? { left: +Math.max(0, RENT.next - CLOCK.total).toFixed(2) } : null;
@@ -64,6 +64,7 @@ export function updateDoors(dt) {
   DOORS.forEach(d => {   // fecham sozinhas depois de alguns segundos, se ninguém estiver no vão
     if (!d.open) { d.t = 0; return; }
     d.t = (d.t || 0) + dt;
+    if (d.hold > 0) { d.hold -= dt; d.t = 0; }
     if (d.t > CLOSE_AFTER) { const [cx, cz] = cen(d); if (Math.hypot(P.x - cx, P.z - cz) > 1.6 * d.h.K) { d.open = false; refreshProps(); } }
   });
   DOORS.forEach(d => { const tg = (d.base || 0) + (d.open ? d.openRot : 0); d.p.rotation.y += (tg - d.p.rotation.y) * Math.min(1, dt * 8); if (Math.abs(tg - d.p.rotation.y) < ANG_EPS) d.p.rotation.y = tg; });
@@ -106,6 +107,13 @@ export function doorFront(id, out = 1.2) {
 }
 /** A porta existe, está fechada e pode ser aberta? */
 export function doorClosed(id) { const d = DOORS.find(q => q.id === id); return !!d && !d.open && rentable(d); }
+/** NPC abre uma porta (também as de quartos com dono) e a mantém aberta enquanto passa */
+export function npcOpenDoor(id, hold = 9) {
+  const d = DOORS.find(q => q.id === id); if (!d) return false;
+  d.hold = hold; if (!d.open) { d.open = true; d.t = 0; refreshProps(); }
+  return true;
+}
+export const doorIsOpen = id => { const d = DOORS.find(q => q.id === id); return !!d && d.open; };
 export function openDoorById(id) {
   const d = DOORS.find(q => q.id === id);
   if (d && !d.open && rentable(d)) { d.open = true; refreshProps(); }

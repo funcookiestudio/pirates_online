@@ -121,9 +121,9 @@ export function buildVillage() {
     if (kind === 'tavern') {   // moradores da taberna (cada um com seu quarto no andar de cima)
       const K = TAVERN_SC;
       // cada um tem o seu quarto no andar de cima: Breu na frente (cama da direita), Polly nos fundos
-      const room = (bx, bz, front) => { const [wx, wz] = at(bx * K, (bz + (front ? -.85 : .85)) * K); return { x: wx, z: wz, y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), sb: at(-4.35 * K, 2.5 * K), door: at(0, 5.2 * K), dr: 'tavern-front' }; };
-      citizen(...at(1.4 * K, 6.0 * K), th, looks[3], { kind: 'tenant', room: room(4.3, 3.65, true) }, 3);     // Mestre Breu
-      citizen(...at(-1.4 * K, 6.6 * K), th, looks[4], { kind: 'tenant', room: room(2.5, -3.75, false) }, 4);        // Pé-de-Pau Polly
+      const room = (bx, bz, front, rd, rc) => { const [wx, wz] = at(bx * K, (bz + (front ? -.85 : .85)) * K); return { at, K, th, H: 3.15 * K, o: at(0, 0), rid: rd, rin: rc, bf: at(bx * K, (bz + (front ? -1.55 : 1.55)) * K), x: wx, z: wz, y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), sb: at(-4.35 * K, 2.5 * K), door: at(0, 5.2 * K), dr: 'tavern-front' }; };
+      citizen(...at(1.4 * K, 6.0 * K), th, looks[3], { kind: 'tenant', room: room(4.3, 3.65, true, 'room-f3', [3, 2.4, 3, .6]) }, 3);     // Mestre Breu
+      citizen(...at(-1.4 * K, 6.6 * K), th, looks[4], { kind: 'tenant', room: room(2.5, -3.75, false, 'room-3.4', [3.4, -2.4, 3.4, -.6]) }, 4);        // Pé-de-Pau Polly
     }
   });
 

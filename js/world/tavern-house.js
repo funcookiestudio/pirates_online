@@ -140,7 +140,7 @@ const mkDark=(id,x0,x1,z0,z1,ok)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(
 const iW=[],mkW=(plane,c,rooms)=>{const g=new THREE.Group();up.add(g);iW.push({g,plane,c,rooms});return g};   // paredes internas do andar de cima: abaixam quando estão entre a câmera e o personagem E pertencem ao quarto dele
 const gPB={'-1.8':mkW('u',-1.8,['C','B1']),'1.8':mkW('u',1.8,['B1','B2'])},gPF={'-1.8':mkW('u',-1.8,['C','F1']),'1.8':mkW('u',1.8,['F1','F2'])};
 const cB1=mkW('v',-1.7,['B1','C']),cB2=mkW('v',-1.7,['B2','C']),cF1=mkW('v',1.45,['F1','C']),cF2=mkW('v',1.45,['F2','C']);
-mkDark('B1',-1.8,1.8,-4.9,-1.7,()=>roomRented());mkDark('B2',1.8,4.9,-4.9,-1.7,()=>false);mkDark('F1',-1.8,1.8,1.45,4.9,()=>roomRented());mkDark('F2',1.8,4.9,1.45,4.9,()=>false);   // quartos sem acesso ficam escuros
+mkDark('B1',-1.8,1.8,-4.9,-1.7,()=>false);mkDark('B2',1.8,4.9,-4.9,-1.7,()=>false);mkDark('F1',-1.8,1.8,1.45,4.9,()=>roomRented());mkDark('F2',1.8,4.9,1.45,4.9,()=>false);   // quartos sem acesso ficam escuros
 for(const x of[-1.8,1.8]){const q=gPB[x];B(.15,2.45,2.95,x,4.375,-3.225,PL,q);for(const z of[-4.7,-1.75])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,2.95,x,5.5,-3.225,TM,q);B(.2,.2,2.95,x,3.25,-3.225,TM,q)}
 wall('x',-1.7,-1.8,1.8,[{c:0,w:1,y0:3.15,y1:5.2}],cB1,3.15,2.45,false);wall('x',-1.7,1.8,5,[{c:3.4,w:1,y0:3.15,y1:5.2}],cB2,3.15,2.45,false);
 const d2=(c,gCB)=>{const w=1,h=2.05,yb=3.15;W('x',-1.7,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);W('x',-1.7,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);
@@ -241,13 +241,13 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
     const hit = new THREE.Mesh(new THREE.BoxGeometry(1.3, .6, 2.3), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(bx, 3.95, bz); hit.userData.dyn = 1; up.add(hit);
     const ft = at(bx * K, (bz + (front ? -.85 : .85)) * K), ac = at(axl * K, azl * K);
     const inRoom = (wx, wz) => { const dx = wx - x, dz = wz - z, lx = (dx * Math.cos(th) - dz * Math.sin(th)) / K, lz = (dx * Math.sin(th) + dz * Math.cos(th)) / K; return Math.abs(lx) < 1.45 && (front ? lz > 1.9 && lz < 4.5 : lz < -1.9 && lz > -4.5); };
-    addBed({ x: ft[0], z: ft[1], y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), ax: ac[0], az: ac[1], hit, ok: roomRented, inRoom });
+    addBed({ x: ft[0], z: ft[1], y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), ax: ac[0], az: ac[1], hit, ok: front ? roomRented : () => false, inRoom });
   });
   // armários dos quartos alugáveis: armazenamento do jogador (mesmo baú da vila)
   [[1.25, -4.55, -1, 1.25, -3.55], [-1.25, 4.4, 1, -1.25, 3.5]].forEach(([wx, wz, s, axl, azl]) => {
     const hit = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.1, .7), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(wx, 4.2, wz); hit.userData.dyn = 1; up.add(hit);
     const ac = at(axl * K, azl * K), cp = at(wx * K, wz * K);
-    addCabinet({ x: cp[0], z: cp[1], ax: ac[0], az: ac[1], hit, ok: roomRented });
+    addCabinet({ x: cp[0], z: cp[1], ax: ac[0], az: ac[1], hit, ok: s > 0 ? roomRented : () => false });
   });
   const pts = { keeper: [-.3, -1.6], talkAt: at(-.3 * K, -.1 * K), doorId: 'tavern-front' };
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);

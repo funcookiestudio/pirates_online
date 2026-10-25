@@ -1,6 +1,6 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
-import { openDoorById, doorClosed, tickRent, setDoorLock } from '../world/doors.js';
+import { openDoorById, doorClosed, tickRent, setDoorLock, npcOpenDoor, doorFront } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { scene, ren } from '../core/engine.js';
 import { M } from '../core/utils.js';
@@ -19,6 +19,7 @@ import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
 import { $ } from '../core/utils.js';
 import { log } from '../ui/notify.js';
 import { groundY } from '../world/terrain.js';
+import { planInterior } from '../world/interior-nav.js';
 import { CFG } from '../systems/settings.js';
 
 const list = [];
@@ -78,6 +79,48 @@ export function npcAt(x, z) {
   if (P.up) return null;   // no andar de cima da taberna não se clica em NPCs
   list.forEach(n => { if (!n.g.visible) return; const d = Math.hypot(n.g.position.x - x, n.g.position.z - z); if (d < bd) { bd = d; b = n; } });
   return b;
+}
+
+
+/* ── Inquilinos da taberna: caminho de verdade até o quarto (porta, escada, corredor, porta do quarto, cama) e de volta ── */
+const loc = (tn, x, z) => { const dx = x - tn.o[0], dz = z - tn.o[1], c = Math.cos(tn.th), s = Math.sin(tn.th); return [(dx * c - dz * s) / tn.K, (dx * s + dz * c) / tn.K]; };
+const stairY = (tn, x, z, up) => { const [lx, lz] = loc(tn, x, z); if (lx >= -5.1 && lx <= -3.6 && lz >= -1.85 && lz <= 2.8) return tn.H * Math.max(0, Math.min(1, (1.85 - lz) / 3)); return up ? tn.H : 0; };
+const planTo = (cur, to, L) => { const p = planInterior(cur[0], cur[1], to[0], to[1], L); return p && p.pts.length ? [...p.pts, to] : [to]; };
+const STAIR_UP = [[-4.3, 1.75], [-4.3, .05], [-4.3, -1.3], [-4.3, -1.75]];
+function tnScript(n, dt, tn) {
+  const g = n.g, q = n.q, K = tn.K, W = (a, b) => tn.at(a * K, b * K), cur = () => [g.position.x, g.position.z];
+  const doorW = W(tn.rin[0], tn.rin[1] > 0 ? 1.45 : -1.7);
+  const face = (px, pz) => { g.rotation.y = turn(g.rotation.y, Math.atan2(px - g.position.x, pz - g.position.z), dt * 8); n.vx = n.vz = 0; n.spd = 0; };
+  const go = (pts, ph, lvl) => { q.ph = ph; q.pts = pts; q.i = 0; if (lvl !== undefined) n.lvl = lvl; };
+  const walked = sp => {   // segue os pontos do plano (já livres de móveis e paredes)
+    const p = q.pts[q.i]; if (!p) return true;
+    const dx = p[0] - g.position.x, dz = p[1] - g.position.z, d = Math.hypot(dx, dz);
+    if (d < .14) { q.i++; return q.i >= q.pts.length; }
+    const st = Math.min(d, sp * dt); g.position.x += dx / d * st; g.position.z += dz / d * st;
+    n.vx = dx / d * sp; n.vz = dz / d * sp; n.spd = sp; g.rotation.y = turn(g.rotation.y, Math.atan2(dx, dz), dt * 10);
+    return false;
+  };
+  const wait = ph => { if (n.dro) { face(doorW[0], doorW[1]); return false; } return true; };
+  const hold = id => npcOpenDoor(id, 6);
+  switch (q.ph) {
+    case 'up': if (walked(.9)) go(planTo(cur(), W(tn.rin[2], tn.rin[3]), 1), 'cor', 1); break;
+    case 'cor': if (walked(1.1)) { n.dro = { id: tn.rid, t: 0, done: false, force: true }; q.ph = 'open'; } break;
+    case 'open': hold(tn.rid); if (wait()) go([...planTo(cur(), W(tn.rin[0], tn.rin[1]), 1), tn.bf], 'bed'); break;
+    case 'bed': hold(tn.rid); if (walked(1.0)) { n.q = null; n.up = true; n.sl = 0; n.vx = n.vz = 0; n.spd = 0; } break;
+    // de manhã: da cama até a rua
+    case 'dbed': if (walked(1.0)) { n.dro = { id: tn.rid, t: 0, done: false, force: true }; q.ph = 'dopen'; } break;
+    case 'dopen': hold(tn.rid); if (wait()) go(planTo(cur(), W(-4.3, -1.3), 1), 'dcor'); break;
+    case 'dcor': hold(tn.rid); if (walked(1.1)) go([...STAIR_UP].reverse().slice(1).concat([[-4.3, 2.5]]).map(a => W(a[0], a[1])), 'ddown'); break;
+    case 'ddown': if (walked(.9)) { const f = doorFront('tavern-front', -1.4); go(planTo(cur(), f.p, 0), 'dout', 0); } break;
+    case 'dout': if (walked(1.1)) { n.dro = { id: 'tavern-front', t: 0, done: false, force: true }; q.ph = 'dfopen'; } break;
+    case 'dfopen': hold('tavern-front'); { const f = doorFront('tavern-front', 0); if (wait()) go([doorFront('tavern-front', 1.8).p], 'dexit'); else face(f.p[0], f.p[1]); } break;
+    case 'dexit': hold('tavern-front'); if (walked(1.1)) { n.q = null; n.lvl = 0; n.fy = 0; n.t = 0; } break;
+  }
+  if (n.q) {   // altura (escada/andar) e visibilidade por andar
+    n.fy = stairY(tn, g.position.x, g.position.z, n.lvl === 1);
+    const [lx, lz] = loc(tn, g.position.x, g.position.z), inTav = Math.abs(lx) < 5.1 && Math.abs(lz) < 5.1, nUp = n.fy > tn.H * .5;
+    g.visible = inTav ? (nUp ? !!P.up : !P.up) : true;
+  }
 }
 
 const LABEL_R = 9;   // nome do NPC só aparece com o jogador a menos de 9 m
@@ -252,6 +295,7 @@ export function updateNpcs(dt, now) {
         if (n.rt.hide) { if (n.rt.bed) farmerSleep(n, t, dt); else g.visible = false; return; }
       } else if (n.tn) {   // inquilino da taberna: passeia pela vila de dia; à noite sobe para o seu quarto e dorme
         const h = hourNow(), tn = n.tn, night = isEvening(h);
+        if (n.q) { tnScript(n, dt, tn); } else {
         if (n.up) {
           g.visible = !!P.up && Math.hypot(P.x - tn.x, P.z - tn.z) < 14;
           if (night && !talking) {
@@ -259,7 +303,7 @@ export function updateNpcs(dt, now) {
             const zz = n.zz || (n.zz = makeZzz()); zz.update(tn.x - Math.sin(tn.ry) * 1.7, tn.y + .55, tn.z - Math.cos(tn.ry) * 1.7, t, n.sl > .95);
           } else {   // amanheceu: levanta e desce
             n.sl = Math.max(0, (n.sl || 0) - dt / 1.2); lieDown(g, n.sl, t); if (n.zz) n.zz.update(0, 0, 0, t, false);
-            if (n.sl === 0) { standFromBed(g); n.up = false; g.position.set(tn.sb[0], groundY(tn.sb[0], tn.sb[1]), tn.sb[1]); g.visible = true; n.t = 0; }
+            if (n.sl === 0) { standFromBed(g); n.up = false; n.lvl = 1; n.fy = tn.H; n.q = { ph: 'dbed', pts: planTo([tn.x, tn.z], tn.at(tn.rin[0] * tn.K, tn.rin[1] * tn.K), 1), i: 0 }; }
           }
           return;
         }
@@ -268,11 +312,12 @@ export function updateNpcs(dt, now) {
           if (dd < 2.4 && !n.dro && doorClosed(tn.dr)) n.dro = { id: tn.dr, t: 0, done: false };   // estende a mão direita e abre
           const inside = Math.hypot(g.position.x - tn.sb[0], g.position.z - tn.sb[1]);
           n.tx = tn.sb[0]; n.tz = tn.sb[1];
-          if (inside < 1.1) { n.up = true; n.sl = 0; n.vx = n.vz = 0; return; }
+          if (inside < 1.1) { n.lvl = 0; n.vx = n.vz = 0; n.q = { ph: 'up', pts: STAIR_UP.map(a => tn.at(a[0] * tn.K, a[1] * tn.K)), i: 0 }; return; }
         } else if (n.t <= 0 || ((n.st = (n.st || 0) + dt) > 12)) {   // novo ponto de passeio: praça, ruas da vila
           n.t = 6 + Math.random() * 8; n.st = 0;
           const a = Math.random() * 6.28, r = 3 + Math.random() * (VILLAGE_R - 17);
           n.tx = Math.cos(a) * r; n.tz = Math.sin(a) * r;
+        }
         }
       } else if (isEvening(hourNow()) && !n.job) {   // anoitece: volta para casa; das 21h às 6h dorme
         const h = hourNow(), awake = talking === n, sleepy = isNight(h) && !awake;
@@ -290,6 +335,7 @@ export function updateNpcs(dt, now) {
         if (n.sl === 0) standFromBed(g);
         return;
       } else if (n.t <= 0) { n.t = 3 + Math.random() * 5; const a = Math.random() * 6.28, r = Math.random() * 3.2; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; }
+      if (!n.q) {
       const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !n.dro && !(n.rt ? talking === n : near) ? (n.rt ? 1.25 : 1.1) : 0;
       let wx = 0, wz = 0;
       if (want) {
@@ -306,6 +352,7 @@ export function updateNpcs(dt, now) {
         if (sd < .8) { const push = (.8 - sd) * Math.min(1, dt * 5) * .5; g.position.x += sx / sd * push; g.position.z += sz / sd * push; P.x -= sx / sd * push; P.z -= sz / sd * push; }
       }
       collide(g.position, .5);
+      }
       const sp = Math.hypot(n.vx, n.vz), mv = Math.min(1, sp / 1.1);
       if (sp > .2) g.rotation.y = turn(g.rotation.y, Math.atan2(n.vx, n.vz), dt * 8);
       else if (near) g.rotation.y = turn(g.rotation.y, Math.atan2(P.x - g.position.x, P.z - g.position.z), dt * 3);
@@ -313,14 +360,14 @@ export function updateNpcs(dt, now) {
     }
     // marcha, respiração, olhar e piscar (a mesma do personagem)
     g.up.rotation.set(0, 0, 0);
-    g.position.y = groundY(g.position.x, g.position.z);   // a marcha desce o corpo a cada passo: parte sempre do chão (senão acumula e afunda)
+    g.position.y = groundY(g.position.x, g.position.z) + (n.q ? n.fy || 0 : 0);   // a marcha desce o corpo a cada passo: parte sempre do chão (senão acumula e afunda)
     const gr = gait(g, dt, gaitSpeed(n.spd || 0), { sword: false });
     if (n.role === 'citizen') g.arm.rotation.x = -gr.w * gr.sw * .8;
     if (n.rt) farmerPose(n, t, dt);
     if (n.dro) {   // abrindo uma porta: a mão direita (a do braço da arma) alcança e empurra
       const D = n.dro; D.t += dt; const e = Math.sin(Math.min(1, D.t / .9) * Math.PI);
       g.arm.rotation.x = -1.45 * e; g.arm.fa.rotation.x = -.35 * e; g.up.rotation.x = .08 * e;
-      if (!D.done && D.t > .35) { D.done = true; openDoorById(D.id); }
+      if (!D.done && D.t > .35) { D.done = true; D.force ? npcOpenDoor(D.id) : openDoorById(D.id); }
       if (D.t > .9) n.dro = null;
     }
     if (n.role === 'guard') g.head.rotation.y += Math.sin(t * .4) * .5;   // sentinela varre o olhar

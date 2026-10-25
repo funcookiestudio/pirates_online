@@ -65,12 +65,12 @@ const free = (g, i, j) => i >= 0 && j >= 0 && i < g.w && j < g.d && !g.blk[j * g
 const center = (g, i, j) => [-g.hx + (i + .5) * CS, -g.hz + (j + .5) * CS];
 
 /** Grade do andar atual da casa que contém o ponto (dentro das paredes + 1 m), ou null */
-function gridAt(x, z) {
+function gridAt(x, z, L) {
   for (const h of HOUSES) {
     const dx = x - h.x, dz = z - h.z;
     if (dx * dx + dz * dz > 900) continue;
     const [u, v] = toU(h, x, z);
-    if (Math.abs(u) <= (h.hx || 4.2) * h.K + .3 && Math.abs(v) <= (h.hz || 3.2) * h.K + .3) return build(h, P.up && !h.noStair ? 1 : 0);
+    if (Math.abs(u) <= (h.hx || 4.2) * h.K + .3 && Math.abs(v) <= (h.hz || 3.2) * h.K + .3) return build(h, L !== undefined ? L : P.up && !h.noStair ? 1 : 0);
   }
   return null;
 }
@@ -110,8 +110,8 @@ const nearestFree = (g, i, j) => {
 };
 
 /** Plano para (tx,tz) a partir de (x,z). Devolve { pts:[[x,z]...], goal:[x,z], exact } ou null se um dos pontos não está num interior */
-export function planInterior(x, z, tx, tz) {
-  const g = gridAt(x, z); if (!g || gridAt(tx, tz) !== g && (!gridAt(tx, tz) || gridAt(tx, tz).h !== g.h)) return null;
+export function planInterior(x, z, tx, tz, L) {
+  const g = gridAt(x, z, L); if (!g || gridAt(tx, tz, L) !== g && (!gridAt(tx, tz, L) || gridAt(tx, tz, L).h !== g.h)) return null;
   const [su, sv] = toU(g.h, x, z), [tu, tv] = toU(g.h, tx, tz);
   const s = nearestFree(g, ...cellOf(g, su, sv)), t0 = cellOf(g, tu, tv); if (!s) return { pts: [], goal: null, exact: false };
   const t = nearestFree(g, ...t0); if (!t) return { pts: [], goal: null, exact: false };
