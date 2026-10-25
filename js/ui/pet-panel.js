@@ -5,7 +5,7 @@ import { PETLIST, PSK, FXN, pxn } from '../data/pets.js';
 import { PST, pmax } from '../pets/stats.js';
 import { showPet } from './preview.js';
 import { emit } from '../core/events.js';
-import { setPet } from '../pets/manager.js';
+import { setPet, unequipPet } from '../pets/manager.js';
 import { resetPet, armedButton } from '../systems/reset.js';
 
 /** Aba da árvore de habilidades em exibição (null = a do companheiro ativo) */
@@ -55,10 +55,10 @@ function renderSheet(id, s, pp) {
   const bag = $('pbag');
   bag.innerHTML = '';
   for (let i = 0; i < 24; i++) bag.append(slot('', ''));
-  const active = id === state.pet.id, u = $('usep');
-  u.textContent = active ? 'Em uso' : 'Usar';
+  const active = id === state.pet.id && !state.petOff, u = $('usep');
+  u.textContent = active ? 'Desequipar' : 'Usar';
   u.className = 'use' + (active ? ' is' : '');
-  u.onclick = active ? null : () => { treeTab = null; setPet(id); };
+  u.onclick = active ? () => { unequipPet(); renderPets(); } : () => { treeTab = null; setPet(id); };
   armedButton($('rpp'), 'Resetar ' + pp.n, () => resetPet(id));
 }
 

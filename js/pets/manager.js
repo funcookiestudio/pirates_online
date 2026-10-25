@@ -29,7 +29,7 @@ export function petPerched() {
 /** Companheiro recebe dano; ao chegar a 0 de vida desmaia por 20 s */
 export function hurtPet(d) {
   const s = PST[state.pet.id];
-  if (s.dn > 0 || P.dead) return;
+  if (state.petOff || s.dn > 0 || P.dead) return;
   s.hp -= d;
   const p = petPos();
   puff(p.x, 1.2, p.z, 0xc02020, 3, 3);
@@ -42,6 +42,7 @@ export function hurtPet(d) {
 
 /** Tecla R: alterna entre "só acompanha/coleta" e "ataca também" */
 export function togglePet() {
+  if (state.petOff) { log('🚫 Nenhum companheiro equipado (Pets: escolha um para usar)'); return; }
   state.petAttack = !state.petAttack;
   refreshPetButton();
   const pet = state.pet, dog = isDog(pet.id);
@@ -68,10 +69,23 @@ function happyFx(dt, g) {
   if (state.petHappy <= 0) g.rotation.z = 0;
 }
 
+/** Desequipa o companheiro: fica sem nenhum ativo (some, não coleta nem ataca); equipar qualquer um o traz de volta */
+export function unequipPet(silent) {
+  if (state.petOff) return;
+  dropCarried(); dropMonkeyCarried(); hideFlyers();
+  MON.g.visible = false; DOG.g.visible = false;
+  state.petOff = true; state.petHappy = 0;
+  P.dr = 0;
+  refreshPetButton();
+  if (!silent) log('🚫 Sem companheiro: ' + state.pet.n + ' foi dispensado');
+  emit('pets:changed');
+}
+
 /** Troca o companheiro ativo */
 export function setPet(id) {
   const n = PETLIST.find(p => p.id === id);
-  if (!n || n === state.pet) return;
+  if (!n || (n === state.pet && !state.petOff)) return;
+  state.petOff = false;
 
   // quem estava carregando loot entrega antes de sair
   dropCarried();
@@ -94,6 +108,7 @@ export function setPet(id) {
 
 /** Vida do pet, redução de dano para o jogador e o comportamento do pet ativo */
 export function updatePets(dt, now) {
+  if (state.petOff) { P.dr = 0; return; }
   const id = state.pet.id, s = PST[id], m = pmax(id);
 
   if (s.dn > 0) {

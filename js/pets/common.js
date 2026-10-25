@@ -12,7 +12,7 @@ export function inCombat() {
 
 /** O companheiro deve lutar agora? (ataque ligado, jogador vivo, pet acordado e em combate) */
 export function petFighting() {
-  return state.petAttack && !P.dead && !PDN() && inCombat();
+  return state.petAttack && !state.petOff && !P.dead && !PDN() && inCombat();
 }
 
 /** Loot mais próximo da posição `p` (somente a menos de 35 m do jogador) */

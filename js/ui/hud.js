@@ -19,9 +19,9 @@ import { drawDayClock } from './dayclock.js';
 export function updateStatusBars() {
   const pet = PST[state.pet.id];
   sty('hp', 'height', Math.max(0, P.hp / P.max * 100) + '%');
-  sty('mp', 'height', Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%');
+  sty('mp', 'height', state.petOff ? '0%' : Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%');
   txt('hpt', Math.ceil(P.hp) + '/' + P.max);
-  txt('mpt', PDN() ? '💤' : Math.ceil(pet.hp));
+  txt('mpt', state.petOff ? '—' : PDN() ? '💤' : Math.ceil(pet.hp));
   sty('c2', 'height', P.cds[0] / 3 * 100 + '%');
   sty('c3', 'height', P.cds[1] / 5 * 100 + '%');
   sty('c6', 'height', P.rcd / ROLL_CD * 100 + '%');

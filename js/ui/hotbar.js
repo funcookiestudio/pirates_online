@@ -27,7 +27,7 @@ export function initHotbarFit() {
 /** Sincroniza ícone, modo (ataca / coleta) e destaque do botão com o companheiro ativo */
 export function refreshPetButton() {
   const pet = state.pet;
-  $('pi').textContent = pet.ic;
-  $('pm').textContent = state.petAttack ? '⚔' : ((pet.id === 'dog' || pet.id === 'rat') ? '🐾' : '📦');
+  $('pi').textContent = state.petOff ? '🚫' : pet.ic;
+  $('pm').textContent = state.petOff ? '' : state.petAttack ? '⚔' : ((pet.id === 'dog' || pet.id === 'rat') ? '🐾' : '📦');
   $('s5').classList.toggle('on', state.petAttack);
 }

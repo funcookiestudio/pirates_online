@@ -6,7 +6,7 @@ import { P } from '../entities/player.js';
 import { bag, chest, eq, setWeapon } from './inventory.js';
 import { WEAPONS } from '../data/weapons.js';
 import { PST } from '../pets/stats.js';
-import { setPet } from '../pets/manager.js';
+import { setPet, unequipPet } from '../pets/manager.js';
 import { refreshPetButton } from '../ui/hotbar.js';
 import { MOUNT } from './mount.js';
 import { SEED } from '../world/terrain.js';
@@ -41,6 +41,7 @@ export function saveGame() {
       player: Object.fromEntries(PLAYER_FIELDS.map(f => [f, P[f]])),
       bag, chest, eq, act: P.act, pets,
       pet: state.pet.id,
+      petOff: !!state.petOff,
       petAttack: state.petAttack,
       autoCfg: state.autoCfg,
       dunDone: state.dunDone,
@@ -91,6 +92,7 @@ export function loadGame() {
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });
     if (PST[s.pet]) setPet(s.pet);
+    if (s.petOff) unequipPet(true);
     refreshPetButton();
     return true;
   } catch (e) {
