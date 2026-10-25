@@ -15,7 +15,7 @@ import { freePoint } from './steer.js';
 import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
 import { stairClick, cancelStair, floorLevelH, upperContains, descendThen } from '../world/floors.js';
-import { doorClick, cancelDoor, exitClick, roomClick } from '../world/doors.js';
+import { doorClick, doorTileClick, cancelDoor, exitClick, roomClick } from '../world/doors.js';
 import { bedClick } from '../world/beds.js';
 import { cabinetClick } from '../world/cabinets.js';
 import { snapInterior } from '../world/interior-nav.js';
@@ -70,6 +70,7 @@ function pick(cx, cy) {
   { const up = P.up && floorLevelH() > 0; PICKDBG.x = aim.x; PICKDBG.z = aim.z; PICKDBG.y = up ? groundY(P.x, P.z) + floorLevelH() : groundY(aim.x, aim.z); PICKDBG.on = true; PICKDBG.up = up; }
   cancelStair(); cancelDoor();
   if (doorClick(ray)) return;
+  if (doorTileClick(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
   if (bedClick(ray)) return;
   if (cabinetClick(ray)) return;
   if (roomClick(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }

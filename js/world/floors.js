@@ -61,6 +61,13 @@ export function refreshProps() {
 export const setLevel = () => refreshProps();
 
 /** Altura extra (m) do chão sob (x,z): 0 fora das casas; sobe pela escada e fica no andar de cima */
+let MID = false;   // o personagem está nos degraus (entre os andares)
+export const onStairMid = () => MID;
+/** Tiles de acionamento da escada (pé e topo), em coordenadas do mundo. Castelo e casas sem escada: null */
+export function stairTiles(h) {
+  if (h.noStair || h.sc || h.hf) return null;
+  return { down: toW(h, -4.3, 2.5), up: toW(h, -4.3, -1.75) };
+}
 export function floorOffset(x, z) {
   for (const h of HOUSES) {
     if (h.noStair) continue;
@@ -74,10 +81,13 @@ export function floorOffset(x, z) {
       const pr = Math.max(0, Math.min(1, (1.85 - lz) / 3));
       const half = pr >= .5;   // até a metade da escada vale o andar de baixo; da metade para cima, o de cima
       if (half !== !!P.up) { P.up = half; setLevel(half); }
+      MID = pr > .02 && pr < .98;
       return H * pr;
     }
+    MID = false;
     return P.up ? H : 0;
   }
+  MID = false;
   if (P.up) { P.up = false; setLevel(false); }
   return 0;
 }

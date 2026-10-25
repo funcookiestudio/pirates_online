@@ -123,11 +123,28 @@ export function doorClick(ray) {
     DOORS.forEach(q => { if (q.lvl !== (P.up ? 1 : 0) || (q.room && q.open) || !visible(q.p)) return; const [qx, qz] = cen(q); const c = new THREE.Vector3(qx, groundY(qx, qz) + (P.up ? P.fy : 0) + 1.1 * q.h.K, qz); const dd = ray.ray.distanceToPoint(c); if (dd < best) { best = dd; d = q; } });
   }
   if (!d) return false;
+  return approach(d);
+}
+/** Vai até a porta (ou usa direto, se já estiver perto) */
+function approach(d) {
   const [cx, cz] = cen(d);
   if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d); return true; }
   const side = sideOf(d), [ax, az] = cen(d, side * 1.5);
   P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az };
   return true;
+}
+const doorOK = d => d.lvl === (P.up ? 1 : 0) && !(d.room && d.open) && visible(d.p);
+/** Tiles de acionamento (azuis): um de cada lado do vão, a 1,1 m dele. Devolve [{ d, x, z }] das portas do andar do personagem */
+export function doorTiles() {
+  const out = [];
+  DOORS.forEach(d => { if (!doorOK(d)) return; [1.1, -1.1].forEach(o => { const [x, z] = cen(d, o); out.push({ d, x, z }); }); });
+  return out;
+}
+/** Clique num tile de acionamento: abre/fecha a porta (indo até ela se preciso) */
+export function doorTileClick(x, z) {
+  if (anim) return false;
+  const t = doorTiles().find(q => Math.hypot(q.x - x, q.z - z) < .5);
+  return t ? approach(t.d) : false;
 }
 /** Clique fora da casa estando dentro dela: vai até a porta de saída, abre e sai até o ponto clicado */
 export function exitClick(x, z) {

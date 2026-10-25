@@ -4,7 +4,9 @@ import { VERSION } from '../core/version.js';
 import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
-import { houseAt, HOUSES } from '../world/floors.js';
+import { houseAt, HOUSES, onStairMid, stairTiles, STAIR } from '../world/floors.js';
+import { doorTiles } from '../world/doors.js';
+import { groundY } from '../world/terrain.js';
 import { debugGrid, navVersion } from '../world/interior-nav.js';
 import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
 
@@ -48,11 +50,29 @@ export function flashBlocked(x, y, z) { flash.t = .7; flash.x = x; flash.y = y; 
 // mapa de tiles da casa (depuração/visualização): verde = livre, vermelho = bloqueado
 const MAXC = 7000, cg = new THREE.PlaneGeometry(.41, .41).rotateX(-Math.PI / 2);
 const mkInst = col => { const m = new THREE.InstancedMesh(cg, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .38, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false }), MAXC); m.count = 0; m.frustumCulled = false; m.renderOrder = 990; m.visible = false; scene.add(m); return m; };
-const imFree = mkInst(0x40e070), imBlk = mkInst(0xf03838);
+const imFree = mkInst(0x40e070), imBlk = mkInst(0xf03838), imTrig = mkInst(0x3a7bff);
+imTrig.material.opacity = .6; imTrig.renderOrder = 3;
 let tkey = '';
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _u = new THREE.Vector3(0, 1, 0);
+/** Tiles azuis de acionamento: portas (dentro e fora) e escadas (pé e topo). Só no andar em que o personagem está */
+function updateTrig() {
+  const on = CFG.tiles && !onStairMid() && !STAIR.run;
+  imTrig.visible = on;
+  if (!on) return;
+  let n = 0;
+  const put = (x, z, th, y) => { if (n >= 64) return; _q.setFromAxisAngle(_u, th); _p.set(x, y, z); _m.compose(_p, _q, _s); imTrig.setMatrixAt(n++, _m); };
+  doorTiles().forEach(t => {
+    if (Math.hypot(t.x - P.x, t.z - P.z) > 30) return;
+    const h = t.d.h, inside = houseAt(t.x, t.z, 0) === h, g = groundY(t.x, t.z);
+    put(t.x, t.z, h.th, g + (t.d.lvl === 1 ? (h.Hf !== undefined ? h.Hf : 3.03 * h.K) + .06 : inside ? FLOOR_LIFT + .06 : .08));
+  });
+  const ph = houseAt(P.x, P.z, 0);
+  if (ph) { const st = stairTiles(ph); if (st) { const q = P.up ? st.up : st.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? (ph.Hf !== undefined ? ph.Hf : 3.03 * ph.K) + .06 : FLOOR_LIFT + .06)); } }
+  imTrig.count = n; imTrig.instanceMatrix.needsUpdate = true;
+}
 function updateTiles() {
-  const on = CFG.tiles, d = on ? debugGrid() : null;
+  updateTrig();
+  const on = CFG.tiles && !onStairMid() && !STAIR.run, d = on ? debugGrid() : null;   // subindo/descendo a escada: a grade some (não acompanha a câmera) e volta ao chegar no andar
   imFree.visible = imBlk.visible = !!d;
   if (!d) { tkey = ''; return; }
   const key = HOUSES.indexOf(d.h) + ':' + d.L + ':' + navVersion();
