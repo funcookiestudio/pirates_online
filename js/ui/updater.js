@@ -18,7 +18,7 @@ async function latest() {
 export async function hardRefresh() {
   try { const rs = await navigator.serviceWorker?.getRegistrations(); await Promise.all((rs || []).map(r => r.unregister())); } catch (e) { /* sem SW */ }
   try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } catch (e) { /* sem Cache Storage */ }
-  try { await Promise.all(['index.html', 'js/main.js'].map(u => fetch(u, { cache: 'reload' }))); } catch (e) { /* offline: recarrega mesmo assim */ }
+  try { await Promise.all(['index.html', 'js/boot.js', 'js/main.js'].map(u => fetch(u, { cache: 'reload' }))); } catch (e) { /* offline: recarrega mesmo assim */ }
   location.reload();
 }
 

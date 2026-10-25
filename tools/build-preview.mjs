@@ -7,7 +7,7 @@ const html = readFileSync('index.html', 'utf8');
 const body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<!-- Three.js'));
 const three = html.match(/<script src="(https:\/\/cdnjs[^"]+three[^"]+)">/)[1];
 
-const out = await build({ entryPoints: ['js/main.js'], bundle: true, format: 'iife', minify: false, write: false });
+const out = await build({ entryPoints: ['js/boot.js'], bundle: true, format: 'iife', minify: false, write: false });
 const js = out.outputFiles[0].text.replaceAll('</script', '<\\/script');
 
 mkdirSync('preview', { recursive: true });

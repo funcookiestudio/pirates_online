@@ -1,6 +1,7 @@
 /* Retrato 3D no painel (personagem e companheiro): modelo em animação de espera (idle) que o jogador gira arrastando.
    Usa um renderizador único fora da tela e copia o quadro para o canvas visível. */
-import { person, hideSword } from '../entities/character.js';
+import { person, hideSword, playerModel } from '../entities/character.js';
+import { activeChar } from '../core/chars.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { mkParrot, mkRaven, mkDog, mkMonkey, mkRat } from '../pets/models.js';
@@ -93,7 +94,7 @@ function idlePlayer(g, t) {
 }
 
 function buildPlayer() {
-  const g = person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a);
+  const g = playerModel(!!(activeChar() && activeChar().f));
   const fa = g.arm.fa;
   hideSword(g); // tira a espada padrão
   const W = WEAPONS[P.wid];

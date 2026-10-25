@@ -20,6 +20,11 @@ export function person(skin, shirt, pants, hat, spec) {
   return buildHuman(false, d);
 }
 
+/** Corpo do jogador: pirata (masculino) ou pirata (feminino), com o mesmo esqueleto/rig */
+export function playerModel(female) {
+  return female ? person(0xe0b48a, 0, 0, 0, { sk: 'pirata', f: true, ov: { skin: 0xe0b48a } }) : person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a);
+}
+
 /** Inimigo do tipo `t` (ENEMY_KINDS): esqueletos usam o esqueleto; os demais, humanos pintados com as cores do tipo */
 export function enemyModel(t) {
   const [sk, sh, pa, ht] = t.c;

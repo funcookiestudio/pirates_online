@@ -83,6 +83,7 @@
     <h4>🖥 Gráficos</h4>
     <div class="acr"><span>Qualidade da imagem</span><select id="gx-q"><option value="auto">Automática (ajusta pelo FPS)</option><option value="max">Máxima (resolução nativa)</option><option value="high">Alta</option><option value="mid">Média</option><option value="low">Baixa (mais FPS)</option></select></div>
     <label><input type="checkbox" id="gx-names"> 🏷 Mostrar nomes de NPCs e inimigos <small>(só os que estão por perto e à vista)</small></label>
+    <label><button id="gx-switch" type="button">🔁 Trocar de personagem</button> <small>(salva e volta à seleção)</small></label>
     <label><input type="checkbox" id="gx-fps"> 📈 Mostrar FPS e resolução</label>
   </div>
   </div>
@@ -237,6 +238,6 @@
 
 <!-- Three.js (global THREE) e depois o jogo como módulos ES -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/boot.js"></script>
 </body>
 </html>

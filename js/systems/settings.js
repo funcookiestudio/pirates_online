@@ -6,6 +6,7 @@ import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
 import { houseAt, HOUSES, onStairMid, stairTiles, STAIR } from '../world/floors.js';
 import { doorTiles } from '../world/doors.js';
+import { saveGame } from './save.js';
 import { groundY } from '../world/terrain.js';
 import { debugGrid, navVersion } from '../world/interior-nav.js';
 import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
@@ -131,6 +132,7 @@ export function initSettings() {
   dg.checked = CFG.dbg; dg.onchange = () => { CFG.dbg = dg.checked; save(); };
   tl.checked = CFG.tiles; tl.onchange = () => { CFG.tiles = tl.checked; save(); };
   hh.onchange = () => { CFG.hlhide = hh.checked; save(); };
+  $('gx-switch').onclick = () => { saveGame(); location.reload(); };   // a tela de seleção abre a cada início
   const nm = $('gx-names'); nm.checked = CFG.names !== false; nm.onchange = () => { CFG.names = nm.checked; save(); };
   const dg2 = $('gx-diag'); dg2.onchange = () => { CFG.diag = dg2.value; };   /* não é salvo: volta ao normal ao recarregar */
   const vs = $('gx-vis'); vs.checked = CFG.vis !== false; vs.onchange = () => { CFG.vis = vs.checked; save(); };

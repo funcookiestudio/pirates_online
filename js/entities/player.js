@@ -2,7 +2,8 @@
 import { xpToNext } from '../data/scaling.js';
 import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
-import { person, hideSword } from './character.js';
+import { person, hideSword, playerModel } from './character.js';
+import { activeChar } from '../core/chars.js';
 import { puff } from '../systems/effects.js';
 import { log, banner } from '../ui/notify.js';
 import { emit } from '../core/events.js';
@@ -15,7 +16,7 @@ import { emit } from '../core/events.js';
  *  gold/pot = ouro e poções · wid = índice da arma equipada · dr = redução de dano
  */
 export const P = {
-  g: person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a),
+  g: playerModel(!!(activeChar() && activeChar().f)),
   x: 0, z: 5, hp: 100, max: 100, mp: 60, mmax: 60, lv: 1, xp: 0, nxt: 60, dmg: 12,
   tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: 3.2, gold: 0, couro: 0, penas: 0, pot: 3, bmb: 3, dead: false,
   walk: 0, wid: 0, cds: [0, 0], vx: 0, vz: 0, ph: 0,

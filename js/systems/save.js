@@ -14,7 +14,8 @@ import { safeSpot } from './safe.js';
 import { getRent, setRent } from '../world/doors.js';
 import { inDungeon } from '../dungeon/dungeon-scene.js';
 
-const KEY = 'pirata-arpg:save:v1';
+import { activeChar, saveKey } from '../core/chars.js';
+const KEY = saveKey(activeChar() && activeChar().id);   // um save por personagem
 const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
 

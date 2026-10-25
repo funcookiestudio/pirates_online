@@ -1,5 +1,6 @@
 /* Pontos de interesse do gerador de ilhas: Porto (cais), Caverna (entrada) e Tesouro (X no chão, com recompensa única). */
 import { scene } from '../core/engine.js';
+import { charKey } from '../core/chars.js';
 import { props } from '../core/registry.js';
 import { M as M0 } from '../core/utils.js';
 import { xray } from './xray.js';
@@ -16,7 +17,7 @@ import { buildCaves, updateCaves, DUNGEONS } from './caves.js';
 import { cullTerrain } from './terrain-mesh.js';
 
 export const pois = [];   // { n, x, z, c } em coordenadas do jogo (c = cor no minimapa)
-const KEY = 'pirata-tesouro-v1' + (SEED === 'pirata' ? '' : '-' + SEED);
+const KEY = charKey('pirata-tesouro-v1' + (SEED === 'pirata' ? '' : '-' + SEED));   // o tesouro achado é por personagem
 let arrive = false; try { arrive = localStorage.getItem('pirata-chegada') === '1'; } catch (e) { /* ok */ }
 let treasure = null, got = false, near = '';
 try { got = localStorage.getItem(KEY) === '1'; } catch (e) { /* sem armazenamento */ }
