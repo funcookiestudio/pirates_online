@@ -52,8 +52,20 @@ function setNear(g, st) {
   st.far = false;
 }
 
+/* Muito longe: sai da cena (o three.js recalcula a matriz de TODO objeto da cena a cada quadro, visível ou não). A posição segue sendo atualizada pela IA. */
+const SLEEP = 90 * 90, WAKE = 80 * 80;
+function dormant(g) {
+  const u = g.userData, dx = g.position.x - P.x, dz = g.position.z - P.z, d = dx * dx + dz * dz;
+  if (u.lodOff) {
+    if (d < WAKE) { u.lodOff.add(g); u.lodOff = null; } else return true;
+  } else if (d > SLEEP && g.parent && g.parent.isScene) { u.lodOff = g.parent; g.parent.remove(g); return true; }
+  return false;
+}
+
 function one(g, dead) {
-  if (!g || !g.visible || !g.parent) return;
+  if (!g) return;
+  if (dormant(g)) return;
+  if (!g.visible || !g.parent) return;
   const st = g.userData.lod || (g.userData.lod = { far: false });
   if (st.fail) return;
   const dx = g.position.x - P.x, dz = g.position.z - P.z, d = dx * dx + dz * dz;
