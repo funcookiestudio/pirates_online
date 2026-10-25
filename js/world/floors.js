@@ -161,6 +161,24 @@ let INSIDE = false;
 /** O personagem está dentro de uma casa? (o raio-x das árvores/pedras fica desligado lá dentro) */
 export const insideHouse = () => INSIDE;
 const _m = new THREE.Matrix4(), _v = new THREE.Vector3(), STUB = .42;
+/** Cor dominante (por área) das peças do grupo: a "cor da parede" */
+function wallColor(g) {
+  const hist = new Map(), c = new THREE.Color(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
+  g.traverse(o => {
+    if (!o.isMesh || !o.geometry.attributes.position || Array.isArray(o.material)) return;
+    const pos = o.geometry.attributes.position, col = o.geometry.attributes.color, idx = o.geometry.index, n = idx ? idx.count : pos.count;
+    const vi = i => idx ? idx.getX(i) : i;
+    for (let i = 0; i + 2 < n; i += 3) {
+      const i0 = vi(i), i1 = vi(i + 1), i2 = vi(i + 2);
+      a.fromBufferAttribute(pos, i0); b.fromBufferAttribute(pos, i1).sub(a); d.fromBufferAttribute(pos, i2).sub(a);
+      const area = b.cross(d).length() * .5;
+      if (col) c.setRGB(col.getX(i0), col.getY(i0), col.getZ(i0)); else c.copy(o.material.color);
+      const key = c.getHex(), lum = .3 * c.r + .59 * c.g + .11 * c.b; hist.set(key, (hist.get(key) || 0) + area * (lum > .3 ? 1 : .15));   // argamassa e vigas escuras pesam menos
+    }
+  });
+  let best = 0xcdbf9e, bw = -1; hist.forEach((v, k) => { if (v > bw) { bw = v; best = k; } });
+  return best;
+}
 /** Cria (uma vez) a "bordinha" da parede: faixa baixa de reboco com friso de madeira em cima, do tamanho da parede (no quadro do pai) */
 function buildStub(w, h) {
   const g = w.g, par = g.parent, mn = new THREE.Vector3(1e9, 1e9, 1e9), mx = new THREE.Vector3(-1e9, -1e9, -1e9);
@@ -179,6 +197,7 @@ function buildStub(w, h) {
   if (w.plane) { alongX = w.plane === 'v'; plane = w.c; }
   else if (w.nx) { alongX = false; plane = w.nx * w.D; } else { alongX = true; plane = w.nz * w.D; }
   const L = alongX ? Math.max(.2, mx.x - mn.x) : Math.max(.2, mx.z - mn.z), mid = alongX ? (mx.x + mn.x) / 2 : (mx.z + mn.z) / 2;
+  const WC = new THREE.Color(wallColor(g)), WD = WC.clone().multiplyScalar(.82);
   const box = (c0, c1, bh, bt, y, c) => { const bl = c1 - c0, m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? bl : bt, bh, alongX ? bt : bl), new THREE.MeshLambertMaterial({ color: c })); m.position.set(alongX ? (c0 + c1) / 2 : plane, mn.y + y, alongX ? plane : (c0 + c1) / 2); st.add(m); };
   const lo = mid - L / 2, hi = mid + L / 2, full = Math.max(H, mx.y - mn.y), PW = .18;
   // vãos das portas dessa parede ficam livres (sem bordinha)
@@ -187,8 +206,9 @@ function buildStub(w, h) {
   let cur = lo; const segs = [];
   gaps.forEach(([g0, g1]) => { if (g0 > cur) segs.push([cur, g0]); cur = Math.max(cur, g1); });
   if (cur < hi) segs.push([cur, hi]);
-  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .8, TH, H * .4, 0xcdbf9e); box(c0, c1, H * .2, TH + .08, H * .9, 0x4a3320); });
-  [lo, hi - PW].forEach(c0 => box(c0, c0 + PW, full, TH + .08, full / 2, 0x4a3320));   // bordinha lateral: quina de madeira em cada ponta da parede (na união com a vizinha)
+  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .8 + .03, TH, H * .4 - .015, WC); box(c0, c1, H * .2, TH + .04, H * .9, WD); });
+  w.posts = [lo, hi - PW].map(c0 => { const n0 = st.children.length; box(c0, c0 + PW, full, TH + .04, full / 2, WC); return st.children[n0]; });   // quinas nas pontas: só aparecem junto de parede vizinha em pé
+  w.geo = { alongX, plane, lo, hi, y: mn.y };
   st.visible = false; par.add(st); w.stub = st;
 }
 /** Parede "abaixada" (como no The Sims): em vez de sumir, vira só uma bordinha baixa rente ao piso dela */
@@ -216,6 +236,22 @@ export function updateCutaway() {
     if (h.iw) h.iw.forEach(w => { const pc = w.plane === 'u' ? px : pz, cc = w.plane === 'u' ? cx : cz; lower(w, h, inside && P.up && !!pr && w.rooms.includes(pr) && (pc - w.c) * (cc - w.c) < 0); });   // paredes internas: só as do quarto do personagem, e só as que ficam entre a câmera e ele
     if (h.dk) h.dk.forEach(d => { d.m.visible = inside && !!P.up && pr !== d.id && !d.ok(); });   // quartos sem acesso: escuros
     h.walls.forEach(w => lower(w, h, (inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)));
+    {   // quinas das pontas: só onde há parede vizinha em pé (união entre paredes visíveis)
+      const all = [...h.walls, ...(h.iw || [])];
+      if (!h._stubs) { h._stubs = 1; all.forEach(w => { if (w.g.parent && w.stub === undefined) buildStub(w, h); }); }
+      all.forEach(w => {
+        if (!w.posts || !w.geo) return;
+        const lowered = !!(w.stub && w.stub.visible);
+        [w.geo.lo, w.geo.hi].forEach((e, i) => {
+          let nb = false;
+          if (lowered) for (const v of all) {
+            if (v === w || !v.geo || v.geo.alongX === w.geo.alongX || Math.abs(v.geo.y - w.geo.y) > 1.2) continue;
+            if (Math.abs(v.geo.plane - e) < .45 && w.geo.plane > v.geo.lo - .45 && w.geo.plane < v.geo.hi + .45 && v.g.visible) { nb = true; break; }
+          }
+          w.posts[i].visible = nb;
+        });
+      });
+    }
   }
 }
 
