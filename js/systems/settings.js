@@ -1,5 +1,6 @@
 /* Ajustes gerais (painel ⚙, junto com os do auto): qualidade gráfica, contador de FPS e marcador do tile clicado.
    Guardados no navegador (localStorage), separados do save do jogo. */
+import { VERSION } from '../core/version.js';
 import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
@@ -90,7 +91,7 @@ export function updateSettings(dt) {
     tile.visible = away;
     placeTile(tile, mark.position.x, mark.position.y + .05, mark.position.z);
   } else { tile.visible = false; mark.visible = CFG.hl === 'ring' && away; }
-  if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res'; }
+  if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = VERSION + ' · ' + Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res'; }
 }
 
 export function initSettings() {
