@@ -159,6 +159,6 @@ export const navVersion = () => ver;
 export function debugGrid() {
   const g = gridAt(P.x, P.z); if (!g) return null;
   const cells = [];
-  for (let j = 0; j < g.d; j++) for (let i = 0; i < g.w; i++) { const c = center(g, i, j), hh = g.h; if (hh.hx && (Math.abs(c[0]) > hh.hx || Math.abs(c[1]) > hh.hz || (hh.inBox && !hh.sc && !hh.inBox(c[0], c[1])))) continue; const [x, z] = toW(g.h, ...c); cells.push({ x, z, free: !(g.h.rects ? g.occ : g.blk)[j * g.w + i] }); }
+  for (let j = 0; j < g.d; j++) for (let i = 0; i < g.w; i++) { const c = center(g, i, j), hh = g.h; if (hh.inBox ? !hh.inBox(c[0], c[1]) : (hh.hx && (Math.abs(c[0]) > hh.hx || Math.abs(c[1]) > hh.hz))) continue; const [x, z] = toW(g.h, ...c); cells.push({ x, z, free: !(g.h.rects ? g.occ : g.blk)[j * g.w + i] }); }
   return { h: g.h, L: g.L, cells, size: CS };
 }
