@@ -15,8 +15,11 @@ import { freePoint } from './steer.js';
 import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
 import { stairClick, cancelStair, floorLevelH, upperContains, descendThen } from '../world/floors.js';
-import { doorClick, cancelDoor, exitClick } from '../world/doors.js';
+import { doorClick, cancelDoor, exitClick, roomClick } from '../world/doors.js';
 import { bedClick } from '../world/beds.js';
+import { cabinetClick } from '../world/cabinets.js';
+import { snapInterior } from '../world/interior-nav.js';
+import { PICKDBG, flashBlocked } from './settings.js';
 import { wakeUp } from './bed.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
@@ -55,21 +58,26 @@ function pick(cx, cy) {
       const ux = o.x + d.x * t, uz = o.z + d.z * t;
       if (upperContains(ux, uz)) aim.set(ux, 0, uz);
       else {
+        // Como no Tibia: cada andar é uma camada. Do andar de cima só se clica no piso de cima; a abertura da escada leva ao andar de baixo
+        // e o chão lá embaixo (dentro ou fora da casa) não recebe cliques até o personagem descer
         cancelStair(); cancelDoor();
-        const f = freePoint(g0.x, g0.z, .7);
-        if (descendThen(f.x, f.z)) { P.tgt = null; mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z); return; }
+        if (stairClick(ux, uz)) { P.tgt = null; mark.position.set(ux, markY(ux, uz), uz); }
+        return;
       }
-    }
+    } else return;
   }
 
+  { const up = P.up && floorLevelH() > 0; PICKDBG.x = aim.x; PICKDBG.z = aim.z; PICKDBG.y = up ? groundY(P.x, P.z) + floorLevelH() : groundY(aim.x, aim.z); PICKDBG.on = true; PICKDBG.up = up; }
   cancelStair(); cancelDoor();
   if (doorClick(ray)) return;
   if (bedClick(ray)) return;
-  if (exitClick(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
-  if (stairClick(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
-  if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, groundY(aim.x, aim.z) + .12, aim.z); return; }
+  if (cabinetClick(ray)) return;
+  if (roomClick(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
+  if (exitClick(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
+  if (stairClick(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
+  if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
   const n = npcAt(aim.x, aim.z);
-  if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, groundY(n.g.position.x, n.g.position.z) + .12, n.g.position.z); return; }
+  if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, markY(n.g.position.x, n.g.position.z), n.g.position.z); return; }
   cancelTalk();
 
   let best = null, bd = 2.2;
@@ -81,12 +89,18 @@ function pick(cx, cy) {
 
   P.tgt = best;
   if (!best) {
-    const f = freePoint(aim.x, aim.z, .7);
+    let f = freePoint(aim.x, aim.z, .7);
+    const sn = snapInterior(P.x, P.z, f.x, f.z);   // dentro de casas: só células livres e alcançáveis do andar atual
+    if (sn === null) { flashBlocked(f.x, PICKDBG.y, f.z); return; }
+    if (sn) f = { x: sn[0], z: sn[1] };
     P.tx = f.x;
     P.tz = f.z;
-    mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z);
+    mark.position.set(f.x, markY(f.x, f.z), f.z);
   }
 }
+
+/** altura do marcador de clique: acompanha o piso (térreo elevado ou andar de cima) */
+const markY = (x, z) => groundY(x, z) + (P.up && floorLevelH() > 0 && upperContains(x, z) ? floorLevelH() : 0) + .12;
 
 export function initInput() {
   // ponteiro: toque/clique mira e move · roda do mouse e pinça = zoom · botão direito (arrastar) e giro com dois dedos = girar a câmera
@@ -105,10 +119,10 @@ export function initInput() {
   cv.addEventListener('pointerdown', e => {
     if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX, y: e.clientY }; return; }
     pts.set(e.pointerId, e);
-    if (pts.size === 2) { clearTimeout(wait); down = false; gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
+    if (pts.size === 2) { clearTimeout(wait); down = false; P.tgt = null; P.tx = P.x; P.tz = P.z; cancelStair(); cancelDoor(); gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
     if (e.pointerType === 'touch') {
       // espera um instante: se um segundo dedo chegar, era o início de um gesto e o personagem não anda
-      wait = setTimeout(() => { if (pts.size === 1) { down = true; pick(e.clientX, e.clientY); } }, 70);
+      down = true; pick(e.clientX, e.clientY);   // sem espera: anda no mesmo instante (se virar gesto de dois dedos, o passo é desfeito)
     } else { down = true; pick(e.clientX, e.clientY); }
   });
 

@@ -7,6 +7,7 @@ import { bakeGroup } from './merge.js';
 import { registerFloors, refreshProps } from './floors.js';
 import { addDoor, roomRented } from './doors.js';
 import { addBed } from './beds.js';
+import { addCabinet } from './cabinets.js';
 
 export const TAVERN_SC = 1.22;
 
@@ -127,9 +128,9 @@ function bnc(x,z,w){B(w,.08,.35,x,.5,z,WOOD);for(const a of[-1,1])B(.08,.4,.3,x+
 for(const q of[[-3,2],[3,-.5],[-1.5,-1],[0,2.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);C(.1,0,.4,5,q[0],2.45,q[1],0x6a8f3a);C(.08,0,.3,5,q[0]+.15,2.5,q[1],0xb8a040)}
 XR=true;
 // andar de cima: camas, partições, mesa
-for(const bx of[-1.07,2.5]){const z0=-3.75;
+for(const bx of[-1.07,2.5]){const z0=-3.45;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0+.35,[0x7a2e2e,0x2e4a7a,0x3a6b3a][bx<-3?0:bx<0?1:2],up);B(.8,.12,.4,bx,3.95,z0-.8,0xf0ead8,up);
- B(1.3,1.1,.1,bx,4.0,-4.8,WOOD2,up);B(1.2,.5,.08,bx,3.65,-2.62,WOOD2,up);const cx=bx+(bx<-1?1.05:bx>1?1.0:1.15);B(.8,.45,.5,cx,3.38,-4.3,WOOD2,up);B(.82,.1,.52,cx,3.66,-4.3,WOOD,up);
+ B(1.3,1.1,.1,bx,4.0,-4.5,WOOD2,up);B(1.2,.5,.08,bx,3.65,-2.32,WOOD2,up);const cx=bx+(bx<-1?1.05:bx>1?1.0:1.15);B(.8,.45,.5,cx,3.38,-4.3,WOOD2,up);B(.82,.1,.52,cx,3.66,-4.3,WOOD,up);
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
 // divisórias entre os quartos, parede do corredor e portas
@@ -147,9 +148,9 @@ for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',1.45,c-w/2-.09,yb+h/2,.16,
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,-.01,IRON,p);B(w,.1,.09,w/2,h-.4,-.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,-.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,-.07);p.add(r)}
 for(const x of[-1.8,1.8]){B(.15,2.45,3.15,x,4.375,3.125,PL,up);for(const z of[1.55,4.7])B(.2,2.45,.2,x,4.375,z,TM,up);B(.2,.2,3.15,x,5.5,3.125,TM,up);B(.2,.2,3.15,x,3.25,3.125,TM,up)}
-for(const bx of[4.3,1.1]){const z0=3.65;
+for(const bx of[4.3,1.1]){const z0=3.35;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0-.35,bx>0?0x8a6a2e:0x2e6b6b,up);B(.8,.12,.4,bx,3.95,z0+.8,0xf0ead8,up);
- B(1.3,1.1,.1,bx,4.0,4.7,WOOD2,up);B(1.2,.5,.08,bx,3.65,2.62,WOOD2,up);
+ B(1.3,1.1,.1,bx,4.0,4.4,WOOD2,up);B(1.2,.5,.08,bx,3.65,2.32,WOOD2,up);
  const cx=bx-1.05;B(.8,.45,.5,cx,3.38,4.3,WOOD2,up);B(.82,.1,.52,cx,3.66,4.3,WOOD,up);
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
@@ -186,10 +187,11 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
     props.push(o);
   };
   // paredes (a da frente tem o vão da porta)
-  [-5, -4.1, -3.2, -2.35].forEach(u => { block(u, 3.6, .45, undefined, u < -3); block(-u, 3.6, .45); });
-  block(-1.5, 3.6, .5); block(1.5, 3.6, .5);
-  for (let u = -5; u <= 5.01; u += .9) if (Math.abs(u - 3.8) > 1.2) block(u, -3.6, .45);
-  for (let v = -2.8; v <= 2.81; v += .9) { block(-5, v, .2, undefined, true); block(5, v, .45); }
+  [-5, -4.1, -3.2, -2.35].forEach(u => { block(u, 3.6, .45, 0, u < -3); block(-u, 3.6, .45, 0); });   // paredes do térreo valem só no térreo (antes bloqueavam também o piso de cima)
+  block(-1.5, 3.6, .5, 0); block(1.5, 3.6, .5, 0);
+  for (let u = -5; u <= 5.01; u += .9) if (Math.abs(u - 3.8) > 1.2) block(u, -3.6, .45, 0);
+  for (let v = -2.8; v <= 2.81; v += .9) block(5, v, .45, 0);
+  for (let v = -2.8; v <= 2.81; v += .6) block(-5, v, .2, 0, true);   // (espaçamento curto: com o corpo de 0,3 não pode sobrar fresta)
   // mobília do térreo (raios pequenos: os corredores precisam ficar livres)
   [-2.6, -1.8, -1.0].forEach(u => block(u, -1.5, .4, 0));
   block(-4.35, -2.0, .4, 0); block(-4.35, -3.0, .4, 0);
@@ -201,31 +203,49 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   // fora
   block(-3.8, 5.8, .3, undefined); block(-4.2, 5.8, .3); block(-3.4, 5.8, .3); block(4.6, 4.5, .55); block(5.7, 4.5, .55);
   // ── andar de cima ──
-  const wl = (axis, c, a0, a1, gaps, ng) => { for (let u = a0; u <= a1 + .01; u += .3) { if (gaps.some(g => Math.abs(u - g) < .85)) continue; axis === 'x' ? block(u, c, .14, 1, ng) : block(c, u, .14, 1); } };
+  const wl = (axis, c, a0, a1, gaps, ng) => { for (let u = a0; u <= a1 + .01; u += .3) { if (gaps.some(g => Math.abs(u - g) < 1.05)) continue; axis === 'x' ? block(u, c, .1, 1, ng) : block(c, u, .1, 1); } };
   wl('x', -1.7, -1.8, 5, [0, 3.4], true);          // parede do corredor (fundos)
   wl('x', 1.45, -1.8, 5, [3, -.4], true);              // parede do corredor (frente)
   wl('z', -1.8, -4.7, -1.75, []); wl('z', 1.8, -4.7, -1.75, []);   // divisórias dos quartos de trás
   wl('z', -1.8, 1.55, 4.7, []); wl('z', 1.8, 1.55, 4.7, []);         // divisórias da frente
-  for (let u = -5; u <= 5.01; u += .9) { block(u, 4.9, .22, 1); block(u, -4.9, .22, 1); }   // parede da frente/fundos
-  for (let v = -4.8; v <= 4.81; v += .9) { block(5, v, .22, 1); block(-5, v, .2, 1); }
-  [-1.07, 2.5].forEach(bx => block(bx, -3.75, .75, 1));      // camas dos fundos
-  [4.3, 1.1].forEach(bx => block(bx, 3.65, .75, 1));             // camas da frente
-  block(-4.5, 4.35, .3, 1); block(-3.8, 4.35, .3, 1); block(-4.4, 3.45, .25, 1);   // mesa (a janela da frente fica livre)   // mesa e cadeira
-  [-4.7, -4.0, -3.4].forEach(u => block(u, 1.85, .15, 1, true));              // proteção do vão
+  for (let u = -5; u <= 5.01; u += .45) { block(u, 4.9, .12, 1); block(u, -4.9, .12, 1); }   // parede da frente/fundos
+  for (let v = -4.8; v <= 4.81; v += .45) { block(5, v, .12, 1); block(-5, v, .12, 1); }
+  [-1.07, 2.5].forEach(bx => [-.8, 0, .8].forEach(dz => block(bx, -3.45 + dz, .42, 1)));
+  [-1.07, 2.5].forEach(bx => block(bx, -2.0, .5, 1, true));   // fecha o vão estreito entre os pés da cama e a parede da porta (era uma armadilha)      // camas dos fundos
+  [4.3, 1.1].forEach(bx => [-.8, 0, .8].forEach(dz => block(bx, 3.35 + dz, .42, 1)));
+  [4.3, 1.1].forEach(bx => block(bx, 2.0, .5, 1, true));             // camas da frente
+  block(-4.5, 4.2, .3, 1); block(-3.8, 4.2, .3, 1); block(-4.4, 3.45, .2, 1);   // mesa (a janela da frente fica livre)   // mesa e cadeira
+  [-4.4, -3.6].forEach(u => block(u, 1.85, .1, 1, true));              // proteção do vão
   [-.55, .25, 1.05, 1.85].forEach(v => block(-3.75, v, .1, 1, true));      // guarda-corpo da escada (na posição do corrimão visível)
+  // armários (visual): porta de duas folhas voltada para o quarto
+  for (const [wx, wz] of [[1.25, -4.55], [-1.25, 4.4]]) {
+    const y = 3.15, s = wz < 0 ? 1 : -1;
+    B(1.05, 2.0, .6, wx, y + 1.0, wz, WOOD2, up); B(1.15, .08, .68, wx, y + 2.04, wz, WOOD, up); B(1.1, .08, .64, wx, y + .04, wz, TM, up);
+    for (const a of [-.25, .25]) B(.47, 1.76, .04, wx + a, y + 1.0, wz + s * .31, WOOD, up);
+    B(.03, 1.7, .05, wx, y + 1.0, wz + s * .33, TM, up);
+    for (const a of [-.08, .08]) B(.04, .16, .05, wx + a, y + 1.0, wz + s * .35, 0xc9a85a, up);
+    [[-.3], [.3]].forEach(([a]) => block(wx + a, wz, .26, 1));
+  }
   // camas dos dois quartos alugáveis (os outros dois são do Mestre Breu e da Pé-de-Pau): só deita quem tem a chave
-  [[1.1, 3.65, true, -.35, 3.0], [-1.07, -3.75, false, .6, -3.2]].forEach(([bx, bz, front, axl, azl]) => {
+  [[1.1, 3.35, true, -.35, 2.7], [-1.07, -3.45, false, .6, -2.9]].forEach(([bx, bz, front, axl, azl]) => {
     const hit = new THREE.Mesh(new THREE.BoxGeometry(1.3, .6, 2.3), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(bx, 3.95, bz); hit.userData.dyn = 1; up.add(hit);
     const ft = at(bx * K, (bz + (front ? -.85 : .85)) * K), ac = at(axl * K, azl * K);
-    addBed({ x: ft[0], z: ft[1], y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), ax: ac[0], az: ac[1], hit, ok: roomRented });
+    const inRoom = (wx, wz) => { const dx = wx - x, dz = wz - z, lx = (dx * Math.cos(th) - dz * Math.sin(th)) / K, lz = (dx * Math.sin(th) + dz * Math.cos(th)) / K; return Math.abs(lx) < 1.45 && (front ? lz > 1.9 && lz < 4.5 : lz < -1.9 && lz > -4.5); };
+    addBed({ x: ft[0], z: ft[1], y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), ax: ac[0], az: ac[1], hit, ok: roomRented, inRoom });
+  });
+  // armários dos quartos alugáveis: armazenamento do jogador (mesmo baú da vila)
+  [[1.25, -4.55, -1, 1.25, -3.55], [-1.25, 4.4, 1, -1.25, 3.5]].forEach(([wx, wz, s, axl, azl]) => {
+    const hit = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.1, .7), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(wx, 4.2, wz); hit.userData.dyn = 1; up.add(hit);
+    const ac = at(axl * K, azl * K), cp = at(wx * K, wz * K);
+    addCabinet({ x: cp[0], z: cp[1], ax: ac[0], az: ac[1], hit, ok: roomRented });
   });
   const pts = { keeper: [-.3, -1.6], talkAt: at(-.3 * K, -.1 * K), doorId: 'tavern-front' };
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);
   [uB, uL, uR, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); bakeGroup(up, [uB, uL, uR, ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
   const H = { x, z, th, K };
-  const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, undefined], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, undefined] };
+  const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, 0], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, 0] };
   DR.forEach(d => { const dd = addDoor(d, H); const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
   refreshProps();
-  registerFloors({ x, z, th, K, door: 'tavern-front', fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
+  registerFloors({ x, z, th, K, Hf: 3.15 * K, inBox: (lx, lz) => Math.abs(lx) <= 4.95 && Math.abs(lz) <= 4.95, upOK: (lx, lz) => !(lx > -5.15 && lx < -3.55 && lz > -1.75 && lz < 1.85), links: [{ l: 0, x: -4.3, z: 2.5 }, { l: 1, x: -4.3, z: -1.75 }], door: 'tavern-front', fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
   return { g: root, th, at, pts, front: at(-.3 * K, -1.6 * K) };
 }

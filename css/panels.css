@@ -274,3 +274,8 @@
 #pnl.dragging [data-drop], #pnl.dragging #bag { transition: box-shadow .1s; }
 .dropok { box-shadow: 0 0 0 3px #6bd36b, 0 0 12px #6bd36b !important; }
 .dropno { box-shadow: 0 0 0 2px #a05040 !important; }
+
+#acfg .atabs { display: flex; gap: 4px; margin-bottom: 8px; position: sticky; top: 0; background: #1a1209; z-index: 1; }
+#acfg .atabs span { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; cursor: pointer; border: 1px solid #6a4a22; border-radius: 5px; color: #c8b088; background: #00000030; }
+#acfg .atabs span.on { background: #3a2a18; color: #f0d9a0; border-color: #e0a458; }
+#acfg .atab[hidden] { display: none; }

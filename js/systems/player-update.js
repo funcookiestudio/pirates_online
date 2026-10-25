@@ -2,12 +2,13 @@
 import { safeSpot } from './safe.js';
 import { updateBedPending, animateBed, sleeping } from './bed.js';
 import { refreshTorch } from './inventory.js';
-import { houseNear } from '../world/floors.js';
+import { snapInterior, interiorWaypoint } from '../world/interior-nav.js';
+import { houseNear, houseAt, descendThen, upperContains } from '../world/floors.js';
 import { steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
-import { updateDoors, applyDoorReach } from '../world/doors.js';
+import { updateDoors, applyDoorReach, exitClick } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
@@ -41,7 +42,7 @@ export function updatePlayer(dt) {
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
     else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
     else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
-    else moveAndAct(dt);
+    else { moveAndAct(dt); stuckWatch(dt); }
   }
 
   // recargas e temporizadores
@@ -92,6 +93,21 @@ function applyAim() {
   P.g.eyeL.scale.y = 1 - .88 * e;
 }
 
+/** Preso? Quer andar mas não sai do lugar: refaz o caminho pela porta/escada; se não der, para em vez de forçar a parede */
+const SW = { x: 0, z: 0, t: 0, n: 0 };
+function stuckWatch(dt) {
+  const far = Math.hypot(P.tx - P.x, P.tz - P.z) > 1.3;
+  if (!far || STAIR.on || P.tgt || P.roll > 0 || MOUNT.on) { SW.t = 0; SW.n = 0; SW.x = P.x; SW.z = P.z; return; }
+  if (Math.hypot(P.x - SW.x, P.z - SW.z) > .3) { SW.x = P.x; SW.z = P.z; SW.t = 0; SW.n = 0; return; }
+  SW.t += dt;
+  if (SW.t < 2) return;
+  SW.t = 0; SW.n++;
+  const tx = P.tx, tz = P.tz, h = houseAt(P.x, P.z, .3), th = houseAt(tx, tz, .3);
+  if (h && h !== th && SW.n === 1) { if (P.up ? (!upperContains(tx, tz) && descendThen(tx, tz)) : exitClick(tx, tz)) return; }   // dentro e o destino é fora: sai pelo caminho certo
+  if (h && P.up && !STAIR.on && SW.n === 1 && !upperContains(tx, tz) && descendThen(tx, tz)) return;                            // no andar de cima, destino sem piso lá: desce pela escada
+  if (SW.n >= 2) { P.tx = P.x; P.tz = P.z; SW.n = 0; }                                               // não há caminho: para
+}
+
 const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
 
 /** Anda até o destino/alvo, ataca ao chegar no alcance, colide com árvores/pedras e regenera */
@@ -103,7 +119,7 @@ function moveAndAct(dt) {
 
   if (!P.tgt && (P.tx !== STEER.gx || P.tz !== STEER.gz)) {
     // destino novo: tira de dentro de obstáculos e zera o controle de progresso
-    if (!STAIR.on) { const f = freePoint(P.tx, P.tz, .7); P.tx = f.x; P.tz = f.z; }   // (o ponto da escada não é movido)
+    if (!STAIR.on) { const sn = snapInterior(P.x, P.z, P.tx, P.tz); if (sn === null) { P.tx = P.x; P.tz = P.z; } else if (sn) { P.tx = sn[0]; P.tz = sn[1]; } else { const f = freePoint(P.tx, P.tz, .7); P.tx = f.x; P.tz = f.z; } }   // (o ponto da escada não é movido)
     STEER.gx = P.tx; STEER.gz = P.tz; STEER.bd = 1e9; STEER.bt = 0;
   }
   const tx = P.tgt ? P.tgt.x : P.tx, tz = P.tgt ? P.tgt.z : P.tz;
@@ -116,9 +132,9 @@ function moveAndAct(dt) {
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
     setSwim(true);
-    const [nx, nz] = navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? .4 : .5);
+    const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? BODY_IN : .5);
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
-    [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? .4 : .5, STEER, Math.min(nd, d - rng));
+    [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? BODY_IN : .5, STEER, Math.min(nd, d - rng));
     setSwim(false);
   }
   const k = 1 - Math.exp(-dt * (want > Math.hypot(P.vx, P.vz) ? 6 : 9));
@@ -169,13 +185,16 @@ function moveAndAct(dt) {
   P.hp = Math.min(P.max, P.hp + dt * .5);
 }
 
+/** Raio do corpo dentro de casas (a grade dos interiores usa o mesmo valor + folga) */
+const BODY_IN = .3;
+
 /** Colisão com árvores e pedras e limite da ilha */
 let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
   const inH = houseNear(P.x, P.z, .3);
   props.forEach(p => {
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
-    const rr = p.r + (MOUNT.on ? .9 : inH ? .4 : .5);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
+    const rr = p.r + (MOUNT.on ? .9 : inH ? BODY_IN : .5);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
     if (dd < rr) {
       P.x = p.position.x + ex / dd * rr;
       P.z = p.position.z + ez / dd * rr;

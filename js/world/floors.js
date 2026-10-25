@@ -5,20 +5,22 @@ import { P } from '../entities/player.js';
 import { cam } from '../core/engine.js';
 import { invalidateGrid } from '../systems/steer.js';
 import { openDoorById } from './doors.js';
+import { invalidateInterior } from './interior-nav.js';
 
 export const HOUSES = [];
 export function registerFloors(h) { HOUSES.push(h); }
 
 /** O ponto está dentro (ou junto) de uma casa? Lá dentro o corpo é mais fino e o caminho usa uma grade fina */
-export function houseNear(x, z, pad = .6) {
+export function houseAt(x, z, pad = .6) {
   for (const h of HOUSES) {
     const dx = x - h.x, dz = z - h.z;
     if (dx * dx + dz * dz > 400) continue;
     const lx = (dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, lz = (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K;
-    if (Math.abs(lx) <= (h.hx || 4.2) + pad && Math.abs(lz) <= (h.hz || 3.2) + pad) return true;
+    if (Math.abs(lx) <= (h.hx || 4.2) + pad && Math.abs(lz) <= (h.hz || 3.2) + pad) return h;
   }
-  return false;
+  return null;
 }
+export const houseNear = (x, z, pad = .6) => !!houseAt(x, z, pad);
 
 /** Liga as colisões do andar atual e desliga as do outro (as desligadas vão para longe) */
 export function refreshProps() {
@@ -28,7 +30,7 @@ export function refreshProps() {
     const on = (p.lvl === undefined || p.lvl === (P.up ? 1 : 0)) && !(p.dr && p.dr.open);
     p.position.x = on ? p.hx : 1e5; p.position.z = on ? p.hz : 1e5;
   });
-  invalidateGrid();
+  invalidateGrid(); invalidateInterior();
 }
 export const setLevel = () => refreshProps();
 
@@ -40,7 +42,7 @@ export function floorOffset(x, z) {
     const lx = (dx * Math.cos(h.th) - dz * Math.sin(h.th)) / h.K, lz = (dx * Math.sin(h.th) + dz * Math.cos(h.th)) / h.K;
     if (Math.abs(lx) > (h.fx || 5.3) || Math.abs(lz) > (h.fz || 4.1)) continue;
     if (h.hf) return h.hf(lx, lz, b => { P.up = b; setLevel(b); });   // casas com piso próprio (castelo: palco e escadas)
-    const H = 3.03 * h.K;
+    const H = h.Hf !== undefined ? h.Hf : 3.03 * h.K;
     const stair = lx >= -5.1 && lx <= -3.6 && lz >= -1.75 && lz <= 1.85;
     if (stair) {
       if (lz < -1.15 && !P.up) { P.up = true; setLevel(true); }
@@ -76,7 +78,7 @@ export function stairClick(x, z) {
     if (lx < -5.6) continue;
     if (!P.up && (Math.hypot(lx + 4.2, lz - 1.8) < 2.8 || (lx <= -2.9 && lz >= .15 && lz <= 2.8))) {
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, 2.5), i: 0, pts: [[-4.3, 1.75], [-4.3, .05], [-4.3, -1.3], [-4.3, -1.75]].map(q => toW(h, ...q)) });
-    } else if (P.up && (Math.hypot(lx + 4.2, lz + .2) < 2.8 || (lx <= -3 && lz >= -2.45 && lz <= 1.95))) {
+    } else if (P.up && lx >= -5.3 && lx <= -3.35 && lz >= -2.3 && lz <= 1.9) {   // só a abertura da escada (antes era um círculo de 2,8 m que engolia o piso do andar)
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, -4.3, -1.75), i: 0, pts: [[-4.3, -1.3], [-4.3, .05], [-4.3, 1.75], [-4.3, 2.5]].map(q => toW(h, ...q)) });
     } else continue;
     P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];
@@ -144,7 +146,8 @@ export function upperContains(x, z) {
     const [px, pz] = toL(h, P.x, P.z);
     if (Math.abs(px) > (h.fx || 5.3) || Math.abs(pz) > (h.fz || 4.1)) continue;
     const [lx, lz] = toL(h, x, z);
-    return Math.abs(lx) <= (h.sc ? (h.fx || 5.3) - .3 : 5.1) && Math.abs(lz) <= (h.fz || 4.1) - .1;
+    if (Math.abs(lx) > (h.sc ? (h.fx || 5.3) - .3 : 5.1) || Math.abs(lz) > (h.fz || 4.1) - .1) return false;
+    return h.upOK ? h.upOK(lx, lz) : true;
   }
   return false;
 }

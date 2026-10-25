@@ -9,6 +9,7 @@ import { buildCastle } from './world/castle.js';
 import { initDialog } from './ui/dialog.js';
 import { updateNpcs, npcList } from './entities/npc.js';
 import { updatePerf } from './systems/perf.js';
+import { updateSettings, initSettings } from './systems/settings.js';
 import { pathTo } from './systems/steer.js';
 import { mergeStatics } from './world/merge.js';
 import { buildOutposts, updateOutposts } from './world/outposts.js';
@@ -49,6 +50,7 @@ import './systems/death.js';
 import { initFullscreen, initPwa } from './ui/fullscreen.js';
 import { VILLAGE_SEAT, POST_DATA } from './data/posts.js';
 import { P, hurtP } from './entities/player.js';
+import * as NAV from './world/interior-nav.js';
 import { enemies, props, loot } from './core/registry.js';
 
 let last = 0;
@@ -69,6 +71,7 @@ function tick(now) {
 
   // 1) jogo
   updatePerf(realDt);
+  updateSettings(realDt);
   updatePlayer(dt);
   updateEnemies(dt);
   updateDayNight(inDungeon());
@@ -107,6 +110,7 @@ initFullscreen();
 initPwa();
 initPanel();
 initDialog();
+initSettings();
 setWeapon();
 refreshPetButton();
 initHotbarFit();
@@ -127,5 +131,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

@@ -24,7 +24,7 @@
 <div id="mini"><canvas id="mm" width="140" height="140"></canvas></div>
 <canvas id="clk" width="300" height="300"></canvas>
 <div id="quest"><b>Missão</b><div id="qt"></div></div>
-<div id="menu"><button id="bg" title="Ajustes do modo auto">⚙</button></div>
+<div id="menu"><button id="bg" title="Ajustes (gráficos, cliques e modo auto)">⚙</button></div>
 <div id="log"></div>
 
 <!-- auto combate: centro esquerdo da tela -->
@@ -77,6 +77,26 @@
   <div class="cvb"><button id="cvgo">🕳 Entrar na dungeon</button><button id="cvno">Agora não</button></div>
 </div>
 <div id="acfg">
+  <div class="atabs"><span data-t="gx" class="on">🖥 Gráficos</span><span data-t="jg">🎮 Jogo</span><span data-t="au">🤖 Auto</span></div>
+  <div class="atab" id="at-gx">
+  <div class="acs">
+    <h4>🖥 Gráficos</h4>
+    <div class="acr"><span>Qualidade da imagem</span><select id="gx-q"><option value="auto">Automática (ajusta pelo FPS)</option><option value="max">Máxima (resolução nativa)</option><option value="high">Alta</option><option value="mid">Média</option><option value="low">Baixa (mais FPS)</option></select></div>
+    <label><input type="checkbox" id="gx-fps"> 📈 Mostrar FPS e resolução</label>
+  </div>
+  </div>
+  <div class="atab" id="at-jg" hidden>
+  <div class="acs">
+    <h4>🎯 Cliques</h4>
+    <div class="acr"><span>Marcador do destino</span><select id="gx-hl"><option value="tile">Tile (quadrado no chão)</option><option value="ring">Anel</option><option value="off">Desligado</option></select></div>
+    <label><input type="checkbox" id="gx-hlhide"> Esconder o marcador ao chegar</label>
+    <label><input type="checkbox" id="gx-dbg"> 🔍 Diagnóstico do clique <small>(azul = ponto onde a câmera acertou · rosa = destino final)</small></label>
+    <label><input type="checkbox" id="gx-tiles"> 🧱 Mostrar tiles da casa e áreas bloqueadas <small>(verde = livre · vermelho = bloqueado)</small></label>
+  </div>
+  <h4>PROGRESSO</h4>
+  <div class="pact"><div id="rst">Apagar progresso salvo</div></div>
+  </div>
+  <div class="atab" id="at-au" hidden>
   <h3>🤖 AUTOPLAY</h3>
   <div class="acs">
     <h4>⚔ Combate</h4>
@@ -107,8 +127,7 @@
     <small id="acs-store"></small>
     <div class="acr"><span>🎒 Ir à vila com a mochila em</span><input type="range" id="ac-bagAt" min="4" max="24" step="1"><b id="acv-bagAt"></b></div>
   </div>
-  <h4>PROGRESSO</h4>
-  <div class="pact"><div id="rst">Apagar progresso salvo</div></div>
+  </div>
 </div>
 <div id="pnl">
   <div class="ptabs">

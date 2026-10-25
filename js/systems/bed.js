@@ -3,6 +3,7 @@ import { P } from '../entities/player.js';
 import { eq } from './inventory.js';
 import { groundY } from '../world/terrain.js';
 import { BED } from '../world/beds.js';
+import { updateCabinetPending } from '../world/cabinets.js';
 import { hourNow } from '../core/clock.js';
 import { isEvening } from '../world/daynight.js';
 import { lieDown, standFromBed, makeZzz, SLEEP } from '../entities/sleep.js';
@@ -15,9 +16,10 @@ export const sleeping = () => !!P.bed || (P.bedK || 0) > 0;
 
 /** Chamado a cada quadro antes do movimento: inicia o deitar ao chegar perto da cama */
 export function updateBedPending() {
+  updateCabinetPending();
   const b = BED.pend;
   if (!b || P.bed) return;
-  if (Math.hypot(P.x - b.ax, P.z - b.az) < .55) {
+  if (Math.hypot(P.x - (b.cx ?? b.ax), P.z - (b.cz ?? b.az)) < .8) {
     BED.pend = null; P.bed = b; P.bedK = P.bedK || 0; P.bedNight = isEvening(hourNow()); P.tgt = null; P.vx = P.vz = 0;
     from = { x: P.x, z: P.z, y: groundY(P.x, P.z) + (P.fy || 0), ry: P.g.rotation.y };
     P.models && Object.values(P.models).forEach(m => { if (m) m.visible = false; });   // arma guardada enquanto dorme
@@ -46,7 +48,7 @@ export function animateBed(dt) {
   P.lastBed = bd;
   lieDown(g, k, t);
   // deslocamento: do ponto onde estava até os pés sobre o colchão; ao levantar, volta ao ponto de acesso
-  const e = ss(k), sx = b ? from.x : bd.ax, sz = b ? from.z : bd.az;
+  const e = ss(k), sx = b ? from.x : (bd.cx ?? bd.ax), sz = b ? from.z : (bd.cz ?? bd.az);
   const px = sx + (bd.x - sx) * e, pz = sz + (bd.z - sz) * e;
   const gy = groundY(px, pz) + (P.fy || 0), y = gy + (bd.y - gy) * e + Math.sin(Math.PI * e) * .25;
   g.position.set(px, y, pz);
@@ -54,6 +56,6 @@ export function animateBed(dt) {
   let dy = bd.ry - g.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); g.rotation.y += dy * Math.min(1, dt * 6);
   P.ay = g.rotation.y;
   zz.update(px - Math.sin(bd.ry) * 1.7, y + .55, pz - Math.cos(bd.ry) * 1.7, t, k > .95);
-  if (!b && k <= 0.001) { P.x = P.tx = bd.ax; P.z = P.tz = bd.az; }
+  if (!b && k <= 0.001) { P.x = P.tx = (bd.cx ?? bd.ax); P.z = P.tz = (bd.cz ?? bd.az); }
   return true;
 }

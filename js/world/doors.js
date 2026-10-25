@@ -109,12 +109,12 @@ const visible = o => { for (; o; o = o.parent) if (!o.visible) return false; ret
 /** Clique: o raio acertou uma porta? (só as do andar do personagem) */
 export function doorClick(ray) {
   meshes.length = 0;
-  DOORS.forEach(d => { if (d.lvl === (P.up ? 1 : 0) && visible(d.p)) d.p.children.forEach(m => { if (m.isMesh) { m.userData.door = d; meshes.push(m); } }); });
+  DOORS.forEach(d => { if (d.lvl === (P.up ? 1 : 0) && !(d.room && d.open) && visible(d.p)) d.p.children.forEach(m => { if (m.isMesh) { m.userData.door = d; meshes.push(m); } }); });
   const hit = ray.intersectObjects(meshes, false)[0];
   let d = hit && hit.object.userData.door;
   if (!d) {   // reserva: o raio passa perto do centro da porta (esfera de ~1,2 m)
     let best = 1.2;
-    DOORS.forEach(q => { if (q.lvl !== (P.up ? 1 : 0) || !visible(q.p)) return; const [qx, qz] = cen(q); const c = new THREE.Vector3(qx, groundY(qx, qz) + (P.up ? P.fy : 0) + 1.1 * q.h.K, qz); const dd = ray.ray.distanceToPoint(c); if (dd < best) { best = dd; d = q; } });
+    DOORS.forEach(q => { if (q.lvl !== (P.up ? 1 : 0) || (q.room && q.open) || !visible(q.p)) return; const [qx, qz] = cen(q); const c = new THREE.Vector3(qx, groundY(qx, qz) + (P.up ? P.fy : 0) + 1.1 * q.h.K, qz); const dd = ray.ray.distanceToPoint(c); if (dd < best) { best = dd; d = q; } });
   }
   if (!d) return false;
   const [cx, cz] = cen(d);
@@ -136,6 +136,27 @@ export function exitClick(x, z) {
   if (!best) return false;
   const d = best, [cx, cz] = cen(d);
   const side = sideOf(d), [ax, az] = cen(d, side * 1.5);
+  if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d, { x, z }); return true; }
+  P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az, final: { x, z } };
+  return true;
+}
+/** Clique em ponto do outro lado de uma porta de quarto fechada (entrar ou sair do quarto): vai à porta, abre e segue até o ponto */
+export function roomClick(x, z) {
+  if (anim) return false;
+  let best = null, bd = 1e9;
+  DOORS.forEach(d => {
+    if (!d.room || d.lvl !== (P.up ? 1 : 0) || d.open || ROOM_OWNERS[d.id]) return;
+    const [tl, tu] = (q => d.ax === 'z' ? [q[0], q[1]] : [q[1], q[0]])(toL(d.h, x, z)), [pl, pu] = (q => d.ax === 'z' ? [q[0], q[1]] : [q[1], q[0]])(toL(d.h, P.x, P.z));
+    const ts = tl > d.f ? 1 : -1, ps = pl > d.f ? 1 : -1;
+    if (ts === ps || Math.abs(tl - d.f) > 5 || Math.abs(pl - d.f) > 5) return;
+    const rs = d.f < 0 ? -1 : 1, ru = ts === rs ? tu : pu;   // o ponto que está do lado do quarto precisa estar na largura do quarto (não vale o resto do andar)
+    if (Math.abs(ru - d.c) > 1.9) return;
+    if (!roomRented() && ps !== (d.f < 0 ? -1 : 1)) return;
+    const dd = Math.abs(tu - d.c) + Math.abs(pu - d.c);
+    if (dd < bd) { bd = dd; best = d; }
+  });
+  if (!best) return false;
+  const d = best, [cx, cz] = cen(d), side = sideOf(d), [ax, az] = cen(d, side * 1.5);
   if (Math.hypot(P.x - cx, P.z - cz) < 1.9) { P.tgt = null; useDoor(d, { x, z }); return true; }
   P.tgt = null; P.tx = ax; P.tz = az; pend = { d, ax, az, final: { x, z } };
   return true;
