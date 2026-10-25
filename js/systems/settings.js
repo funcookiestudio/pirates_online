@@ -4,7 +4,7 @@ import { VERSION } from '../core/version.js';
 import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
-import { houseAt, HOUSES, onStairMid, stairTiles, STAIR } from '../world/floors.js';
+import { houseAt, HOUSES, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
 import { doorTiles } from '../world/doors.js';
 import { saveGame } from './save.js';
 import { groundY } from '../world/terrain.js';
@@ -70,6 +70,7 @@ function updateTrig() {
   });
   const ph = houseAt(P.x, P.z, 0);
   if (ph) { const st = stairTiles(ph); if (st) { const q = P.up ? st.up : st.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? (ph.Hf !== undefined ? ph.Hf : 3.03 * ph.K) + .06 : FLOOR_LIFT + .06)); } }
+  if (ph && ph.sc) castleStairTiles(ph).forEach(t => { const q = P.up ? t.up : t.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? ph.Hf + .06 : FLOOR_LIFT + .06)); });
   imTrig.count = n; imTrig.instanceMatrix.needsUpdate = true;
 }
 function updateTiles() {

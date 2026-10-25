@@ -70,6 +70,12 @@ export function stairTiles(h) {
   const f = q => snapCell(h, ...toW(h, ...q));   /* alinhado à grade: o tile é uma célula só */
   return { down: f([-4.3, 2.5]), up: f([-4.3, -1.75]) };
 }
+/** Castelo: tiles de acionamento das duas escadas (s = -1 esquerda, 1 direita): pé (salão) e topo (patamar) */
+export function castleStairTiles(h) {
+  if (!h.sc) return null;
+  const f = q => snapCell(h, ...toW(h, ...q));
+  return [-1, 1].map(s => ({ s, down: f([s * 3.9, 9.7]), up: f([s * 5.9, -.5]) }));
+}
 export function floorOffset(x, z) {
   for (const h of HOUSES) {
     if (h.noStair) continue;
@@ -108,7 +114,9 @@ export function stairClick(x, z) {
     if (Math.abs(px) > (h.fx || 5.3) || Math.abs(pz) > (h.fz || 4.1)) continue;      // só quem já está dentro da casa
     const [lx, lz] = toL(h, x, z);
     if (h.sc) {
-      const r = h.sc(lx, lz);
+      const hit = castleStairTiles(h).find(t => inCell(h, P.up ? t.up : t.down, x, z));   // só o tile de ativação (1 célula) sobe/desce
+      if (!hit) continue;
+      const r = h.sc(P.up ? hit.s * 5.9 : hit.s * 3.9, P.up ? -.5 : 9.7);
       if (!r) continue;
       Object.assign(STAIR, { on: true, run: false, h, A: toW(h, ...r.A), i: 0, pts: r.pts.map(q => toW(h, ...q)) });
       P.tgt = null; P.tx = STAIR.A[0]; P.tz = STAIR.A[1];

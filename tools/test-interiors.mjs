@@ -45,6 +45,14 @@ const res = await p.evaluate(() => {
   reach('taberna térreo', tav, false, [0, 1.2], [[-4.3, 2.5], [0, 0], [3, -.5], [-1, 1]]);
   reach('castelo cima', cas, true, [10, 0], [[10, 5], [8, -8], [5.9, 9.7]]);
   reach('castelo térreo', cas, false, [0, 6], [[0, -4], [-10, -5.5], [10, -5.5], [-10, 5], [10, 5], [3.9, 9.7]]);
+  { // escada do castelo: só o tile de 1 célula ativa; a célula ao lado não
+    P.up = false; G.FLOORS.refreshProps(); const a = W(cas, 0, 6); P.x = a[0]; P.z = a[1];
+    const c = G.FLOORS.castleStairTiles(cas)[1].down, [cu, cv] = G.FLOORS.toU ? [0, 0] : [0, 0];
+    const side = [c[0] + 0.5 * Math.cos(cas.th), c[1] - 0.5 * Math.sin(cas.th)];
+    const r1 = G.FLOORS.stairClick(side[0], side[1]); G.FLOORS.cancelStair();
+    const r2 = G.FLOORS.stairClick(c[0], c[1]); G.FLOORS.cancelStair();
+    out.push({ t: 'tile escada castelo: ao lado não ativa', ok: !r1, info: String(r1) }); out.push({ t: 'tile escada castelo: no tile ativa', ok: !!r2, info: String(r2) });
+  }
   { // parede do castelo: de dentro (portal fechado) não se alcança o pátio nem as alas pelas paredes finas
     P.up = false; G.FLOORS.refreshProps(); const s0 = W(cas, 0, 6);
     [[0, 15], [-17, 0], [17, 0], [0, -13]].forEach(q => { const t = W(cas, q[0], q[1]), r = G.nav.snapInterior(s0[0], s0[1], t[0], t[1]); out.push({ t: 'parede castelo (' + q + ')', ok: !Array.isArray(r) || Math.hypot(r[0] - t[0], r[1] - t[1]) > 1.5, info: Array.isArray(r) ? 'ajustado' : 'fechado' }); });

@@ -36,7 +36,6 @@ export function canSee(tx, tz, near) {
   const L = P.up ? 1 : 0;
   for (let i = 0; i < HOUSES.length; i++) {
     const h = HOUSES[i];
-    if (h.sc) continue;                                     // castelo: fora da regra por enquanto
     const hx = (h.hx || 4.2) * h.K, hz = (h.hz || 3.2) * h.K, R = Math.hypot(hx, hz) + 1;
     const cx = h.x - (P.x + tx) / 2, cz = h.z - (P.z + tz) / 2;
     if (cx * cx + cz * cz > (R + Math.sqrt(d2) / 2) ** 2) continue;   // casa longe do segmento
@@ -44,7 +43,7 @@ export function canSee(tx, tz, near) {
     const pIn = Math.abs(pu) <= hx && Math.abs(pv) <= hz, tIn = Math.abs(tu) <= hx && Math.abs(tv) <= hz;
     if (!pIn && !tIn) { if (hits(pu, pv, tu, tv, -hx, -hz, hx, hz)) return false; continue; }   // atrás da casa
     if (pIn && tIn) {
-      if (L === 1) return false;                           // jogador no andar de cima: o térreo não aparece
+      if (L === 1) return !!h.sc && Math.abs(tu) < 4.6;     // jogador no andar de cima: o térreo não aparece (castelo: o salão é aberto, vê-se pelo vão)
       if (h.rects && h.rects.some(q => q.l === 0 && q.tall && !(q.dr && q.dr.open) && hits(pu, pv, tu, tv, q.u0, q.v0, q.u1, q.v1))) return false;   // parede entre os dois
       continue;
     }
