@@ -6,6 +6,7 @@ import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
 import { registerFloors, refreshProps } from './floors.js';
 import { addDoor } from './doors.js';
+import { addBed } from './beds.js';
 
 export const SMITH_SC = 1.28;
 
@@ -193,6 +194,10 @@ for(let i=0;i<5;i++){const a=i*1.3,r=C(.4,.5,.4,5,-6+Math.cos(a)*.6,.2,5+Math.si
   };
   [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
   DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
+  // cama: o dorminhoco deita de costas, cabeça no travesseiro
+  { const hit = new THREE.Mesh(new THREE.BoxGeometry(1.05, .7, 2.1), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(2.7, .8, -2.25); hit.rotation.y = Math.PI / 2; hit.userData.dyn = 1; S.add(hit);
+    const bf = at(1.85 * K, -2.25 * K), ba = at(2.4 * K, -1.1 * K);
+    addBed({ x: bf[0], z: bf[1], y: 0.72 * K + .18, ry: th + (-Math.PI / 2), ax: ba[0], az: ba[1], hit }); }
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
   return { g: root, th, at, pts, front: at(-1.4 * K, 4.2 * K) };

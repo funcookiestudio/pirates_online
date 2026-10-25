@@ -120,7 +120,8 @@ export function updateCutaway() {
     if (h.up) h.up.visible = !inside || !!P.up;
     const [cx, cz] = toL(h, cam.position.x, cam.position.z);
     const inY = !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;
-    h.walls.forEach(w => { w.g.visible = !((inside || (w.y && inY)) && (cx * w.nx + cz * w.nz) * h.K > w.D * h.K * .35); });
+    const cd = Math.hypot(cx - px, cz - pz) || 1;   // direção da câmera vista do personagem: esconde também as paredes na linha de visão em diagonal
+    h.walls.forEach(w => { w.g.visible = !((inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K * .35 || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)); });
   }
 }
 

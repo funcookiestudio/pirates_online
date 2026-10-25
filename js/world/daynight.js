@@ -34,8 +34,10 @@ const stars = (() => {
 export const isNight = h => h >= 21 || h < 6;
 export const isEvening = h => h >= 20.5 || h < 6;
 
+let glass = null, glassT = 0;
 export function updateDayNight(inDungeon) {
   const h = hourNow();
+  if (++glassT === 90) glass = null;   // recolhe os vidros depois que o mundo foi fundido
   stars.visible = !inDungeon && stars.material.opacity > .02;
   if (inDungeon) { lastH = -1; return; }
   stars.position.copy(cam.position);
@@ -50,4 +52,8 @@ export function updateDayNight(inDungeon) {
   hemi.intensity = a[4] + (b[4] - a[4]) * u;
   torch.intensity = a[5] + (b[5] - a[5]) * u;
   stars.material.opacity = Math.max(0, Math.min(1, (.6 - hemi.intensity) / .3));   // as estrelas surgem quando escurece
+  // janelas das casas acendem ao entardecer (vidros de cor 0xbfe0f0: materiais fundidos por quadra, coletados uma vez)
+  if (!glass) { glass = new Set(); scene.traverse(o => { const m = o.isMesh && o.material; if (m && !Array.isArray(m) && m.transparent && m.emissive && m.color.getHex() === 0xbfe0f0) glass.add(m); }); }
+  const gl = stars.material.opacity;
+  glass.forEach(m => { m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .4 + gl * .45; });
 }

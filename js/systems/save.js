@@ -11,6 +11,7 @@ import { refreshPetButton } from '../ui/hotbar.js';
 import { MOUNT } from './mount.js';
 import { SEED } from '../world/terrain.js';
 import { safeSpot } from './safe.js';
+import { getRent, setRent } from '../world/doors.js';
 import { inDungeon } from '../dungeon/dungeon-scene.js';
 
 const KEY = 'pirata-arpg:save:v1';
@@ -36,7 +37,7 @@ export function saveGame() {
     localStorage.setItem(KEY, JSON.stringify({
       v: 1,
       t: Date.now(),
-      seed: SEED, pos: lastSafe,
+      seed: SEED, pos: lastSafe, rent: getRent(),
       player: Object.fromEntries(PLAYER_FIELDS.map(f => [f, P[f]])),
       bag, chest, eq, act: P.act, pets,
       pet: state.pet.id,
@@ -55,6 +56,7 @@ export function loadGame() {
     if (!s || s.v !== 1) return false;
 
     PLAYER_FIELDS.forEach(f => { if (Number.isFinite(s.player[f])) P[f] = s.player[f]; });
+    setRent(s.rent);
     P.nxt = xpToNext(P.lv);               // curva de XP nova: recalcula a partir do nível salvo
     P.xp = Math.min(P.xp, P.nxt - 1);
     P.hp = P.max;

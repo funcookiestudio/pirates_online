@@ -17,6 +17,7 @@ import { initSmith, updateSmith, updateSparks } from './npc-work.js';
 import { cam } from '../core/engine.js';
 import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
 import { $ } from '../core/utils.js';
+import { log } from '../ui/notify.js';
 import { groundY } from '../world/terrain.js';
 
 const list = [];
@@ -96,6 +97,7 @@ function arrive(n) {
   want = null;
   talking = n;
   P.tx = P.x; P.tz = P.z;
+  if (n.info && n.info.shop && n.info.shop !== 'tavern' && (n.sl > .3 || n.up || isNight(hourNow()))) { talking = null; log('😴 ' + n.info.name + ' está dormindo — a loja abre de manhã'); return; }   // lojas fecham à noite
   openDialog(n.info);
 }
 

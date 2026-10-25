@@ -13,6 +13,9 @@ const RENT = { on: false, next: 0 };
 /** Quartos que já têm dono: nunca abrem para o jogador */
 export const ROOM_OWNERS = { 'room-f3': 'Mestre Breu', 'room-3.4': 'Pé-de-Pau Polly' };
 export const roomRented = () => RENT.on;
+/** Persistência do aluguel: horas restantes (ou null) */
+export const getRent = () => RENT.on ? { left: +Math.max(0, RENT.next - CLOCK.total).toFixed(2) } : null;
+export const setRent = r => { if (r && Number.isFinite(r.left)) { RENT.on = true; RENT.next = CLOCK.total + r.left; } };
 /** Horas de jogo até a próxima cobrança da diária */
 export const rentDue = () => Math.max(0, RENT.next - CLOCK.total);
 const rentable = d => !d.room || (RENT.on && !ROOM_OWNERS[d.id]);
@@ -52,7 +55,7 @@ export function updateDoors(dt) {
     if (!anim.done && anim.t >= .35) { anim.done = true; toggleDoor(anim.d); }
     if (anim.t >= .85) {   // porta aberta: o personagem atravessa
       const a = anim; anim = null;
-      if (a.d.open) { const sd = sideOf(a.d), [tx, tz] = a.final ? [a.final.x, a.final.z] : cen(a.d, -sd * 2.2); P.tgt = null; P.tx = tx; P.tz = tz; }
+      if (a.d.open) { const sd = sideOf(a.d), [tx, tz] = a.final ? [a.final.x, a.final.z] : cen(a.d, -sd * (a.d.room ? 1.1 : 2.2)); P.tgt = null; P.tx = tx; P.tz = tz; }
     }
   }
   DOORS.forEach(d => {   // fecham sozinhas depois de alguns segundos, se ninguém estiver no vão
@@ -76,7 +79,7 @@ function useDoor(d, final) {
 }
 function toggleDoor(d) {
   if (d.room && ROOM_OWNERS[d.id]) { log('🔒 Quarto de ' + ROOM_OWNERS[d.id] + ': trancado'); return; }
-  if (d.room && !roomRented()) { log('🔒 Trancada. Alugue um quarto com a Madame Rum'); return; }
+  if (d.room && !roomRented() && sideOf(d) !== (d.f < 0 ? -1 : 1)) { log('🔒 Trancada. Alugue um quarto com a Madame Rum'); return; }
   d.open = !d.open; d.t = 0; if (d.pair) { d.pair.open = d.open; d.pair.t = 0; }
   refreshProps();
 }

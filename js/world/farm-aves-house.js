@@ -11,13 +11,14 @@ import { addBed } from './beds.js';
 
 export const AVES_HOUSE = { w: 8, d: 6 };      // dimensões externas (m): o resto do sítio se organiza em volta
 
-export function buildAvesHouse(x, z, th, y0 = 0) {
+/** style (opcional): { PL, PL2, SH, QUILT, QUILT2, roof:[4 cores] } troca a paleta para as outras fazendas */
+export function buildAvesHouse(x, z, th, y0 = 0, style = {}) {
   const root = new THREE.Group();
   root.position.set(x, y0, z); root.rotation.y = th;
   const KS = 1.28, S = new THREE.Group(); S.scale.setScalar(KS); root.add(S);
   const DR = [];
-  const PL = 0xeccabd, PL2 = 0xdcb4a6, STONE = 0x8c8880, STONE2 = 0x6e6a62, TM = 0x5a3a2a, DOOR = 0x6b4a2b, DOOR2 = 0x5c3f24, IRON = 0x2b2b30,
-    WOOD = 0x9a7040, WOOD2 = 0x6e4d2c, SH = 0x4d8088, TRIM = 0xf4efe2, QUILT = 0xc85a78, QUILT2 = 0xf0d8dc;
+  const PL = style.PL ?? 0xeccabd, PL2 = style.PL2 ?? 0xdcb4a6, STONE = 0x8c8880, STONE2 = 0x6e6a62, TM = 0x5a3a2a, DOOR = 0x6b4a2b, DOOR2 = 0x5c3f24, IRON = 0x2b2b30,
+    WOOD = 0x9a7040, WOOD2 = 0x6e4d2c, SH = style.SH ?? 0x4d8088, TRIM = 0xf4efe2, QUILT = style.QUILT ?? 0xc85a78, QUILT2 = style.QUILT2 ?? 0xf0d8dc;
   let DEF = S, XR = false;
   function M(c, e) { const m = new THREE.MeshLambertMaterial({ color: c, emissive: e || 0 }); return XR ? xray(m) : m; }
   function B(w, h, d, x, y, z, c, p, e) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c, e)); m.position.set(x, y, z); m.castShadow = m.receiveShadow = true; (p || DEF).add(m); return m; }
@@ -86,7 +87,7 @@ export function buildAvesHouse(x, z, th, y0 = 0) {
   wall('z', 4, -3, 3, [{ c: 1.7, w: 1.2, y0: 1, y1: 2.1 }], wR); win('z', 4, 1.7, 1.2, 1, 2.1, wR);
   B(2.0, .2, .9, DC, .12, 3.55, STONE); B(1.5, .12, .5, DC, .06, 4.2, STONE2);                                      // degraus da porta
   // telhado de telha cerâmica
-  const L = Math.hypot(3.6, 2.2), A = Math.atan2(2.2, 3.6), RT = H + 2.2, sc = [0xb4502e, 0xa84828, 0xbc5834, 0xa04226];
+  const L = Math.hypot(3.6, 2.2), A = Math.atan2(2.2, 3.6), RT = H + 2.2, sc = style.roof || [0xb4502e, 0xa84828, 0xbc5834, 0xa04226];
   for (const s of [1, -1]) {
     const g = new THREE.Group(); g.position.set(0, RT, 0); g.rotation.x = s * A; roof.add(g);
     B(9, .12, L, 0, -.12, s * L / 2, 0x3a281a, g);

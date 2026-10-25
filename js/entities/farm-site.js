@@ -20,6 +20,8 @@ import { H } from '../world/terrain.js';
 import { cropGeo, CROP_MAT } from './crops.js';
 import { buildAvesDecor } from '../world/farm-aves.js';
 import { buildAvesHouse } from '../world/farm-aves-house.js';
+import { buildGranjaDecor } from '../world/farm-granja.js';
+import { buildGadoDecor } from '../world/farm-gado.js';
 const E = N / 2;
 
 export const FARMSITE = { ok: false, sites: [] };
@@ -265,7 +267,8 @@ function buildOne(spot) {
       pond: (() => { const q = toWorld(spot, f, -10.2, 5.7); return { cx: q.x, cz: q.z, fx: f.fx, fz: f.fz, rx: 2.0, rz: .85 }; })(),
       perch: (() => { const q = toWorld(spot, f, -5.2, 9.3); return { x: q.x, z: q.z, h: 1.85, ry: f.th + Math.atan2(-5, -3.6) }; })() });   // poleiro do pavão
   } else if (vr.id === 'granja') {
-    house(-8, -12); barn(8, -12); well(0, -10); hayPile(-13, -8.5);
+    { const hw = toWorld(spot, f, -8, -12); spot.bed = buildAvesHouse(hw.x, hw.z, f.th, by, { PL: 0xf1ece0, PL2: 0xd8d2c4, SH: 0x3f5a78, QUILT: 0x4a6a9a, QUILT2: 0xe8eef2, roof: [0x4a6078, 0x40566c, 0x546a82, 0x3a5068] }).bed; }
+    buildGranjaDecor({ g, solid, M });                                                // celeiro caiado, moinho, chiqueiro coberto, abrigo das ovelhas (farm-granja.js)
     const a = pen(...A, 0xe88aa0), b = pen(...B, 0xf0f0f0); PA = a; PB = b;
     bx(3.8, .04, 2.8, 0x5a4030, a.cx + 1, .04, a.cz); trough(a.x0 + 2.2, a.z0 + 1.2);   // lamaçal e cocho
     trough(b.x0 + 2.2, b.z1 - 1.2); bx(1.2, .6, 1, 0xd8b848, b.x1 - 1.8, .3, b.z0 + 1.2);
@@ -273,12 +276,10 @@ function buildOne(spot) {
     pens.push({ kinds: ['pig', 'pig', 'pig'], at: spotsIn(a, 3) });
     pens.push({ kinds: ['sheep', 'sheep', 'sheep', 'sheep'], at: spotsIn(b, 4) });
   } else {
-    house(-8, -12); barn(8, -12); silo(-0.5, -13.5); roll(13, -6.4);
+    { const hw = toWorld(spot, f, -8, -12); spot.bed = buildAvesHouse(hw.x, hw.z, f.th, by, { PL: 0xd9cdb0, PL2: 0xbfb294, SH: 0x5a3a28, QUILT: 0x8a2433, QUILT2: 0xe8dcc0, roof: [0x4a4f5c, 0x40454f, 0x555a68, 0x363a46] }).bed; }
+    buildGadoDecor({ g, solid, M });                                                  // estábulo grande, silos, cocheira, bebedouros (farm-gado.js)
     const a = pen(...A, 0x4a90d8), b = pen(...B, 0x8a5a3a); PA = a; PB = b;
-    trough(a.x0 + 2.2, a.z0 + 1.2); bx(1.6, .9, 1.2, 0xd8b848, a.x1 - 1.6, .45, a.z1 - 1.2);
-    bx(2.6, 1.8, 2, 0x8a6238, b.x0 + 2, .9, b.z0 + 1.5);                              // cocheira
-    bx(2.9, .12, 2.3, 0x4a3426, b.x0 + 2, 1.85, b.z0 + 1.5); solid(b.x0 + 2, b.z0 + 1.5, 1.4);
-    trough(b.x0 + 2.2, b.z1 - 1.2);
+    bx(1.6, .9, 1.2, 0xd8b848, a.x1 - 1.6, .45, a.z1 - 1.2);
     field(4.5, 4.5 + 3 * 1.5 - 1, -2, 9, 3, [['Cevada', 1.3, .65], ['Aveia', 1.3, .65], ['Beterraba', 1.1, 1]]);
     pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spotsIn(a, 4) });
     pens.push({ kinds: ['horse', 'horse'], at: spotsIn(b, 2) });

@@ -3,6 +3,8 @@ import { P } from '../entities/player.js';
 import { eq } from './inventory.js';
 import { groundY } from '../world/terrain.js';
 import { BED } from '../world/beds.js';
+import { hourNow } from '../core/clock.js';
+import { isEvening } from '../world/daynight.js';
 import { lieDown, standFromBed, makeZzz, SLEEP } from '../entities/sleep.js';
 
 const DUR = 2.2;            // s para deitar / levantar
@@ -16,7 +18,7 @@ export function updateBedPending() {
   const b = BED.pend;
   if (!b || P.bed) return;
   if (Math.hypot(P.x - b.ax, P.z - b.az) < .55) {
-    BED.pend = null; P.bed = b; P.bedK = P.bedK || 0; P.tgt = null; P.vx = P.vz = 0;
+    BED.pend = null; P.bed = b; P.bedK = P.bedK || 0; P.bedNight = isEvening(hourNow()); P.tgt = null; P.vx = P.vz = 0;
     from = { x: P.x, z: P.z, y: groundY(P.x, P.z) + (P.fy || 0), ry: P.g.rotation.y };
     P.models && Object.values(P.models).forEach(m => { if (m) m.visible = false; });   // arma guardada enquanto dorme
     if (P.torchM) P.torchM.visible = false;
@@ -35,6 +37,7 @@ export function animateBed(dt) {
   const g = P.g;
   P.vx = P.vz = 0; P.walk = 0;
   const deep = !!b && k > .95;
+  if (deep && P.bedNight && hourNow() >= 6 && hourNow() < 12) { P.bed = null; P.bedNight = false; }   // dormiu a noite toda: acorda ao amanhecer
   SLEEP.fast = deep ? 12 : 1;                                   // o tempo passa mais rápido
   if (deep) { P.hp = Math.min(P.max, P.hp + P.max * .12 * dt); P.mp = Math.min(P.mmax, P.mp + P.mmax * .12 * dt); }   // dormir recupera vida e mana
   if (!zz) zz = makeZzz();

@@ -26,6 +26,7 @@ import { updateXray } from './world/xray.js';
 import { initInput } from './systems/input.js';
 import * as FLOORS from './world/floors.js';
 import { updateRoyals } from './entities/royals.js';
+import { updateFarmFx } from './world/farm-granja.js';
 import { refreshProps } from './world/floors.js';
 import { updateDayNight } from './world/daynight.js';
 import { initBackground } from './systems/background.js';
@@ -74,6 +75,7 @@ function tick(now) {
   updateNpcs(realDt, now);
   updateFarm(realDt);
   updateRoyals(realDt);
+  updateFarmFx(realDt);
   separate();
   updateLoot(dt, now);
   updateBombs(dt);
