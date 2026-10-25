@@ -5,6 +5,7 @@ import { P, mark } from '../entities/player.js';
 import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
 import { houseAt, HOUSES, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
+import { inCellN } from '../world/imap.js';
 import { VIZ } from './steer.js';
 import { applyFull } from '../ui/fullscreen.js';
 import { doorTiles } from '../world/doors.js';
@@ -54,25 +55,27 @@ export function flashBlocked(x, y, z) { flash.t = .7; flash.x = x; flash.y = y; 
 const MAXC = 7000, cg = new THREE.PlaneGeometry(.41, .41).rotateX(-Math.PI / 2);
 const mkInst = col => { const m = new THREE.InstancedMesh(cg, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .38, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false }), MAXC); m.count = 0; m.frustumCulled = false; m.renderOrder = 990; m.visible = false; scene.add(m); return m; };
 const imFree = mkInst(0x40e070), imBlk = mkInst(0xf03838), imTrig = mkInst(0x3a7bff);
-imTrig.material.opacity = .6; imTrig.renderOrder = 3;
+imTrig.material.opacity = .75; imTrig.renderOrder = 995; imTrig.material.polygonOffsetFactor = -8; imTrig.material.polygonOffsetUnits = -8;
 imTrig.geometry = new THREE.PlaneGeometry(.45, .45).rotateX(-Math.PI / 2);   // célula inteira = a área que ativa ao clicar
 let tkey = '';
+let TRIGS = [];   // células de ativação (porta/escada): a grade verde/vermelha não é desenhada nelas, só o azul
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1), _u = new THREE.Vector3(0, 1, 0);
 /** Tiles azuis de acionamento: portas (dentro e fora) e escadas (pé e topo). Só no andar em que o personagem está */
 function updateTrig() {
   const on = CFG.tiles && !onStairMid() && !STAIR.run;
   imTrig.visible = on;
-  if (!on) return;
+  TRIGS = [];
+  if (!on) { tkey = ''; return; }
   let n = 0;
-  const put = (x, z, th, y, k = 1) => { if (n >= 64) return; _q.setFromAxisAngle(_u, th); _p.set(x, y, z); _s.set(k, 1, k); _m.compose(_p, _q, _s); imTrig.setMatrixAt(n++, _m); };
+  const put = (x, z, th, y, k = 1, h0) => { if (n >= 64) return; if (h0) TRIGS.push([h0, [x, z], k]); _q.setFromAxisAngle(_u, th); _p.set(x, y, z); _s.set(k, 1, k); _m.compose(_p, _q, _s); imTrig.setMatrixAt(n++, _m); };
   doorTiles().forEach(t => {
     if (Math.hypot(t.x - P.x, t.z - P.z) > 30) return;
     const h = t.d.h, inside = houseAt(t.x, t.z, 0) === h, g = groundY(t.x, t.z);
-    put(t.x, t.z, h.th, g + (t.d.lvl === 1 ? (h.Hf !== undefined ? h.Hf : 3.03 * h.K) + .06 : inside ? FLOOR_LIFT + .06 : .08));
+    put(t.x, t.z, h.th, g + (t.d.lvl === 1 ? (h.Hf !== undefined ? h.Hf : 3.03 * h.K) + .06 : inside ? FLOOR_LIFT + .06 : .08), 1, t.d.lvl === (P.up ? 1 : 0) ? h : null);
   });
   const ph = houseAt(P.x, P.z, 0);
-  if (ph) { const st = stairTiles(ph); if (st) { const q = P.up ? st.up : st.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? (ph.Hf !== undefined ? ph.Hf : 3.03 * ph.K) + .06 : FLOOR_LIFT + .06), 3); } }
-  if (ph && ph.sc) castleStairTiles(ph).forEach(t => { const q = P.up ? t.up : t.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? ph.Hf + .06 : FLOOR_LIFT + .06), 3); });
+  if (ph) { const st = stairTiles(ph); if (st) { const q = P.up ? st.up : st.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? (ph.Hf !== undefined ? ph.Hf : 3.03 * ph.K) + .06 : FLOOR_LIFT + .06), 3, ph); } }
+  if (ph && ph.sc) castleStairTiles(ph).forEach(t => { const q = P.up ? t.up : t.down; put(q[0], q[1], ph.th, groundY(q[0], q[1]) + (P.up ? ph.Hf + .06 : FLOOR_LIFT + .06), 3, ph); });
   imTrig.count = n; imTrig.instanceMatrix.needsUpdate = true;
 }
 function updateTiles() {
@@ -80,12 +83,12 @@ function updateTiles() {
   const on = CFG.tiles && !onStairMid() && !STAIR.run, d = on ? debugGrid() : null;   // subindo/descendo a escada: a grade some (não acompanha a câmera) e volta ao chegar no andar
   imFree.visible = imBlk.visible = !!d;
   if (!d) { tkey = ''; return; }
-  const key = HOUSES.indexOf(d.h) + ':' + d.L + ':' + navVersion();
+  const key = HOUSES.indexOf(d.h) + ':' + d.L + ':' + navVersion() + ':' + TRIGS.map(t => t[1][0].toFixed(1) + t[1][1].toFixed(1)).join();
   const y = P.g.position.y + .06 + (!P.up && d.h ? FLOOR_LIFT : 0);
   if (key !== tkey) {
     tkey = key; _q.setFromAxisAngle(_u, d.h.th);
     let a = 0, b = 0;
-    d.cells.forEach(c => { if (a >= MAXC || b >= MAXC) return; _p.set(c.x, 0, c.z); _m.compose(_p, _q, _s); (c.free ? imFree.setMatrixAt(a++, _m) : imBlk.setMatrixAt(b++, _m)); });
+    d.cells.forEach(c => { if (a >= MAXC || b >= MAXC) return; if (TRIGS.some(t => t[0] === d.h && inCellN(d.h, t[1], c.x, c.z, t[2] - .1))) return; _p.set(c.x, 0, c.z); _m.compose(_p, _q, _s); (c.free ? imFree.setMatrixAt(a++, _m) : imBlk.setMatrixAt(b++, _m)); });
     imFree.count = a; imBlk.count = b; imFree.instanceMatrix.needsUpdate = imBlk.instanceMatrix.needsUpdate = true;
   }
   imFree.position.y = imBlk.position.y = y;

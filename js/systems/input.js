@@ -61,7 +61,7 @@ function pick(cx, cy) {
         // Como no Tibia: cada andar é uma camada. Do andar de cima só se clica no piso de cima; a abertura da escada leva ao andar de baixo
         // e o chão lá embaixo (dentro ou fora da casa) não recebe cliques até o personagem descer
         cancelStair(); cancelDoor();
-        if (stairClick(ux, uz)) { P.tgt = null; mark.position.set(ux, markY(ux, uz), uz); }
+        if (stairClick(ux, uz)) { P.tgt = null; mark.position.set(ux, groundY(ux, uz) + floorLevelH() + .12, uz); }
         return;
       }
     } else return;
