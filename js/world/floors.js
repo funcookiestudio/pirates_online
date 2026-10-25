@@ -160,6 +160,18 @@ export function stairMove(dt) {
 let INSIDE = false;
 /** O personagem está dentro de uma casa? (o raio-x das árvores/pedras fica desligado lá dentro) */
 export const insideHouse = () => INSIDE;
+const _bb = new THREE.Box3(), _bv = new THREE.Vector3(), LOW = .14;
+/** Parede "abaixada" (como no The Sims): em vez de sumir, fica só uma bordinha baixa rente ao piso dela */
+function lower(w, h, on) {
+  const g = w.g; if (!g.parent) return;
+  if (w.yb === undefined) {
+    g.scale.y = 1; g.position.y = 0; g.parent.updateWorldMatrix(true, true);
+    _bb.setFromObject(g); _bv.set(0, _bb.isEmpty() ? 0 : _bb.min.y, 0); g.parent.worldToLocal(_bv); w.yb = _bv.y;
+  }
+  const k = on ? LOW : 1;
+  if (g.scale.y !== k) { g.scale.y = k; g.position.y = w.yb * (1 - k); }
+  g.visible = true;
+}
 export function updateCutaway() {
   INSIDE = false;
   for (const h of HOUSES) {
@@ -174,8 +186,10 @@ export function updateCutaway() {
     const inY = inside && !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;   // paredes só somem com o personagem dentro
     const cd = Math.hypot(cx - px, cz - pz) || 1;   // direção da câmera vista do personagem: esconde também as paredes na linha de visão em diagonal
     if (h.ch) { h.ch[0].visible = !inside || !P.up; h.ch[1].visible = !inside || !!P.up; }   // chaminé: por dentro, só a parte do andar do personagem
-    if (h.iw) h.iw.forEach(w => { const pc = w.plane === 'u' ? px : pz, cc = w.plane === 'u' ? cx : cz; w.g.visible = !(inside && P.up && (pc - w.c) * (cc - w.c) < 0); });   // paredes internas do quarto: somem só quando estão entre a câmera e o personagem
-    h.walls.forEach(w => { w.g.visible = !((inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)); });
+    const pr = h.roomAt ? h.roomAt(px, pz) : null;
+    if (h.iw) h.iw.forEach(w => { const pc = w.plane === 'u' ? px : pz, cc = w.plane === 'u' ? cx : cz; lower(w, h, inside && P.up && !!pr && w.rooms.includes(pr) && (pc - w.c) * (cc - w.c) < 0); });   // paredes internas: só as do quarto do personagem, e só as que ficam entre a câmera e ele
+    if (h.dk) h.dk.forEach(d => { d.m.visible = inside && !!P.up && pr !== d.id && !d.ok(); });   // quartos sem acesso: escuros
+    h.walls.forEach(w => lower(w, h, (inside || (w.y && inY)) && ((cx * w.nx + cz * w.nz) * h.K > w.D * h.K || ((cx - px) * w.nx + (cz - pz) * w.nz) / cd > .45)));
   }
 }
 

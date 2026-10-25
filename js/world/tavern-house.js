@@ -136,22 +136,26 @@ for(const bx of[-1.07,2.5]){const z0=-3.45;
  for(const a of[-.5,.5])for(const b of[-1,1])B(.08,.45,.08,bx+a,3.375,z0+b,WOOD2,up);
  }
 // divisórias entre os quartos, parede do corredor e portas
-const iW=[],mkW=(plane,c)=>{const g=new THREE.Group();up.add(g);iW.push({g,plane,c});return g};   // paredes internas do andar de cima: somem quando estão entre a câmera e o personagem
-const gP={'-1.8':mkW('u',-1.8),'1.8':mkW('u',1.8)},gCB=mkW('v',-1.7),gCF=mkW('v',1.45);
-for(const x of[-1.8,1.8]){const q=gP[x];B(.15,2.45,2.95,x,4.375,-3.225,PL,q);for(const z of[-4.7,-1.75])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,2.95,x,5.5,-3.225,TM,q);B(.2,.2,2.95,x,3.25,-3.225,TM,q)}
-wall('x',-1.7,-1.8,5,[{c:0,w:1,y0:3.15,y1:5.2},{c:3.4,w:1,y0:3.15,y1:5.2}],gCB,3.15,2.45,false);
-const d2=c=>{const w=1,h=2.05,yb=3.15;W('x',-1.7,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);W('x',-1.7,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);
+const dkG=new THREE.Group();dkG.userData.dyn=1;up.add(dkG);const DK=[];
+const mkDark=(id,x0,x1,z0,z1,ok)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(x1-x0,2.6,z1-z0),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.8,depthWrite:false}));m.position.set((x0+x1)/2,3.15+1.3,(z0+z1)/2);m.renderOrder=5;m.visible=false;dkG.add(m);DK.push({m,id,ok})};
+const iW=[],mkW=(plane,c,rooms)=>{const g=new THREE.Group();up.add(g);iW.push({g,plane,c,rooms});return g};   // paredes internas do andar de cima: abaixam quando estão entre a câmera e o personagem E pertencem ao quarto dele
+const gPB={'-1.8':mkW('u',-1.8,['C','B1']),'1.8':mkW('u',1.8,['B1','B2'])},gPF={'-1.8':mkW('u',-1.8,['C','F1']),'1.8':mkW('u',1.8,['F1','F2'])};
+const cB1=mkW('v',-1.7,['B1','C']),cB2=mkW('v',-1.7,['B2','C']),cF1=mkW('v',1.45,['F1','C']),cF2=mkW('v',1.45,['F2','C']);
+mkDark('B1',-1.8,1.8,-4.9,-1.7,()=>roomRented());mkDark('B2',1.8,4.9,-4.9,-1.7,()=>false);mkDark('F1',-1.8,1.8,1.45,4.9,()=>roomRented());mkDark('F2',1.8,4.9,1.45,4.9,()=>false);   // quartos sem acesso ficam escuros
+for(const x of[-1.8,1.8]){const q=gPB[x];B(.15,2.45,2.95,x,4.375,-3.225,PL,q);for(const z of[-4.7,-1.75])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,2.95,x,5.5,-3.225,TM,q);B(.2,.2,2.95,x,3.25,-3.225,TM,q)}
+wall('x',-1.7,-1.8,1.8,[{c:0,w:1,y0:3.15,y1:5.2}],cB1,3.15,2.45,false);wall('x',-1.7,1.8,5,[{c:3.4,w:1,y0:3.15,y1:5.2}],cB2,3.15,2.45,false);
+const d2=(c,gCB)=>{const w=1,h=2.05,yb=3.15;W('x',-1.7,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);W('x',-1.7,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCB);
  const p=new THREE.Group();p.position.set(c-w/2,yb,-1.68);p.rotation.y=0;gCB.add(p);DR.push({p,g:gCB,openRot:.9,c,f:-1.7,w,lvl:1,room:true,id:'room-'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,.01,IRON,p);B(w,.1,.09,w/2,h-.4,.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,.07);p.add(r)};
-d2(0);d2(3.4);
+d2(0,cB1);d2(3.4,cB2);
 // quartos da frente (da direita para a esquerda), com corredor entre eles e os quartos dos fundos
-wall('x',1.45,-1.8,5,[{c:3,w:1,y0:3.15,y1:5.2},{c:-.4,w:1,y0:3.15,y1:5.2}],gCF,3.15,2.45,false);
-for(const c of[3,-.4]){const w=1,h=2.05,yb=3.15;W('x',1.45,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCF);W('x',1.45,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCF);
+wall('x',1.45,-1.8,1.8,[{c:-.4,w:1,y0:3.15,y1:5.2}],cF1,3.15,2.45,false);wall('x',1.45,1.8,5,[{c:3,w:1,y0:3.15,y1:5.2}],cF2,3.15,2.45,false);
+for(const c of[3,-.4]){const gCF=c>1.8?cF2:cF1;const w=1,h=2.05,yb=3.15;W('x',1.45,c-w/2-.09,yb+h/2,.16,h+.1,T+.1,TM,gCF);W('x',1.45,c+w/2+.09,yb+h/2,.16,h+.1,T+.1,TM,gCF);
  const p=new THREE.Group();p.position.set(c-w/2,yb,1.43);p.rotation.y=0;gCF.add(p);DR.push({p,g:gCF,openRot:-.9,c,f:1.45,w,lvl:1,room:true,id:'room-f'+c});
  for(let i=0;i<5;i++)B(w/5-.012,h-.06,.07,w/5*(i+.5),h/2,0,i%2?DOOR:DOOR2,p);B(w,.1,.09,w/2,.4,-.01,IRON,p);B(w,.1,.09,w/2,h-.4,-.01,IRON,p);
  B(.22,.22,.04,w/2,h-.3,-.06,0xc9a85a,p);const r=new THREE.Mesh(new THREE.TorusGeometry(.06,.014,4,8),M(IRON));r.position.set(w-.15,1.0,-.07);p.add(r)}
-for(const x of[-1.8,1.8]){const q=gP[x];B(.15,2.45,3.15,x,4.375,3.125,PL,q);for(const z of[1.55,4.7])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,3.15,x,5.5,3.125,TM,q);B(.2,.2,3.15,x,3.25,3.125,TM,q)}
+for(const x of[-1.8,1.8]){const q=gPF[x];B(.15,2.45,3.15,x,4.375,3.125,PL,q);for(const z of[1.55,4.7])B(.2,2.45,.2,x,4.375,z,TM,q);B(.2,.2,3.15,x,5.5,3.125,TM,q);B(.2,.2,3.15,x,3.25,3.125,TM,q)}
 for(const bx of[4.3,1.1]){const z0=3.35;
  B(1.2,.15,2.2,bx,3.6,z0,WOOD2,up);B(1.1,.2,2.1,bx,3.78,z0,0xd6c394,up);B(1.1,.1,1.4,bx,3.93,z0-.35,bx>0?0x8a6a2e:0x2e6b6b,up);B(.8,.12,.4,bx,3.95,z0+.8,0xf0ead8,up);
  B(1.3,1.1,.1,bx,4.0,4.4,WOOD2,up);B(1.2,.5,.08,bx,3.65,2.32,WOOD2,up);
@@ -248,13 +252,13 @@ for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   });
   const pts = { keeper: [-.3, -1.6], talkAt: at(-.3 * K, -.1 * K), doorId: 'tavern-front' };
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);
-  [uB, uL, uR, uf, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); iW.forEach(q => bakeGroup(q.g, lv(q.g))); bakeGroup(up, [uB, uL, uR, uf, ...iW.map(q => q.g), ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
+  [uB, uL, uR, uf, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(wB, lv(wB)); iW.forEach(q => bakeGroup(q.g, lv(q.g))); bakeGroup(up, [uB, uL, uR, uf, dkG, ...iW.map(q => q.g), ...lv(up)]); bakeGroup(front, lv(front)); bakeGroup(roof);
   const H = { x, z, th, K };
   const dcols = { 'tavern-front': [3.6, [-.5, .5], .5, 0], 'tavern-back': [-3.6, [3.0, 3.7, 4.3], .45, 0] };
   const ddm = {};
   DR.forEach(d => { const dd = addDoor(d, H); ddm[d.id] = dd; const [lz, xs, r, lvl] = dcols[d.id] || [d.f, [d.c - .7, d.c, d.c + .7], .3, 1]; xs.forEach(lx => block(lx, lz, r, lvl, false, dd)); });
   refreshProps();
-  registerFloors({ x, z, th, K, Hf: 3.15 * K, inBox: (lx, lz) => Math.abs(lx) <= 4.95 && Math.abs(lz) <= 4.95, upOK: (lx, lz) => !(lx > -5.15 && lx < -3.55 && lz > -1.75 && lz < 1.85), links: [{ l: 0, x: -4.3, z: 2.5 }, { l: 1, x: -4.3, z: -1.75 }], door: 'tavern-front', iw: iW, ch: [chL, chU], fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uf, nx: 0, nz: 1, D: 4.9 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
+  registerFloors({ x, z, th, K, Hf: 3.15 * K, inBox: (lx, lz) => Math.abs(lx) <= 4.95 && Math.abs(lz) <= 4.95, upOK: (lx, lz) => !(lx > -5.15 && lx < -3.55 && lz > -1.75 && lz < 1.85), links: [{ l: 0, x: -4.3, z: 2.5 }, { l: 1, x: -4.3, z: -1.75 }], door: 'tavern-front', iw: iW, dk: DK, roomAt: (lx, lz) => lz < -1.7 && lx >= -1.8 ? (lx < 1.8 ? 'B1' : 'B2') : lz > 1.45 && lx >= -1.8 ? (lx < 1.8 ? 'F1' : 'F2') : 'C', ch: [chL, chU], fz: 5.2, hx: 5.4, hz: 5.2, roof, up, walls: [{ g: front, nx: 0, nz: 1, D: 3.5 }, { g: wB, nx: 0, nz: -1, D: 3.5 }, { g: wL, nx: -1, nz: 0, D: 5 }, { g: wR, nx: 1, nz: 0, D: 5 }, { g: uf, nx: 0, nz: 1, D: 4.9 }, { g: uB, nx: 0, nz: -1, D: 4.9 }, { g: uL, nx: -1, nz: 0, D: 5 }, { g: uR, nx: 1, nz: 0, D: 5 }] });
   const FH = HOUSES[HOUSES.length - 1], TW = .12;
   // ── mapa de retângulos (térreo) ──
   R(0, -5.2, 3.35, -.8, 3.85, 0, 1); R(0, .8, 3.35, 5.2, 3.85, 0, 1); R(0, -.8, 3.35, .8, 3.85, 'tavern-front');
