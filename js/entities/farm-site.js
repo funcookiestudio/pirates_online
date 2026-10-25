@@ -10,10 +10,10 @@ import { VILLAGE_R } from '../core/village-const.js';
 import { pois } from '../world/pois.js';
 import { FZONE } from '../world/reserve.js';
 
-export const FARMSITE = { ok: false, spot: null, x: 0, z: 0, pen: [], yard: [] };
+export const FARMSITE = { ok: false, spot: null, x: 0, z: 0, pens: [] };
 
 // área ocupada (coordenadas locais: +z = lado da vila / portão)
-const X0 = -15, X1 = 17, Z0 = -13, Z1 = 7;
+const X0 = -15, X1 = 20, Z0 = -13, Z1 = 7;
 import { H } from '../world/terrain.js';
 
 /** Orientação: o portão (+z local) olha para o ponto `t` (estrada mais próxima) */
@@ -62,7 +62,7 @@ export function chooseFarmSite(avoid = []) {
     const tx = q2.x - q0.x, tz = q2.z - q0.z, tl = Math.hypot(tx, tz) || 1, nx = -tz / tl, nz = tx / tl;
     for (const side of [-1, 1]) for (const off of [14, 18, 23]) {
       const s = { x: q.x + nx * side * off, z: q.z + nz * side * off, tx: q.x, tz: q.z, ty: groundY(q.x, q.z) };
-      if (Math.hypot(s.x, s.z) < VILLAGE_R + 22) continue;
+      if (Math.hypot(s.x, s.z) < VILLAGE_R + 40) continue;
       if (isl.bridges.some(b => Math.hypot(b[0] - VX - s.x, b[1] - VZ - s.z) < 33)) continue;   // ponte antiga ficaria solta no ar
       if (far.some(p => Math.hypot(p.x - s.x, p.z - s.z) < 30)) continue;
       const c = cost(s) + off * .25;
@@ -138,8 +138,7 @@ export function buildFarmSite() {
   bx(.7, 1.6, .7, 0x7a5a48, HX - 1.6, 4.1, HZ - .7);                                          // chaminé
   solid(HX - 1.3, HZ, 1.5); solid(HX + 1.3, HZ, 1.5);
 
-  // ---- pasto cercado (portão no lado +z) ----
-  const PX0 = -7, PX1 = 7, PZ0 = -4, PZ1 = 6;
+  // ---- três cercados dedicados, cada um com portão próprio para o pátio (+z) ----
   const post = (x, z, big) => { bx(big ? .3 : .2, big ? 1.5 : 1.2, big ? .3 : .2, 0x6a4a2a, x, .6, z); solid(x, z, .3); };
   const rail = (x0, z0, x1, z1) => {
     const L = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(x1 - x0, z1 - z0);
@@ -150,23 +149,47 @@ export function buildFarmSite() {
     for (let i = 0; i <= n; i++) post(x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n, false);
     rail(x0, z0, x1, z1);
   };
-  side(PX0, PZ0, PX1, PZ0); side(PX0, PZ0, PX0, PZ1); side(PX1, PZ0, PX1, PZ1);
-  side(PX0, PZ1, -1.6, PZ1); side(1.6, PZ1, PX1, PZ1);
-  post(-1.6, PZ1, true); post(1.6, PZ1, true);
-  bx(3.4, .12, .12, 0xd8c8a0, 0, 2.05, PZ1).position.y = 1.7;                                   // viga do portão
-  bx(.3, 1.9, .3, 0x6a4a2a, -1.6, 1, PZ1); bx(.3, 1.9, .3, 0x6a4a2a, 1.6, 1, PZ1);
-  bx(2.6, .5, .08, 0x5a3a22, 0, 1.7, PZ1 + .1);                                                 // placa
-  // cocho com água e feno
-  bx(2.6, .5, .9, 0x7a5430, -4.2, .3, -2.6); bx(2.3, .1, .6, 0x4a90c8, -4.2, .52, -2.6);
-  bx(1.4, .5, 1, 0xd8b848, 4.6, .3, -2.8);
+  const PZ0 = -4, PZ1 = 4;
+  const pens = [];
+  const penBox = (x0, x1, sign) => {
+    const cx = (x0 + x1) / 2, gw = .95;
+    side(x0, PZ0, x1, PZ0); side(x0, PZ0, x0, PZ1); side(x1, PZ0, x1, PZ1);
+    side(x0, PZ1, cx - gw, PZ1); side(cx + gw, PZ1, x1, PZ1);
+    post(cx - gw, PZ1, true); post(cx + gw, PZ1, true);
+    bx(2 * gw + .5, .14, .14, 0xd8c8a0, cx, 1.65, PZ1);
+    bx(1.5, .42, .08, sign, cx, 2.0, PZ1 + .05);                                            // placa colorida do cercado
+    bx(x1 - x0 - .2, .03, PZ1 - PZ0 - .2, 0x6aa24a, cx, .02, (PZ0 + PZ1) / 2);             // capim do cercado
+    return cx;
+  };
+  // 1) galinheiro (aves)
+  const c1 = penBox(-9, -3.4, 0xe8c040);
+  bx(2.2, 1.3, 1.5, 0xb8864a, c1 - 1.2, .65, -3);
+  const rf = bx(2.5, .12, 1.8, 0x7a3a28, c1 - 1.2, 1.4, -3); rf.rotation.z = .12;
+  bx(.5, .5, .06, 0x2a1a10, c1 - 1.2, .5, -2.22);
+  bx(1.2, .22, .5, 0x7a5430, c1 + 1.5, .2, -2.8); bx(1, .06, .36, 0xd8c070, c1 + 1.5, .34, -2.8);
+  solid(c1 - 1.2, -3, 1.2);
+  // 2) porcos e ovelhas
+  const c2 = penBox(-2.8, 2.8, 0xe88aa0);
+  bx(3.2, .04, 2.2, 0x5a4030, c2 - .8, .04, 1.2);                                             // lama
+  bx(2.2, .42, .8, 0x7a5430, c2 + 1.2, .25, -3); bx(1.9, .08, .5, 0x4a90c8, c2 + 1.2, .46, -3);
+  bx(1.2, .6, 1, 0xd8b848, c2 - 1.6, .3, -3.2);
+  // 3) vacas, boi e cavalo
+  const c3 = penBox(3.4, 9, 0x4a90d8);
+  bx(2.6, .5, .9, 0x7a5430, c3 - 1.2, .3, -3); bx(2.3, .1, .6, 0x4a90c8, c3 - 1.2, .52, -3);
+  bx(1.6, .9, 1.2, 0xd8b848, c3 + 1.6, .45, -3.1);
+  // posições dos animais dentro de cada cercado (coordenadas locais)
+  const spots = (cx, n, w = 4.2) => Array.from({ length: n }, (_, i) => [cx + ((i % 3) - 1) * w / 3 + (i > 2 ? .6 : 0), -.8 + Math.floor(i / 3) * 2.2 + ((i * 7) % 3) * .2]);
+  pens.push({ kinds: ['hen', 'hen', 'hen', 'rooster', 'duck', 'turkey', 'peacock'], at: spots(c1, 7) });
+  pens.push({ kinds: ['pig', 'pig', 'sheep', 'sheep', 'sheep'], at: spots(c2, 5) });
+  pens.push({ kinds: ['cow', 'cow', 'ox', 'horse'], at: spots(c3, 4, 4.4) });
   // ---- fardos de feno (ao lado do celeiro e na entrada) ----
   const hay = (x, z, y = 0, ry = 0) => bx(1.1, .8, .8, 0xd8b848, x, .4 + y, z, ry);
   hay(-6.5, -9.2); hay(-6.5, -8.2); hay(-6.4, -9, .8, .3); hay(-5.3, -7.2, 0, .2);
   solid(-6.5, -8.7, 1.1);
-  const roll = new THREE.Mesh(new THREE.CylinderGeometry(.7, .7, 1.1, 12), M(0xd8b848)); roll.rotation.z = Math.PI / 2; roll.position.set(10.5, .7, -3); g.add(roll);
-  solid(10.5, -3, .9);
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(.7, .7, 1.1, 12), M(0xd8b848)); roll.rotation.z = Math.PI / 2; roll.position.set(10.6, .7, -6); g.add(roll);
+  solid(10.6, -6, .9);
   // ---- plantação (direita) ----
-  const FX0 = 9, FX1 = 16, FZ0 = -6, FZ1 = 6;
+  const FX0 = 12, FX1 = 19, FZ0 = -6, FZ1 = 6;
   bx(FX1 - FX0 + 1, .12, FZ1 - FZ0 + 1, 0x5a3a24, (FX0 + FX1) / 2, .02, (FZ0 + FZ1) / 2);
   const CROPS = [[0xd8b848, 1, .22], [0x4a9a3a, 1.4, .3], [0xd8b848, 1, .22], [0x6ab04a, .5, .28], [0x4a9a3a, 1.4, .3]];
   CROPS.forEach(([c, h, w], r) => {
@@ -177,22 +200,20 @@ export function buildFarmSite() {
     }
   });
   // espantalho
-  bx(.1, 2.1, .1, 0x6a4a2a, 12.5, 1.1, 6.9);
-  bx(1.5, .1, .1, 0x6a4a2a, 12.5, 1.75, 6.9);
-  bx(.5, .8, .3, 0xb85a3a, 12.5, 1.5, 6.9);
-  bx(.36, .36, .36, 0xe8c898, 12.5, 2.2, 6.9);
-  bx(.7, .08, .7, 0x6a3a28, 12.5, 2.42, 6.9); bx(.38, .3, .38, 0x6a3a28, 12.5, 2.58, 6.9);
+  bx(.1, 2.1, .1, 0x6a4a2a, 15.5, 1.1, 6.9);
+  bx(1.5, .1, .1, 0x6a4a2a, 15.5, 1.75, 6.9);
+  bx(.5, .8, .3, 0xb85a3a, 15.5, 1.5, 6.9);
+  bx(.36, .36, .36, 0xe8c898, 15.5, 2.2, 6.9);
+  bx(.7, .08, .7, 0x6a3a28, 15.5, 2.42, 6.9); bx(.38, .3, .38, 0x6a3a28, 15.5, 2.58, 6.9);
   // cercadinho baixo da plantação
   for (let z = FZ0 - .5; z <= FZ1 + .5; z += 2) { bx(.14, .7, .14, 0x6a4a2a, FX0 - .6, .35, z); bx(.14, .7, .14, 0x6a4a2a, FX1 + .6, .35, z); }
   // poço
-  cyl(.9, .9, .9, 0x8a8a86, -10, .45, 3, 12); cyl(.65, .65, .05, 0x2a6aa0, -10, .85, 3, 12);
-  bx(.14, 1.8, .14, 0x6a4a2a, -10.8, 1.5, 3); bx(.14, 1.8, .14, 0x6a4a2a, -9.2, 1.5, 3); bx(1.9, .14, 1.1, 0x6a3a28, -10, 2.45, 3);
-  solid(-10, 3, 1.1);
+  cyl(.9, .9, .9, 0x8a8a86, -12, .45, 4, 12); cyl(.65, .65, .05, 0x2a6aa0, -12, .85, 4, 12);
+  bx(.14, 1.8, .14, 0x6a4a2a, -12.8, 1.5, 4); bx(.14, 1.8, .14, 0x6a4a2a, -11.2, 1.5, 4); bx(1.9, .14, 1.1, 0x6a3a28, -12, 2.45, 4);
+  solid(-12, 4, 1.1);
 
-  // dados para os animais
-  const pen = [];
-  for (let i = 0; i < 16; i++) { const lx = -5.6 + (i % 4) * 3.7 + (i % 2) * .5, lz = -2.2 + Math.floor(i / 4) * 2.4; pen.push(toWorld(spot, f, lx, lz)); }
-  Object.assign(FARMSITE, { ok: true, x: spot.x, z: spot.z, pen, f });
+  const penData = pens.map(pn => ({ kinds: pn.kinds, pts: pn.at.map(([lx, lz]) => toWorld(spot, f, lx, lz)) }));
+  Object.assign(FARMSITE, { ok: true, x: spot.x, z: spot.z, pens: penData, f });
   pois.push({ n: 'Fazenda', x: spot.x, z: spot.z, c: '#9ad060', ic: '🌾' });
   return FARMSITE;
 }

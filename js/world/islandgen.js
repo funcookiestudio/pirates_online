@@ -1,3 +1,4 @@
+import { VILLAGE_R } from '../core/village-const.js';
 /* Gerador procedural de ilhas low poly (puro: sem THREE nem DOM). Terraços, rios, lagos, pontes, estradas, biomas e vegetação por semente.
    Portado do sistema de ilhas do Cristiano. Célula da grade = 1 m. */
 export const N=300,V=N+1,RD={half:2,sh:6,slope:.12};
@@ -112,19 +113,28 @@ export function build(seed,type){
  // distância à água (umidade) por BFS
  const dw=new Uint8Array(NV).fill(255);{const q=[];for(let k=0;k<NV;k++)if(wk[k]){dw[k]=0;q.push(k)}for(let n=0;n<q.length;n++){const c=q[n];if(dw[c]>=18)continue;for(const o of[1,-1,V,-V]){const t=c+o;if(t>=0&&t<NV&&dw[t]===255){dw[t]=dw[c]+1;q.push(t)}}}}
  // 4) ESTRADAS: Dijkstra que foge de declives (e de água; rios só com ponte) -> perfil suave e limitado
- const dij=src=>{const D=new Float32Array(NV).fill(1e9),par=new Int32Array(NV).fill(-1),hp=mkHeap();
-  D[src]=0;hp.push(0,src);
+ // portões da vila: ângulos 0/90/180/270 (x=cos a, z=sin a), a ~25 m do centro; as estradas nascem NELES, não da muralha
+ const vx0=vil%V,vz0=(vil/V)|0,gateCells=[];
+ for(let q=0;q<4;q++){const an=q*Math.PI/2;let g0=-1;
+  for(const d of[VILLAGE_R+4,VILLAGE_R+6,VILLAGE_R+9,VILLAGE_R+12]){const i=vx0+Math.round(Math.cos(an)*d),j=vz0+Math.round(Math.sin(an)*d);if(i<2||j<2||i>=N-1||j>=N-1)continue;const k=j*V+i;if(lab[k]===mainL&&H[k]>.5){g0=k;break}}
+  if(g0>=0)gateCells.push(g0)}
+ if(!gateCells.length)gateCells.push(vil);
+ const isSrc=new Set(gateCells);
+ const dij=srcs=>{const D=new Float32Array(NV).fill(1e9),par=new Int32Array(NV).fill(-1),hp=mkHeap();
+  for(const src of srcs){D[src]=0;hp.push(0,src)}
   while(hp.n()){const c0=hp.top(),k=hp.pop();if(c0>D[k])continue;const ci=k%V,cj=(k/V)|0;
    for(const[a,b,ds]of NB){const ni=ci+a,nj=cj+b;if(ni<1||nj<1||ni>=N||nj>=N)continue;const t=nj*V+ni;if(lab[t]!==mainL||wk[t]===2||(H[t]<.5&&!wk[t]))continue;
     const dh=Math.abs(H0[t]-H0[k]),c=D[k]+ds*(1+rn[t]+(wd[t]?6:0)+(wk[t]?14:0))+dh*6+Math.max(0,dh/ds-.2)*60;
     if(c<D[t]){D[t]=c;par[t]=k;hp.push(c,t)}}}
   par.D=D;return par};
- const par=dij(vil),rc=k=>k===vil||par[k]>=0,rcl=cells.filter(rc);
+ const par=dij(gateCells),rc=k=>k===vil||isSrc.has(k)||par[k]>=0,rcl=cells.filter(rc);
  // destinos sempre alcançáveis pela malha de estradas (evita retas atravessando a ilha)
  if(!rc(port)){const a=pc.filter(rc);port=a.length?a[ri(0,a.length-1)]:rcl[ri(0,rcl.length-1)]}
  if(!rc(cav)){const a=rcl.filter(k=>H[k]>1.5&&sl(k)<.3&&!wd[k]);cav=a.length?a[ri(0,a.length-1)]:rcl[ri(0,rcl.length-1)]}
  if(!rc(tre)){tre=vil;const sc2=k=>par.D[k]+P.d[k];for(const k of rcl)if(H[k]>.8&&sl(k)<.3&&!wd[k]&&sc2(k)>sc2(tre))tre=k}
- const pathTo=dst=>{const a=[];for(let k=dst;k!==-1&&k!==vil;k=par[k])a.push(k);a.push(vil);return a.reverse()};
+ const pathTo=dst=>{const a=[];let k=dst;for(;k!==-1&&k!==vil&&!isSrc.has(k);k=par[k])a.push(k);
+  if(k!==-1&&k!==vil){a.push(k);const gx=k%V,gz=(k/V)|0,L=Math.max(Math.abs(gx-vx0),Math.abs(gz-vz0));for(let i=1;i<L;i++)a.push(Math.round(gz+(vz0-gz)*i/L)*V+Math.round(gx+(vx0-gx)*i/L))}
+  a.push(vil);return a.reverse()};
  const vx=vil%V,vz=(vil/V)|0,hv0=avg(vx,vz,3),roads=[];
  const mkRoad=(name,dst,pr1)=>{
   const cp=pathTo(dst);let m=0,pre=null;
