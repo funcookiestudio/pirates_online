@@ -104,7 +104,7 @@ function inst(geo, list, fn, base, vr, rr) {
 function vegetation(posts) {
   const { palms, pines, rocks, bushes } = isl.veg, rr = rngf(hash(isl.seed + 'v')), g = new THREE.Group();
   const trunk = new THREE.CylinderGeometry(.07, .11, 1, 5); trunk.translate(0, .5, 0);
-  const ok = (x, z) => Math.hypot(x, z) > VILLAGE_R + 8 && !reserved(x, z, 2) && !onRoad(x, z, 2.5) && posts.every(p => Math.hypot(p.x - x, p.z - z) > 10) && CAVES.every(c => Math.hypot(c.x + c.dx * 3 - x, c.z + c.dz * 3 - z) > 8 && Math.hypot(c.x - x, c.z - z) > 5);
+  const ok = (x, z) => Math.hypot(x, z) > VILLAGE_R + 8 && !reserved(x, z, 2) && !onRoad(x, z, 3.5) && posts.every(p => Math.hypot(p.x - x, p.z - z) > 10) && CAVES.every(c => Math.hypot(c.x + c.dx * 3 - x, c.z + c.dz * 3 - z) > 8 && Math.hypot(c.x - x, c.z - z) > 5);
   const f = (a, k) => { const x = a[0] - VX, z = a[1] - VZ; return ok(x, z) ? [x, z, groundY(x, z), a] : false; };
   // árvores e pedras maiores (o personagem tem ~2 m) e mais densas: pinheiros e arbustos ganham um vizinho
   const SC = { pl: 2.1, pi: 2.4, ro: 2.2, bu: 1.8 };
@@ -113,7 +113,7 @@ function vegetation(posts) {
     list.forEach(a => {
       const x = a[0] - VX, z = a[1] - VZ;
       if (ok(x, z)) { const w = a.slice(); w[0] = x; w[1] = z; w[2] *= SC[key]; out.push(w); }
-      if (dup) {
+      if (dup && rr() < .55) {
         const x2 = x + (rr() - .5) * 7, z2 = z + (rr() - .5) * 7;
         if (ok(x2, z2) && walkable(x2, z2)) { const w = a.slice(); w[0] = x2; w[1] = z2; w[2] *= SC[key] * (.75 + rr() * .5); w[4] = rr() * 6; out.push(w); }
       }

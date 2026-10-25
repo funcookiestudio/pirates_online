@@ -28,7 +28,7 @@ export function build(seed,type){
   else m=1-Math.hypot(x,y)/.85;
   m-=Math.max(0,Math.max(Math.abs(ex),Math.abs(ey))-.78)*4;
   const e=nz(i*.135*sc+ox,j*.135*sc+oy),v=m*1.15+(e-.5)*.75;
-  if(v>.12){const u=(v-.12)*9*ht*(.7+e*.6),t=u/TS,f=Math.floor(t);
+  if(v>.12){const u0=(v-.12)*9*ht*(.7+e*.6),u=u0>8?8+(u0-8)*.4:u0,t=u/TS,f=Math.floor(t);
    H[j*V+i]=.9*ss(0,.5,u)+HS*(f+ss(.35,.75,t-f))+(nw(i*.06*sc+oy,j*.06*sc+ox)-.5)*.5*ss(0,1,u)}
   else H[j*V+i]=Math.max((v-.12)*KS,-6)}
  // 2) componentes de terra: a maior é a "ilha principal"
@@ -53,7 +53,11 @@ export function build(seed,type){
  let tre=port;for(const k of cells)if(H[k]>.8&&sl(k)<.3&&!wd[k]&&P.d[k]>P.d[tre])tre=k;
  let md=Math.max(1,P.d[tre]),dd=k=>P.d[k]/md;
  const pick=(f,g)=>{let a=cells.filter(f);if(!a.length)a=cells.filter(g);if(!a.length)a=cells;return a[ri(0,a.length-1)]};
- const vil=pick(k=>dd(k)>.2&&dd(k)<.5&&H[k]>.8&&H[k]<5&&sl(k)<.1&&!wd[k],k=>dd(k)>.1&&H[k]>.8&&sl(k)<.3&&!wd[k]);
+ // vila no CENTRO da ilha: entre os terrenos planos, o mais próximo do centro de massa da terra
+ let cmx=0,cmz=0;for(const k of cells){cmx+=k%V;cmz+=(k/V)|0}cmx/=cells.length;cmz/=cells.length;
+ const cdist=k=>Math.hypot(k%V-cmx,(k/V|0)-cmz),flatOk=(f1,f2)=>{let a=cells.filter(f1);if(!a.length)a=cells.filter(f2);return a.length?a:cells};
+ const vc=flatOk(k=>H[k]>.8&&H[k]<5&&sl(k)<.1&&!wd[k]&&P.d[k]>=0,k=>H[k]>.8&&sl(k)<.3&&!wd[k]);
+ let vil=vc[0];for(const k of vc)if(cdist(k)<cdist(vil))vil=k;
  let cav=pick(k=>dd(k)>.4&&dd(k)<.85&&H[k]>2.5&&sl(k)<.1&&!wd[k],k=>dd(k)>.3&&H[k]>1.5&&!wd[k]);
 
  // 3b) RIOS e LAGOS: superfície de água nivelada (W) + leito escavado; roads atravessam por pontes
@@ -138,6 +142,11 @@ export function build(seed,type){
   const pl=pre?m:0,full={name,cp,xs:pre?pre.xs.slice(0,m).concat(xs):xs,zs:pre?pre.zs.slice(0,m).concat(zs):zs,hs:pre?pre.hs.slice(0,m).concat(hs):hs,sub:{xs,zs,hs}};
   roads.push(full);return full};
  const PR={P:3,C:4.5,T:3.5},rP=mkRoad('Porto',port,PR.P),rC=mkRoad('Caverna',cav,PR.C),rT=mkRoad('Tesouro',tre,PR.T);
+ // trilhas extras: destinos bem espalhados (amostragem do mais distante), formando uma rede com cruzamentos
+ const dests=[port,cav,tre,vil],RS=[rP,rC,rT];
+ for(let n=0;n<3;n++){let bk=-1,bs=-1;
+  for(const k of rcl){if(H[k]<.8||sl(k)>.25||wd[k])continue;let m=1e9;for(const q of dests)m=Math.min(m,Math.hypot(k%V-q%V,(k/V|0)-(q/V|0)));if(m>bs){bs=m;bk=k}}
+  if(bk<0||bs<28)break;dests.push(bk);RS.push(mkRoad('Trilha',bk,3))}
  const pm=new Uint8Array(NV);
  const carve=(xs,zs,hs,half,sh,mk)=>{const R=half+sh,n=xs.length,bd=new Float32Array(NV).fill(1e9),bh=new Float32Array(NV);
   for(let s=0;s<Math.max(1,n-1);s++){const e=Math.min(s+1,n-1),ax=xs[s],az=zs[s],bx=xs[e],bz=zs[e],dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz;
@@ -147,11 +156,11 @@ export function build(seed,type){
    if(bd[k]<=half&&lf>.5){if(mk===1)pm[k]=1;else if(!pm[k])pm[k]=2}else if(bd[k]<=half+1.5&&lf>.5&&!pm[k])pm[k]=2}};
  const end=(R)=>{const n=R.sub.xs.length-1;return[R.sub.xs[n],R.sub.zs[n],R.sub.hs[n]]};
  carve([vx],[vz],[hv0],9,5,2);
- for(const R of[rP,rC,rT]){const[ex,ez,eh]=end(R);carve([ex],[ez],[eh],R===rP?PR.P:R===rC?PR.C:PR.T,4,2)}
- for(const R of[rP,rC,rT])carve(R.sub.xs,R.sub.zs,R.sub.hs,RD.half,RD.sh,1);
+ for(const R of RS){const[ex,ez,eh]=end(R);carve([ex],[ez],[eh],R===rP?PR.P:R===rC?PR.C:PR.T,4,2)}
+ for(const R of RS)carve(R.sub.xs,R.sub.zs,R.sub.hs,RD.half,RD.sh,1);
  // 4b) PONTES onde a estrada cruza rio (convés nivelado acima da água) + convés caminhável
  const deck=new Float32Array(NV).fill(-99),bridges=[];
- for(const R of[rP,rC,rT]){const{xs,zs,hs}=R.sub,n=xs.length,wet=xs.map((x,i)=>wk[Math.round(zs[i])*V+Math.round(x)]===1);
+ for(const R of RS){const{xs,zs,hs}=R.sub,n=xs.length,wet=xs.map((x,i)=>wk[Math.round(zs[i])*V+Math.round(x)]===1);
   let i=0;while(i<n){if(!wet[i]){i++;continue}let a=i,b=i;
    for(;;){let g=b+1;while(g<n&&!wet[g]&&g-b<=3)g++;if(g<n&&wet[g])b=g;else break}
    const s0=Math.max(0,a-3),s1=Math.min(n-1,b+3);
@@ -181,4 +190,4 @@ export function build(seed,type){
  const nav=new Uint8Array(NV);for(let k=V+1;k<NV-V-1;k++)if(H[k]<-.1||(W[k]>-90&&W[k]-H[k]>.35)||sl(k)>.7)nav[k]=1;
  for(let k=0;k<NV;k++)if(deck[k]>-90)nav[k]=0;
  const out=R=>({n:R.name,pts:R.xs.map((x,i)=>[+(x-N/2).toFixed(2),+(R.zs[i]-N/2).toFixed(2),+R.hs[i].toFixed(2)])});
- return{H,pm,W,wk,mo,bio,nav,deck,bridges,pois,veg,seed,type,land:land/NV,port:{dx,dz},cave:{dx:gx/gl,dz:gz/gl},roads:[rP,rC,rT].map(out),rivers,lakes,biomeShare:bc.map(v=>v/Math.max(1,land)),roadHalf:RD.half}}
+ return{H,pm,W,wk,mo,bio,nav,deck,bridges,pois,veg,seed,type,land:land/NV,port:{dx,dz},cave:{dx:gx/gl,dz:gz/gl},roads:RS.map(out),rivers,lakes,biomeShare:bc.map(v=>v/Math.max(1,land)),roadHalf:RD.half}}

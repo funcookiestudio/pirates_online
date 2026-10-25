@@ -18,6 +18,7 @@ export let HV = 0;         // altura original da vila no gerador (para cores por
 const E = N / 2;
 
 /** Gera a ilha e molda: vila plana em y=0 e um platô sob cada posto. `posts` é alterado (x,z passam para um ponto em terra firme). */
+const KSC = N / 200;   // a ilha cresce com N: distâncias de postos/cavernas acompanham
 export function initTerrain(posts = [], seed = SEED) {
   isl = build(seed, 'redonda');
   const vil = isl.pois[1];
@@ -52,19 +53,19 @@ export function initTerrain(posts = [], seed = SEED) {
 
   // postos: entre todos os pontos de terra firme, o que melhor combina com o anel (distância da vila) e a direção desejados
   const cands = [];
-  for (let z = -95; z <= 95; z += 2) for (let x = -95; x <= 95; x += 2) {
+  for (let z = -95 * KSC; z <= 95 * KSC; z += 2) for (let x = -95 * KSC; x <= 95 * KSC; x += 2) {
     const d = Math.hypot(x, z);
-    if (d > 44 && d < 92 && reach(x, z) && roomy(x, z, 6)) cands.push([x, z, d, Math.atan2(z, x)]);
+    if (d > 44 * KSC && d < 92 * KSC && reach(x, z) && roomy(x, z, 6)) cands.push([x, z, d, Math.atan2(z, x)]);
   }
   // espalha os postos por pontos bem distantes entre si (e da vila), depois ordena pela distância: quanto mais longe, mais perigoso
   const chosen = [];
   for (let n = 0; n < posts.length && cands.length; n++) {
     let best = null;
-    for (const sep of [26, 22, 18, 15]) {          // separação mínima entre postos: relaxa só se a ilha não comportar
+    for (const sep of [26 * KSC, 22 * KSC, 18 * KSC, 15 * KSC]) {          // separação mínima entre postos: relaxa só se a ilha não comportar
       let bs = -1;
       for (const c of cands) {
         if (chosen.some(q => Math.hypot(q[0] - c[0], q[1] - c[1]) < sep)) continue;
-        let m = (c[2] - 44) * 1.1 - (c[2] > 80 ? (c[2] - 80) * 2 : 0);
+        let m = (c[2] - 44 * KSC) * 1.1 - (c[2] > 80 * KSC ? (c[2] - 80 * KSC) * 2 : 0) + (onRoad(c[0], c[1], 16) ? 14 : 0);   // postos gostam de ficar numa trilha próxima
         for (const q of chosen) m = Math.min(m, Math.hypot(q[0] - c[0], q[1] - c[1]));
         if (m > bs) { bs = m; best = c; }
       }
@@ -93,10 +94,10 @@ function slopeAt(x, z) {
 /** Entradas de caverna: no máximo uma por faixa de distância (perto / meio / borda), sempre numa ENCOSTA que sobe atrás
     e com um terreno plano à frente, longe de estradas, vila e postos. */
 function pickCaves(posts) {
-  const bands = [[34, 58], [58, 76], [76, 95]], out = [];
+  const bands = [[34, 58], [58, 76], [76, 95]].map(b => b.map(v => v * KSC)), out = [];
   bands.forEach(([lo, hi]) => {
     let best = null, bs = -1;
-    for (let z = -95; z <= 95; z += 2) for (let x = -95; x <= 95; x += 2) {
+    for (let z = -95 * KSC; z <= 95 * KSC; z += 2) for (let x = -95 * KSC; x <= 95 * KSC; x += 2) {
       const d = Math.hypot(x, z);
       if (d < lo || d >= hi || heightAt(x, z) < SEA + 3) continue;
       const [gx, gz, sl] = slopeAt(x, z);
@@ -109,7 +110,7 @@ function pickCaves(posts) {
       if (onRoad(x, z, 3) || onRoad(fx, fz, 2) || posts.some(p => Math.hypot(p.x - x, p.z - z) < 18)) continue;
       let m = 99;
       for (const c of out) m = Math.min(m, Math.hypot(c.x - x, c.z - z));
-      if (m < 26) continue;
+      if (m < 26 * KSC) continue;
       const sc = m + sl * 4 + (Math.sin(x * 12.9 + z * 78.2) * 3);            // espalha; leve desempate pseudo-aleatório (estável)
       if (sc > bs) { bs = sc; best = { x, z, y: h, dx, dz, d }; }
     }
@@ -155,12 +156,12 @@ export function flatten(x, z, r0, r1, h) {
 }
 
 /** Há estrada (ou seu acostamento) a até `m` metros de (x,z)? Vegetação, pedras e postos ficam longe delas. */
-export function onRoad(x, z, m = 2) {
+export function onRoad(x, z, m = 2) {   // estrada ou convés de ponte
   if (!isl) return false;
   const cx = Math.round(x + VX + E), cz = Math.round(z + VZ + E), r = Math.ceil(m);
   for (let j = cz - r; j <= cz + r; j++) for (let i = cx - r; i <= cx + r; i++) {
     if (i < 0 || j < 0 || i > N || j > N) continue;
-    if (isl.pm[j * V + i] && (i - cx) ** 2 + (j - cz) ** 2 <= m * m) return true;
+    if ((isl.pm[j * V + i] || isl.deck[j * V + i] > -90) && (i - cx) ** 2 + (j - cz) ** 2 <= m * m) return true;
   }
   return false;
 }
