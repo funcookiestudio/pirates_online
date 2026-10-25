@@ -112,7 +112,8 @@ function tnScript(n, dt, tn) {
     case 'dbed': if (walked(1.0)) { n.dro = { id: tn.rid, t: 0, done: false, force: true }; q.ph = 'dopen'; } break;
     case 'dopen': hold(tn.rid); if (wait()) go(planTo(cur(), W(-4.3, -1.3), 1), 'dcor'); break;
     case 'dcor': hold(tn.rid); if (walked(1.1)) go([...STAIR_UP].reverse().slice(1).concat([[-4.3, 2.5]]).map(a => W(a[0], a[1])), 'ddown'); break;
-    case 'ddown': if (walked(.9)) { const f = doorFront('tavern-front', -1.4); go(planTo(cur(), f.p, 0), 'dout', 0); } break;
+    case 'ddown': if (walked(.9)) { if (tn.keeper) { go(planTo(cur(), [n.hx, n.hz], 0), 'dhome', 0); break; } const f = doorFront('tavern-front', -1.4); go(planTo(cur(), f.p, 0), 'dout', 0); } break;
+    case 'dhome': if (walked(1.0)) { n.q = null; n.lvl = 0; n.fy = 0; n.t = 0; } break;
     case 'dout': if (walked(1.1)) { n.dro = { id: 'tavern-front', t: 0, done: false, force: true }; q.ph = 'dfopen'; } break;
     case 'dfopen': hold('tavern-front'); { const f = doorFront('tavern-front', 0); if (wait()) go([doorFront('tavern-front', 1.8).p], 'dexit'); else face(f.p[0], f.p[1]); } break;
     case 'dexit': hold('tavern-front'); if (walked(1.1)) { n.q = null; n.lvl = 0; n.fy = 0; n.t = 0; } break;
@@ -320,15 +321,15 @@ export function updateNpcs(dt, now) {
           if (dd < 2.4 && !n.dro && doorClosed(tn.dr)) n.dro = { id: tn.dr, t: 0, done: false };   // estende a mão direita e abre
           const [lx, lz] = loc(tn, g.position.x, g.position.z), inTav = Math.abs(lx) < 4.9 && lz > -4.9 && lz < 4.6;
           const F0 = doorFront('tavern-front', 1.7).p, F1 = doorFront('tavern-front', -1.5).p;
-          if (inTav) { n.lvl = 0; n.vx = n.vz = 0; npcOpenDoor('tavern-front', 4); n.q = { ph: 'in', pts: planTo([g.position.x, g.position.z], tn.sb, 0), i: 0 }; return; }
+          if (inTav || tn.keeper) { n.lvl = 0; n.vx = n.vz = 0; npcOpenDoor('tavern-front', 4); n.q = { ph: 'in', pts: planTo([g.position.x, g.position.z], tn.sb, 0), i: 0 }; return; }
           // de fora: vai até o ponto diante da porta, abre e atravessa (nunca em linha reta contra a parede)
           const nearF0 = Math.hypot(g.position.x - F0[0], g.position.z - F0[1]) < 1.2;
           const tg = nearF0 && !doorClosed(tn.dr) ? F1 : F0;
           n.tx = tg[0]; n.tz = tg[1];
         } else if (n.t <= 0 || ((n.st = (n.st || 0) + dt) > 12)) {   // novo ponto de passeio: praça, ruas da vila
           n.t = 6 + Math.random() * 8; n.st = 0;
-          const a = Math.random() * 6.28, r = 3 + Math.random() * (VILLAGE_R - 17);
-          n.tx = Math.cos(a) * r; n.tz = Math.sin(a) * r;
+          const a = Math.random() * 6.28, r = tn.keeper ? Math.random() * 3.2 : 3 + Math.random() * (VILLAGE_R - 17);
+          if (tn.keeper) { n.t = 3 + Math.random() * 5; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; } else { n.tx = Math.cos(a) * r; n.tz = Math.sin(a) * r; }
         }
         }
       } else if (isEvening(hourNow()) && !n.job) {   // anoitece: volta para casa; das 21h às 6h dorme

@@ -55,7 +55,7 @@ function buildWall() {
 }
 
 let gi = 0, ci = 0;
-function citizen(x, z, ry, look, work, idx = ci) { makeNpc('citizen', x, z, ry, look, idx === 0 ? 2 : idx, CITIZENS[idx % CITIZENS.length], work); ci++; if (!(work && work.kind === 'tenant')) blocker(x, z, .55); }   // inquilinos andam pela vila: sem obstáculo fixo no ponto inicial
+function citizen(x, z, ry, look, work, idx = ci) { const nn = makeNpc('citizen', x, z, ry, look, idx === 0 ? 2 : idx, CITIZENS[idx % CITIZENS.length], work); ci++; if (!(work && work.kind === 'tenant')) blocker(x, z, .55); return nn; }   // inquilinos andam pela vila: sem obstáculo fixo no ponto inicial
 
 function buildGate(a) {
   const d = [Math.cos(a), Math.sin(a)], t = [-Math.sin(a), Math.cos(a)];
@@ -112,16 +112,18 @@ export function buildVillage() {
     } else { makeChest(x, z, ry, CHEST); blocker(x, z, 1.0); }
   });
   const DOORS_PT = [];   // ponto diante da porta de cada casa (para os caminhos de pedra)
+  let kn = null;
   SLOTS.forEach(([kind, deg]) => {
     const a = deg * Math.PI / 180, r = VILLAGE_R - ({ tavern: 9 }[kind] || 5.9), k = IDX[kind];
     const [fx, fz, th, at, pts] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
     DOORS_PT.push(doorFront(kind + '-front', 1.2) || { p: at(0, 3.9 * 1.28), f: [-Math.cos(a), -Math.sin(a)] });
     if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[k], { kind: 'smith', at, th, pts }, k); }
-    else citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId } : undefined, k);
+    else kn = citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId } : undefined, k);
     if (kind === 'tavern') {   // moradores da taberna (cada um com seu quarto no andar de cima)
       const K = TAVERN_SC;
       // cada um tem o seu quarto no andar de cima: Breu na frente (cama da direita), Polly nos fundos
       const room = (bx, bz, front, rd, rc) => { const [wx, wz] = at(bx * K, (bz + (front ? -.85 : .85)) * K); return { at, K, th, H: 3.15 * K, o: at(0, 0), rid: rd, rin: rc, bf: at(bx * K, (bz + (front ? -1.55 : 1.55)) * K), x: wx, z: wz, y: 3.98 * K + .12, ry: th + (front ? Math.PI : 0), sb: at(-4.35 * K, 2.5 * K), door: at(0, 5.2 * K), dr: 'tavern-front' }; };
+      if (kn) kn.tn = { ...room(-1.07, -3.45, false, 'room-0', [0, -2.4, 0, -.6]), bf: at(-1.07 * K, -2.2 * K), keeper: true };   // Madame Rum dorme no quarto dos fundos (esquerda)
       citizen(...at(1.4 * K, 6.0 * K), th, looks[3], { kind: 'tenant', room: room(4.3, 3.65, true, 'room-f3', [3, 2.4, 3, .6]) }, 3);     // Mestre Breu
       citizen(...at(-1.4 * K, 6.6 * K), th, looks[4], { kind: 'tenant', room: room(2.5, -3.75, false, 'room-3.4', [3.4, -2.4, 3.4, -.6]) }, 4);        // Pé-de-Pau Polly
     }
