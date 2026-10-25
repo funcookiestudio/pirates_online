@@ -88,8 +88,8 @@ function bridges() {
   return dyn(g);
 }
 
-function inst(geo, list, fn, base, vr, rr) {
-  const m = new THREE.InstancedMesh(geo, mat(0xffffff), Math.max(1, list.length)), o = new THREE.Object3D(), c = new THREE.Color();
+function inst(geo, list, fn, base, vr, rr, vc) {
+  const m = new THREE.InstancedMesh(geo, vc ? xray(new THREE.MeshLambertMaterial({ vertexColors: true })) : mat(0xffffff), Math.max(1, list.length)), o = new THREE.Object3D(), c = new THREE.Color();
   let n = 0;
   list.forEach(a => {
     if (fn(o, a) === false) return;
@@ -129,15 +129,21 @@ function vegetation(posts) {
     c[key].push(a);
   };
   pl.forEach(a => put(0, a, 'pl')); pi.forEach(a => put(0, a, 'pi')); ro.forEach(a => put(0, a, 'ro')); bu.forEach(a => put(0, a, 'bu'));
+  const PINE = (() => {   // pinheiro: tronco e copas fundidos, cor por vértice (a variação de brilho por árvore vem da cor da instância)
+    const parts = [[trunk.clone().scale(1, .8, 1), 0x5a3e22], [new THREE.ConeGeometry(.62, 1.3, 6).translate(0, 1.35, 0), 0x2a6a34], [new THREE.ConeGeometry(.42, .9, 6).translate(0, 2.05, 0), 0x2f7438]];
+    const pos = [], nor = [], col = [], k = 1 / .867;
+    parts.forEach(([g, hex]) => { const n = g.toNonIndexed(), cc = new THREE.Color(hex), cnt = n.attributes.position.count; pos.push(...n.attributes.position.array); nor.push(...n.attributes.normal.array); for (let i = 0; i < cnt; i++) col.push(Math.min(1, cc.r * k), Math.min(1, cc.g * k), Math.min(1, cc.b * k)); });
+    const bg = new THREE.BufferGeometry();
+    bg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); bg.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); bg.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    return bg;
+  })();
   const cone = (r, h, n) => new THREE.ConeGeometry(r, h, n), ico = () => new THREE.IcosahedronGeometry(.5, 0);
   cells.forEach(c => {
     const q = new THREE.Group(); q.userData.c = [c.x, c.z];
     q.add(
       inst(trunk, c.pl, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], a[3]); o.scale.set(a[2], 1.5 * a[2], a[2]); }, 0x7a5a34, .1, rr),
       inst(cone(.8, .4, 6), c.pl, (o, a) => { o.position.set(a[0] - Math.sin(a[3]) * 1.5 * a[2], Y(a) + 1.5 * a[2] * Math.cos(a[3]) + .1, a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x3d9a3a, .12, rr),
-      inst(trunk, c.pi, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2], .8 * a[2], a[2]); }, 0x5a3e22, .08, rr),
-      inst(cone(.62, 1.3, 6), c.pi, (o, a) => { o.position.set(a[0], Y(a) + 1.35 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x2a6a34, .14, rr),
-      inst(cone(.42, .9, 6), c.pi, (o, a) => { o.position.set(a[0], Y(a) + 2.05 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x2f7438, .14, rr),
+      inst(PINE, c.pi, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0xdddddd, .12, rr, true),   // tronco + 2 cones numa só peça (1 chamada em vez de 3)
       inst(ico(), c.ro, (o, a) => { o.position.set(a[0], Y(a) + .1, a[1]); o.rotation.set(a[4], a[4] * 2, 0); o.scale.set(a[2], a[2] * .7, a[2] * 1.1); }, 0x7a7672, .14, rr),
       inst(ico(), c.bu, (o, a) => { o.position.set(a[0], Y(a) + .12 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2] * 1.1, a[2] * .7, a[2] * 1.1); }, null, .12, rr),
     );
