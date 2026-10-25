@@ -6,6 +6,8 @@ import { P } from './player.js';
 import { person } from './character.js';
 import { gait, gaitSpeed } from './gait.js';
 import { collide, steer, navTarget } from '../systems/steer.js';
+import { tickClock } from '../core/clock.js';
+import { farmerThink, farmerPose, refreshField } from './farmer.js';
 import { initSmith, updateSmith, updateSparks } from './npc-work.js';
 import { cam } from '../core/engine.js';
 import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
@@ -192,6 +194,7 @@ export function makeBoard(x, z, ry, info) {
 
 export function updateNpcs(dt, now) {
   const t0 = now / 1000;
+  tickClock(dt);
   updateSparks(dt);
   if (want && Math.hypot(P.x - want.g.position.x, P.z - want.g.position.z) < 3.4) arrive(want);
   if (talking && (P.dead || Math.hypot(P.x - talking.g.position.x, P.z - talking.g.position.z) > 7.5 || !dialogOpen())) { talking = null; closeDialog(); }
@@ -219,7 +222,7 @@ export function updateNpcs(dt, now) {
     }
     // longe do jogador: não desenha nem processa (o ferreiro controla a própria visibilidade)
     if (Math.hypot(P.x - g.position.x, P.z - g.position.z) > 66) { if (!n.job) g.visible = false; return; }
-    if (!n.job) g.visible = true;
+    if (!n.job && !(n.rt && n.rt.hide)) g.visible = true;
     if (n.role === 'chest') return;
     if (n.job) {
       updateSmith(n, dt, now, [P.x, P.z], talking === n);
@@ -228,8 +231,12 @@ export function updateNpcs(dt, now) {
     if (n.role === 'citizen') {
       n.t -= dt;
       const near = talking === n || Math.hypot(P.x - g.position.x, P.z - g.position.z) < 5;
-      if (n.t <= 0) { n.t = 3 + Math.random() * 5; const a = Math.random() * 6.28, r = Math.random() * 3.2; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; }
-      const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !near ? 1.1 : 0;
+      if (n.rt) {   // fazendeiro: segue a rotina do dia
+        n.rt.fld && ((n.rfT = (n.rfT || 0) - dt) <= 0) && (n.rfT = 1, refreshField(n.rt.fld));
+        farmerThink(n, dt, talking === n || Math.hypot(P.x - g.position.x, P.z - g.position.z) < 2.5);
+        if (n.rt.hide) { g.visible = false; return; }
+      } else if (n.t <= 0) { n.t = 3 + Math.random() * 5; const a = Math.random() * 6.28, r = Math.random() * 3.2; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; }
+      const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !(n.rt ? talking === n : near) ? (n.rt ? 1.25 : 1.1) : 0;
       let wx = 0, wz = 0;
       if (want) {
         const [gx, gz] = navTarget(n.sm, g.position.x, g.position.z, n.tx, n.tz, .5, now);
@@ -250,6 +257,7 @@ export function updateNpcs(dt, now) {
     g.position.y = groundY(g.position.x, g.position.z);   // a marcha desce o corpo a cada passo: parte sempre do chão (senão acumula e afunda)
     const gr = gait(g, dt, gaitSpeed(n.spd || 0), { sword: false });
     if (n.role === 'citizen') g.arm.rotation.x = -gr.w * gr.sw * .8;
+    if (n.rt) farmerPose(n, t, dt);
     if (n.role === 'guard') g.head.rotation.y += Math.sin(t * .4) * .5;   // sentinela varre o olhar
   });
 }
