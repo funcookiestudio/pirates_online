@@ -12,7 +12,7 @@ import { updatePerf, DIAG } from './systems/perf.js';
 import { updateSettings, initSettings, CFG } from './systems/settings.js';
 import { DOORS } from './world/doors.js';
 import { updateLod } from './systems/lod.js';
-import { updateVision, updateVisionOverlay, canSee, VIS } from './systems/vision.js';
+import { updateVision, canSee, VIS } from './systems/vision.js';
 import { pathTo } from './systems/steer.js';
 import { mergeStatics } from './world/merge.js';
 import { initUpdater } from './ui/updater.js';
@@ -108,7 +108,6 @@ function tick(now) {
 
   S('updateXray', () => updateXray());
   S('updateVision', () => updateVision(realDt, inDungeon()));
-  S('updateVisionOverlay', () => updateVisionOverlay(inDungeon()));   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
   const tR = performance.now();
   if (CFG.diag !== 'logic') ren.render(scene, cam);   // diagnóstico 'logic': só lógica, sem desenhar
   const tE = performance.now(), k = .1;

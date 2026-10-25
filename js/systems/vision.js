@@ -7,8 +7,7 @@ import { enemies } from '../core/registry.js';
 import { FARM } from '../entities/farm.js';
 import { HOUSES } from '../world/floors.js';
 import { toU } from '../world/imap.js';
-import { hemi, torch, scene } from '../core/engine.js';
-import { groundY } from '../world/terrain.js';
+import { hemi, torch } from '../core/engine.js';
 import { CFG } from './settings.js';
 
 export const VIS = { on: true, nearNpc: 4, nearEnemy: 6, every: .1 };
@@ -78,47 +77,3 @@ export function updateVision(dt, skip) {
   }
 }
 
-// ───────── Fase 3: escurecer o chão que o jogador não enxerga (e lembrar o que já viu) ─────────
-// Grade de células de 2 m ao redor do jogador (raio 24 m). Cada célula é testada com a mesma linha de visão dos personagens, aos poucos
-// (uma fatia por quadro). Célula fora de visão fica escura: mais escura se nunca foi vista, mais clara se já foi ("lembrada").
-const CS = 2, RR = 12, W = RR * 2 + 1, NC = W * W, SLICE = 6;
-const seenEver = new Set(), vis = new Uint8Array(NC), kEv = new Uint8Array(NC);
-let ovNever = null, ovMem = null, ocx = 1e9, ocz = 1e9, slice = 0, dirty = true;
-const M4 = new THREE.Matrix4(), Q0 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), V3 = new THREE.Vector3(), S3 = new THREE.Vector3(CS, CS, 1);
-
-function mkOverlay(op) {
-  const m = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0x03060a, transparent: true, opacity: op, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, fog: false }), NC);
-  m.count = 0; m.frustumCulled = false; m.renderOrder = 5; m.userData.dyn = 1; m.visible = false;
-  scene.add(m); return m;
-}
-
-function overlay(skip) {
-  if (!ovNever) { ovNever = mkOverlay(.5); ovMem = mkOverlay(.24); }
-  const on = VIS.on && !skip && !P.up;
-  ovNever.visible = ovMem.visible = on;
-  if (!on) return;
-  const pcx = Math.floor(P.x / CS), pcz = Math.floor(P.z / CS);
-  if (pcx !== ocx || pcz !== ocz) { ocx = pcx; ocz = pcz; slice = 0; vis.fill(1); kEv.fill(0); dirty = true; }   // recentra: recomeça a varredura
-  // uma fatia da grade por quadro
-  const per = Math.ceil(NC / SLICE), k0 = slice * per, k1 = Math.min(NC, k0 + per);
-  for (let k = k0; k < k1; k++) {
-    const i = ocx - RR + (k % W), j = ocz - RR + ((k / W) | 0), x = (i + .5) * CS, z = (j + .5) * CS;
-    const v = canSee(x, z, 3) ? 1 : 0, key = i * 100003 + j;
-    if (v) seenEver.add(key);
-    const e = seenEver.has(key) ? 1 : 0;
-    if (v !== vis[k] || e !== kEv[k]) { vis[k] = v; kEv[k] = e; dirty = true; }
-  }
-  slice = (slice + 1) % SLICE;
-  if (!dirty) return;
-  dirty = false;
-  let a = 0, b = 0;
-  for (let k = 0; k < NC; k++) {
-    if (vis[k]) continue;
-    const i = ocx - RR + (k % W), j = ocz - RR + ((k / W) | 0), x = (i + .5) * CS, z = (j + .5) * CS;
-    if (Math.hypot(x - P.x, z - P.z) > RR * CS) continue;
-    M4.compose(V3.set(x, groundY(x, z) + .08, z), Q0, S3);
-    if (kEv[k]) ovMem.setMatrixAt(b++, M4); else ovNever.setMatrixAt(a++, M4);
-  }
-  ovNever.count = a; ovMem.count = b; ovNever.instanceMatrix.needsUpdate = ovMem.instanceMatrix.needsUpdate = true;
-}
-export function updateVisionOverlay(skip) { overlay(skip); }
