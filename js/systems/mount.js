@@ -105,6 +105,7 @@ function finishDismount() {
   P.x = P.tx = px; P.z = P.tz = pz;
   MOUNT.on = false; P.mounted = false; MOUNT.t = 0; MOUNT.st = 'park';
   P.g.rotation.x = 0; P.g.rotation.y = MOUNT.yaw;
+  [P.g.legL, P.g.legR].forEach(l => { l.rotation.set(0, 0, 0); l.knee.rotation.x = 0; });
   place(); refreshMountButton();
 }
 /** Posição/giro do jogador na animação: do lado do cavalo (u=0) até a sela (u=1) */

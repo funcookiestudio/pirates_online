@@ -137,7 +137,8 @@ function fuse(grp, keep) {
 /** Dobra os joelhos e o braço livre conforme a fase do passo (ph) e a intensidade (m) */
 export function bend(g, ph, m) {
   const c = Math.cos(ph), w = Math.sin(ph);
-  g.legL.knee.rotation.x = (Math.max(0, -c) * .85 + .05) * m;
-  g.legR.knee.rotation.x = (Math.max(0, c) * .85 + .05) * m;
+  const ld = (q) => Math.max(0, Math.sin(q - .2)) * .16;   // joelho amortece o apoio
+  g.legL.knee.rotation.x = (Math.max(0, -c) * .95 + .05) * m + ld(ph + 1.57) * m;
+  g.legR.knee.rotation.x = (Math.max(0, c) * .95 + .05) * m + ld(ph - 1.57) * m;
   g.armL.fa.rotation.x = -.15 - m * (.2 + .5 * Math.max(0, w));
 }

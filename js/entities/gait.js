@@ -29,11 +29,13 @@ export function gait(g, dt, sp, o = {}) {
   S.sp += (sp - S.sp) * (1 - Math.exp(-12 * dt));
   const acc = Math.max(-8, Math.min(8, (S.sp - pv) / dt));
   S.ph += 7.2 * S.sp * dt;
-  const amp = Math.min(S.sp, 1.5), sw = .6 * amp, c = Math.cos(S.ph), w = Math.sin(S.ph);
+  const amp = Math.min(S.sp, 1.5), sw = (.5 + .06 * Math.min(amp, 1.5)) * amp, c = Math.cos(S.ph), w = Math.sin(S.ph);
 
   // pernas + pé rolando
-  g.legL.rotation.x = w * sw;
-  g.legR.rotation.x = -w * sw;
+  // coxa: a perna avança mais depressa do que recua (passada assimétrica) e fica levemente à frente do quadril
+  const hip = (ph) => { const sn = Math.sin(ph); return sn + .22 * Math.sin(2 * ph + 1.2) * Math.min(1, amp) - .1 * amp; };
+  g.legL.rotation.set(hip(S.ph) * sw, 0, 0);
+  g.legR.rotation.set(hip(S.ph + Math.PI) * sw, 0, 0);   // (zera os ângulos laterais que a montaria deixa)
   bend(g, S.ph, amp * 1.1);
   [[g.legL, w], [g.legR, -w]].forEach(([l, s]) => {
     const toe = s > 0 ? s * .55 : s * .3;
@@ -41,7 +43,7 @@ export function gait(g, dt, sp, o = {}) {
   });
 
   // quadril: sobe/desce, balança, torce
-  const bob = Math.abs(c) * .045 * amp, breathe = Math.sin(S.t * 1.8) * .008 * (1 - Math.min(amp, 1));
+  const bob = (.5 + .5 * Math.cos(2 * S.ph)) * .04 * amp, breathe = Math.sin(S.t * 1.8) * .008 * (1 - Math.min(amp, 1));
   g.up.position.set(-w * .025 * amp, .72 + bob + breathe, 0);
   const tw = o.twist === undefined ? 1 : o.twist;
   g.up.rotation.y += w * .2 * amp * tw;
@@ -49,7 +51,7 @@ export function gait(g, dt, sp, o = {}) {
   g.up.rotation.x += Math.max(-.2, Math.min(.2, acc * .05)) * tw + amp * .06 * tw;
   g.position.y -= bob * .6;
 
-  if (o.armL !== false) g.armL.rotation.x = w * sw * .9;
+  if (o.armL !== false) { g.armL.rotation.x = w * sw * .85; g.armL.rotation.z = Math.sin(S.ph) * .03 * amp; }
 
   // inércia da espada (mola)
   if (o.sword) {
@@ -58,6 +60,7 @@ export function gait(g, dt, sp, o = {}) {
     g.arm.fa.rotation.x += S.sl.x;
   } else S.sl.x = S.sl.v = 0;
   S.prevArm = g.arm.rotation.x;
+  if (o.sword) { g.arm.rotation.x -= w * sw * .75; g.arm.fa.rotation.x -= amp * .12 + Math.max(0, -w) * amp * .25; }   // braço da arma balança em oposição à perna, com o cotovelo dobrado
 
   // pena do chapéu
   const vy = (bob - S.prevBob) / dt; S.prevBob = bob;
