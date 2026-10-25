@@ -42,6 +42,10 @@ function fuse(grp, keep) {
 }
 
 /* ---- skins ---- u/f: manga/antebraço (0 = pele) · st: meias/botas · hat: tri|straw|cap|band|kerch|hood|toque */
+const PJC = 0xe8e0c8;
+/** Pijama de época inicial: camisolão e calça de dormir creme, touca de dormir, chinelos */
+export const PJM = { t: PJC, fl: PJC, u: PJC, f: PJC, pa: PJC, st: 0xd8d0b0, sh: 0x6a4a30, hat: 'nightcap', hc: 0xd8d0b0, hair: 0x4a2f20, ex: [] };
+export const PJF = { b: PJC, sk: PJC, u: PJC, f: PJC, st: 0xd8d0b0, sh: 0x6a4a30, hem: 0xd8d0b0, hat: 'nightcap', hc: 0xd8d0b0, hair: 0x8a3b2a, ex: [] };
 export const SKM = {
   pirata: { t: 0x8a2433, fl: 0x8a2433, vest: 0xe9d9a8, belt: 0x2c4b78, u: 0x8a2433, f: 0x8a2433, cuff: GOLD, pa: 0xb59a6a, st: WHITE, sh: 0x1d1d22, buck: 1, hat: 'tri', hc: 0x1d1d22, hair: 0x4a2f20, ex: ['jabot', 'patch', 'mo'] },
   taberneiro: { t: 0xf1ead6, vest: 0x7a4a2b, belt: 0x3b2a1c, ap: WHITE, u: 0xf1ead6, f: 0, pa: 0x5b4a3a, st: 0xe9e2cc, sh: 0x3b2a1c, hat: 'cap', hc: WHITE, hair: 0x6b4a2f, mo: 0x6b4a2f, ex: ['towel'] },
@@ -237,8 +241,24 @@ export function buildHuman(F, d) {
   if (hat === 'sou') { put(B(1.5, .1, 1.5, .05, hc), 0, .98, -.1, head); put(B(1.1, .4, 1.0, .1, hc), 0, 1.2, 0, head); put(B(1.3, .5, .12, .05, hc), 0, .72, -.8, head); }
   if (hat === 'bonnet') { put(B(1.25, .55, 1.2, .15, hc), 0, .95, -.12, head); put(B(1.3, .12, .2, .04, WHITE), 0, .9, .5, head); put(B(.12, .3, .12, .04, 0xe8c040), .3, 1.4, .1, head).rotation.z = -.3; }
   if (hat === 'brim') { put(B(1.8, .08, 1.7, .04, hc), 0, 1.05, 0, head); put(B(1.0, .45, 1.0, .1, hc), 0, 1.3, 0, head); put(B(1.04, .1, 1.04, .03, 0x3a2a1c), 0, 1.12, 0, head); }
+  if (hat === 'nightcap') {
+    put(B(1.22, .3, 1.12, .12, hc), 0, 1.0, -.02, head); put(B(.9, .3, .8, .1, hc), -.1, 1.28, -.2, head);
+    put(B(.5, .3, .5, .1, hc), -.35, 1.3, -.6, head); put(B(.4, .4, .4, .1, hc), -.45, .95, -.95, head); put(B(.24, .24, .24, .08, 0xf4f0e6), -.45, .66, -1.0, head);
+    put(B(1.26, .08, 1.16, .03, 0xd8d0b0), 0, .86, -.02, head);
+  }
+  const LK = d.look;
   let eyeL, eyeR;
-  if (F) {
+  if (LK) {
+    LK.hairBlocks.forEach(([w, h, dd, b, x, y, z, c]) => put(B(w, h, dd, b, c), x, y, z, head));
+    LK.beardBlocks.forEach(([w, h, dd, b, x, y, z, c]) => put(B(w, h, dd, b, c), x, y, z, head));
+    const ec = LK.eye, ez = F ? .53 : .55, ey = F ? .56 : .58;
+    put(B(.24, .08, .05, .02, LK.brow), -.28, ey + .2, ez, head); put(B(.24, .08, .05, .02, LK.brow), .28, ey + .2, ez, head);
+    put(B(.24, .24, .05, .02, 0xf4f4f0), -.28, ey, ez - .01, head); put(B(.24, .24, .05, .02, 0xf4f4f0), .28, ey, ez - .01, head);
+    eyeR = put(B(.14, .22, .06, .03, ec), -.28, ey, ez + .02, head); eyeL = put(B(.14, .22, .06, .03, ec), .28, ey, ez + .02, head);
+    put(B(.05, .07, .04, .02, 0xffffff), -.25, ey + .05, ez + .06, head); put(B(.05, .07, .04, .02, 0xffffff), .31, ey + .05, ez + .06, head);
+    if (F) { put(B(.18, .07, .04, .02, 0xf08a9c), -.4, .36, .53, head); put(B(.18, .07, .04, .02, 0xf08a9c), .4, .36, .53, head); put(B(.28, .07, .06, .03, LK.lip), 0, .26, .53, head); put(B(.14, .12, .1, .04, SKIN), 0, .42, .54, head); }
+    else { put(B(.34, .08, .06, .03, LK.lip), 0, .26, .55, head); put(B(.16, .14, .1, .04, SKIN), 0, .42, .56, head); put(B(.14, .3, .14, .04, SKIN), -.62, .55, 0, head); put(B(.14, .3, .14, .04, SKIN), .62, .55, 0, head); }
+  } else if (F) {
     put(B(1.14, .22, .2, .06, H), 0, .84, .5, head); put(B(1.2, 1.1, .4, .12, H), 0, .3, -.5, head);
     put(B(.2, .85, .9, .08, H), -.6, .4, -.05, head); put(B(.2, .85, .9, .08, H), .6, .4, -.05, head);
     if (ex.includes('earring')) put(B(.07, .14, .07, .02, GOLD), -.64, .2, .2, head);

@@ -94,7 +94,7 @@ function idlePlayer(g, t) {
 }
 
 function buildPlayer() {
-  const g = playerModel(!!(activeChar() && activeChar().f));
+  const g = playerModel(!!(activeChar() && activeChar().f), activeChar() && activeChar().a);
   const fa = g.arm.fa;
   hideSword(g); // tira a espada padrão
   const W = WEAPONS[P.wid];

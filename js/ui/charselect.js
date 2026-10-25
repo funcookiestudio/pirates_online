@@ -2,7 +2,8 @@
    e "Iniciar jogo" embaixo. Funciona em retrato e paisagem (celular): no retrato o personagem fica em cima e a lista embaixo.
    Roda ANTES do jogo carregar (boot.js): só usa THREE (global), core/chars.js e o corpo humano (human.js, sem dependências). */
 import { chars, activeChar, createChar, deleteChar, setActive, summary, MAX_CHARS } from '../core/chars.js';
-import { buildHuman, SKM, SKF } from '../entities/human.js';
+import { playerModel } from '../entities/character.js';
+import { SKINS, SKIN_NAMES, HAIRC, HAIRC_NAMES, EYES, EYE_NAMES, LIPS, LIP_NAMES, HAIR_NAMES, BEARD_NAMES, defaultLook, randomLook } from '../entities/look.js';
 
 const CSS = `
 #cs{position:fixed;inset:0;z-index:50;background:radial-gradient(ellipse at 50% 38%,#4a2e1c 0%,#24150d 48%,#0b0705 100%);color:#e8d9b8;font-family:Cinzel,'Trajan Pro','Palatino Linotype',Georgia,serif;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation}
@@ -38,6 +39,19 @@ const CSS = `
 #cs .modal{position:absolute;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:14px}
 #cs .modal.on{display:flex}
 #cs .dlg{position:relative;width:min(440px,100%);max-height:100%;overflow:auto;padding:24px 18px 18px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(#1b1210,#120b09);border:1px solid #6b4a2a;border-radius:4px;box-shadow:0 0 0 1px #000,0 12px 40px #000}
+#cs .modal{background:#0008}
+#cs .modal .dlg{max-height:100%}
+#cs .ap{display:flex;flex-direction:column;gap:9px}
+#cs .ar{display:flex;align-items:center;gap:8px}
+#cs .ar label{flex:0 0 74px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#a89878}
+#cs .ar .st{flex:1;display:flex;align-items:center;gap:6px}
+#cs .ar .st button{appearance:none;font:inherit;width:36px;height:34px;background:#1a110d;color:#e8e0d0;border:1px solid #4a3220;border-radius:3px;cursor:pointer;touch-action:manipulation}
+#cs .ar .st span{flex:1;text-align:center;font-size:13px;color:#e8e0d0}
+#cs .sw{flex:1;display:flex;flex-wrap:wrap;gap:5px}
+#cs .sw b{width:26px;height:26px;border-radius:50%;border:2px solid #3a2a1c;cursor:pointer;touch-action:manipulation}
+#cs .sw b.on{border-color:#fff;box-shadow:0 0 0 1px #000}
+@media (orientation:portrait),(max-width:700px){#cs .modal{align-items:flex-end;padding:0}#cs .modal .dlg{width:100%;max-height:56%;border-radius:10px 10px 0 0}}
+@media (orientation:landscape) and (min-width:701px){#cs .modal{justify-content:flex-start}#cs .modal .dlg{max-height:100%}}
 #cs .gen{display:flex;gap:10px}
 #cs .gen button{flex:1;appearance:none;font:inherit;color:#cdb98f;background:#1a110d;border:2px solid #4a3220;border-radius:4px;padding:12px 6px;cursor:pointer;font-size:14px;letter-spacing:.1em;text-transform:uppercase;touch-action:manipulation}
 #cs .gen button i{display:block;font-style:normal;font-size:30px;line-height:1.1}
@@ -91,6 +105,7 @@ export function runCharSelect() {
       <div class="modal" data-k="modal"><div class="dlg pn" style="position:relative">
         <h2>Novo personagem</h2>
         <div class="gen"><button data-g="m" class="on"><i>♂</i>Masculino</button><button data-g="f"><i>♀</i>Feminino</button></div>
+        <div class="ap" data-k="ap"></div>
         <div><label>Nome</label><div class="nrow"><input data-k="name" maxlength="14" autocomplete="off" spellcheck="false"><button class="btn dim dice" data-k="dice" title="Nome aleatório">🎲</button></div></div>
         <div class="err" data-k="err"></div>
         <button class="btn" data-k="ok">Criar personagem</button><button class="btn dim" data-k="cancel">Cancelar</button>
@@ -122,11 +137,11 @@ export function runCharSelect() {
     scene.add(new THREE.Points(eg, new THREE.PointsMaterial({ color: 0xffa050, size: .05, transparent: true, opacity: .85, depthWrite: false })));
 
     let model = null, modelKey = '', yaw = .35, drag = null, spin = 0, raf = 0, dead = false;
-    function show(female) {
-      const k = female ? 'f' : 'm';
-      if (k === modelKey) return; modelKey = k;
+    function show(female, look, force) {
+      const k = (female ? 'f' : 'm') + JSON.stringify(look || 0);
+      if (k === modelKey && !force) return; modelKey = k;
       if (model) { pivot.remove(model); model.traverse(c => { if (c.geometry) c.geometry.dispose(); }); }
-      model = female ? buildHuman(true, Object.assign({}, SKF.pirata, { skin: 0xe0b48a })) : buildHuman(false, Object.assign({}, SKM.pirata, { skin: 0xe0b48a }));
+      model = playerModel(female, look || defaultLook(female));
       pivot.add(model);
     }
     cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = e.clientX; cv.style.cursor = 'grabbing'; });
@@ -179,7 +194,7 @@ export function runCharSelect() {
       });
       for (let i = list.length; i < MAX_CHARS; i++) { const e = document.createElement('div'); e.className = 'slot empty'; e.textContent = 'Vaga livre'; e.onclick = openCreate; L.appendChild(e); }
       const c = list.find(q => q.id === sel);
-      if (c) show(c.f);
+      if (c) show(c.f, c.a);
       const s = c ? summary(c.id) : null;
       $('info').innerHTML = c ? `<div class="big"></div><div class="row k"><span>Nível</span><b>${s.lv}</b></div><div class="row"><span>Ouro</span><b>${s.gold}</b></div><div class="row"><span>Gênero</span><b>${c.f ? 'Feminino' : 'Masculino'}</b></div><div class="row"><span>Último jogo</span><b>${fmt(s.saved)}</b></div>` : '<div class="big">Nenhum personagem</div><div class="hint">Crie o seu primeiro pirata</div>';
       if (c) $('info').querySelector('.big').textContent = c.name;
@@ -194,7 +209,27 @@ export function runCharSelect() {
       if (!chars().length) openCreate();
     };
 
-    function setGender(g) { gender = g; root.querySelectorAll('.gen button').forEach(b => b.classList.toggle('on', b.dataset.g === g)); show(g === 'f'); }
+    let look = defaultLook(false);
+    const swatch = (key, cols, names) => '<div class="sw">' + cols.map((c, i) => '<b data-sw="' + key + '" data-i="' + i + '" title="' + names[i] + '" style="background:#' + c.toString(16).padStart(6, '0') + '"></b>').join('') + '</div>';
+    const arrow = (key, label) => '<div class="ar"><label>' + label + '</label><div class="st"><button data-st="' + key + '" data-d="-1">◀</button><span data-nm="' + key + '"></span><button data-st="' + key + '" data-d="1">▶</button></div></div>';
+    function buildAp() {
+      const f = gender === 'f';
+      $('ap').innerHTML = arrow('hs', 'Cabelo') + '<div class="ar"><label>Cor</label>' + swatch('hc', HAIRC, HAIRC_NAMES) + '</div>'
+        + (f ? arrow('bs', 'Batom') : arrow('bs', 'Barba') + '<div class="ar"><label>Cor barba</label>' + swatch('bc', HAIRC, HAIRC_NAMES) + '</div>')
+        + '<div class="ar"><label>Pele</label>' + swatch('sk', SKINS, SKIN_NAMES) + '</div><div class="ar"><label>Olhos</label>' + swatch('ey', EYES, EYE_NAMES) + '</div>'
+        + '<div class="ar"><label></label><button class="btn dim" data-k="rnd" style="padding:8px">🎲 Aparência aleatória</button></div>';
+      $('rnd').onclick = () => { look = randomLook(gender === 'f'); refreshAp(); };
+      $('ap').querySelectorAll('[data-st]').forEach(b => { b.onclick = () => { const k = b.dataset.st, n = k === 'hs' ? 10 : (f ? LIPS.length : 10); look[k] = (look[k] + +b.dataset.d + n) % n; refreshAp(); }; });
+      $('ap').querySelectorAll('[data-sw]').forEach(b => { b.onclick = () => { look[b.dataset.sw] = +b.dataset.i; refreshAp(); }; });
+    }
+    function refreshAp() {
+      const f = gender === 'f';
+      $('ap').querySelector('[data-nm="hs"]').textContent = HAIR_NAMES[f ? 'f' : 'm'][look.hs];
+      $('ap').querySelector('[data-nm="bs"]').textContent = f ? LIP_NAMES[look.bs] : BEARD_NAMES[look.bs];
+      $('ap').querySelectorAll('[data-sw]').forEach(b => b.classList.toggle('on', look[b.dataset.sw] === +b.dataset.i));
+      show(f, look);
+    }
+    function setGender(g) { gender = g; root.querySelectorAll('.gen button').forEach(b => b.classList.toggle('on', b.dataset.g === g)); look = defaultLook(g === 'f'); buildAp(); refreshAp(); }
     root.querySelectorAll('.gen button').forEach(b => { b.onclick = () => setGender(b.dataset.g); });
     $('dice').onclick = () => { $('name').value = pick(NAMES[gender]); };
     function openCreate() { if (chars().length >= MAX_CHARS) return; $('err').textContent = ''; $('modal').classList.add('on'); setGender('m'); $('name').value = pick(NAMES.m); $('cancel').style.display = chars().length ? '' : 'none'; }
@@ -203,7 +238,7 @@ export function runCharSelect() {
     $('ok').onclick = () => {
       const nm = $('name').value.trim();
       if (nm.length < 2) { $('err').textContent = 'O nome precisa ter pelo menos 2 letras.'; return; }
-      const c = createChar(nm, gender === 'f');
+      const c = createChar(nm, gender === 'f', look);
       if (!c) { $('err').textContent = 'Não há vagas livres.'; return; }
       sel = c.id; $('modal').classList.remove('on'); render();
     };

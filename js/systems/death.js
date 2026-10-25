@@ -14,6 +14,12 @@ import { leaveDungeon } from '../dungeon/dungeon-scene.js';
 const nameOf = id => id < 0 ? 'a Vila' : POST_DATA[id].name;
 
 on('player:died', () => {
+  if (state.safeAt) {
+    const loss0 = Math.floor(P.gold * .1); P.gold -= loss0; setAuto(false);
+    const m0 = $('msg'); m0.style.display = 'flex';
+    m0.innerHTML = '☠ Você morreu…<br><small>Você volta ao último ponto seguro' + (loss0 ? ' · −' + loss0 + ' ouro' : '') + '</small>';
+    setTimeout(reviveSafe, 3500); return;
+  }
   const near = nearestPost(P.x, P.z, 24), id = near ? near.id : state.cp;
   let note;
   if (id >= 0) {
@@ -48,4 +54,15 @@ function revive() {
   enemies.forEach(e => { if (!e.dead) { e.ag = false; e.hp = e.max; e.st = 'chase'; } });
   $('msg').style.display = 'none';
   log('Renasceu em ' + nameOf(state.cp));
+}
+
+function reviveSafe() {
+  leaveDungeon();
+  const { x, z } = freePoint(state.safeAt.x, state.safeAt.z, .8);
+  P.x = x; P.z = z; P.tx = x; P.tz = z; P.vx = P.vz = 0; P.up = !!state.safeAt.up;
+  P.hp = P.max; P.mp = P.mmax; P.tgt = null; P.dead = false; P.sit = 0; P.sitT = 0; standUp(true);
+  state.stam = Math.max(state.stam, .5);
+  enemies.forEach(e => { if (!e.dead) { e.ag = false; e.hp = e.max; e.st = 'chase'; } });
+  $('msg').style.display = 'none';
+  log('Renasceu no último ponto seguro');
 }

@@ -1,5 +1,6 @@
 /* Corpo "de blocos" usado pelo jogador, NPCs e inimigos: humanos com skins e esqueleto (ver human.js). */
-import { buildHuman, buildSkeleton, SKM, SKF, hideSword } from './human.js';
+import { buildHuman, buildSkeleton, SKM, SKF, PJM, PJF, hideSword } from './human.js';
+import { resolveLook } from './look.js';
 export { hideSword };
 
 /**
@@ -21,8 +22,11 @@ export function person(skin, shirt, pants, hat, spec) {
 }
 
 /** Corpo do jogador: pirata (masculino) ou pirata (feminino), com o mesmo esqueleto/rig */
-export function playerModel(female) {
-  return female ? person(0xe0b48a, 0, 0, 0, { sk: 'pirata', f: true, ov: { skin: 0xe0b48a } }) : person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a);
+export function playerModel(female, look) {
+  if (!look) return female ? person(0xe0b48a, 0, 0, 0, { sk: 'pirata', f: true, ov: { skin: 0xe0b48a } }) : person(0xe0b48a, 0x8b2e2e, 0x2e3a5a, 0x1a1a1a);   // personagem antigo: mantém o visual pirata
+  const L = resolveLook(!!female, look);
+  const d = Object.assign({}, female ? PJF : PJM, { skin: L.skin, hair: L.hair, look: L });
+  return buildHuman(!!female, d);
 }
 
 /** Inimigo do tipo `t` (ENEMY_KINDS): esqueletos usam o esqueleto; os demais, humanos pintados com as cores do tipo */

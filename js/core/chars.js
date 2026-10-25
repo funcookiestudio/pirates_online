@@ -29,10 +29,10 @@ export const activeChar = () => db.list.find(c => c.id === db.active) || null;
 /** Chave de armazenamento própria do personagem ativo (`base` + id) */
 export const charKey = base => { const c = activeChar(); return c ? base + ':' + c.id : base; };
 
-export function createChar(name, female) {
+export function createChar(name, female, look) {
   name = String(name || '').trim().slice(0, 14);
   if (name.length < 2 || db.list.length >= MAX_CHARS) return null;
-  const c = { id: newId(), name, f: !!female, t: Date.now() };
+  const c = { id: newId(), name, f: !!female, a: look || undefined, t: Date.now() };
   db.list.push(c); persist();
   return c;
 }

@@ -179,7 +179,8 @@ function moveAndAct(dt) {
   updateCutaway();
   updateDoors(dt);
   // dentro da vila (zona segura) o personagem guarda a arma no coldre; ela volta à mão ao sair
-  P.safe = safeSpot(P.x, P.z, VILLAGE_R - .3) && !dIn(P.x, P.z);   // vila, fazendas e porto: armas no coldre
+  P.safe = safeSpot(P.x, P.z, VILLAGE_R - .3) && !dIn(P.x, P.z);
+  if (P.safe && !P.dead) state.safeAt = { x: P.x, z: P.z, up: !!P.up };   // último ponto seguro (renascimento)   // vila, fazendas e porto: armas no coldre
   P.safeK = (P.safeK || 0) + ((P.safe ? 1 : 0) - (P.safeK || 0)) * Math.min(1, dt * 6);
 
   // intensidade da caminhada (0 parado … 1 correndo) e regeneração
