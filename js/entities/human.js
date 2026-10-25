@@ -42,10 +42,10 @@ function fuse(grp, keep) {
 }
 
 /* ---- skins ---- u/f: manga/antebraço (0 = pele) · st: meias/botas · hat: tri|straw|cap|band|kerch|hood|toque */
-const PJC = 0xe8e0c8;
-/** Pijama de época inicial: camisolão e calça de dormir creme, touca de dormir, chinelos */
-export const PJM = { t: PJC, fl: PJC, u: PJC, f: PJC, pa: PJC, st: 0xd8d0b0, sh: 0x6a4a30, hat: 'nightcap', hc: 0xd8d0b0, hair: 0x4a2f20, ex: [] };
-export const PJF = { b: PJC, sk: PJC, u: PJC, f: PJC, st: 0xd8d0b0, sh: 0x6a4a30, hem: 0xd8d0b0, hat: 'nightcap', hc: 0xd8d0b0, hair: 0x8a3b2a, ex: [] };
+const PJC = 0xa88a58, PJD = 0x7a6238;
+/** Roupa inicial: saco de batata rasgado (juta), sem chapéu, pés descalços */
+export const PJM = { t: PJC, fl: PJD, u: PJC, f: PJC, pa: PJD, st: PJD, sh: 0x6a4a30, hc: PJD, hair: 0x4a2f20, ex: [], rags: 1 };
+export const PJF = { b: PJC, sk: PJD, u: PJC, f: PJC, st: PJD, sh: 0x6a4a30, hem: 0x8a6e42, hc: PJD, hair: 0x8a3b2a, ex: [], rags: 1 };
 export const SKM = {
   pirata: { t: 0x8a2433, fl: 0x8a2433, vest: 0xe9d9a8, belt: 0x2c4b78, u: 0x8a2433, f: 0x8a2433, cuff: GOLD, pa: 0xb59a6a, st: WHITE, sh: 0x1d1d22, buck: 1, hat: 'tri', hc: 0x1d1d22, hair: 0x4a2f20, ex: ['jabot', 'patch', 'mo'] },
   taberneiro: { t: 0xf1ead6, vest: 0x7a4a2b, belt: 0x3b2a1c, ap: WHITE, u: 0xf1ead6, f: 0, pa: 0x5b4a3a, st: 0xe9e2cc, sh: 0x3b2a1c, hat: 'cap', hc: WHITE, hair: 0x6b4a2f, mo: 0x6b4a2f, ex: ['towel'] },
@@ -199,6 +199,17 @@ export function buildHuman(F, d) {
   const armR = arm(F ? -.74 : -.82), armL = arm(F ? .74 : .82);   // armR = braço da arma (-x) · armL = braço livre (+x)
   addSword(armR.fa).forEach(m => keep.add(m));
 
+  if (d.rags) {   // remendos, rasgos e franjas de juta
+    const SK = SKIN, DK = 0x5a4626;
+    const yc = F ? 1.95 : 1.65, zc = F ? .4 : .43, yl = F ? 1.05 : 1.0, zl = F ? .45 : .47;
+    put(B(.3, .26, .04, .02, SK), -.3, yc + .1, zc);      // rasgo no peito (pele aparece)
+    put(B(.26, .22, .04, .02, DK), .32, yc - .2, zc);     // remendo escuro
+    put(B(.36, .08, .04, .02, DK), -.1, yc - .05, zc + .01); put(B(.08, .3, .04, .02, DK), .15, yc + .15, zc + .01);
+    put(B(.3, .3, .04, .02, SK), .25, yl, zl);            // rasgo na saia/calça
+    put(B(.24, .2, .04, .02, DK), -.3, yl - .1, zl);
+    for (let k = -3; k <= 3; k++) put(B(.14, .12 + ((k * 7) & 3) * .05, .5, .02, k % 2 ? DK : PJC), k * .19, yl - .42, 0);   // barra esfiapada
+    put(B(.5, .06, .06, .02, DK), 0, yc + .45, zc - .02);  // gola de corda
+  }
   // cabeça
   const head = at(new THREE.Group(), 0, 2.2, 0); root.add(head);
   put(F ? B(1.12, 1.02, 1.02, .2, SKIN) : B(1.15, 1.05, 1.05, .2, SKIN), 0, .55, 0, head);
