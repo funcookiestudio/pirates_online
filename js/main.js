@@ -12,6 +12,7 @@ import { updatePerf, DIAG } from './systems/perf.js';
 import { updateSettings, initSettings, CFG } from './systems/settings.js';
 import { DOORS } from './world/doors.js';
 import { updateLod } from './systems/lod.js';
+import { updateEnemyLabels } from './ui/enemy-labels.js';
 import { updateVision, canSee, VIS } from './systems/vision.js';
 import { pathTo } from './systems/steer.js';
 import { mergeStatics } from './world/merge.js';
@@ -87,6 +88,7 @@ function tick(now) {
   S('updateLod', () => updateLod(realDt));
   S('updateDayNight', () => updateDayNight(inDungeon()));
   S('updateNpcs', () => updateNpcs(realDt, now));
+  S('enemyLabels', () => updateEnemyLabels());
   S('updateFarm', () => updateFarm(realDt));
   S('updateRoyals', () => updateRoyals(realDt));
   S('updateFarmFx', () => updateFarmFx(realDt));

@@ -19,6 +19,7 @@ import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
 import { $ } from '../core/utils.js';
 import { log } from '../ui/notify.js';
 import { groundY } from '../world/terrain.js';
+import { CFG } from '../systems/settings.js';
 
 const list = [];
 export const npcList = list;
@@ -203,7 +204,7 @@ export function updateNpcs(dt, now) {
     const g = n.g, t = t0 + n.ph;
     if (n.lab) {
       v3.set(g.position.x, n.ly || 2.7, g.position.z).project(cam);
-      const vis = n.g.visible && !P.up && v3.z < 1 && Math.abs(v3.x) < 1.05 && Math.abs(v3.y) < 1.05 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < LABEL_R;
+      const vis = CFG.names !== false && n.g.visible && !P.up && v3.z < 1 && Math.abs(v3.x) < 1.05 && Math.abs(v3.y) < 1.05 && Math.hypot(P.x - g.position.x, P.z - g.position.z) < LABEL_R;
       /* só escreve no DOM quando muda (cada escrita invalida o estilo e o celular refaz layout/pintura depois do JS), e move por transform, que não força layout */
       if (n.labOn !== vis) { n.labOn = vis; n.lab.style.display = vis ? 'block' : 'none'; if (vis && n.labX === undefined) { n.lab.style.left = '0'; n.lab.style.top = '0'; } }
       if (vis) {

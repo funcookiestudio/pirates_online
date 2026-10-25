@@ -233,6 +233,16 @@ function updateEnemy(e, dt) {
   // longe do jogador (e já perdido no nevoeiro) e sem perseguir: não desenha nem processa
   if (!e.ag && Math.hypot(P.x - e.x, P.z - e.z) > 66) { e.g.visible = false; return; }
   e.g.visible = true;
+  /* longe e sem perseguir: pensa/anda a ~8 vezes por segundo e nem anima (a pose já vira um único modelo congelado a partir de 15 m) */
+  let farIdle = false;
+  if (!e.ag) {
+    const dd = Math.hypot(P.x - e.x, P.z - e.z);
+    if (dd > 18) {
+      e._q = (e._q === undefined ? Math.random() * .12 : e._q) + dt;
+      if (e._q < .12) return;
+      dt = e._q; e._q = 0; farIdle = true;
+    }
+  }
 
   const bo = e.t.boss;
   e.fl = Math.max(0, e.fl - dt);
@@ -272,7 +282,7 @@ function updateEnemy(e, dt) {
   let wx = 0, wz = 0;
   if (e.sn <= 0 && !P.dead) [wx, wz] = think(e, dt, c);
   move(e, wx, wz, dt);
-  animate(e, c, dt);
+  if (!farIdle) animate(e, c, dt);
 }
 
 /** Atualiza todos os inimigos e remove os mortos (agendando o reaparecimento) */
