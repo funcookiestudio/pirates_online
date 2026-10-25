@@ -109,12 +109,12 @@ function finishDismount() {
 }
 /** Posição/giro do jogador na animação: do lado do cavalo (u=0) até a sela (u=1) */
 function lockPlayer(u) {
-  const th = MOUNT.yaw, lat = SIDE * (1 - ss(sat((u - .1) / .6)));
+  const th = MOUNT.yaw, lat = SIDE * (1 - ss(sat((u - .42) / .45)));   // só se desloca depois de subir acima do dorso
   let px = MOUNT.x + Math.cos(th) * lat, pz = MOUNT.z - Math.sin(th) * lat;
   if (!MOUNT.dis && MOUNT.sx != null && u < .18) { const w = ss(u / .18); px = MOUNT.sx + (px - MOUNT.sx) * w; pz = MOUNT.sz + (pz - MOUNT.sz) * w; }   // aproxima-se do flanco
   P.x = P.tx = px; P.z = P.tz = pz;
   P.vx = P.vz = 0; P.walk = 0;
-  P.g.rotation.y = th - Math.PI / 2 * (1 - ss(sat((u - .55) / .45)));
+  P.g.rotation.y = th - Math.PI / 2 * (1 - ss(sat((u - .4) / .5)));
 }
 
 export function dismount(msg) {
@@ -262,8 +262,8 @@ export function mountPose(dt) {
   const g = P.g, k = ss(MOUNT.t), run = Math.min(1, MOUNT.sp / 6);
   P.mountK = k;
   const bob = Math.abs(Math.sin(MOUNT.ph)) * .05 * Math.min(1, MOUNT.sp / 2.2);
-  const u = MOUNT.t, hop = Math.sin(Math.PI * u) * .32 * (u < 1 ? 1 : 0), over = Math.sin(Math.PI * sat((u - .22) / .5));   // pulo + perna passando por cima
-  g.position.y += LIFT * k + bob + hop;
+  const u = MOUNT.t, rise = ss(sat((u - .06) / .44)), hop = u < 1 ? Math.sin(Math.PI * sat((u - .2) / .7)) * .38 : 0, over = Math.sin(Math.PI * sat((u - .38) / .5));   // pulo + perna passando por cima
+  g.position.y += LIFT * rise + bob + hop;
   const tl = -1.1 - .15 * run, kl = .75;
   [[g.legL, -1], [g.legR, 1]].forEach(([l, s]) => {
     l.rotation.x += (tl - l.rotation.x) * k;
