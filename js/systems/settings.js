@@ -95,7 +95,7 @@ export function updateSettings(dt) {
 
 export function initSettings() {
   fpsEl = document.createElement('div');
-  fpsEl.style.cssText = 'position:fixed;left:6px;bottom:4px;z-index:9;font:11px monospace;color:#cfe;background:#0008;padding:1px 5px;border-radius:3px;pointer-events:none;display:none';
+  fpsEl.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(4px + env(safe-area-inset-top,0px));z-index:9;font:11px monospace;color:#cfe;background:#0008;padding:1px 5px;border-radius:3px;pointer-events:none;display:none';
   document.body.appendChild(fpsEl);
   const show = () => { fpsEl.style.display = CFG.fps ? 'block' : 'none'; };
   const q = $('gx-q'), f = $('gx-fps'), hl = $('gx-hl'), hh = $('gx-hlhide'), tl = $('gx-tiles'), dg = $('gx-dbg');
