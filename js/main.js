@@ -64,6 +64,9 @@ function frame(now) {
   tick(now);
 }
 
+/** Mede cada etapa da lógica (média móvel, ms) para o diagnóstico */
+function S(name, fn) { const a = performance.now(); fn(); const d = performance.now() - a, v = DIAG.sec[name] || 0; DIAG.sec[name] = v + (d - v) * .1; }
+
 function tick(now) {
 
   const rawDt = (now - (last || now)) / 1000;   // sem limite: o contador de FPS e a qualidade automática precisam enxergar fps abaixo de 20
@@ -79,33 +82,33 @@ function tick(now) {
   updatePerf(rawDt);
   updateSettings(realDt);
   if (CFG.diag === 'draw') { const a = performance.now(); ren.render(scene, cam); DIAG.rend += ((performance.now() - a) - DIAG.rend) * .1; DIAG.js = 0; DIAG.calls = ren.info.render.calls; DIAG.tris = ren.info.render.triangles; return; }   // diagnóstico: só desenho
-  updatePlayer(dt);
-  updateEnemies(dt);
-  updateLod(realDt);
-  updateDayNight(inDungeon());
-  updateNpcs(realDt, now);
-  updateFarm(realDt);
-  updateRoyals(realDt);
-  updateFarmFx(realDt);
-  separate();
-  updateLoot(dt, now);
-  updateBombs(dt);
-  updateParticles(dt);
-  updateRespawns(dt);
-  updateOutposts(now / 1000);
-  updatePois();
-  updateDungeon(dt, now);
-  updateCamera(dt);
+  S('updatePlayer', () => updatePlayer(dt));
+  S('updateEnemies', () => updateEnemies(dt));
+  S('updateLod', () => updateLod(realDt));
+  S('updateDayNight', () => updateDayNight(inDungeon()));
+  S('updateNpcs', () => updateNpcs(realDt, now));
+  S('updateFarm', () => updateFarm(realDt));
+  S('updateRoyals', () => updateRoyals(realDt));
+  S('updateFarmFx', () => updateFarmFx(realDt));
+  S('separate', () => separate());
+  S('updateLoot', () => updateLoot(dt, now));
+  S('updateBombs', () => updateBombs(dt));
+  S('updateParticles', () => updateParticles(dt));
+  S('updateRespawns', () => updateRespawns(dt));
+  S('updateOutposts', () => updateOutposts(now / 1000));
+  S('updatePois', () => updatePois());
+  S('updateDungeon', () => updateDungeon(dt, now));
+  S('updateCamera', () => updateCamera(dt));
 
   // 2) interface e companheiros
-  updateStatusBars();
-  updateShots(realDt);
-  updatePets(realDt, now);
-  updateOverlays(now);
+  S('updateStatusBars', () => updateStatusBars());
+  S('updateShots', () => updateShots(realDt));
+  S('updatePets', () => updatePets(realDt, now));
+  S('updateOverlays', () => updateOverlays(now));
 
-  updateXray();
-  updateVision(realDt, inDungeon());
-  updateVisionOverlay(inDungeon());   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
+  S('updateXray', () => updateXray());
+  S('updateVision', () => updateVision(realDt, inDungeon()));
+  S('updateVisionOverlay', () => updateVisionOverlay(inDungeon()));   // por último: esconde quem o jogador não enxerga (paredes, andares, casas fechadas)
   const tR = performance.now();
   if (CFG.diag !== 'logic') ren.render(scene, cam);   // diagnóstico 'logic': só lógica, sem desenhar
   const tE = performance.now(), k = .1;
