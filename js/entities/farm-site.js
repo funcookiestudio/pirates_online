@@ -17,6 +17,7 @@ import { CLOCK } from '../core/clock.js';
 import { HORSEMAN, FARMER_AVES, FARMER_GRANJA } from '../data/npcs.js';
 import { ZONES } from '../world/reserve.js';
 import { H } from '../world/terrain.js';
+import { cropGeo, CROP_MAT } from './crops.js';
 const E = N / 2;
 
 export const FARMSITE = { ok: false, sites: [] };
@@ -191,15 +192,18 @@ function buildOne(spot) {
   const hayPile = (x, z) => { hay(x, z); hay(x, z + 1); hay(x + .1, z + .1, .8, .3); solid(x, z + .5, 1.1); };
   const roll = (x, z) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.7, .7, 1.1, 12), M(0xd8b848)); m.rotation.z = Math.PI / 2; m.position.set(x, .7, z); g.add(m); solid(x, z, .9); };
   let FLD = null;
-  const field = (FX0, FX1, FZ0, FZ1, rows) => {
-    FLD = { rows, cut: Array(rows).fill(-99), cells: [], FX0, FZ0, FZ1 };
+  const field = (FX0, FX1, FZ0, FZ1, rows, crops) => {
+    // fileiras em fases diferentes (nada plantado tudo junto): do ponto de colheita aos brotos, em ciclos defasados
+    FLD = { rows, cut: Array.from({ length: rows }, (_, r) => 7 - 10 * [1, .78, .6, .45, .3][r]), cells: [], FX0, FZ0, FZ1 };
     bx(FX1 - FX0 + 1, .12, FZ1 - FZ0 + 1, 0x5a3a24, (FX0 + FX1) / 2, .02, (FZ0 + FZ1) / 2);
-    const CROPS = [[0xd8b848, 1, .22], [0x4a9a3a, 1.4, .3], [0xd8b848, 1, .22], [0x6ab04a, .5, .28], [0x4a9a3a, 1.4, .3]].slice(0, rows);
-    CROPS.forEach(([c, h, w], r) => {
+    // cada fileira é uma cultura da biblioteca de legumes (7 fases de crescimento); as plantas compartilham a mesma malha por fase
+    crops.slice(0, rows).forEach(([crop, step, sc], r) => {
       const x = FX0 + 1 + r * 1.5;
-      for (let z = FZ0 + .5; z <= FZ1 - .5; z += .7) {
-        if (c === 0x6ab04a) { const p = new THREE.Mesh(new THREE.SphereGeometry(.28, 7, 5), M(0xe8862a)); p.position.set(x, .3, z); g.add(p); FLD.cells.push({ mesh: p, r, sph: true }); }
-        else { const m = bx(w, h * (.85 + ((z * 7 + r * 3) % 3) * .08), w, c, x, .12 + h / 2 * .9, z); FLD.cells.push({ mesh: m, r, y0: m.position.y, hh: m.geometry.parameters.height / 2 }); }
+      for (let z = FZ0 + .5; z <= FZ1 - .5; z += step) {
+        const m = new THREE.Mesh(cropGeo(crop, 6, .8 * sc), CROP_MAT);
+        const j = Math.abs(Math.sin(z * 12.9 + r * 7.7) * 43758.5) % 1;
+        m.position.set(x + (j - .5) * .12, .1, z); m.rotation.y = j * 6.28; m.scale.setScalar(.9 + j * .2);
+        m.userData.dyn = 1; g.add(m); FLD.cells.push({ mesh: m, r, crop, sc, st: 6 });
       }
     });
     const sx = (FX0 + FX1) / 2, sz = FZ1 + .9;
@@ -248,7 +252,7 @@ function buildOne(spot) {
     bx(.5, .5, .06, 0x2a1a10, a.x0 + 2.2, .5, a.z0 + 2.3); solid(a.x0 + 2.2, a.z0 + 1.5, 1.2);
     bx(1.2, .22, .5, 0x7a5430, a.x1 - 1.8, .2, a.z1 - 1.2); bx(1, .06, .36, 0xd8c070, a.x1 - 1.8, .34, a.z1 - 1.2);
     bx(3.4, .05, 2.2, 0x4a90c8, b.cx - 1, .05, b.cz + .6);                           // lagoa dos patos
-    field(4.5, 4.5 + 6 * 1.5 - 1, -2, 9, 5);
+    field(4.5, 4.5 + 6 * 1.5 - 1, -2, 9, 5, [['Milho', 1.3, .8], ['Alface', .7, 1], ['Trigo', 1.3, .65], ['Couve', .9, .9], ['Girassol', 1.3, .8]]);
     pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster'], at: spotsIn(a, 5) });
     pens.push({ kinds: ['duck', 'duck', 'turkey', 'peacock'], at: spotsIn(b, 4) });
   } else if (vr.id === 'granja') {
@@ -256,7 +260,7 @@ function buildOne(spot) {
     const a = pen(...A, 0xe88aa0), b = pen(...B, 0xf0f0f0); PA = a; PB = b;
     bx(3.8, .04, 2.8, 0x5a4030, a.cx + 1, .04, a.cz); trough(a.x0 + 2.2, a.z0 + 1.2);   // lamaçal e cocho
     trough(b.x0 + 2.2, b.z1 - 1.2); bx(1.2, .6, 1, 0xd8b848, b.x1 - 1.8, .3, b.z0 + 1.2);
-    field(4.5, 4.5 + 4 * 1.5 - 1, -2, 9, 4);
+    field(4.5, 4.5 + 4 * 1.5 - 1, -2, 9, 4, [['Batata', 1.1, .9], ['Cenoura', .95, 1], ['Repolho', .95, 1], ['Tomate', 1.2, .85]]);
     pens.push({ kinds: ['pig', 'pig', 'pig'], at: spotsIn(a, 3) });
     pens.push({ kinds: ['sheep', 'sheep', 'sheep', 'sheep'], at: spotsIn(b, 4) });
   } else {
@@ -266,7 +270,7 @@ function buildOne(spot) {
     bx(2.6, 1.8, 2, 0x8a6238, b.x0 + 2, .9, b.z0 + 1.5);                              // cocheira
     bx(2.9, .12, 2.3, 0x4a3426, b.x0 + 2, 1.85, b.z0 + 1.5); solid(b.x0 + 2, b.z0 + 1.5, 1.4);
     trough(b.x0 + 2.2, b.z1 - 1.2);
-    field(4.5, 4.5 + 3 * 1.5 - 1, -2, 9, 3);
+    field(4.5, 4.5 + 3 * 1.5 - 1, -2, 9, 3, [['Cevada', 1.3, .65], ['Aveia', 1.3, .65], ['Beterraba', 1.1, 1]]);
     pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spotsIn(a, 4) });
     pens.push({ kinds: ['horse', 'horse'], at: spotsIn(b, 2) });
   }

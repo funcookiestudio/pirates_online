@@ -43,5 +43,5 @@ export function updateXray() {
   const s = ren.getDrawingBufferSize(new THREE.Vector2());
   U.uPS.value.set((v.x * .5 + .5) * s.x, (v.y * .5 + .5) * s.y);
   U.uPD.value = d;
-  U.uR.value = s.y * .1;
+  U.uR.value = s.y * .18;
 }

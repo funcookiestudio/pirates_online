@@ -11,7 +11,7 @@ import { refreshPetButton } from '../ui/hotbar.js';
 import { MOUNT } from './mount.js';
 
 const KEY = 'pirata-arpg:save:v1';
-const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'pot', 'bmb', 'x', 'z'];
+const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb', 'x', 'z'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
 
 let disabled = false; // true após apagar o progresso (evita salvar de novo antes de recarregar)

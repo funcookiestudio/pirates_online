@@ -59,7 +59,7 @@ const H = POSE.hold;
 const WALK = 1.5;                        // m/s
 
 /** Prepara o ferreiro: marreta, pinça com a espada, espada na bigorna, forja e barril d'água */
-export function initSmith(n, at, th) {
+export function initSmith(n, at, th, pts) {
   const g = n.g, hm = new THREE.Group();
   const bx = (w, h, d, c, px, py, pz, p) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(px, py, pz); p.add(m); return m; };
   bx(.06, .62, .06, 0x6a4020, 0, -.5, 0, hm);
@@ -83,9 +83,9 @@ export function initSmith(n, at, th) {
     return sw;
   };
   const anvilSword = mkSword();
-  const [ax, az] = at(1.3, 2.6), [sx, sz] = at(1.1, 2.6);
-  anvilSword.position.set(sx, .8, sz);
-  anvilSword.rotation.y = th;
+  const [ax, az] = at(...pts.anvil);
+  anvilSword.position.set(ax, pts.anvilY, az);
+  anvilSword.rotation.y = th + Math.PI / 2;
   scene.add(anvilSword);
   const handSword = mkSword();
   handSword.scale.set(.75, 1, 1);
@@ -93,17 +93,17 @@ export function initSmith(n, at, th) {
   handSword.rotation.y = -Math.PI / 2;           // cabo na ponta da pinça, lâmina para a frente
   tongs.add(handSword);
   handSword.visible = false;
-  const [fx, fz] = at(-1.3, 2.7);
-  const fire = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, .6), new THREE.MeshBasicMaterial({ color: 0xff6a20 }));
-  fire.position.set(fx, .84, fz);
+  const [fx, fz] = at(...pts.fire);
+  const fire = new THREE.Mesh(new THREE.BoxGeometry(.5, .08, .5), new THREE.MeshBasicMaterial({ color: 0xff6a20 }));
+  fire.position.set(fx, pts.fireY, fz);
   scene.add(fire);
   const glowL = new THREE.PointLight(0xff7a20, 0, 5);
   scene.add(glowL);
   [hm, tongs, mug, anvilSword, handSword, fire].forEach(o => { if (o) o.userData.dyn = 1; }); // animados: ficam fora da fusão do cenário
-  const [bx0, bz0] = at(2.45, 2.6);
+  const [bx0, bz0] = at(...pts.bar), W2 = a => at(...a);
   n.job = {
     at, th, hm, tongs, mug, anvilSword, handSword, fire, glowL, heat: 1, hit: -1, flash: 0, dip: 0,
-    hx: ax, hz: az, bx: bx0, bz: bz0, fx, fz, home: at(.9, 3.45), forgeSpot: at(-.9, 4.2), barSpot: at(2.85, 4.0), wp: at(0, 3.3), door: at(0, 2.5),
+    hx: ax, hz: az, bx: bx0, bz: bz0, fx, fz, home: W2(pts.home), forgeSpot: W2(pts.forgeSpot), barSpot: W2(pts.barSpot), wps: pts.wps.map(W2), door: W2(pts.door), ay: pts.ay, topY: pts.anvilY, barY: pts.fireY - .02,
     segs: [], i: 0, s: 0, away: false, nd: 0, st: 0,
   };
   planSession(n.job);
@@ -112,9 +112,9 @@ export function initSmith(n, at, th) {
 /** Sorteia uma jornada: 3 a 5 rodadas (martelar → enxugar → forja), depois mergulha a espada, entrega na loja e descansa */
 function planSession(J) {
   const rounds = 3 + Math.floor(Math.random() * 3), q = [];
-  const { home, forgeSpot: fo, barSpot: ba, wp, door } = J;
+  const { home, forgeSpot: fo, barSpot: ba, door } = J, [wa, wb] = J.wps;
   // começa dentro de casa: pega uma lâmina FRIA, esquenta no braseiro e só então vai para a bigorna
-  q.push(['dwait', 1.2], ['walk', 0, [door, wp, fo], 'carry', 'forge', true, true], ['forge', 2.4], ['walk', 0, [fo, home], 'forge', 'hold', true, true]);
+  q.push(['dwait', 1.2], ['walk', 0, [door, wa, wb, fo], 'carry', 'forge', true, true], ['forge', 2.4], ['walk', 0, [fo, home], 'forge', 'hold', true, true]);
   for (let r = 0; r < rounds; r++) {
     q.push(['ready', .6], ['strike', HITS * CYC], ['wipe', 1.1]);
     // esquenta: pega a espada, CAMINHA até o braseiro, aquece e volta andando
@@ -122,7 +122,7 @@ function planSession(J) {
   }
   // fim do trabalho: caminha até o barril, mergulha a espada e a leva até a loja
   q.push(['take', .9], ['walk', 0, [home, ba], 'carry', 'barUp', true, false], ['qdip', 2.2], ['qlift', 1.1],
-    ['walk', 0, [ba, wp, door], 'barUp', 'carry', true, false], ['dwait', 4 + Math.random() * 3]);
+    ['walk', 0, [ba, wb, wa, door], 'barUp', 'carry', true, false], ['dwait', 4 + Math.random() * 3]);
   if (Math.random() < .6) q.push(['drink', 3.6]);
   // a próxima jornada recomeça na casa (busca outra lâmina)
   J.segs = q; J.i = 0; J.s = 0; J.heat = 0; J.round = rounds;
@@ -147,7 +147,7 @@ export function updateSmith(n, dt, now, face, talking) {
   J.flash = Math.max(0, J.flash - dt * 5);
   J.dip = Math.max(0, J.dip - dt * 6);
   const yawTo = (x, z) => Math.atan2(x - g.position.x, z - g.position.z);
-  const yawAnvil = J.th + Math.PI;
+  const yawAnvil = J.th + J.ay;
 
   const durOf = sg => sg[0] === 'walk' ? pathLen(sg[2]) / WALK : sg[1];
   let seg = J.segs[J.i];
@@ -171,7 +171,7 @@ export function updateSmith(n, dt, now, face, talking) {
       const rise = t < HIT_T ? ease(clamp01(t / HIT_T)) : 1 - clamp01((t - HIT_T - 0) / .1) ** 2;
       const rebound = t > HIT_T + .1 ? Math.sin(clamp01((t - HIT_T - .1) / .3) * Math.PI) * .1 : 0;
       A = lerp(HIT.A, RAISE.A, rise) - rebound; F = lerp(HIT.F, RAISE.F, rise); lean = lerp(HIT.lean, RAISE.lean, rise); headX = lerp(HIT.head, RAISE.head, rise);
-      if (t >= HIT_T + .1 && J.hit !== k) { J.hit = k; J.flash = 1; J.dip = 1; J.heat = Math.max(.35, J.heat - .08); spark(J.hx, .95, J.hz, 9, 2.2); }
+      if (t >= HIT_T + .1 && J.hit !== k) { J.hit = k; J.flash = 1; J.dip = 1; J.heat = Math.max(.35, J.heat - .08); spark(J.hx, J.topY + .1, J.hz, 9, 2.2); }
       headY = Math.sin(s * 2) * .05; pose = { ...H, LA: H.LA + J.dip * .05 };
       break;
     }

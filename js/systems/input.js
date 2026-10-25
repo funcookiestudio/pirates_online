@@ -16,7 +16,7 @@ import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
-import { toggleMount } from './mount.js';
+import { toggleMount, MOUNT } from './mount.js';
 
 const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -26,6 +26,7 @@ let down = false;
 /** Clique/toque na tela: seleciona um inimigo próximo ou define o destino no chão */
 function pick(cx, cy) {
   if (P.sit > 0 || P.sitT) standUp(); // clicar no mundo levanta o personagem
+  MOUNT.want = false;   // clicar em outro lugar cancela a ida até o cavalo
   state.autoHold = 2.5; // assume o controle do auto combate por 2,5 s
   pointer.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(pointer, cam);

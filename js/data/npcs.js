@@ -32,12 +32,12 @@ export const BOARD = { name: 'Mural de Missões', title: 'Cartazes de procurados
 export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic: '⛵', ferry: true,
   lines: ['Ahoy! Meu barco leva marujo a qualquer ilha do arquipélago... por uma moedinha.', 'O mar está calmo. Diga o destino e eu iço a vela!', 'Cada ilha tem seus perigos e seus tesouros. Boa viagem, marujo!'] };
 
-export const HORSEMAN = { name: 'Seu Tobias', title: 'Criador de cavalos', ic: '🐴', stable: true,
+export const HORSEMAN = { name: 'Seu Tobias', title: 'Criador de cavalos', ic: '🐴', stable: true, shop: 'farm-gado',
   lines: ['Cavalo bom não se acha em qualquer curral, marujo. O meu corre mais que vento de tempestade!', 'Com ele você cruza a ilha na metade do tempo — mas cavalo não nada, hein.', 'Trate bem do bicho e ele nunca te deixa a pé. Assobie (tecla H) e ele vem.'] };
 
-export const FARMER_AVES = { name: 'Dona Marta', title: 'Criadora de aves', ic: '🐔',
+export const FARMER_AVES = { name: 'Dona Marta', title: 'Criadora de aves', ic: '🐔', shop: 'farm-aves',
   lines: ['Bom dia, marujo! As galinhas botaram bem hoje — ovo fresquinho não falta aqui.', 'Cuidado com o galo, ele é brigão! Já bicou até capitão.', 'Aqui a gente vive em paz. Só peço que não assustem as aves.'] };
-export const FARMER_GRANJA = { name: 'Seu Zé', title: 'Granjeiro', ic: '🐖',
+export const FARMER_GRANJA = { name: 'Seu Zé', title: 'Granjeiro', ic: '🐖', shop: 'farm-granja',
   lines: ['Eita, visita! Chegue, que o porco tá gordo e a lã das ovelhas tá no ponto.', 'Roça é trabalho de sol a sol, mas não troco por mar nenhum.', 'Se ouvir barulho de ovelha à noite, é só o vento. Eu acho...'] };
 
 export const ISLANDS = [

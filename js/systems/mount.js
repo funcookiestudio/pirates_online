@@ -10,9 +10,11 @@ import { dIn } from '../dungeon/dgrid.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { ik } from '../entities/player-weapon.js';
 import { puff } from './effects.js';
-import { standUp } from './rest.js';
+import { standUp, sitDown } from './rest.js';
 import { log } from '../ui/notify.js';
 import { $ } from '../core/utils.js';
+import { state } from '../core/state.js';
+import { enemies } from '../core/registry.js';
 
 export const COATS = [
   { n: 'Castanho', cost: 120, mult: 2.05, br: 1, c: 0x8a4a22, mz: 0xb87a4a },
@@ -86,6 +88,12 @@ export function refreshMountButton() {
   if (!b.querySelector('i')) b.insertAdjacentHTML('beforeend', '<i style="position:absolute;left:3px;right:3px;bottom:3px;height:4px;border-radius:2px;background:rgba(0,0,0,.5);overflow:hidden"><b style="display:block;height:100%;width:100%;background:#7ad84a"></b></i>');
   b.style.display = MOUNT.owned ? '' : 'none';
   b.classList.toggle('on', MOUNT.on);
+  // ícone de estado (como no companheiro): ● verde = cavalo ativo (montado, chamado ou parado fora da vila) · botão apagado = no estábulo
+  if (!b.querySelector('u')) b.insertAdjacentHTML('beforeend', '<u style="position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;border:1px solid #1c1208;text-decoration:none"></u>');
+  const act = MOUNT.on || !!(MOUNT.root && MOUNT.root.visible);
+  b.querySelector('u').style.background = MOUNT.on ? '#7ad84a' : act ? '#e0c050' : '#666';
+  b.title = 'Montaria (H): ' + (MOUNT.on ? 'montado — desmontar' : act ? 'cavalo ativo — ir montar' : 'chamar o cavalo');
+  b.style.opacity = act ? '1' : '.6';
 }
 
 /** Montado em terra firme, fora da vila e das dungeons */
@@ -107,6 +115,7 @@ function finishDismount() {
   P.g.rotation.x = 0; P.g.rotation.y = MOUNT.yaw;
   [P.g.legL, P.g.legR].forEach(l => { l.rotation.set(0, 0, 0); l.knee.rotation.x = 0; });
   place(); refreshMountButton();
+  if (MOUNT.sitAfter) { MOUNT.sitAfter = false; sitDown(); }
 }
 /** Posição/giro do jogador na animação: do lado do cavalo (u=0) até a sela (u=1) */
 function lockPlayer(u) {
@@ -135,7 +144,7 @@ export function dismount(msg) {
 function mountUp() {
   if (!canRide()) { log('🐴 Não dá para montar aqui'); return; }
   MOUNT.on = true; P.mounted = true; MOUNT.t = 0; MOUNT.st = 'park'; MOUNT.want = false; MOUNT.dis = false; MOUNT.sx = P.x; MOUNT.sz = P.z;
-  if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) > 3) { MOUNT.x = P.x; MOUNT.z = P.z; }   // (cavalo muito longe: sobe no lugar)
+  if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) > 6) { MOUNT.x = P.x; MOUNT.z = P.z; }   // (cavalo muito longe: sobe no lugar)
   P.tgt = null; P.tx = P.x; P.tz = P.z;
   puff(P.x, 1, P.z, 0xd8c8a0, 3, 3);
   refreshMountButton();
@@ -147,10 +156,12 @@ export function toggleMount() {
   if (!MOUNT.on && (P.sit > 0 || P.sitT)) { standUp(); MOUNT.pending = true; return; }   // levanta primeiro, depois chama/monta
   if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; P.tgt = null; startDismount(); return; }
   if (!canRide()) { log('🐴 Chame o cavalo fora da vila, em terra firme'); return; }
-  MOUNT.root.visible = true;
-  if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) < 3.4) { mountUp(); return; }
-  MOUNT.st = 'come'; MOUNT.want = true; MOUNT.stuck = 0;
-  log('🐴 Assobiou: o cavalo está a caminho');
+  MOUNT.root.visible = true; refreshMountButton();
+  const d = Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z);
+  if (d < 3.4) { mountUp(); return; }
+  MOUNT.want = true; MOUNT.walkT = 25; MOUNT.stuck = 0;
+  if (d > 14) { MOUNT.st = 'come'; log('🐴 Assobiou: o cavalo está a caminho'); }   // longe: ele vem até perto; o jogador anda o resto
+  else log('🐴 Indo até o cavalo');
 }
 
 /** Multiplicador de velocidade atual (cansado: só um trote um pouco mais rápido que a pé) */
@@ -172,6 +183,7 @@ function updateBreath(dt) {
 export function updateMount(dt) {
   if (!MOUNT.owned || !MOUNT.root) return;
   updateBreath(dt);
+  { const k = (MOUNT.on ? 2 : MOUNT.root.visible ? 1 : 0); if (k !== MOUNT.iconK) { MOUNT.iconK = k; refreshMountButton(); } }
   if (MOUNT.pending && P.sit === 0 && !P.sitT) { MOUNT.pending = false; toggleMount(); }
   if (MOUNT.on) {
     if (P.dead) { dismount(); return; }
@@ -196,13 +208,35 @@ export function updateMount(dt) {
     animateHorseLegs(dt, sp);
     return;
   }
+  // dungeon: o cavalo some e volta ao lado do jogador quando ele sai
+  if (dIn(P.x, P.z)) { if (!MOUNT.inDg) { MOUNT.inDg = true; MOUNT.hid = MOUNT.root.visible; MOUNT.want = false; MOUNT.st = 'park'; } MOUNT.root.visible = false; return; }
+  if (MOUNT.inDg) {
+    MOUNT.inDg = false;
+    if (MOUNT.hid) {
+      const f = freePoint(P.x + Math.sin(P.g.rotation.y + 2.4) * 3.5, P.z + Math.cos(P.g.rotation.y + 2.4) * 3.5, .9);
+      MOUNT.x = f.x; MOUNT.z = f.z; MOUNT.yaw = P.g.rotation.y; MOUNT.root.visible = true; MOUNT.st = 'park';
+      puff(f.x, 1, f.z, 0xd8c8a0, 3, 3); place();
+    }
+  }
+  // combate: o cavalo parado se afasta do jogador (não fica no meio da luta)
+  if (MOUNT.root.visible && !MOUNT.want && MOUNT.st !== 'come') {
+    const fight = enemies.some(e => !e.dead && (e.ag || Math.hypot(e.x - P.x, e.z - P.z) < 10) && Math.hypot(e.x - P.x, e.z - P.z) < 14);
+    const dp = Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z);
+    if (fight && dp < 20) MOUNT.st = 'flee'; else if (MOUNT.st === 'flee' && (!fight || dp >= 20)) MOUNT.st = 'park';
+    if (MOUNT.st === 'flee') {
+      const ax = (MOUNT.x - P.x) / (dp || 1), az = (MOUNT.z - P.z) / (dp || 1), v = 6.5 * dt;
+      const [rx, rz] = slideTo(MOUNT.x, MOUNT.z, MOUNT.x + ax * v, MOUNT.z + az * v, false);
+      const moved = Math.hypot(rx - MOUNT.x, rz - MOUNT.z);
+      MOUNT.x = rx; MOUNT.z = rz; MOUNT.yaw = Math.atan2(ax, az);
+      place(); animateHorseLegs(dt, moved / Math.max(dt, 1e-3));
+      return;
+    }
+  }
   // fora da sela: vindo até o jogador, ou parado
   if (MOUNT.st === 'come') {
     const dx = P.x - MOUNT.x, dz = P.z - MOUNT.z, d = Math.hypot(dx, dz);
-    if (d < 2.4) {
+    if (d < (MOUNT.want ? 5 : 2.4)) {
       MOUNT.st = 'park';
-      if (MOUNT.want && canRide()) mountUp();
-      MOUNT.want = false;
     } else {
       const v = Math.min(9.5, 3 + d * .8) * dt, nx = MOUNT.x + dx / d * v, nz = MOUNT.z + dz / d * v;
       const [rx, rz] = slideTo(MOUNT.x, MOUNT.z, nx, nz, false);
@@ -220,8 +254,20 @@ export function updateMount(dt) {
       return;
     }
   }
+  if (MOUNT.want) walkToHorse(dt);
   place();
   animateHorseLegs(dt, 0);
+}
+
+/** O jogador caminha até o flanco esquerdo do cavalo parado e só então sobe (nada de teleporte) */
+function walkToHorse(dt) {
+  MOUNT.walkT -= dt;
+  if (!canRide() || MOUNT.walkT <= 0) { MOUNT.want = false; return; }
+  if (MOUNT.st === 'come') return;                                   // ainda vindo
+  const c = Math.cos(MOUNT.yaw), s = Math.sin(MOUNT.yaw);
+  const f = freePoint(MOUNT.x + c * SIDE, MOUNT.z - s * SIDE, .5);
+  if (Math.hypot(P.x - f.x, P.z - f.z) < 1.1) { MOUNT.want = false; mountUp(); return; }
+  P.tgt = null; P.tx = f.x; P.tz = f.z; state.autoHold = Math.max(state.autoHold, .35);
 }
 
 /** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): passo → trote → galope de quatro tempos

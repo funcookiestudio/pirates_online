@@ -3,11 +3,15 @@ import { scene } from '../core/engine.js';
 import { props } from '../core/registry.js';
 import { M } from '../core/utils.js';
 import { xray } from './xray.js';
+import { buildSmithHouse } from './smith-house.js';
+import { buildTavernHouse } from './tavern-house.js';
 
 const X = c => xray(M(c));
 
 /** Constrói a casa `kind` em (x,z) olhando para o centro da vila. Devolve onde o morador fica (na frente da porta) */
 export function buildHouse(kind, x, z, a) {
+  if (kind === 'tavern') { const h = buildTavernHouse(x, z, a); return [h.front[0], h.front[1], h.th, h.at]; }
+  if (kind === 'smith') { const h = buildSmithHouse(x, z, a); return [h.front[0], h.front[1], h.th, h.at, h.pts]; }
   const g = new THREE.Group(), th = Math.atan2(-Math.cos(a), -Math.sin(a));
   g.position.set(x, 0, z);
   g.rotation.y = th;

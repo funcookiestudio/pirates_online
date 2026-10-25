@@ -13,9 +13,15 @@ import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
 
-const icon = it => it.bomb ? '💣' : it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
+const icon = it => it.ic ? it.ic : it.bomb ? '💣' : it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
 const val = (ty, q, wi) => Math.round((ty === 'wpn' ? WEAPONS[wi].b : 8) * q * (1 + (P.lv - 1) * .25));
 const BUY = 9, SELL = { smith: 4, tavern: 3, trader: 6 };
+/* Produtos de cada fazenda: comida que o fazendeiro vende e que se come na hora (recupera vida/mana: frações do máximo) */
+const FARM_GOODS = {
+  'farm-aves': [{ n: 'Ovos cozidos', ic: '🥚', price: 12, hp: .25 }, { n: 'Caldo de galinha', ic: '🍲', price: 22, hp: .3, mp: .35 }, { n: 'Frango assado', ic: '🍗', price: 34, hp: .6 }, { n: 'Espiga de milho', ic: '🌽', price: 9, hp: .18 }, { n: 'Alface fresca', ic: '🥬', price: 7, hp: .12 }, { n: 'Pão de trigo', ic: '🍞', price: 13, hp: .3 }, { n: 'Couve refogada', ic: '🥗', price: 11, hp: .2, mp: .15 }, { n: 'Sementes de girassol', ic: '🌻', price: 8, hp: .08, mp: .25 }, { mat: 'penas', n: 'Penas (material)', ic: '🪶', price: 8 }],
+  'farm-granja': [{ n: 'Batata cozida', ic: '🥔', price: 8, hp: .2 }, { n: 'Cenoura crocante', ic: '🥕', price: 7, hp: .15, mp: .1 }, { n: 'Repolho', ic: '🥬', price: 8, hp: .15 }, { n: 'Tomate maduro', ic: '🍅', price: 9, hp: .18, mp: .1 }, { n: 'Leite fresco', ic: '🥛', price: 14, hp: .2, mp: .3 }, { n: 'Bacon defumado', ic: '🥓', price: 28, hp: .5 }, { n: 'Carne de ovelha assada', ic: '🍖', price: 32, hp: .6 }, { n: 'Manta de lã (aquece e relaxa)', ic: '🧶', price: 26, hp: .15, mp: .6 }],
+  'farm-gado': [{ n: 'Leite fresco', ic: '🥛', price: 15, hp: .2, mp: .3 }, { n: 'Queijo curado', ic: '🧀', price: 20, hp: .4 }, { n: 'Bife na brasa', ic: '🥩', price: 36, hp: .7 }, { n: 'Mingau de aveia', ic: '🥣', price: 12, hp: .25, mp: .15 }, { n: 'Pão de cevada', ic: '🍞', price: 11, hp: .25 }, { n: 'Beterraba assada', ic: '🍠', price: 10, hp: .2, mp: .1 }, { mat: 'couro', n: 'Couro curtido (material)', ic: '🐂', price: 18 }]
+};
 
 function makeStock(kind) {
   if (kind === 'smith') {
@@ -24,13 +30,14 @@ function makeStock(kind) {
     [1, 2, 3].forEach(q => s.push({ ty: 'arm', q, wi: 0, price: val('arm', q, 0) * BUY }));
     return s;
   }
+  if (FARM_GOODS[kind]) return FARM_GOODS[kind].map(g => ({ food: g.mat ? 0 : 1, ...g, desc: g.mat ? 'Material de artesanato · você tem ' + P[g.mat] : '+' + Math.round(g.hp * 100) + '% vida' + (g.mp ? ' · +' + Math.round(g.mp * 100) + '% mana' : '') + ' · consumo imediato' }));
   const s = [{ pot: 1, n: 'Poção de vida', price: kind === 'tavern' ? PRICE.potTavern : PRICE.potTrader, desc: 'Recupera vida (tecla E) · leva até ' + POT_MAX }];
   if (kind === 'trader') s.push({ pot: 1, bomb: 1, n: 'Bomba', price: PRICE.bomb, desc: 'Explosão em área (tecla W) · leva até ' + BOMB_MAX });
   return s;
 }
 
-const itemName = it => it.pot ? it.n : it.ty === 'wpn' ? WEAPONS[it.wi].n : AN[it.q - 1];
-const stat = it => it.pot ? it.desc : '+' + val(it.ty, it.q, it.wi) + (it.ty === 'wpn' ? ' dano' : ' vida');
+const itemName = it => it.pot || it.food || it.mat ? it.n : it.ty === 'wpn' ? WEAPONS[it.wi].n : AN[it.q - 1];
+const stat = it => it.pot || it.food || it.mat ? it.desc : '+' + val(it.ty, it.q, it.wi) + (it.ty === 'wpn' ? ' dano' : ' vida');
 
 function renderChest() {
   $('shgd').textContent = '🎒 ' + bag.length + '/' + BAG_MAX + ' · 📦 ' + chest.length + '/' + CHEST_MAX;
@@ -60,7 +67,7 @@ function renderShop() {
   if (cur.chest) { renderChest(); return; }
   $('shb').textContent = 'COMPRAR';
   $('shs').textContent = 'VENDER';
-  $('shgd').textContent = '💰 ' + P.gold;
+  $('shgd').textContent = '💰 ' + P.gold + (FARM_GOODS[cur.shop] ? ' · 🪶 ' + P.penas + ' · 🐂 ' + P.couro : '');
   $('shb').classList.toggle('on', tab === 'buy');
   $('shs').classList.toggle('on', tab === 'sell');
   const box = $('shl');
@@ -69,23 +76,38 @@ function renderShop() {
   if (tab === 'buy') {
     stock.forEach(it => {
       const r = document.createElement('div');
-      r.className = 'shr' + (it.pot ? '' : ' r' + it.q);
-      r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (it.pot ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
+      r.className = 'shr' + (it.pot || it.food || it.mat ? '' : ' r' + it.q);
+      r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (it.pot || it.food || it.mat ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
       const b = document.createElement('button');
       b.textContent = '💰 ' + it.price;
-      const full = it.bomb ? P.bmb >= BOMB_MAX : it.pot ? P.pot >= POT_MAX : bagFull();
+      const full = it.mat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? P.bmb >= BOMB_MAX : it.pot ? P.pot >= POT_MAX : bagFull();
       b.disabled = P.gold < it.price || full;
-      if (full) b.title = it.pot ? 'Você já leva o máximo' : 'Mochila cheia';
+      if (full) b.title = it.food ? 'Você já está satisfeito' : it.pot ? 'Você já leva o máximo' : 'Mochila cheia';
       b.onclick = () => {
         if (P.gold < it.price || full) return;
         P.gold -= it.price;
-        if (it.bomb) { P.bmb++; lootText('+ bomba'); }
+        if (it.mat) { P[it.mat]++; lootText('+1 ' + it.n); }
+        else if (it.food) { P.hp = Math.min(P.max, P.hp + P.max * it.hp); if (it.mp) P.mp = Math.min(P.mmax, P.mp + P.mmax * it.mp); lootText(it.ic + ' ' + it.n); log(it.ic + ' Comeu: ' + it.n); }
+        else if (it.bomb) { P.bmb++; lootText('+ bomba'); }
         else if (it.pot) { P.pot++; lootText('+ poção'); } else addItem({ ty: it.ty, q: it.q, wi: it.wi });
         renderShop();
       };
       r.append(b);
       box.append(r);
     });
+  } else if (FARM_GOODS[k]) {
+    // o fazendeiro só recompra o material da própria fazenda (metade do preço)
+    const g = FARM_GOODS[k].find(x => x.mat);
+    box.innerHTML = '<p class="shn">Só compro ' + g.n.replace(' (material)', '').toLowerCase() + ' — o resto eu mesmo produzo.</p>';
+    const r = document.createElement('div');
+    r.className = 'shr';
+    r.innerHTML = '<i>' + g.ic + '</i><span>' + g.n + '<small>Você tem ' + P[g.mat] + '</small></span>';
+    const bt = document.createElement('button');
+    bt.textContent = '+ 💰 ' + Math.floor(g.price / 2);
+    bt.disabled = P[g.mat] <= 0;
+    bt.onclick = () => { if (P[g.mat] <= 0) return; P[g.mat]--; P.gold += Math.floor(g.price / 2); renderShop(); };
+    r.append(bt);
+    box.append(r);
   } else if (k !== 'smith') {
     // taverna e mercadora só compram o que vendem: poções
     const price = k === 'tavern' ? 12 : 16;
@@ -137,7 +159,7 @@ function buttons() {
     });
   }
   if (cur.chest) add('📦 Abrir baú', openShop);
-  if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : '🛒 Ver mercadoria', openShop);
+  if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : FARM_GOODS[cur.shop] ? '🧺 Produtos da fazenda' : '🛒 Ver mercadoria', openShop);
   if (cur.shop === 'tavern') add('🍺 Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('🍺 Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });
   if (cur.ferry) ISLANDS.forEach(i => {
     if (i.seed === SEED) return;
@@ -171,10 +193,11 @@ function openShop() {
   stock = cur.chest ? [] : makeStock(cur.shop);
   $('shic').textContent = cur.ic + ' ' + cur.name;
   $('shop').style.display = 'block';
+  $('dlg').style.display = 'none';   // com a loja aberta, o painel de diálogo some
   renderShop();
 }
 
-function closeShop() { $('shop').style.display = 'none'; }
+function closeShop() { $('shop').style.display = 'none'; if (cur) $('dlg').style.display = 'block'; }
 
 export function closeDialog() {
   cur = null;

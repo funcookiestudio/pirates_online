@@ -2,6 +2,7 @@
    acendem os lampiões e dormem. Cada tarefa é uma lista de pontos (com ação e tempo de parada) percorrida em ciclo;
    a tarefa só muda quando o fazendeiro volta a um ponto seguro (pátio), para não atravessar cercas. */
 import { M } from '../core/utils.js';
+import { cropGeo, stageOf } from './crops.js';
 import { hourNow, CLOCK } from '../core/clock.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -105,7 +106,7 @@ export function refreshField(fld) {
     const gr = growth(fld, c.r);
     if (Math.abs(gr - c.gr) < .04 && c.gr != null) return;
     c.gr = gr;
-    if (c.sph) c.mesh.scale.setScalar(.35 + .65 * gr);
-    else { c.mesh.scale.y = gr; c.mesh.position.y = c.y0 - c.hh * (1 - gr); }
+    const st = stageOf(gr);
+    if (st !== c.st) { c.st = st; c.mesh.geometry = cropGeo(c.crop, st, .8 * c.sc); }
   });
 }

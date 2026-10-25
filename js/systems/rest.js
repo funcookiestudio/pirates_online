@@ -5,7 +5,7 @@
 import { P } from '../entities/player.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { gaitReset } from '../entities/gait.js';
-import { MOUNT } from './mount.js';
+import { MOUNT, startDismount } from './mount.js';
 
 export const SIT_DOWN = 3;   // duração (s) de em pé → sentado
 export const SIT_UP = 2.6;   // duração (s) de sentado → em pé
@@ -32,7 +32,15 @@ export function sitPose(s) {
   return o;
 }
 
-export function sitDown() { if (!P.dead && P.roll <= 0 && !MOUNT.on) { P.sitT = 1; P.sitF = false; } }
+export function sitDown() {
+  if (P.dead || P.roll > 0) return;
+  if (MOUNT.on) {   // montado: desce do cavalo primeiro e senta ao terminar
+    if (!MOUNT.dis && MOUNT.t >= 1) { P.tgt = null; startDismount(); }
+    MOUNT.sitAfter = true;
+    return;
+  }
+  P.sitT = 1; P.sitF = false;
+}
 export function standUp(fast) { P.sitT = 0; P.sitF = !!fast; }
 export function toggleSit() { if (P.swap) return; P.sitT ? standUp() : sitDown(); }
 

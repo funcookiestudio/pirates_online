@@ -87,7 +87,7 @@ export function buildVillage() {
   // casas temáticas coladas na muralha (um slot por ofício), deixando o centro livre
   const looks = [[0xe0b48a, 0x5a4a3a, 0x3a3a3a, 0x2a2a2a], [0xc8946a, 0xb06a2a, 0x3a3a4a, 0x8a5a2a], [0xf0c8a0, 0x3a5a8a, 0x2a3a5a, 0xd8d0b0],
     [0xa87850, 0x7a5a2a, 0x4a3a2a, 0x6a4a3a], [0xe8bc94, 0x2a8a8a, 0x5a2a2a, 0x2a2a2a], [0xd0a07a, 0x2a7a4a, 0x3a4a3a, 0xa87850], [0xc8946a, 0x8a8a8a, 0x3a4a3a, 0xa87850]];
-  const SLOTS = [['smith', 28], ['tavern', 62], ['cartog', 118], ['caulk', 152], ['sailor', 208], ['trader', 242], ['fisher', 298]];
+  const SLOTS = [['smith', 33], ['tavern', 140], ['cartog', 225], ['caulk', 312], ['sailor', 208], ['trader', 242], ['fisher', 298]];
   // à direita da casa do Zé Carrancudo, junto ao muro: mural de missões e baú
   const edge = VILLAGE_R - 2.1;
   [[324, 'board'], [341, 'chest']].forEach(([deg, what]) => {
@@ -98,9 +98,9 @@ export function buildVillage() {
     } else { makeChest(x, z, ry, CHEST); blocker(x, z, 1.0); }
   });
   SLOTS.forEach(([kind, deg], i) => {
-    const a = deg * Math.PI / 180, r = VILLAGE_R - 3.7;
-    const [fx, fz, th, at] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
-    if (kind === 'smith') { const [sx, sz] = at(.9, 3.45); citizen(sx, sz, th + Math.PI, looks[i], { kind: 'smith', at, th }); }
+    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ smith: 5.3, tavern: 5.6 }[kind] || 3.7);
+    const [fx, fz, th, at, pts] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
+    if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[i], { kind: 'smith', at, th, pts }); }
     else citizen(fx, fz, th, looks[i]);
   });
 }

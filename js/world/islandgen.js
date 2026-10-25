@@ -30,8 +30,9 @@ export function build(seed,type){
   m-=Math.max(0,Math.max(Math.abs(ex),Math.abs(ey))-.78)*4;
   const e=nz(i*.135*sc+ox,j*.135*sc+oy),v=m*1.15+(e-.5)*.75;
   if(v>.12){const u0=(v-.12)*9*ht*(.7+e*.6),u=u0>8?8+(u0-8)*.4:u0,t=u/TS,f=Math.floor(t);
-   H[j*V+i]=.9*ss(0,.5,u)+HS*(f+ss(.35,.75,t-f))+(nw(i*.06*sc+oy,j*.06*sc+ox)-.5)*.5*ss(0,1,u)}
-  else H[j*V+i]=Math.max((v-.12)*KS,-6)}
+   const terr=HS*(f+ss(.35,.75,t-f)),smo=HS*t*.88,ridge=1-Math.abs(2*nw(i*.028*sc+ox*2,j*.028*sc+oy*2)-1),hill=nz(i*.05*sc+oy*3,j*.05*sc+ox*3)-.5;
+   H[j*V+i]=.9*ss(0,1.15,u)+terr*.22+smo*.78+hill*2.4*ss(.6,4,u)+ridge*ridge*1.5*ss(2.5,7,u)+(nw(i*.06*sc+oy,j*.06*sc+ox)-.5)*.5*ss(0,1,u)}
+  else{const dv=v-.12;H[j*V+i]=Math.max(dv>-.07?dv*KS*.3:-.07*KS*.3+(dv+.07)*KS*1.25,-6)}}
  // 2) componentes de terra: a maior é a "ilha principal"
  const lab=new Int32Array(NV),sizes=[0];let nl=0,land=0;
  for(let k=0;k<NV;k++)if(H[k]>.3){land++;if(!lab[k]){nl++;let c=0;const q=[k];lab[k]=nl;for(let n=0;n<q.length;n++){c++;for(const o of[1,-1,V,-V]){const t=q[n]+o;if(t>=0&&t<NV&&!lab[t]&&H[t]>.3){lab[t]=nl;q.push(t)}}}sizes[nl]=c}}
@@ -77,6 +78,8 @@ export function build(seed,type){
    const c=FD[k]+ds*(1+rn[t]*.8)+Math.max(0,H[k]-H[t])*10+pen[t]*30;if(c<FD[t]){FD[t]=c;FP[t]=k;fh.push(c,t)}}}
  const carveRiver=(cp,hit)=>{
   const xs=sm(cp.map(k=>k%V),5,3),zs=sm(cp.map(k=>(k/V)|0),5,3),n=xs.length,hs=sm(xs.map((x,i)=>bil(x,zs[i])),8,3);
+  {const ph=r()*6.28,lam=26+r()*22,am=1.6+r()*1.8,ox0=xs.slice(),oz0=zs.slice();
+   for(let i=2;i<n-2;i++){const tx=ox0[i+1]-ox0[i-1],tz=oz0[i+1]-oz0[i-1],tl=Math.hypot(tx,tz)||1,f=ss(0,14,i)*(1-ss(n-18,n-2,i)),o=Math.sin(i/lam*6.283+ph)*am*f;xs[i]=ox0[i]-tz/tl*o;zs[i]=oz0[i]+tx/tl*o}}
   let Wp=new Array(n),cur=1e9;for(let i=0;i<n;i++){cur=Math.min(cur,hs[i]-.28);Wp[i]=Math.max(.05,cur)}
   if(hit>=0&&W[hit]>-90){const L=Math.min(24,n-1),d=W[hit]-Wp[n-1];for(let i=n-L;i<n;i++)Wp[i]+=d*ss(0,1,(i-(n-L))/L)}
   Wp=sm(Wp,6,2);const hwf=s=>1.5+1.7*s/(n-1),bd=new Float32Array(NV).fill(1e9),bW=new Float32Array(NV),bh=new Float32Array(NV),Rm=3.2+BANK;
@@ -96,7 +99,7 @@ export function build(seed,type){
   if(srcs.some(q=>Math.hypot(q[0]-sx,q[1]-sz)<55))continue;
   const cp=[];let k=s0,hit=-1;for(let g=0;g<3000&&k>=0;g++){cp.push(k);if(FD[k]===0)break;const nx=FP[k];if(nx<0)break;if(rv[nx]){hit=nx;cp.push(nx);break}k=nx}
   if(cp.length<30)continue;srcs.push([sx,sz]);rivers.push(carveRiver(cp,hit))}
- const lakes=[],nL=ri(2,4),cand2=cells.filter(k=>H[k]>.85&&sl(k)<.07&&!wd[k]&&!pen[k]&&!rv[k]);
+ const lakes=[],nL=ri(3,5),cand2=cells.filter(k=>H[k]>.85&&sl(k)<.07&&!wd[k]&&!pen[k]&&!rv[k]);
  for(let tr=0;tr<500&&lakes.length<nL&&cand2.length;tr++){
   const c=cand2[ri(0,cand2.length-1)],cx0=c%V,cz0=(c/V)|0,R0=ri(5,10),h0=H0[c];
   if(lakes.some(l=>Math.hypot(l.ix-cx0,l.iz-cz0)<45))continue;
@@ -141,7 +144,7 @@ export function build(seed,type){
   for(const q of roads){let t=0;while(t+1<q.cp.length&&t+1<cp.length&&q.cp[t+1]===cp[t+1])t++;if(t>m){m=t;pre=q}}
   const sub=cp.slice(m);let xs=sub.map(k=>k%V),zs=sub.map(k=>(k/V)|0),h0=hv0;
   if(pre){xs[0]=pre.xs[m];zs[0]=pre.zs[m];h0=pre.hs[m]}
-  xs=sm(xs,4,3);zs=sm(zs,4,3);const n=xs.length,seg=[0];for(let i=1;i<n;i++)seg.push(Math.hypot(xs[i]-xs[i-1],zs[i]-zs[i-1])||1e-3);
+  xs=sm(xs,6,3);zs=sm(zs,6,3);const n=xs.length,seg=[0];for(let i=1;i<n;i++)seg.push(Math.hypot(xs[i]-xs[i-1],zs[i]-zs[i-1])||1e-3);
   let hs=sm(xs.map((x,i)=>bil(x,zs[i])),14,3);const h1=avg(xs[n-1],zs[n-1],2),Lb=Math.max(1,Math.min(n-1,40));
   for(let i=0;i<n;i++)hs[i]+=(h0-hs[0])*(1-ss(0,1,i/Lb))+(h1-hs[n-1])*(1-ss(0,1,(n-1-i)/Lb));
   const pin=new Uint8Array(n),pr0=pre?0:9;pin[0]=pin[n-1]=1;

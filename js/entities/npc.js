@@ -87,7 +87,7 @@ export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
   let lab = null;
   if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }
   const n = { info, lab, g, role, hx: x, hz: z, ry, ph: Math.random() * 6, t: 2 + Math.random() * 4, tx: x, tz: z, vx: 0, vz: 0, sm: { side: 0 } };
-  if (work && work.kind === 'smith') initSmith(n, work.at, work.th);
+  if (work && work.kind === 'smith') initSmith(n, work.at, work.th, work.pts);
   list.push(n);
   return n;
 }
