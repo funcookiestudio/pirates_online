@@ -8,6 +8,7 @@ import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
 import { registerFloors, refreshProps } from './floors.js';
 import { addDoor } from './doors.js';
+import { addRect } from './imap.js';
 import { P } from '../entities/player.js';
 import { CASTLE } from './reserve.js';
 import { VILLAGE_R, CORRIDOR_W } from '../core/village-const.js';
@@ -471,8 +472,10 @@ export function buildCastle() {
   const block = (lx, lz, r, lvl, ng, dr) => {
     const o = new THREE.Object3D(); const [wx, wz] = at(lx, lz); o.position.set(wx, 0, wz); o.r = r; if (ng) o.ng = true; if (dr) o.dr = dr;
     if (lvl !== undefined) { o.lvl = lvl; o.hx = wx; o.hz = wz; if (lvl === 1) { o.position.x = 1e5; o.position.z = 1e5; } }
-    props.push(o);
+    props.push(o); return o;
   };
+  const H = { x, z, th, K: 1, fx: HX + 1, fz: HZ + 1 };   // casa registrada (recebe o mapa de retângulos)
+  const R = (l, u0, v0, u1, v1, dr) => addRect(H, l, u0, v0, u1, v1, dr, true);   // parede/porta: bloqueia o passo e a visão
   // torres
   [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => block(a * (HX + 2.2), b * (HZ + 2.2), 3.5));
   // pórtico, pedestais dos leões, pátio de armas (muralha de cortina, bastiões, fonte, canhões)
@@ -482,18 +485,25 @@ export function buildCastle() {
   for (let u = -FX; u <= FX + .01; u += .9) { if (Math.abs(u) > 2.9) block(u, FZ, .7); }
   [[-4.7, 2.3], [4.7, 2.3], [-FX, 3], [FX, 3]].forEach(([a2, r2]) => block(a2, FZ, r2));
   // muros externos (o portal fica livre; cada porta ganha seus círculos fechados)
-  for (let u = -HX; u <= HX + .01; u += .9) { if (Math.abs(u) > 2.3) block(u, HZ, .5); block(u, -HZ, .5); }
-  for (let v = -HZ; v <= HZ + .01; v += .9) { block(-HX, v, .5); block(HX, v, .5); }
+  for (let u = -HX; u <= HX + .01; u += .9) { if (Math.abs(u) > 2.3) block(u, HZ, .5).map = true; block(u, -HZ, .5).map = true; }
+  for (let v = -HZ; v <= HZ + .01; v += .9) { block(-HX, v, .5).map = true; block(HX, v, .5).map = true; }
+  for (const L of [0, 1]) {   // paredes externas em retângulos (a fachada deixa o vão do portal, fechado pelas portas)
+    R(L, -HX - .5, -HZ - .5, HX + .5, -HZ + .5); R(L, -HX - .5, -HZ, -HX + .5, HZ); R(L, HX - .5, -HZ, HX + .5, HZ);
+    R(L, -HX - .5, HZ - .5, -2.3, HZ + .5); R(L, 2.3, HZ - .5, HX + .5, HZ + .5);
+  }
   // divisórias do térreo (arco em z = -5,5)
-  for (const s of [-1, 1]) for (let v = -HZ; v <= HZ + .01; v += .8) { if (Math.abs(v + 5.5) < 1.9) continue; block(s * 7, v, .35, 0); }
+  for (const s of [-1, 1]) for (let v = -HZ; v <= HZ + .01; v += .8) { if (Math.abs(v + 5.5) < 1.9) continue; block(s * 7, v, .35, 0).map = true; }
+  for (const s of [-1, 1]) { R(0, s * 7 - .3, -HZ, s * 7 + .3, -7.4); R(0, s * 7 - .3, -3.6, s * 7 + .3, HZ); }
   // escadas: bordas laterais (ng: a viagem roteirizada atravessa)
   for (const s of [-1, 1]) for (let v = RAMP.zl; v <= 8; v += .8) { block(s * 4.5, v, .2, 0, true); block(s * 4.5, v, .2, 1, true); }
   // divisórias de cima (abertura do patamar em z = -0,5)
   for (const s of [-1, 1]) for (let v = .8; v <= 8.8; v += .6) block(s * 7, v, .3, 1, true);
   // galerias: parede dos quartos (ng) e partições
   for (const s of [-1, 1]) {
-    for (let v = -HZ + .4; v <= HZ - .39; v += .5) { if (rz.some(c => Math.abs(v - c) < .95)) continue; block(s * GX, v, .3, 1, true); }
-    for (const zz of [-3.7, 3.7]) for (let xx = GX + .2; xx <= HX - .4; xx += .6) block(s * xx, zz, .25, 1);
+    for (let v = -HZ + .4; v <= HZ - .39; v += .5) { if (rz.some(c => Math.abs(v - c) < .95)) continue; block(s * GX, v, .3, 1, true).map = true; }
+    for (const zz of [-3.7, 3.7]) for (let xx = GX + .2; xx <= HX - .4; xx += .6) block(s * xx, zz, .25, 1).map = true;
+    { const b = [-HZ, ...rz.flatMap(c => [c - .65, c + .65]), HZ]; for (let i = 0; i < b.length; i += 2) R(1, s * GX - .15, b[i], s * GX + .15, b[i + 1]); }   // parede das galerias, com vãos das portas dos quartos
+    for (const zz of [-3.7, 3.7]) R(1, Math.min(s * (GX + .1), s * (HX - .3)), zz - .25, Math.max(s * (GX + .1), s * (HX - .3)), zz + .25);
   }
   // andar de cima: vazio do salão fechado (corrimão contínuo) e bordas do patamar
   for (const s of [-1, 1]) {
@@ -533,18 +543,17 @@ export function buildCastle() {
   const lv = g => DR.filter(d => d.g === g).map(d => d.p);
   [gB, gL, gR, dGL, dGR, uF, uB, uL, uR, dUL, dUR, yP, yK].forEach(q => bakeGroup(q));
   bakeGroup(gF, lv(gF)); bakeGroup(front, [gF, gB, gL, gR, dGL, dGR]); bakeGroup(up, [uF, uB, uL, uR, dUL, dUR, ...lv(up)]); bakeGroup(roof);
-  const H = { x, z, th, K: 1, fx: HX + 1, fz: HZ + 1 };
   DR.forEach(d => {
     const dd = addDoor(d, H);
-    if (d.ax === 'z') [d.c - .5, d.c, d.c + .5].forEach(u => block(d.f, u, .3, 1, false, dd));
-    else (d.c < 0 ? [-1.45, -.9, -.35] : [.35, .9, 1.45]).forEach(u => block(u, d.f, .4, 0, false, dd));
+    if (d.ax === 'z') { [d.c - .5, d.c, d.c + .5].forEach(u => { block(d.f, u, .3, 1, false, dd).map = true; }); R(1, d.f - .15, d.c - .65, d.f + .15, d.c + .65, dd); }
+    else { (d.c < 0 ? [-1.45, -.9, -.35] : [.35, .9, 1.45]).forEach(u => { block(u, d.f, .4, 0, false, dd).map = true; }); R(0, d.c - .85, d.f - .5, d.c + .85, d.f + .5, dd); }
   });
   refreshProps();
-  registerFloors({
+  registerFloors(Object.assign(H, {
     x, z, th, K: 1, inBox: (lx, lz) => Math.abs(lx) <= HX - .2 && Math.abs(lz) <= HZ - .4, links: [{ l: 0, x: 3.9, z: 9.7 }, { l: 0, x: -3.9, z: 9.7 }, { l: 1, x: 5.9, z: -.5 }, { l: 1, x: -5.9, z: -.5 }], upOK: (lx, lz) => { const ax = Math.abs(lx); if (ax > HX - .2 || Math.abs(lz) > HZ - .4) return false; return ax >= 7 || (ax >= 4.6 && (lz <= .8 || lz >= 8.6)); }, hx: HX + .6, hz: HZ + .6, ye: FZ, yx: FX, fx: HX + 1, fz: HZ + 1, Hf: HF, roof, up, hf, sc,
     walls: [{ g: gF, nx: 0, nz: 1, D: HZ }, { g: gB, nx: 0, nz: -1, D: HZ }, { g: gL, nx: -1, nz: 0, D: HX }, { g: gR, nx: 1, nz: 0, D: HX },
       { g: uF, nx: 0, nz: 1, D: HZ }, { g: uB, nx: 0, nz: -1, D: HZ }, { g: uL, nx: -1, nz: 0, D: HX }, { g: uR, nx: 1, nz: 0, D: HX },
       { g: yD, nx: 0, nz: 1, D: HZ, y: 1 }, { g: yP, nx: 0, nz: 1, D: HZ, y: 1 }, { g: yK, nx: 0, nz: -1, D: HZ }, { g: dGL, nx: -1, nz: 0, D: 7 }, { g: dGR, nx: 1, nz: 0, D: 7 }, { g: dUL, nx: -1, nz: 0, D: 7 }, { g: dUR, nx: 1, nz: 0, D: 7 }],
-  });
+  }));
   return { g: root, th, at };
 }

@@ -44,6 +44,11 @@ const res = await p.evaluate(() => {
   reach('taberna cima', tav, true, [-3.5 * 1.22, 3.2 * 1.22], [[-3, 3.5], [-2.5, 4], [-3.2, 4.4], [-4.3, -3], [0, -.2], [3, -.2]]);
   reach('taberna térreo', tav, false, [0, 1.2], [[-4.3, 2.5], [0, 0], [3, -.5], [-1, 1]]);
   reach('castelo cima', cas, true, [10, 0], [[10, 5], [8, -8], [5.9, 9.7]]);
+  reach('castelo térreo', cas, false, [0, 6], [[0, -4], [-10, -5.5], [10, -5.5], [-10, 5], [10, 5], [3.9, 9.7]]);
+  { // parede do castelo: de dentro (portal fechado) não se alcança o pátio nem as alas pelas paredes finas
+    P.up = false; G.FLOORS.refreshProps(); const s0 = W(cas, 0, 6);
+    [[0, 15], [-17, 0], [17, 0], [0, -13]].forEach(q => { const t = W(cas, q[0], q[1]), r = G.nav.snapInterior(s0[0], s0[1], t[0], t[1]); out.push({ t: 'parede castelo (' + q + ')', ok: !Array.isArray(r) || Math.hypot(r[0] - t[0], r[1] - t[1]) > 1.5, info: Array.isArray(r) ? 'ajustado' : 'fechado' }); });
+  }
   // 2b) casas de um cômodo (mapa de retângulos): alcança o interior e NÃO sai pelas paredes (porta fechada)
   [['trader-front', [-1.4, 1.8], [[-1.4, 0.5], [-2.5, 1], [0, 2], [-3, -1]], [[-1.4, 4], [5, 0], [0, -4.5], [-5, 0]]],
    ['cartog-front', [-1.4, 1.8], [[-1.4, 0.5], [-2.5, 1], [0, 2]], [[-1.4, 4], [5, 0], [0, -4.5], [-5, 0]]],
