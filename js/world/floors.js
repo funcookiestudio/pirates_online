@@ -220,8 +220,8 @@ function buildStub(w, h, all) {
   let cur = lo; const segs = [];
   gaps.forEach(([g0, g1]) => { if (g0 > cur) segs.push([cur, g0]); cur = Math.max(cur, g1); });
   if (cur < hi) segs.push([cur, hi]);
-  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .58, TH, H * .29 - .015, WC); box(c0, c1, H * .46, TH + .06, H * .77, BM); });   // corpo na cor da parede + friso alto de madeira que cobre o topo
-  w.posts = [lo, hi - PW].map(c0 => { const n0 = st.children.length; box(c0, c0 + PW, full, TH + .06, full / 2, BM); return st.children[n0]; });   // quinas de madeira: só aparecem junto de parede vizinha em pé
+  segs.forEach(([c0, c1]) => { if (c1 - c0 < .05) return; box(c0, c1, H * .58, TH, H * .29 - .015, WC); { const r = box(c0, c1, H * .46 + (alongX ? 0 : .02), TH + .06 + (alongX ? 0 : .02), H * .77 + (alongX ? 0 : .01), BM); r.material.polygonOffset = true; r.material.polygonOffsetFactor = -2; r.material.polygonOffsetUnits = -2; } });   // corpo na cor da parede + friso alto de madeira que cobre o topo
+  w.posts = [lo, hi - PW].map(c0 => { const n0 = st.children.length; box(c0, c0 + PW, full + .04, TH + .08, full / 2 + .02, BM); return st.children[n0]; });   // quinas de madeira: só aparecem junto de parede vizinha em pé
   w.geo = { alongX, plane, lo, hi, y };
   st.visible = false; par.add(st); w.stub = st; void mid;
 }
