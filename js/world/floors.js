@@ -228,7 +228,7 @@ function buildStub(w, h, all) {
 /** Parede "abaixada" (como no The Sims): em vez de sumir, vira só uma bordinha baixa rente ao piso dela */
 function lower(w, h, on) {
   const g = w.g; if (!g.parent) return;
-  g.visible = !on || !w.stub;
+  g.visible = !on || (!w.stub && !w.hide);   // sem bordinha (castelo): some inteira
   if (w.stub) w.stub.visible = on;
 }
 function ensureStubs(h) {
@@ -248,7 +248,8 @@ export function updateCutaway() {
     if (h.inner) h.inner.visible = h.shown;
     if (h.up) h.up.visible = !inside || !!P.up;
     const [cx, cz] = toL(h, cam.position.x, cam.position.z);
-    const inY = inside && !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye;   // paredes só somem com o personagem dentro
+    const yardIn = !!h.yardBox && h.yardBox(px, pz);   // castelo: pátio e arco do portão também escondem torres e muralhas pelo ângulo da câmera
+    const inY = (inside && !!h.ye && Math.abs(px) < h.yx && pz >= -h.hz && pz < h.ye) || yardIn;   // paredes só somem com o personagem dentro
     const cd = Math.hypot(cx - px, cz - pz) || 1;   // direção da câmera vista do personagem: esconde também as paredes na linha de visão em diagonal
     if (h.ch) { h.ch[0].visible = !inside || !P.up; h.ch[1].visible = !inside || !!P.up; }   // chaminé: por dentro, só a parte do andar do personagem
     const pr = h.roomAt ? h.roomAt(px, pz) : null;

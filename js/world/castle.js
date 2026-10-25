@@ -544,10 +544,10 @@ export function buildCastle() {
   });
   refreshProps();
   registerFloors(Object.assign(H, {
-    x, z, th, K: 1, inBox: (lx, lz) => Math.abs(lx) <= HX - .2 && Math.abs(lz) <= HZ - .4, links: [{ l: 0, x: 3.9, z: 9.7 }, { l: 0, x: -3.9, z: 9.7 }, { l: 1, x: 5.9, z: -.5 }, { l: 1, x: -5.9, z: -.5 }], upOK: (lx, lz) => { const ax = Math.abs(lx); if (ax > HX - .2 || Math.abs(lz) > HZ - .4) return false; return ax >= 7 || (ax >= 4.6 && (lz <= .8 || lz >= 8.6)); }, hx: HX + .6, hz: HZ + .6, ye: FZ, yx: FX, fx: HX + 1, fz: HZ + 1, Hf: HF, roof, up, hf, sc,
+    x, z, th, K: 1, inBox: (lx, lz) => Math.abs(lx) <= HX - .2 && Math.abs(lz) <= HZ - .4, links: [{ l: 0, x: 3.9, z: 9.7 }, { l: 0, x: -3.9, z: 9.7 }, { l: 1, x: 5.9, z: -.5 }, { l: 1, x: -5.9, z: -.5 }], upOK: (lx, lz) => { const ax = Math.abs(lx); if (ax > HX - .2 || Math.abs(lz) > HZ - .4) return false; return ax >= 7 || (ax >= 4.6 && (lz <= .8 || lz >= 8.6)); }, hx: HX + .6, hz: HZ + .6, yardBox: (lx, lz) => Math.abs(lx) < FX + .5 && lz > -HZ - 3 && lz < FZ + 4, ye: FZ, yx: FX, fx: HX + 1, fz: HZ + 1, Hf: HF, roof, up, hf, sc,
     walls: [{ g: gF, nx: 0, nz: 1, D: HZ }, { g: gB, nx: 0, nz: -1, D: HZ }, { g: gL, nx: -1, nz: 0, D: HX }, { g: gR, nx: 1, nz: 0, D: HX },
       { g: uF, nx: 0, nz: 1, D: HZ }, { g: uB, nx: 0, nz: -1, D: HZ }, { g: uL, nx: -1, nz: 0, D: HX }, { g: uR, nx: 1, nz: 0, D: HX },
-      { g: yD, nx: 0, nz: 1, D: HZ, y: 1 }, { g: yP, nx: 0, nz: 1, D: HZ, y: 1 }, { g: yK, nx: 0, nz: -1, D: HZ }, { g: dGL, nx: -1, nz: 0, D: 7 }, { g: dGR, nx: 1, nz: 0, D: 7 }, { g: dUL, nx: -1, nz: 0, D: 7 }, { g: dUR, nx: 1, nz: 0, D: 7 }],
+      { g: yD, nx: 0, nz: 1, D: HZ, y: 1, hide: 1 }, { g: yP, nx: 0, nz: 1, D: HZ, y: 1, hide: 1 }, { g: yK, nx: 0, nz: -1, D: HZ, y: 1, hide: 1 }, { g: dGL, nx: -1, nz: 0, D: 7 }, { g: dGR, nx: 1, nz: 0, D: 7 }, { g: dUL, nx: -1, nz: 0, D: 7 }, { g: dUR, nx: 1, nz: 0, D: 7 }],
   }));
   return { g: root, th, at };
 }
