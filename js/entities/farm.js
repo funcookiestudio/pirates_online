@@ -314,8 +314,8 @@ export function mkOx() {
 }
 
 /** Cavalo. Expõe: g.head, g.neck, g.legs[4] (com .knee), g.tail, g.earL, g.earR */
-export function mkHorse() {
-  const g = new THREE.Group(), c = 0x8a4a22, dk = 0x2a1a10, mz = 0xb87a4a;
+export function mkHorse(c = 0x8a4a22, mz = 0xb87a4a) {
+  const g = new THREE.Group(), dk = 0x2a1a10;
   g.add(
     wb(.52, .6, 1.2, c, 0, 1.12, 0),
     wb(.46, .22, .5, mz, 0, .86, .1),

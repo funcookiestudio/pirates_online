@@ -9,7 +9,7 @@ import { tierBonus } from '../data/scaling.js';
 import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
 import { saveGame } from '../systems/save.js';
-import { MOUNT, giveHorse } from '../systems/mount.js';
+import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 let cur = null, li = 0, tab = 'buy', stock = [];
 
@@ -122,12 +122,19 @@ function buttons() {
   b.innerHTML = '';
   const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); };
   if (cur.stable) {
-    if (!MOUNT.owned) add('🐴 Comprar o cavalo · ' + HORSE_COST + ' ouro', () => {
-      if (P.gold < HORSE_COST) { say('Faltam moedas, marujo! O cavalo custa ' + HORSE_COST + ' de ouro.'); return; }
-      P.gold -= HORSE_COST; giveHorse(); saveGame();
-      say('Negócio fechado! Ele é seu. Assobie com a tecla H e ele vem correndo.'); buttons();
+    COATS.forEach((k, i) => {
+      if (MOUNT.owned && i <= MOUNT.coat) return;
+      const price = MOUNT.owned ? k.cost - COATS[MOUNT.coat].cost / 2 : k.cost;
+      add('🐴 ' + (MOUNT.owned ? 'Trocar por cavalo ' : 'Comprar cavalo ') + k.n + ' · ' + price + ' ouro', () => {
+        if (P.gold < price) { say('Faltam moedas, marujo! O ' + k.n + ' custa ' + price + ' de ouro.'); return; }
+        P.gold -= price; giveHorse(i); saveGame();
+        say('Negócio fechado! Ele é seu (' + k.n + ': mais rápido e com mais fôlego). Assobie com a tecla H.'); buttons();
+      });
     });
-    else add('🐴 Seu cavalo está esperando (H para chamar)', () => say('Cavalo e dono, uma coisa só! Use a tecla H para chamar, montar e desmontar.'));
+    if (MOUNT.owned) add('🥕 Dar ração ao cavalo · 15 ouro', () => {
+      if (P.gold < 15) { say('Ração custa 15 de ouro, marujo.'); return; }
+      P.gold -= 15; feedHorse(); say('Bem alimentado! Fôlego cheio e recupera rápido por um tempo.');
+    });
   }
   if (cur.chest) add('📦 Abrir baú', openShop);
   if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : '🛒 Ver mercadoria', openShop);

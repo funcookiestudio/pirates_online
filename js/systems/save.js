@@ -34,7 +34,7 @@ export function saveGame() {
       petAttack: state.petAttack,
       autoCfg: state.autoCfg,
       dunDone: state.dunDone,
-      horse: MOUNT.owned,
+      horse: MOUNT.owned ? 1 + MOUNT.coat : 0,
     }));
   } catch (e) { /* armazenamento indisponível: o jogo segue sem salvar */ }
 }
@@ -76,7 +76,7 @@ export function loadGame() {
       if (p.rk && typeof p.rk === 'object') PST[id].rk = { ...p.rk };
     });
 
-    MOUNT.owned = !!s.horse;
+    MOUNT.owned = !!s.horse; MOUNT.coat = Math.max(0, Math.min(2, (s.horse | 0) - 1));
     state.dunDone = s.dunDone && typeof s.dunDone === 'object' ? s.dunDone : {};
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });

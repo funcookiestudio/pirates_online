@@ -13,8 +13,13 @@ import { standUp } from './rest.js';
 import { log } from '../ui/notify.js';
 import { $ } from '../core/utils.js';
 
+export const COATS = [
+  { n: 'Castanho', cost: 120, mult: 2.05, br: 1, c: 0x8a4a22, mz: 0xb87a4a },
+  { n: 'Negro', cost: 240, mult: 2.2, br: .8, c: 0x2a2a30, mz: 0x4a4a52 },
+  { n: 'Branco', cost: 380, mult: 2.35, br: .6, c: 0xe8e4dc, mz: 0xc8c0b0 },
+];
 export const MOUNT = {
-  owned: false, on: false, t: 0,          // t = progresso de subir (0 no chão … 1 na sela)
+  owned: false, coat: 0, on: false, t: 0,          // t = progresso de subir (0 no chão … 1 na sela)
   mult: 2.05, en: 1, tired: false,        // en = fôlego do cavalo (0‥1); cansado só trota
                               // velocidade montado ÷ a pé
   st: 'park',                             // park (parado) · come (vindo até o jogador)
@@ -27,7 +32,7 @@ const ss = x => x * x * (3 - 2 * x);
 
 function ensureHorse() {
   if (MOUNT.root) return;
-  const g = mkHorse(), root = new THREE.Group();
+  const g = mkHorse(COATS[MOUNT.coat].c, COATS[MOUNT.coat].mz), root = new THREE.Group();
   g.scale.setScalar(SCALE);
   // sela
   const saddle = new THREE.Mesh(new THREE.BoxGeometry(.56, .09, .5), new THREE.MeshLambertMaterial({ color: 0x5a2a18 }));
@@ -52,19 +57,25 @@ function place() {
 }
 
 /** Cavalo recém-comprado: aparece ao lado do jogador */
-export function giveHorse() {
-  if (MOUNT.owned) return;
-  MOUNT.owned = true;
+export function giveHorse(coat = 0) {
+  const had = MOUNT.owned;
+  MOUNT.owned = true; MOUNT.coat = coat; MOUNT.en = 1; MOUNT.tired = false;
+  if (MOUNT.root) { scene.remove(MOUNT.root); MOUNT.root = null; }
+  if (MOUNT.on) dismount();
+  if (had) { park(MOUNT.x, MOUNT.z, MOUNT.yaw); refreshMountButton(); return; }
   park(P.x + 2.2, P.z + 1.2, P.g.rotation.y);
   refreshMountButton();
 }
 
 /** Ao carregar o jogo / chegar numa ilha: o cavalo espera do lado de fora do portão leste da vila */
-export function initMount(owned) {
-  MOUNT.owned = !!owned;
+export function initMount(owned, coat = 0) {
+  MOUNT.owned = !!owned; MOUNT.coat = coat | 0;
   if (MOUNT.owned) park(VILLAGE_R + 5, 4, Math.PI / 2);
   refreshMountButton();
 }
+
+/** Ração: enche o fôlego e dá um ritmo de recuperação maior por alguns segundos */
+export function feedHorse() { MOUNT.en = 1; MOUNT.tired = false; MOUNT.feed = 20; }
 
 export function refreshMountButton() {
   const b = $('sm');
@@ -112,12 +123,13 @@ export function toggleMount() {
 }
 
 /** Multiplicador de velocidade atual (cansado: só um trote um pouco mais rápido que a pé) */
-export const mountMult = () => MOUNT.tired ? 1.3 : MOUNT.mult;
+export const mountMult = () => MOUNT.tired ? 1.3 : COATS[MOUNT.coat].mult;
 
 function updateBreath(dt) {
   const sp = Math.hypot(P.vx, P.vz);
-  if (MOUNT.on) MOUNT.en += (sp > 3.5 ? -.085 : sp > .3 ? -.01 : .06) * dt;
+  if (MOUNT.on) MOUNT.en += (sp > 3.5 ? -.085 * COATS[MOUNT.coat].br : sp > .3 ? -.01 : .06) * dt;
   else MOUNT.en += .12 * dt;
+  if (MOUNT.feed > 0) { MOUNT.feed -= dt; MOUNT.en += .15 * dt; }
   MOUNT.en = Math.max(0, Math.min(1, MOUNT.en));
   if (MOUNT.en <= 0 && !MOUNT.tired) { MOUNT.tired = true; if (MOUNT.on) log('🐴 O cavalo está cansado: ande um pouco para ele recuperar o fôlego'); }
   else if (MOUNT.tired && MOUNT.en > .35) MOUNT.tired = false;
