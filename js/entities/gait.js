@@ -44,10 +44,10 @@ export function gait(g, dt, sp, o = {}) {
 
   // quadril: sobe/desce, balança, torce
   const bob = (.5 + .5 * Math.cos(2 * S.ph)) * .04 * amp, breathe = Math.sin(S.t * 1.8) * .008 * (1 - Math.min(amp, 1));
-  g.up.position.set(-w * .012 * amp, .72 + bob + breathe, 0);
+  g.up.position.set(-w * .004 * amp, .72 + bob + breathe, 0);
   const tw = o.twist === undefined ? 1 : o.twist;
-  g.up.rotation.y += w * .075 * amp * tw;
-  g.up.rotation.z += w * .015 * amp * tw;
+  g.up.rotation.y += w * .02 * amp * tw;
+  g.up.rotation.z += w * .005 * amp * tw;
   g.up.rotation.x += Math.max(-.2, Math.min(.2, acc * .05)) * tw + amp * .06 * tw;
   g.position.y -= bob * .6;
 
