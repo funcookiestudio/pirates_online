@@ -43,10 +43,10 @@ export function autoThink(dt) {
   }
   // cavalo: fora da vila e sem combate, se o caminho é longo, monta sozinho
   MT -= dt;
-  if (MT <= 0 && MOUNT.owned && !MOUNT.on && !MOUNT.dis && MOUNT.st !== 'come' && !P.dead && !P.swimming && !P.sit && !P.sitT && P.roll <= 0 &&
+  if (MT <= 0 && MOUNT.owned && !MOUNT.dismissed && !MOUNT.on && !MOUNT.dis && MOUNT.st !== 'come' && !P.dead && !P.swimming && !P.sit && !P.sitT && P.roll <= 0 &&
       Math.hypot(P.x, P.z) > VILLAGE_R + 2 && Math.hypot(P.tx - P.x, P.tz - P.z) > 32 &&
       !enemies.some(e => !e.dead && (e.ag || Math.hypot(e.x - P.x, e.z - P.z) < 10) && Math.hypot(e.x - P.x, e.z - P.z) < 14)) {
-    MT = 6; toggleMount();
+    MT = 6; toggleMount(true);
   } else if (MT <= 0) MT = .6;
   const alive = enemies.filter(e => !e.dead);
   const dist = e => Math.hypot(e.x - P.x, e.z - P.z);

@@ -154,7 +154,7 @@ function mountUp() {
 export function dismissHorse() {
   if (!MOUNT.owned || !MOUNT.root) return;
   if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1) return; dismount(); }
-  MOUNT.want = false; MOUNT.pending = false; MOUNT.st = 'park';
+  MOUNT.want = false; MOUNT.pending = false; MOUNT.st = 'park'; MOUNT.dismissed = true;   // o auto play não chama o cavalo até o jogador chamar
   if (!MOUNT.root.visible) return;
   puff(MOUNT.x, 1, MOUNT.z, 0xd8c8a0, 3, 3);
   MOUNT.root.visible = false; refreshMountButton();
@@ -162,8 +162,9 @@ export function dismissHorse() {
 }
 
 /** Tecla H: desmonta · monta (se o cavalo está perto) · ou chama o cavalo */
-export function toggleMount() {
+export function toggleMount(auto) {
   if (!MOUNT.owned || P.dead) return;
+  if (auto !== true) MOUNT.dismissed = false;   // o jogador chamou o cavalo de novo: o auto volta a poder usá-lo
   if (!MOUNT.on && (P.sit > 0 || P.sitT)) { standUp(); MOUNT.pending = true; return; }   // levanta primeiro, depois chama/monta
   if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; P.tgt = null; startDismount(); return; }
   if (!canRide()) { log('🐴 Chame o cavalo fora da vila, em terra firme'); return; }
