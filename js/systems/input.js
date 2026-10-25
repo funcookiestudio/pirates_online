@@ -155,10 +155,9 @@ export function initInput() {
 
 /** Botões de câmera na tela (toque/mouse): girar, inclinar, aproximar/afastar e restaurar. O ícone 📷 mostra/oculta o painel. */
 function camButtons() {
-  const KEY = 'pirata-cam-ui';
   const wrap = document.createElement('div');
   wrap.id = 'camc';
-  wrap.style.cssText = 'position:fixed;right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:4px;z-index:6;user-select:none;touch-action:manipulation';
+  wrap.style.cssText = 'position:fixed;left:10px;top:calc(env(safe-area-inset-top, 0px) + 58px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:6;user-select:none;touch-action:manipulation';
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,34px);gap:4px';
   const style = 'width:34px;height:34px;font-size:16px;line-height:1;color:#f0d890;background:#2a1a10cc;border:1px solid #a07838;border-radius:6px;cursor:pointer;padding:0';
@@ -170,11 +169,11 @@ function camButtons() {
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, stop));
     into.append(b); return b;
   };
-  let open = true; try { open = localStorage.getItem(KEY) !== '0'; } catch (e) { /* sem armazenamento */ }
+  let open = false;   // os comandos sempre começam ocultos
   const tog = B('📷', 'Mostrar / ocultar os comandos de câmera', () => {
     open = !open; grid.style.display = open ? 'grid' : 'none'; tog.style.opacity = open ? '1' : '.65';
-    try { localStorage.setItem(KEY, open ? '1' : '0'); } catch (e) { /* ok */ }
   }, false, wrap);
+  tog.style.cssText = 'width:40px;height:40px;font-size:18px;color:#fff;background:#1c1208e0;border:2px solid #a07a3a;border-radius:4px;cursor:pointer;padding:0';
   B('⟲', 'Girar câmera (←)', () => rotateBy(-.1), true); B('▲', 'Inclinar para cima (↑)', () => tiltBy(.06), true); B('⟳', 'Girar câmera (→)', () => rotateBy(.1), true);
   B('＋', 'Aproximar (+)', () => zoomBy(.92), true); B('▼', 'Inclinar para baixo (↓)', () => tiltBy(-.06), true); B('－', 'Afastar (−)', () => zoomBy(1.08), true);
   B('', '', () => {}).style.visibility = 'hidden'; B('⌂', 'Restaurar câmera (Home / 0)', resetCamera); B('', '', () => {}).style.visibility = 'hidden';
