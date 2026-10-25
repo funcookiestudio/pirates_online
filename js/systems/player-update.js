@@ -30,6 +30,7 @@ export function updatePlayer(dt) {
     updateAim(dt);
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
+    else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; P.tgt = null; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
     else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
     else moveAndAct(dt);
   }

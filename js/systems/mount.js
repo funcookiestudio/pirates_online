@@ -28,7 +28,8 @@ export const MOUNT = {
   x: 0, z: 0, yaw: 0, ph: 0, sp: 0, root: null, g: null, stuck: 0, idle: 0,
 };
 export const LIFT = .92;                  // altura do quadril do jogador acima do chão, na sela
-const SCALE = 1.15, MOUNT_TIME = .5;
+const SCALE = 1.15, MOUNT_TIME = .95, DIS_TIME = .8, SIDE = 1.25;   // SIDE = distância lateral (lado esquerdo do cavalo) de onde se sobe/desce
+const sat = x => Math.min(1, Math.max(0, x));
 const ss = x => x * x * (3 - 2 * x);
 
 function ensureHorse() {
@@ -90,7 +91,34 @@ export function refreshMountButton() {
 /** Montado em terra firme, fora da vila e das dungeons */
 const canRide = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && Math.hypot(P.x, P.z) > VILLAGE_R + 1 && !P.sit && !P.sitT && P.roll <= 0;
 
+/** Desmontar com animação: o cavalo para, o jogador passa a perna e desce pelo lado esquerdo */
+function startDismount() {
+  MOUNT.dis = true; MOUNT.x = P.x; MOUNT.z = P.z; MOUNT.yaw = P.g.rotation.y;
+  P.tgt = null; P.vx = P.vz = 0;
+}
+function finishDismount() {
+  MOUNT.dis = false;
+  const c = Math.cos(MOUNT.yaw), s = Math.sin(MOUNT.yaw);
+  let px = MOUNT.x + c * SIDE, pz = MOUNT.z - s * SIDE;
+  if (!walkable(px, pz)) { px = MOUNT.x - c * SIDE; pz = MOUNT.z + s * SIDE; }
+  if (!walkable(px, pz)) { px = MOUNT.x; pz = MOUNT.z; }
+  P.x = P.tx = px; P.z = P.tz = pz;
+  MOUNT.on = false; P.mounted = false; MOUNT.t = 0; MOUNT.st = 'park';
+  P.g.rotation.x = 0; P.g.rotation.y = MOUNT.yaw;
+  place(); refreshMountButton();
+}
+/** Posição/giro do jogador na animação: do lado do cavalo (u=0) até a sela (u=1) */
+function lockPlayer(u) {
+  const th = MOUNT.yaw, lat = SIDE * (1 - ss(sat((u - .1) / .6)));
+  let px = MOUNT.x + Math.cos(th) * lat, pz = MOUNT.z - Math.sin(th) * lat;
+  if (!MOUNT.dis && MOUNT.sx != null && u < .18) { const w = ss(u / .18); px = MOUNT.sx + (px - MOUNT.sx) * w; pz = MOUNT.sz + (pz - MOUNT.sz) * w; }   // aproxima-se do flanco
+  P.x = P.tx = px; P.z = P.tz = pz;
+  P.vx = P.vz = 0; P.walk = 0;
+  P.g.rotation.y = th - Math.PI / 2 * (1 - ss(sat((u - .55) / .45)));
+}
+
 export function dismount(msg) {
+  MOUNT.dis = false;
   if (!MOUNT.on) return;
   MOUNT.on = false; P.mounted = false; MOUNT.t = 0;
   const a = P.g.rotation.y + 1.2;
@@ -105,7 +133,8 @@ export function dismount(msg) {
 
 function mountUp() {
   if (!canRide()) { log('🐴 Não dá para montar aqui'); return; }
-  MOUNT.on = true; P.mounted = true; MOUNT.t = 0; MOUNT.st = 'park'; MOUNT.want = false;
+  MOUNT.on = true; P.mounted = true; MOUNT.t = 0; MOUNT.st = 'park'; MOUNT.want = false; MOUNT.dis = false; MOUNT.sx = P.x; MOUNT.sz = P.z;
+  if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) > 3) { MOUNT.x = P.x; MOUNT.z = P.z; }   // (cavalo muito longe: sobe no lugar)
   P.tgt = null; P.tx = P.x; P.tz = P.z;
   puff(P.x, 1, P.z, 0xd8c8a0, 3, 3);
   refreshMountButton();
@@ -115,7 +144,7 @@ function mountUp() {
 export function toggleMount() {
   if (!MOUNT.owned || P.dead) return;
   if (!MOUNT.on && (P.sit > 0 || P.sitT)) { standUp(); MOUNT.pending = true; return; }   // levanta primeiro, depois chama/monta
-  if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1) return; dismount(); return; }
+  if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; startDismount(); return; }
   if (!canRide()) { log('🐴 Chame o cavalo fora da vila, em terra firme'); return; }
   MOUNT.root.visible = true;
   if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) < 3.4) { mountUp(); return; }
@@ -148,9 +177,18 @@ export function updateMount(dt) {
     if (P.swimming) { dismount('🐴 O cavalo não nada: você desmontou'); return; }
     if (dIn(P.x, P.z)) { dismount(); return; }
     if (Math.hypot(P.x, P.z) <= VILLAGE_R + .5) { dismount('🐴 Cavalos ficam do lado de fora da vila'); return; }
-    MOUNT.t = Math.min(1, MOUNT.t + dt / MOUNT_TIME);
+    const r = MOUNT.root;
+    if (MOUNT.dis || MOUNT.t < 1) {   // animação de subir / descer: o cavalo fica parado, o jogador é conduzido
+      if (MOUNT.dis) MOUNT.t = Math.max(0, MOUNT.t - dt / DIS_TIME); else MOUNT.t = Math.min(1, MOUNT.t + dt / MOUNT_TIME);
+      if (!MOUNT.dis && MOUNT.t === 1) { MOUNT.x = P.x; MOUNT.z = P.z; }
+      if (MOUNT.dis && MOUNT.t === 0) { finishDismount(); return; }
+      lockPlayer(MOUNT.t);
+      r.position.set(MOUNT.x, groundY(MOUNT.x, MOUNT.z), MOUNT.z); r.rotation.y = MOUNT.yaw; r.visible = true;
+      animateHorseLegs(dt, 0);
+      return;
+    }
     // o cavalo vai por baixo do jogador
-    const sp = Math.hypot(P.vx, P.vz), r = MOUNT.root;
+    const sp = Math.hypot(P.vx, P.vz);
     r.position.set(P.x, groundY(P.x, P.z), P.z);
     r.rotation.y = P.g.rotation.y;
     r.visible = true;
@@ -224,11 +262,14 @@ export function mountPose(dt) {
   const g = P.g, k = ss(MOUNT.t), run = Math.min(1, MOUNT.sp / 6);
   P.mountK = k;
   const bob = Math.abs(Math.sin(MOUNT.ph)) * .05 * Math.min(1, MOUNT.sp / 2.2);
-  g.position.y += LIFT * k + bob;
+  const u = MOUNT.t, hop = Math.sin(Math.PI * u) * .32 * (u < 1 ? 1 : 0), over = Math.sin(Math.PI * sat((u - .22) / .5));   // pulo + perna passando por cima
+  g.position.y += LIFT * k + bob + hop;
   const tl = -1.1 - .15 * run, kl = .75;
   [[g.legL, -1], [g.legR, 1]].forEach(([l, s]) => {
     l.rotation.x += (tl - l.rotation.x) * k;
     l.rotation.z += (s * .42 - l.rotation.z) * k;
+    if (s > 0) { l.rotation.x -= .5 * over; l.rotation.z += .55 * over; }
+    else l.rotation.x -= .25 * Math.sin(Math.PI * sat(u / .5));
     l.knee.rotation.x += (kl - l.knee.rotation.x) * k;
     if (l.foot) l.foot.rotation.x += (-.2 - l.foot.rotation.x) * k;
   });
@@ -236,13 +277,14 @@ export function mountPose(dt) {
   g.rotation.x += .06 * run * k;                      // inclina para a frente no galope
   // braços nas rédeas (cinemática inversa; as mãos acompanham o balanço do corpo)
   const torch = !!(P.torchM && P.torchM.visible);
-  g.up.rotation.set(0, 0, 0);
+  g.up.rotation.set(.3 * over, 0, 0);
+  const w = ss(sat((u - .1) / .5));
   const sway = Math.sin(MOUNT.ph * 2) * .02 * run, hy = 1.02 + LIFT * 0 + sway;
   const hold = (arm, side) => {
     const q0 = arm.quaternion.clone(), f0 = arm.fa.rotation.x;
     ik(arm, new V3(side * .15, hy + .1 - .72 + LIFT * 0, .36), new V3(side * 1, -.7, -.35));
-    arm.quaternion.copy(q0.slerp(arm.quaternion, k));
-    arm.fa.rotation.x = f0 + (arm.fa.rotation.x - f0) * k;
+    arm.quaternion.copy(q0.slerp(arm.quaternion, w));
+    arm.fa.rotation.x = f0 + (arm.fa.rotation.x - f0) * w;
   };
   hold(g.arm, -1);
   if (!torch) hold(g.armL, 1);
