@@ -1,7 +1,7 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
 import { safeSpot } from './safe.js';
 import { updateBedPending, animateBed, sleeping } from './bed.js';
-import { refreshTorch } from './inventory.js';
+import { refreshTorch, torchLit } from './inventory.js';
 import { snapInterior, interiorWaypoint } from '../world/interior-nav.js';
 import { houseNear, houseAt, descendThen, upperContains } from '../world/floors.js';
 import { VIZ, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
@@ -284,7 +284,7 @@ function animate(dt) {
   const busy = gn || P.sw > 0 || P.swap;
   gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap && !(P.torchM && P.torchM.visible), head: !W.big, gun: gn, sword: !busy });
   if (P.torchM) {   // com arma de 2 mãos na mão a tocha some (o braço livre ajuda a mirar)
-    const on = !W.big && !P.safe;   // tocha apagada e guardada em locais iluminados (vila e casas)
+    const on = torchLit();   // tocha guardada de dia em locais iluminados (vila e casas); à noite fica acesa
     if (P.torchM.visible !== on) { P.torchM.visible = on; refreshTorch(); }
   }
   if (P.torchM && P.torchM.visible && !P.swap) {   // braço da tocha: erguido, balança pouco

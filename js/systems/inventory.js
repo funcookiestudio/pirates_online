@@ -7,6 +7,7 @@ import { itemReq } from '../data/scaling.js';
 import { DG } from '../dungeon/dgrid.js';
 import { torch as torchLight } from '../core/engine.js';
 import { log, lootText } from '../ui/notify.js';
+import { hourNow } from '../core/clock.js';
 
 /** Itens guardados na mochila */
 export const bag = [];
@@ -116,10 +117,12 @@ export function applyWeaponBonus() {
 
 /** Monta as armas equipadas; `prefer` = qual fica na mão ('wpn' ou 'gun') */
 /** Modelo da tocha na mão livre e alcance da luz */
+/** Tocha acesa na mão: não com arma de 2 mãos; na vila (iluminada) só à noite — de dia fica guardada */
+export const torchLit = () => !WEAPONS[P.wid].big && (!P.safe || hourNow() >= 20 || hourNow() < 6.5);
 export function refreshTorch() {
   const has = isTorch(eq.off);
   mountTorch(has ? eq.off.w : null);
-  const on = has && !WEAPONS[P.wid].big && !P.safe;
+  const on = has && torchLit();
   if (P.torchM) P.torchM.visible = on;
   torchLight.distance = on ? 44 : 22;
   torchLight.intensity = (DG.on ? 1.8 : 1.2) * (on ? 1.5 : 1);     // com tocha: luz mais forte e que alcança mais longe
