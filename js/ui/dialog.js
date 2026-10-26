@@ -13,6 +13,7 @@ import { saveGame } from '../systems/save.js';
 import { ROOM_PRICE, roomRented, rentRoom, cancelRent, rentDue } from '../world/doors.js';
 import { questSay, questButtons } from '../systems/quest.js';
 import { questsSay, questsButtons } from '../systems/quests.js';
+import './questboard.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 import { startPet } from '../systems/pet.js';

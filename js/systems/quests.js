@@ -188,14 +188,33 @@ on('dungeon:clear', () => {
   saveGame();
 });
 
-/** Texto do quadro de missões: todas as missões e o estado de cada uma */
-export function boardText() {
-  const lines = QUESTS.map(d => {
-    const q = Q()[d.id], tag = q && q.s === 'done' ? '✔' : q ? '▶' : P.lv >= d.lv ? '📜' : '🔒';
-    return tag + ' ' + d.title + ' (Nv ' + d.lv + ') — ' + d.giver + (q && q.s === 'done' ? ' · concluída' : q ? ' · em andamento' : P.lv >= d.lv ? '' : ' · requer Nv ' + d.lv);
+/** Ponte com o painel do Mural (ui/questboard.js registra `open`) */
+export const BOARDUI = { open: null };
+
+/** Dados do painel do Mural: uma linha por missão, já com estado, progresso e recompensa estimada */
+export function boardData() {
+  return QUESTS.map(d => {
+    const q = Q()[d.id], [pc, gm] = TIER[d.tier], st = q && q.s !== 'done' && q.s !== 'ready' ? stageOf(d, q) : null;
+    const state = q && q.s === 'done' ? 'done' : q && q.s === 'ready' ? 'ready' : q ? 'on' : P.lv >= d.lv ? 'open' : 'lock';
+    return {
+      id: d.id, title: d.title, giver: d.giver, lv: d.lv, tier: d.tier, state, mural: d.giver === 'Mural de Missões',
+      xp: Math.round(xpToNext(d.lv) * pc), gold: Math.round(goldAt(d.lv) * gm), reward: d.rewardTxt || '',
+      ask: d.say.ask, step: q && q.s === 'on' ? q.i + 1 : 0, steps: d.stages.length,
+      hud: st ? st.hud(q) : '', need: st && st.k !== 'hold' && st.k !== 'stalk' && st.k !== 'chase' ? st.n || 0 : 0, n: q && q.s === 'on' ? Math.floor(q.n || 0) : 0,
+      isl: st && st.isl ? ISLN[st.isl] : '', away: !!(st && !here(st)),
+    };
   });
-  return lines.join('\n') + '\n\n' + (state.contract ? contractHud() : '📜 Contrato de dungeon: nenhum ativo');
 }
+/** Aceita/entrega as missões cujo dador é o próprio Mural. Devolve false se não for possível. */
+export function boardAct(id) {
+  const d = QMAP[id]; if (!d || d.giver !== 'Mural de Missões') return false;
+  const q = Q()[id];
+  if (!q && P.lv >= d.lv) { start(d); return true; }
+  if (q && q.s === 'ready') { finish(d); return true; }
+  return false;
+}
+export function contractList() { return Object.entries(CONTRACTS).map(([k, c]) => ({ k, ...c, on: !!(state.contract && state.contract.c === k), run: state.contract && state.contract.c === k ? state.contract.run : null })); }
+export function setContract(k) { if (k && !CONTRACTS[k]) return; state.contract = k ? { c: k, run: null } : null; saveGame(); }
 
 /** Pílulas de progresso do HUD: até 2 missões ativas */
 export function questsHud() {
@@ -227,9 +246,7 @@ export function questsSay(cur) {
 export function questsButtons(cur) {
   const out = [];
   if (cur.board) {
-    out.push(['📋 Ver quadro de missões', say => say(boardText())]);
-    if (state.contract) out.push(['❌ Cancelar o contrato atual (' + CONTRACTS[state.contract.c].n + ')', (say, rebuild) => { state.contract = null; saveGame(); say('Contrato cancelado.'); rebuild(); }]);
-    else Object.entries(CONTRACTS).forEach(([k, c]) => out.push([c.ic + ' Contrato de dungeon: ' + c.n, (say, rebuild) => { state.contract = { c: k, run: null }; saveGame(); say('Contrato aceito: ' + c.hint + '. Vale para a PRÓXIMA dungeon em que você entrar e se repete quantas vezes quiser. Paga 30% do XP do nível da dungeon e 12× o ouro dos inimigos, e o auto ganha menos. Sair da dungeon sem concluir cancela o contrato.'); rebuild(); }]));
+    out.push(['📋 Abrir o quadro de missões', (say, rebuild) => { if (BOARDUI.open) BOARDUI.open(rebuild); }]);
   }
   QUESTS.forEach(d => {
     if (d.giver !== cur.name) return;
