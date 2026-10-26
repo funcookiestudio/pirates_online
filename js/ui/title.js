@@ -71,7 +71,7 @@ function mkChest() {
   // ao redor: moedas espalhadas, pilhas e joias
   for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, d = .75 + rnd() * .55; coin(Math.cos(a) * d * 1.1, .015 + (rnd() < .2 ? .02 : 0), Math.abs(Math.sin(a)) * d * .7 + .3, .05).scale.setScalar(.78); }
   [[-.85, .45], [.9, .55], [.55, .85]].forEach(([x, z]) => { for (let k = 0; k < 6; k++) { const c = new THREE.Mesh(coinG, k % 3 ? gold : band); c.scale.setScalar(.78); c.position.set(x, .012 + k * .017, z); c.rotation.y = rnd() * 3; g.add(c); } });
-  for (let i = 0; i < 7; i++) { const a = rnd() * 6.28, d = .8 + rnd() * .5; if ((i + 2) % 6 === 1) continue; gem(Math.cos(a) * d * 1.1, .07, Math.abs(Math.sin(a)) * d * .6 + .45, i + 2); }
+  // no chão só moedas (as joias ficam dentro do baú)
   const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, 'rgba(255,224,120,.9)'); gr.addColorStop(1, 'rgba(255,200,60,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
