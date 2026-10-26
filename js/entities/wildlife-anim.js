@@ -3,12 +3,12 @@
    · Javali  — parado, andar, correr, fuçar, investida, PANCADA (cabeça baixa, raspa a pata e levanta o focinho), recuo, cambaleio
    · Gato    — parado, andar, correr, sentar, LAMBER A PATA, ESPREGUIÇAR, arranhar e dormir (com Zzz); pisca e mexe as orelhas
    makeAnimal(kind, variant) devolve o animal; animate(A, dt, t, mode, o) pose o corpo. Quem comanda (IA) escolhe o modo. */
-import { mkDeer, mkBoar, mkCat, CAT_VARIANTS } from './wildlife-models.js';
+import { mkDeer, mkBoar, mkCat, mkHare, CAT_VARIANTS } from './wildlife-models.js';
 
 const sm = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }, env = (u, a, b) => sm((u - a) / (b - a));
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
 const limb = (ph, o) => ({ s: Math.sin(ph + o), l: Math.max(0, Math.cos(ph + o)) });
-const K = ['tilt', 'y', 'pz', 'fl', 'fr', 'hl', 'hr', 'kfl', 'kfr', 'khl', 'khr', 'hx', 'hy', 'ta', 'nk', 'hdy', 'rz', 'tc', 'br', 'ez', 'tf', 'tcy', 'tu', 'ex'];
+const K = ['tilt', 'y', 'pz', 'fl', 'fr', 'hl', 'hr', 'kfl', 'kfr', 'khl', 'khr', 'hx', 'hy', 'ta', 'nk', 'hdy', 'rz', 'tc', 'br', 'ez', 'tf', 'tcy', 'tu', 'ex', 'ea'];
 
 /** Passada de quadrúpede: A = amplitude, e = dobra do joelho */
 function gaitP(ph, run, k) {
@@ -97,15 +97,55 @@ const CAT = {
   },
 };
 
-const DEFS = { deer: DEER, boar: BOAR, cat: CAT };
+
+/* ---------------- LEBRE ---------------- */
+/* Salta em vez de andar: o ciclo A.hp (0..1) tem agachar-impulsionar → voo → amortecer. O "ar" (0..1) é a mesma curva usada pela IA para
+   acelerar só no voo, então o corpo e o deslocamento ficam sincronizados. Cada lado usa uma fase levemente diferente (assimetria orgânica). */
+export const hareAir = q => Math.sin(Math.PI * lim(((q % 1) - .12) / .62, 0, 1));
+function hopP(A, big) {
+  const q = A.hp % 1, air = hareAir(q), air2 = Math.sin(Math.PI * lim((q - .17) / .62, 0, 1)), cr = Math.pow(1 - air, 2);
+  const v = .92 + .08 * Math.sin(A.hp * 2.3), h = (big ? .34 : .17) * v;   // altura varia de salto em salto
+  return { y: h * air - .05 * cr, pz: .14 * air, tilt: (big ? -.45 : -.3) * air + .12 * cr,
+    hl: -.7 * cr + (big ? 1.05 : .9) * air, hr: -.7 * cr + (big ? 1.05 : .9) * air2, khl: 1.2 * cr + .1 * air, khr: 1.2 * cr + .1 * air2,
+    fl: .2 * cr - .8 * air + .05, fr: .2 * cr - .8 * air2 - .05, kfl: .6 * air, kfr: .6 * air2,
+    hx: -.25 * air + .1 * cr, hy: Math.sin(A.hp * 1.7) * .08, ta: big ? .35 : .25, ea: big ? -.9 * air - .1 : -.45 * air - .05, tu: big ? .5 : 0 };
+}
+const HARE = {
+  k: {}, piv: [.32, -.2], sc: 1.3,
+  modes: ['idle', 'hop', 'run', 'graze', 'alert', 'sit'],
+  pose: {
+    idle: (t, A) => { const burst = Math.max(0, Math.sin(t * .9 + A.t0)), look = Math.sin(t * .35 + A.t0 * 2);   // fareja em rajadas e olha ao redor devagar
+      return { hx: Math.sin(t * 16) * .025 * burst, hy: look * .6 * Math.max(0, Math.sin(t * .2 + A.t0)), ta: .15, y: Math.sin(t * 2.2) * .004, br: Math.sin(t * 2.2) * .012, ex: .2 * burst }; },
+    hop: (t, A) => hopP(A, false),
+    run: (t, A) => hopP(A, true),
+    graze: (t, A) => { const up = Math.pow(Math.max(0, Math.sin(t * .35 + A.t0)), 5), ch = Math.sin(t * 11);   // cabeça no capim, mastiga; de vez em quando levanta e fareja
+      return { tilt: .16 * (1 - up), hx: .62 * (1 - up) + .1 * up + ch * .04 * (1 - up), hy: Math.sin(t * .8 + A.t0) * .15 * up, fl: .12, fr: .12, hl: -.25, hr: -.25, khl: .5, khr: .5, ta: .15, ea: .05 + .1 * up, y: -.02 + Math.sin(t * 2.2) * .003, br: ch * .004 }; },
+    alert: (t, A) => ({ tilt: -1.1, y: .02, hl: 1.1, hr: 1.1, fl: .4, fr: .4, kfl: 1.5, kfr: 1.5, hx: 1 + Math.sin(t * 18) * .03, hy: Math.sin(t * 1.1 + A.t0) * .55, ta: .2, ea: .2, ex: .1, br: Math.sin(t * 3) * .01 }),   // em pé nas patas de trás, orelhas giram
+    sit: (t, A) => { const gm = Math.pow(Math.max(0, Math.sin(t * .3 + A.t0)), 3), w = Math.sin(t * 14);   // sentada; de tempos em tempos lava o rosto
+      return { tilt: -.4, y: -.14 + Math.sin(t * 2.2) * .004, hl: -1.05, hr: -1.05, khl: 2.6, khr: 2.6, fl: .4 - 1.7 * gm + w * .16 * gm, fr: .4 - 1.7 * gm - w * .16 * gm, kfl: 1.8 * gm, kfr: 1.8 * gm,
+        hx: .35 + .25 * gm + Math.sin(t * 18) * .03 * (1 - gm), hy: Math.sin(t * .8 + A.t0) * .4 * (1 - gm), ta: .15, ea: .1 + .2 * gm, br: Math.sin(t * 2.2) * .01 }; },
+  },
+  apply(A, p, t) {
+    const m = A.m, aw = 1 - Math.min(1, A.W.hop + A.W.run);   // orelhas independentes: cada uma mexe no seu ritmo, só quando a lebre está parada
+    const fL = Math.pow(Math.max(0, Math.sin(t * .9 + A.t0)), 6) * Math.sin(t * 14) * .1 * aw, fR = Math.pow(Math.max(0, Math.sin(t * .7 + A.t0 * 2)), 6) * Math.sin(t * 12) * .1 * aw;
+    m.scale.setScalar(1 + p.br);
+    m.head.rotation.x = p.hx; m.head.rotation.y = p.hy;
+    m.earL.rotation.z = .18 + fL + p.ex * .5; m.earR.rotation.z = -.18 - fR - p.ex * .5;
+    m.earL.rotation.y = Math.sin(t * .5 + A.t0) * .25 * A.W.alert; m.earR.rotation.y = Math.sin(t * .43 + A.t0 * 3) * .25 * A.W.alert;
+    m.earL.rotation.x = m.earR.rotation.x = -.15 + p.ea;
+    m.tail.forEach((s, i) => { s.rotation.x = (i ? .3 : .5) + p.ta * .2 + (p.tu || 0) * .2; s.rotation.y = Math.sin(t * 3 - i * .6) * p.ta * .8; });
+  },
+};
+
+const DEFS = { deer: DEER, boar: BOAR, cat: CAT, hare: HARE };
 
 /** Cria o animal: A.g = raiz (posicione e gire), A.m = modelo, A.W = pesos dos modos */
 export function makeAnimal(kind, variant) {
-  const D = DEFS[kind], m = kind === 'deer' ? mkDeer() : kind === 'boar' ? mkBoar() : mkCat(variant);
+  const D = DEFS[kind], m = kind === 'deer' ? mkDeer() : kind === 'boar' ? mkBoar() : kind === 'hare' ? mkHare() : mkCat(variant);
   const root = new THREE.Group(), rig = new THREE.Group(), [py, pz] = D.piv;
   rig.position.set(0, py, pz); rig.rotation.order = 'YXZ'; m.position.set(0, -py, -pz);
   rig.add(m); root.add(rig); root.scale.setScalar(D.sc);
-  const A = { kind, variant, D, g: root, rig, m, W: {}, ph: Math.random() * 6, bt: 0, gu: 0, t0: Math.random() * 20, mode: 'idle', spd: 0 };
+  const A = { kind, variant, D, g: root, rig, m, W: {}, ph: Math.random() * 6, hp: Math.random(), bt: 0, gu: 0, t0: Math.random() * 20, mode: 'idle', spd: 0 };
   D.modes.forEach(n => A.W[n] = n === 'idle' ? 1 : 0);
   if (kind === 'cat') { A.zs = zzz(root); if (CAT_VARIANTS[variant] && CAT_VARIANTS[variant].dog) { A.dog = true; root.scale.setScalar(D.sc * 1.3); } }
   return A;
@@ -128,6 +168,7 @@ export function animate(A, dt, t, mode, o = {}) {
   for (const n in W) W[n] += ((n === mode ? 1 : 0) - W[n]) * kk;
   const kw = lim(A.spd / 1.2, .6, 1.5), kr = lim(A.spd / 4, .8, 1.7);
   A.ph += dt * (7 * W.walk * kw + 13 * W.run * kr + (W.charge ? 14 * W.charge * kr : 0));
+  if (A.kind === 'hare') A.hp += dt * (2.4 * W.hop + 3.4 * W.run);   // ciclo de salto (só avança saltando)
   if (W.bound) A.bt += dt * (1.1 + A.spd * .12);
   const p = {}; K.forEach(n => p[n] = 0);
   for (const n in W) if (W[n] > .002) { const q = D.pose[n](t, A); K.forEach(k => p[k] += (q[k] || 0) * W[n]); }

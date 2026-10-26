@@ -269,3 +269,81 @@ export function mkCat(variant = 'laranja') {
   }
   return g;
 }
+
+
+/** Lebre (importada da prévia "Lebre"). Expõe: g.head, g.legs[4] (com .knee), g.tail[] (2 segmentos), g.earL, g.earR
+ *  Ordem das patas: [frente-esq, frente-dir, trás-esq, trás-dir] */
+export function mkHare() {
+  const g = new THREE.Group(), fur = 0x9a7a52, dk = 0x2a2018, belly = 0xe8dcc0, wh = 0xf4f0e4, pk = 0xe8a0aa;
+  g.add(
+    wb(.3, .28, .5, fur, 0, .38, 0),
+    wb(.34, .3, .3, fur, 0, .38, -.2), // coxas grandes
+    wb(.2, .2, .14, fur, 0, .44, .28), // pescoço
+    wb(.2, .08, .4, belly, 0, .24, .02) // barriga
+  );
+  const h = new THREE.Group();
+  h.position.set(0, .49, .38);
+  h.add(
+    wb(.2, .2, .26, fur, 0, 0, 0),
+    wb(.12, .1, .12, belly, 0, -.04, .17), // focinho
+    wb(.04, .03, .02, pk, 0, -.01, .24), // nariz
+    wb(.02, .06, .06, 0x111111, .1, .04, .07), // olhos nas laterais
+    wb(.02, .06, .06, 0x111111, -.1, .04, .07)
+  );
+  for (const k of [-1, 1]) { // bigodes (2 fios de cada lado)
+    [[-.035, .1], [-.065, -.12]].forEach(([y, a]) => {
+      const w = wb(.16, .008, .008, 0xf0f0f0, k * .15, y, .15);
+      w.rotation.z = k * a;
+      w.rotation.y = -k * .2;
+      h.add(w);
+    });
+  }
+  // orelhas longas, em pé, com ponta preta e interior rosa
+  const ear = k => {
+    const e = new THREE.Group();
+    e.position.set(k * .06, .1, -.04);
+    e.add(
+      wb(.07, .3, .04, fur, 0, .15, 0),
+      wb(.04, .24, .02, pk, 0, .14, .02),
+      wb(.07, .06, .04, dk, 0, .31, 0)
+    );
+    e.rotation.z = -k * .18; // abertas para fora
+    e.rotation.x = -.15; // levemente para trás
+    h.add(e);
+    return e;
+  };
+  g.earL = ear(-1);
+  g.earR = ear(1);
+  g.add(h);
+  g.head = h;
+
+  const leg = (x, z, hind) => {
+    const l = new THREE.Group();
+    l.position.set(x, .32, z);
+    const k = new THREE.Group();
+    k.position.y = -.15;
+    k.add(
+      wb(hind ? .07 : .06, .15, hind ? .07 : .06, fur, 0, -.075, 0),
+      hind ? wb(.08, .03, .2, belly, 0, -.15, .06) : wb(.08, .03, .1, belly, 0, -.15, .02) // pés de trás longos
+    );
+    l.add(wb(hind ? .13 : .07, hind ? .26 : .2, hind ? .14 : .07, fur, 0, hind ? -.05 : -.04, 0), k);
+    l.knee = k;
+    g.add(l);
+    return l;
+  };
+  g.legs = [leg(-.08, .2, false), leg(.08, .2, false), leg(-.12, -.2, true), leg(.12, -.2, true)];
+
+  // rabinho curto e fofo, com a ponta branca
+  g.tail = [];
+  const tp = new THREE.Group();
+  tp.position.set(0, .44, -.38);
+  tp.add(wb(.08, .08, .06, fur, 0, 0, -.03));
+  const t2 = new THREE.Group();
+  t2.position.z = -.06;
+  t2.add(wb(.14, .14, .12, wh, 0, .02, -.06));
+  tp.add(t2);
+  tp.rotation.x = .5;
+  g.add(tp);
+  g.tail.push(tp, t2);
+  return g;
+}

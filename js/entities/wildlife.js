@@ -20,14 +20,15 @@ import { spawn } from './enemies.js';
 import { KIND } from '../data/enemies.js';
 import { tierBonus, tierOf } from '../data/scaling.js';
 import { SEED } from '../world/terrain.js';
-import { makeAnimal, animate } from './wildlife-anim.js';
+import { makeAnimal, animate, hareAir } from './wildlife-anim.js';
+import { N } from '../world/islandgen.js';
 import { CAT_SPOTS } from './wild-spots.js';
 
 const ACT = 70;                                   // m: só pensa/anima perto do jogador
 const rnd = (a, b) => a + Math.random() * (b - a);
 const turn = (a, b, k) => { const d = Math.atan2(Math.sin(b - a), Math.cos(b - a)); return a + d * Math.min(1, k); };
-const DEER = [], CATS = [];
-export const WILD = { deer: DEER, cats: CATS };
+const DEER = [], CATS = [], HARES = [];
+export const WILD = { deer: DEER, cats: CATS, hares: HARES };
 
 /* ---------- onde ficam: clareiras dentro da floresta ---------- */
 function forestSpots() {
@@ -50,7 +51,7 @@ function forestSpots() {
 const far = (list, x, z, d) => list.every(q => Math.hypot(q.x - x, q.z - z) >= d);
 
 /* ---------- movimento comum (desvia de árvores, pedras, casas e cercas) ---------- */
-function stepTo(a, hd, sp, dt, avoid = true) {
+function stepTo(a, hd, sp, dt, avoid = true, snap = false) {
   // olha 1,6 m à frente e, se o caminho estiver fechado, tenta desviar para os lados
   let best = hd;
   if (avoid) for (const off of [0, .5, -.5, 1, -1, 1.6, -1.6, 2.4]) {
@@ -59,7 +60,7 @@ function stepTo(a, hd, sp, dt, avoid = true) {
     best = hd + 3;
   }
   a.hd = turn(a.hd, best, dt * a.tr * 12);
-  a.v += (sp - a.v) * (1 - Math.exp(-dt * 6));
+  a.v = snap ? sp : a.v + (sp - a.v) * (1 - Math.exp(-dt * 6));   // snap: a velocidade segue o salto (lebre)
   const nx = a.x + Math.sin(a.hd) * a.v * dt, nz = a.z + Math.cos(a.hd) * a.v * dt;
   [a.x, a.z] = slideTo(a.x, a.z, nx, nz);
   const q = { x: a.x, z: a.z }; collide(q, a.rad); a.x = q.x; a.z = q.z;
@@ -155,6 +156,66 @@ function pickCat(a) {
   else { a.st = 'stretch'; a.tm = rnd(3, 5); }
 }
 
+
+/* ---------- lebre ---------- */
+/* Pasta e saltita em campo aberto; em pé (alerta) quando o jogador se aproxima; foge em ZIGUE-ZAGUE a grandes saltos se ele chegar perto. Não ataca nem é alvo.
+   A velocidade acompanha a curva do salto (rápida no ar, quase parada no chão), sincronizada com a animação. */
+function makeHare(x, z) {
+  const A = makeAnimal('hare'); scene.add(A.g);
+  const a = { A, x, z, hx: x, hz: z, hd: rnd(0, 6.28), v: 0, st: 'graze', tm: rnd(2, 8), tr: .9, rad: .25, tx: x, tz: z, zz: 1 };
+  A.g.visible = false; place(a); HARES.push(a); return a;
+}
+const H_ALERT = 17, H_FLEE = 8.5, H_SAFE = 30;
+const grounded = A => { const q = A.hp % 1; return q < .1 || q > .86; };   // só troca de estado com as patas no chão (sem "congelar" no ar)
+function thinkHare(a, dt, t) {
+  const A = a.A, dx = P.x - a.x, dz = P.z - a.z, d = Math.hypot(dx, dz), away = Math.atan2(-dx, -dz), gr = grounded(A);
+  const m = MOUNT.on ? 1.35 : 1;
+  a.tm -= dt;
+  const air = .12 + 1.75 * hareAir(A.hp);   // 0,12 no chão … ~1,9 no pico do salto
+  if (a.st !== 'flee' && d < H_FLEE * m && !P.dead) { a.st = 'flee'; a.tm = rnd(4, 7); a.zz = Math.random() < .5 ? 1 : -1; a.zt = 0; a.stand = 0; }
+  if (a.st === 'flee') {
+    a.zt -= dt; if (a.zt <= 0) { a.zt = rnd(.35, .8); a.zz = -a.zz; }   // troca de lado a cada poucos saltos: zigue-zague
+    stepTo(a, away + a.zz * .7, 7.2 * air, dt, true, true);
+    if ((a.tm <= 0 && d > H_SAFE) || d > H_SAFE + 20) { if (gr) { a.st = 'alert'; a.tm = rnd(3, 5); a.hx = a.x; a.hz = a.z; } }
+    return ['run', a.v];
+  }
+  if (a.st === 'alert') {
+    a.v = 0; a.hd = turn(a.hd, Math.atan2(dx, dz), dt * 2.5);
+    if (a.tm <= 0 && d > H_ALERT) { a.st = 'graze'; a.tm = rnd(5, 10); }
+    return ['alert', 0];
+  }
+  if (d < H_ALERT * m && !P.dead && a.st !== 'hop') { a.st = 'alert'; a.tm = rnd(2.5, 4); return ['alert', 0]; }
+  if (a.st === 'graze') { a.v *= .85; if (a.tm <= 0) pickHare(a); return ['graze', 0]; }
+  if (a.st === 'idle') { a.v *= .85; if (a.tm <= 0) pickHare(a); return ['idle', 0]; }
+  if (a.st === 'sit') { a.v *= .85; if (a.tm <= 0) pickHare(a); return ['sit', 0]; }
+  // hop: saltita até o ponto escolhido (2–6 m), parando ao chegar
+  const wx = a.tx - a.x, wz = a.tz - a.z, wd = Math.hypot(wx, wz);
+  if ((wd < .5 || a.tm <= 0) && gr) { pickHare(a, true); return ['idle', 0]; }
+  stepTo(a, Math.atan2(wx, wz) + Math.sin(t * 1.3 + A.t0) * .15, 2.3 * air, dt, true, true);
+  return ['hop', a.v];
+}
+function pickHare(a, afterHop) {
+  const r = Math.random();
+  if (afterHop ? r < .45 : r < .38) { a.st = 'hop'; a.tm = rnd(3, 6); const ang = rnd(0, 6.28), rr = rnd(2.5, 7); a.tx = a.hx + Math.sin(ang) * rr; a.tz = a.hz + Math.cos(ang) * rr; if (!walkable(a.tx, a.tz)) { a.tx = a.hx; a.tz = a.hz; } }
+  else if (r < .75) { a.st = 'graze'; a.tm = rnd(6, 14); }
+  else if (r < .9) { a.st = 'sit'; a.tm = rnd(5, 10); }
+  else { a.st = 'idle'; a.tm = rnd(2, 5); }
+  if (a.st === 'hop' && Math.hypot(a.x - a.hx, a.z - a.hz) > 14) { a.tx = a.hx; a.tz = a.hz; }   // volta para perto do território
+}
+/** Pontos de campo aberto espalhados pela ilha para as lebres */
+function meadowSpots(count) {
+  const out = [], E = N / 2, cx = -VX, cz = -VZ;
+  for (let tries = 0; tries < 6000 && out.length < count; tries++) {
+    const x = cx + rnd(-E + 25, E - 25), z = cz + rnd(-E + 25, E - 25);
+    if (Math.hypot(x, z) < VILLAGE_R + 20 || groundY(x, z) < SEA + 1.5 || reserved(x, z, 14) || onRoad(x, z, 5)) continue;
+    if (POST_DATA.some(p => Math.hypot(p.x - x, p.z - z) < 26) || CAVES.some(c => Math.hypot(c.x - x, c.z - z) < 26)) continue;
+    if (![[2, 0], [-2, 0], [0, 2], [0, -2], [4, 4], [-4, -4]].every(([dx, dz]) => walkable(x + dx, z + dz))) continue;
+    if (!far(out, x, z, 40)) continue;
+    out.push({ x, z });
+  }
+  return out;
+}
+
 /* ---------- criação ---------- */
 /** Ponto livre mais próximo de (cx,cz): fora de casas, de móveis e de árvores */
 function openNear(cx, cz) {
@@ -183,6 +244,7 @@ export function buildWildlife() {
   const take = (min, test) => { for (let i = 0; i < spots.length; i++) { const s = spots[i]; if (far(used, s.x, s.z, min) && (!test || test(s))) { spots.splice(i, 1); used.push(s); return s; } } return null; };
   const bonus = tierBonus(tierOf(SEED));
   for (let h = 0; h < 9; h++) { const s = take(55); if (!s) break; const n = 1 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) makeDeer(s.x + rnd(-3, 3), s.z + rnd(-3, 3), h); }
+  meadowSpots(16).forEach(sp => { const n = Math.random() < .4 ? 2 : 1; for (let i = 0; i < n; i++) makeHare(sp.x + rnd(-2, 2), sp.z + rnd(-2, 2)); });   // lebres em campo aberto
   for (let b = 0; b < 10; b++) {
     const s = take(48); if (!s) break;
     const lv = Math.max(2, Math.min(8, 2 + Math.floor(Math.hypot(s.x, s.z) / 85))) + bonus, n = Math.random() < .4 ? 2 : 1;
@@ -201,5 +263,5 @@ export function updateWildlife(dt) {
     place(a);
     animate(a.A, d2, T0 + a.A.t0, mode, { spd: sp });
   });
-  run(DEER, thinkDeer); run(CATS, thinkCat);
+  run(DEER, thinkDeer); run(CATS, thinkCat); run(HARES, thinkHare);
 }
