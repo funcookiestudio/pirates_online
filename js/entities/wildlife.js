@@ -82,12 +82,13 @@ function makeDeer(x, z, herd) {
   A.g.visible = false; place(a); DEER.push(a); return a;
 }
 const FLEE_R = 13, ALERT_R = 26, SAFE_R = 34;
-function scare(a) { if (a.st !== 'flee') { a.st = 'flee'; a.tm = rnd(5, 8); a.pron = 1.1; } }
+function scare(a) { if (a.white && a.calm) return; if (a.st !== 'flee') { a.st = 'flee'; a.tm = rnd(5, 8); a.pron = 1.1; } }
 function thinkDeer(a, dt, t) {
   const dx = P.x - a.x, dz = P.z - a.z, d = Math.hypot(dx, dz), away = Math.atan2(-dx, -dz);
   const mounted = MOUNT.on ? 1.3 : 1;                         // a cavalo assustam de mais longe
   a.tm -= dt;
-  if (d < FLEE_R * mounted && !P.dead) { DEER.forEach(o => { if (o.herd === a.herd && Math.hypot(o.x - a.x, o.z - a.z) < 30) scare(o); }); }
+  if (a.white) a.calm = !MOUNT.on && Math.hypot(P.vx || 0, P.vz || 0) < 2.4;   // Cervo Branco: só tolera quem anda devagar
+  if (d < (a.white ? (a.calm ? 2 : 11) : FLEE_R * mounted) && !P.dead) { DEER.forEach(o => { if (o.herd === a.herd && Math.hypot(o.x - a.x, o.z - a.z) < 30) scare(o); }); }
   let mode = 'idle', sp = 0;
   if (a.st === 'flee') {
     // foge para longe do jogador (com leve desvio para a mata), saltando no começo e correndo depois
@@ -108,6 +109,17 @@ function thinkDeer(a, dt, t) {
     }
   }
   return [mode, sp];
+}
+
+/** Cervo Branco (missão): cria uma vez, numa manada distante, e devolve o bicho */
+export function whiteDeer() {
+  let w = DEER.find(a => a.white); if (w) return w;
+  const hs = new Map(); DEER.forEach(a => { if (!hs.has(a.herd)) hs.set(a.herd, a); });
+  const far = [...hs.values()].sort((a, b) => Math.hypot(b.hx, b.hz) - Math.hypot(a.hx, a.hz))[0];
+  if (!far) return null;
+  w = makeDeer(far.hx + 4, far.hz + 3, 99); w.white = true;
+  w.A.g.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.lerp(new THREE.Color(0xffffff), .85); } });
+  return w;
 }
 
 /* ---------- gato ---------- */

@@ -18,7 +18,7 @@ import { npcByShop } from '../entities/npc.js';
 import { freePoint } from './steer.js';
 import { log, lootText } from '../ui/notify.js';
 import { saveGame } from './save.js';
-import { WILD } from '../entities/wildlife.js';
+import { WILD, whiteDeer } from '../entities/wildlife.js';
 import { isNight } from '../world/daynight.js';
 import { hourNow } from '../core/clock.js';
 import { pickWeapon } from '../entities/loot.js';
@@ -90,6 +90,10 @@ const QUESTS = [
       { k: 'hold', n: 20, r: 5, model: 'ring', waves: { kind: KIND.CONTRA, count: 2, every: 8 }, spot: () => pois[0] ? { x: pois[0].x, z: pois[0].z } : { x: 0, z: 30 },
         hud: q => '🔨 Defenda o Breu enquanto ele conserta o casco (' + Math.max(0, Math.ceil(20 - q.n)) + 's) — ' + escortInfo() }],
     reward: { machado: 10 }, rewardTxt: '10 machados de arremesso' },
+  { id: 'cervo', giver: 'Seu Tobias', title: 'O Cervo Branco', lv: 6, tier: 'media',
+    say: { ask: 'Dizem que um cervo branco anda pela mata, o mais distante dos rebanhos. Nunca consegui chegar perto, ele foge de quem corre. Aproxime-se DEVAGAR, sem cavalo, e fique perto dele por alguns segundos. Quero saber que é real!', on: 'O cervo branco fica na manada mais distante da vila. Ande devagar e não corra, ou ele foge.', ready: 'Você o viu de perto?! Ha! Pelo menos um de nós viu... Tome, por sua paciência.' },
+    stages: [{ k: 'stalk', n: 6, r: 7, hud: q => '🦌 Aproxime-se devagar do Cervo Branco (' + Math.max(0, Math.ceil(6 - q.n)) + 's) — sem correr, sem cavalo' }],
+    reward: { couro: 6, pot: 2 }, rewardTxt: '6 couros e 2 poções' },
   { id: 'arsenal', giver: 'Capitã Sal', title: 'Mão Firme', lv: 5, tier: 'curta',
     say: { ask: 'Arremesso é arte de quem não perde a calma, marujo. Pegue estas facas e acerte dez inimigos com elas. Equipe-as no espaço de arma de longa distância e use o botão de ataque. Elas acabam, mas as que não quebram ficam no chão.', on: 'Ainda faltam acertos! Equipe a faca de arremesso no espaço de longa distância e atire nos inimigos.', ready: 'Mão firme, olho vivo! Aqui, mais facas e uns trocados pelo treino.' },
     stages: [{ k: 'throw', n: 10, hud: q => '🎯 Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
@@ -356,6 +360,17 @@ function updateAreas(dt, list) {
   });
 }
 
+/** Cervo Branco: progresso só enquanto o jogador está perto e calmo */
+function updateStalk(dt, list) {
+  list.forEach(([d, q]) => {
+    if (stageOf(d, q).k !== 'stalk') return;
+    const w = whiteDeer(); if (!w) return;
+    const st = stageOf(d, q), dist = Math.hypot(P.x - w.x, P.z - w.z);
+    if (dist < st.r && w.calm) { q.n += dt; if (q.n >= st.n) { lootText('🦌 Você viu o Cervo Branco!'); advance(d, q); } }
+    else q.n = Math.max(0, q.n - dt * .5);
+  });
+}
+
 /** Todo quadro: contagem de tempo (para a penalidade do auto) e objetos das missões */
 export function updateQuests(dt) {
   const list = QUESTS.map(d => [d, Q()[d.id]]).filter(([d, q]) => q && q.s === 'on');
@@ -365,6 +380,7 @@ export function updateQuests(dt) {
   updateCollects(dt, list);
   updateAreas(dt, list);
   updateEscort(dt, list);
+  updateStalk(dt, list);
   list.forEach(([d, q]) => {   // limite de tempo da etapa (ex.: voltar antes da maré cobrir)
     const st = stageOf(d, q);
     if (st.limit && q.tl != null && (q.tl -= dt) <= 0) { q.i = st.back || 0; q.n = 0; q.tl = null; clearPk(); log('🌊 Tempo esgotado! ' + d.title + ': recomece pela etapa anterior'); saveGame(); }
@@ -387,6 +403,8 @@ export function questMarks() {
       const e = enemies.find(z => z.qid === d.id && !z.dead);
       if (e) out.push({ x: e.x, z: e.z, r: 22, t: d.title });
       else { const n = npcByShop('farm-granja'); if (n) out.push({ x: n.g.position.x + 16, z: n.g.position.z + 6, r: 32, t: d.title }); }
+    } else if (st.k === 'stalk') {
+      const w = WILD.deer.find(a => a.white); if (w) out.push({ x: w.x, z: w.z, r: 34, t: d.title });
     } else if (st.k === 'kill') {
       let b = null, bd = 1e9;
       enemies.forEach(z => { if (!z.dead && z.t.n === 'Javali' && !z.qid) { const dd = Math.hypot(z.x - P.x, z.z - P.z); if (dd < bd) { bd = dd; b = z; } } });
