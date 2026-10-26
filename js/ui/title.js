@@ -38,6 +38,7 @@ const CSS = `
 #ttl button:active{transform:translateY(2px)}
 @keyframes ttp{50%{border-color:#c9a45c}}
 #ttl .ver{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(6px + env(safe-area-inset-bottom,0px));font-size:11px;letter-spacing:.2em;color:#8a7c60;text-shadow:0 1px 2px #000}
+@media (orientation:portrait){#ttl .tt{top:calc(7.2vh + env(safe-area-inset-top,0px))}}
 @media (orientation:landscape) and (max-height:480px){#ttl{padding-top:2vh;padding-bottom:3vh}#ttl .tag{display:none}#ttl h1 small{margin-top:.5em}#ttl button{bottom:calc(3vh + env(safe-area-inset-bottom,0px));padding:.5em 2.4em;font-size:clamp(13px,5vh,20px)}}
 `;
 
@@ -94,7 +95,7 @@ function scene3d(root, cv) {
   const raven = mkRaven(), parrot = mkParrot();
   // o menino segura o mosquete com as duas mãos; a menina, a espada erguida na direita e uma tocha na esquerda
   hm.arm.fa.children.forEach(c => { if (c.userData.sword) c.visible = false; });
-  const gun = WEAPONS[WEAPONS.findIndex(w => /Mosquete/.test(w.n))].build(); gun.position.set(0, -.32, 0); hm.arm.fa.add(gun);
+  const gun = WEAPONS[WEAPONS.findIndex(w => /Mosquete/.test(w.n))].build(); gun.position.set(0, -.32, 0); gun.scale.setScalar(1.3); hm.arm.fa.add(gun);
   const torch = WEAPONS[WEAPONS.findIndex(w => /Tocha/.test(w.n))].build(); torch.position.y = .12;
   const tg = new THREE.Group(); tg.position.set(0, -.32, 0); tg.add(torch); hf.armL.fa.add(tg);
   const tl = new THREE.PointLight(0xff8a30, 1.4, 9, 1.6); tl.position.set(0, .45, .1); tg.add(tl);   // luz da tocha (treme)
@@ -128,11 +129,11 @@ function scene3d(root, cv) {
     cam.aspect = aspect; cam.position.set(0, 0, DIST); cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
     const portrait = aspect < 1;
     const hh = portrait ? Math.min(.26, .8 * aspect * .9) : .33;            // altura dos heróis (fração da tela)
-    const fy = portrait ? .72 : .75;                                          // pés dos heróis (retrato: título no centro)
+    const fy = portrait ? .665 : .75;                                          // pés dos heróis (retrato: título no centro)
     const hxs = portrait ? .27 : .24;                                         // distância ao centro (fração da largura)
     const eh = hh * 2.1, exs = portrait ? .3 : .27;
     bs = place(0, hm, .5 - hxs, fy, hh, -3, 1); place(1, hf, .5 + hxs, fy, hh, -3);   // menino e menina com a mesma escala
-    place(2, pirate, .5 - exs, 1.2, eh, 5); place(3, skel, .5 + exs, 1.2, eh, 5);
+    place(2, pirate, .5 - exs, portrait ? 1.12 : 1.2, eh, 5); place(3, skel, .5 + exs, portrait ? 1.12 : 1.2, eh, 5);
     { const z = -7, half = Math.tan(15 * Math.PI / 180) * (DIST - z), cs = .86 * Math.min(.34 * 2 * half * aspect / 1.2, hh * 2 * half * .95 / 1.0);
       tre.scale.setScalar(cs); tre.position.set(0, (.5 - fy - .005) * 2 * half, z); chestS = cs; gl.position.set(0, tre.position.y + cs * .9, z + 2.2); }
     hero = hh; birdY = hh;
@@ -145,8 +146,8 @@ function scene3d(root, cv) {
     hm.rotation.y = .6; hf.rotation.y = -.6; pirate.rotation.y = Math.PI - .7; skel.rotation.y = Math.PI + .7;
     [hm, hf].forEach(g => { g.up.rotation.x = .12; g.legL.knee.rotation.x = .4; g.legR.knee.rotation.x = .3; g.legL.rotation.x = -.4; g.legR.rotation.x = .3; });
     // menino mirando o mosquete com as duas mãos
-    hm.arm.rotation.set(-1.4, 0, .12); hm.arm.fa.rotation.x = -.15; hm.armL.rotation.set(-1.55, 0, -.55); hm.armL.fa.rotation.x = -.2;
-    hm.head.rotation.z = .16; hm.head.rotation.x = -.04; hm.eyeL.scale.y = .15;
+    hm.arm.rotation.set(-1.0, 1.22, .13); hm.arm.fa.rotation.x = -1.48; hm.armL.rotation.set(-1.01, -.3, -.58); hm.armL.fa.rotation.x = -1.15;   // mosquete na diagonal diante do peito, mão esquerda apoiando o cano (resolvido numericamente)
+    hm.head.rotation.z = .16; hm.head.rotation.x = -.04; hm.eyeL.scale.y = .15; if (hm.whL) hm.whL.scale.y = .2;
     // menina: espada erguida (direita) e tocha (esquerda, em pé)
     hf.arm.rotation.set(-2.6, 0, .1); hf.arm.fa.rotation.x = -.3; hf.armL.rotation.set(-.9, 0, -.4); hf.armL.fa.rotation.x = -.6;
     tg.rotation.set(-(hf.armL.rotation.x + hf.armL.fa.rotation.x), 0, .1);
@@ -162,7 +163,7 @@ function scene3d(root, cv) {
   /** movimento ocioso: respiração, tocha tremendo, aves em voo, faíscas, câmera lenta com parallax */
   function idle() {
     const w = Math.sin;
-    [hm, hf].forEach((g, i) => { g.up.rotation.x += w(T * 1.5 + i * 1.7) * .014; g.head.rotation.x += w(T * 1.5 + i * 1.7 + .6) * .012; });
+    [hm, hf].forEach((g, i) => { g.up.rotation.x += w(T * .9 + i * 1.7) * .006; g.head.rotation.x += w(T * .7 + i * 1.7 + .6) * .004; });   // respiração bem suave
     hf.arm.rotation.z += w(T * 1.1) * .03; hf.armL.rotation.x += w(T * 1.3) * .035; hm.arm.rotation.x += w(T * .9) * .015;
     [pirate, skel].forEach((g, i) => { g.up.rotation.x += w(T * 1.2 + i * 2) * .018; });
     tl.intensity = 1.25 + w(T * 13) * .22 + w(T * 7.3 + 1) * .2 + w(T * 31) * .1;

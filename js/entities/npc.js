@@ -16,6 +16,7 @@ import { lieDown, standFromBed, makeZzz } from './sleep.js';
 import { SLEEP } from './sleep.js';
 import { farmerThink, farmerPose, farmerSleep, refreshField } from './farmer.js';
 import { initSmith, updateSmith, updateSparks } from './npc-work.js';
+import { tradeThink, tradeWind, tradePose } from './npc-trades.js';
 import { cam } from '../core/engine.js';
 import { openDialog, closeDialog, dialogOpen } from '../ui/dialog.js';
 import { $ } from '../core/utils.js';
@@ -322,7 +323,8 @@ export function updateNpcs(dt, now) {
           }
           return;
         }
-        if (night) {
+        if (night && n.tr && tradeWind(n, dt)) { n.tx = g.position.x; n.tz = g.position.z; }   // guardando o ofício do dia
+        else if (night) {
           const dd = Math.hypot(g.position.x - tn.door[0], g.position.z - tn.door[1]);
           if (dd < 2.4 && !n.dro && doorClosed(tn.dr)) n.dro = { id: tn.dr, t: 0, done: false };   // estende a mão direita e abre
           const [lx, lz] = loc(tn, g.position.x, g.position.z), inTav = Math.abs(lx) < 4.9 && lz > -4.9 && lz < 4.6;
@@ -332,7 +334,8 @@ export function updateNpcs(dt, now) {
           const nearF0 = Math.hypot(g.position.x - F0[0], g.position.z - F0[1]) < 1.2;
           const tg = nearF0 && !doorClosed(tn.dr) ? F1 : F0;
           n.tx = tg[0]; n.tz = tg[1];
-        } else if (n.t <= 0 || ((n.st = (n.st || 0) + dt) > 12)) {   // novo ponto de passeio: praça, ruas da vila
+        } else if (n.tr) { tradeThink(n, dt, now, talking === n); }   // ofício do dia (Breu: lenha · Polly: rede)
+        else if (n.t <= 0 || ((n.st = (n.st || 0) + dt) > 12)) {   // novo ponto de passeio: praça, ruas da vila
           n.t = 6 + Math.random() * 8; n.st = 0;
           const a = Math.random() * 6.28, r = tn.keeper ? Math.random() * 3.2 : 3 + Math.random() * (VILLAGE_R - 17);
           if (tn.keeper) { n.t = 3 + Math.random() * 5; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; } else { n.tx = Math.cos(a) * r; n.tz = Math.sin(a) * r; }
@@ -357,7 +360,7 @@ export function updateNpcs(dt, now) {
         return;
       } else if (n.t <= 0) { n.t = 3 + Math.random() * 5; const a = Math.random() * 6.28, r = Math.random() * 3.2; n.tx = n.hx + Math.cos(a) * r; n.tz = n.hz + Math.sin(a) * r; }
       if (!n.q) {
-      const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !n.dro && !(n.rt ? talking === n : near) ? (n.rt ? 1.25 : 1.1) : 0;
+      const dx = n.tx - g.position.x, dz = n.tz - g.position.z, d = Math.hypot(dx, dz), want = d > .4 && !n.dro && !(n.tr && n.tr.still) && !(n.rt ? talking === n : near) ? (n.rt ? 1.25 : 1.1) : 0;
       let wx = 0, wz = 0;
       if (want) {
         const [gx, gz] = navTarget(n.sm, g.position.x, g.position.z, n.tx, n.tz, .5, now);
@@ -376,6 +379,7 @@ export function updateNpcs(dt, now) {
       }
       const sp = Math.hypot(n.vx, n.vz), mv = Math.min(1, sp / 1.1);
       if (sp > .2) g.rotation.y = turn(g.rotation.y, Math.atan2(n.vx, n.vz), dt * 8);
+      else if (n.tr && n.tr.face) g.rotation.y = turn(g.rotation.y, Math.atan2(n.tr.face[0] - g.position.x, n.tr.face[1] - g.position.z), dt * 6);
       else if (near) g.rotation.y = turn(g.rotation.y, Math.atan2(P.x - g.position.x, P.z - g.position.z), dt * 3);
       n.spd = sp;
     }
@@ -385,6 +389,7 @@ export function updateNpcs(dt, now) {
     const gr = gait(g, dt, gaitSpeed(n.spd || 0), { sword: false });
     if (n.role === 'citizen') g.arm.rotation.x = -gr.w * gr.sw * .8;
     if (n.rt) farmerPose(n, t, dt);
+    if (n.tr && !n.q && !n.up) tradePose(n, t, dt);
     if (n.dro) {   // abrindo uma porta: a mão direita (a do braço da arma) alcança e empurra
       const D = n.dro; D.t += dt; const e = Math.sin(Math.min(1, D.t / .9) * Math.PI);
       g.arm.rotation.x = -1.45 * e; g.arm.fa.rotation.x = -.35 * e; g.up.rotation.x = .08 * e;
