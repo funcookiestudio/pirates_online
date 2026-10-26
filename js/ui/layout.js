@@ -23,6 +23,8 @@ const DEF = {
 };
 /** Itens soltos (seguem o CSS até serem editados): menu e diamantes */
 const XT = { lnch: ['lnch', 'Menu (ajustes)', false], gwl: ['gwl', 'Diamante vermelho (vida)', true], gwr: ['gwr', 'Diamante azul (companheiro)', true] };
+/** Menu e diamantes com posição padrão própria (retrato); onde não houver, seguem o CSS */
+const DEFX = { p: { lnch: { x: 200, y: 34, sz: 44 }, gwl: { x: 327, y: 53, sz: 88, rot: -37 }, gwr: { x: 366, y: 105, sz: 48, rot: 18 } }, l: {} };
 const DEF_ROT = -37;   // inclinação padrão dos diamantes (para a mão direita; na esquerda espelha)
 
 let L = { p: {}, l: {} };
@@ -38,6 +40,7 @@ const rm = (el, ks) => ks.forEach(k => el.style.removeProperty(k));
 function cur(id) {
   const o = ok();
   if (L[o][id]) return L[o][id];
+  if (DEFX[o][id]) return DEFX[o][id];
   if (BTN[id]) { const d = DEF[o][id]; return { x: d[0], y: d[1], sz: d[2] }; }
   const el = $(XT[id][0]), r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   const g = parseFloat(getComputedStyle(body).getPropertyValue(id === 'gwl' ? '--g1' : '--g2')) || 60;
@@ -55,10 +58,10 @@ export function applyLayout() {
     if (sz) { sz.style.width = sz.style.height = q.sz + 'px'; } else el.style.setProperty('--sz', q.sz + 'px');
   });
   Object.keys(XT).forEach(id => {
-    const el = $(XT[id][0]), q = mob ? L[o][id] : null, lv = id === 'gwl' ? $('lvp') : id === 'gwr' ? $('lva') : null;
+    const el = $(XT[id][0]), q = mob ? (L[o][id] || DEFX[o][id]) : null;
     if (!q) {
       rm(el, ['left', 'right', 'bottom', 'width', 'height', 'margin', '--tilt']);
-      if (id !== 'lnch') { body.style.removeProperty(id === 'gwl' ? '--g1' : '--g2'); rm(lv, ['left', 'right', 'bottom', 'transform']); }
+      if (id !== 'lnch') body.style.removeProperty(id === 'gwl' ? '--g1' : '--g2');
       return;
     }
     el.style.setProperty(other, 'auto'); el.style.setProperty(side, (q.x - q.sz / 2) + 'px');
@@ -66,8 +69,6 @@ export function applyLayout() {
     body.style.setProperty(id === 'gwl' ? '--g1' : '--g2', q.sz + 'px');
     el.style.bottom = (q.y - q.sz * .55) + 'px';
     el.style.setProperty('--tilt', ((q.rot == null ? DEF_ROT : q.rot) * (R ? 1 : -1)) + 'deg');
-    // o nível fica no centro do diamante, na horizontal
-    lv.style.left = (R ? innerWidth - q.x : q.x) + 'px'; lv.style.right = 'auto'; lv.style.bottom = q.y + 'px'; lv.style.transform = 'translate(-50%, 50%)';
   });
 }
 

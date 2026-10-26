@@ -249,8 +249,6 @@ export function initInput() {
     b.onclick = () => { if (held) { held = false; return; } toggleMount(); };
   }
   $('sa').onclick = togAuto;
-  $('gwl').onclick = () => openTab('char');
-  $('gwr').onclick = () => openTab('pets');
   $('pcl').onclick = closePanel;
   camButtons();
   $('pcl2x').onclick = closePanel;

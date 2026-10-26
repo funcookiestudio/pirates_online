@@ -33,14 +33,11 @@ body.mob #gwr::before { content: ""; position: absolute; inset: -6px; }
 body.mob #hb .gem .orb { inset: 5px; }
 /* o líquido continua na horizontal, mesmo com o diamante inclinado */
 body.mob .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
-body.mob .lq i { bottom: calc(var(--g) * .641); transform: scaleY(.475); transform-origin: 50% 100%; }
-/* nível no centro de cada diamante */
-body.mob #deck .lv { right: auto; transform: translate(-50%, 50%); font-size: 11px; }
-body.mob #lvp { left: calc(var(--eo) + var(--g1) * .532); bottom: calc(var(--eb) + 10px + var(--g1) * .359); }
-body.mob #lva { left: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .532); bottom: calc(var(--eb) + 10px + var(--g2) * .359); font-size: 9px; }
-body.mob.hand-l #deck .lv { left: auto; transform: translate(50%, 50%); }
-body.mob.hand-l #lvp { right: calc(var(--eo) + var(--g1) * .532); }
-body.mob.hand-l #lva { right: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .532); }
+body.mob .lq i { bottom: calc(var(--g) * .45); transform: scaleY(.55); transform-origin: 50% 100%; }
+/* nível no início da barra de XP de cada um (jogador à esquerda, companheiro à direita) */
+body.mob #deck .lv { transform: none; font-size: 11px; bottom: calc(var(--eb) + 9px); }
+body.mob #lvp { left: calc(var(--eo) + 6px); right: auto; }
+body.mob #lva { right: calc(var(--eo) + 6px); left: auto; font-size: 11px; }
 
 /* ---- habilidades em arco ---- */
 body.mob #sk { display: contents; }
@@ -95,21 +92,21 @@ body.mob #sawrap, body.mob #lnch { pointer-events: auto; }
 body.joy-on #joyb, body.joy-on #joyk { display: block; }
 
 /* ---- ícones em traço dourado (os mesmos do protótipo): o emoji some e a máscara desenha o ícone ---- */
-body.mob #sk > div:not(#sawrap), body.mob #s5, body.mob #sa { font-size: 0; }
-body.mob #sk > div:not(#sawrap) em, body.mob #s5 > em, body.mob #sa > em { font-size: 11px; }
-body.mob #sk > div:not(#sawrap)::before, body.mob #s5::before, body.mob #sa::before {
+#sk > div:not(#sawrap), #s5, #sa { font-size: 0; }
+#sk > div:not(#sawrap) em, #s5 > em, #sa > em { font-size: 11px; }
+#sk > div:not(#sawrap)::before, #s5::before, #sa::before {
   content: ""; display: block; width: 58%; height: 58%; background: #e0c27a; position: relative; z-index: 1; pointer-events: none;
   -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
 }
-body.mob #sa::before { width: 52%; height: 52%; }
-body.mob #s1 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 19L17 7M14 4h6v6M5 19l-1 3 3-1M8 16l3 3%22/%3E%3C/svg%3E"); }
-body.mob #s2 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4a8 8 0 108 8M12 8a4 4 0 104 4%22/%3E%3C/svg%3E"); }
-body.mob #s3 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2210%22 cy=%2214%22 r=%226%22/%3E%3Cpath d=%22M14 9l4-4M17 3l1 2M19 5l2 1%22/%3E%3C/svg%3E"); }
-body.mob #s4 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 3h6M10 3v5l-5 9a3 3 0 003 4h8a3 3 0 003-4l-5-9V3M8 15h8%22/%3E%3C/svg%3E"); }
-body.mob #sr { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 12h12M11 7l5 5-5 5M3 7h6M3 17h6%22/%3E%3C/svg%3E"); }
-body.mob #s5 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%227%22 cy=%2210%22 r=%222%22/%3E%3Ccircle cx=%2212%22 cy=%227%22 r=%222%22/%3E%3Ccircle cx=%2217%22 cy=%2210%22 r=%222%22/%3E%3Cpath d=%22M7 17c0-3 2.5-5 5-5s5 2 5 5c0 2-2 3-5 3s-5-1-5-3z%22/%3E%3C/svg%3E"); }
-body.mob #sm { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 21V10a6 6 0 0112 0v11M6 16h3M15 16h3%22/%3E%3C/svg%3E"); }
-body.mob #sa { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%227%22/%3E%3Cpath d=%22M12 2v5M12 17v5M2 12h5M17 12h5%22/%3E%3C/svg%3E"); }
+#sa::before { width: 52%; height: 52%; }
+#s1 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 19L17 7M14 4h6v6M5 19l-1 3 3-1M8 16l3 3%22/%3E%3C/svg%3E"); }
+#s2 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4a8 8 0 108 8M12 8a4 4 0 104 4%22/%3E%3C/svg%3E"); }
+#s3 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2210%22 cy=%2214%22 r=%226%22/%3E%3Cpath d=%22M14 9l4-4M17 3l1 2M19 5l2 1%22/%3E%3C/svg%3E"); }
+#s4 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 3h6M10 3v5l-5 9a3 3 0 003 4h8a3 3 0 003-4l-5-9V3M8 15h8%22/%3E%3C/svg%3E"); }
+#sr { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 12h12M11 7l5 5-5 5M3 7h6M3 17h6%22/%3E%3C/svg%3E"); }
+#s5 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%227%22 cy=%2210%22 r=%222%22/%3E%3Ccircle cx=%2212%22 cy=%227%22 r=%222%22/%3E%3Ccircle cx=%2217%22 cy=%2210%22 r=%222%22/%3E%3Cpath d=%22M7 17c0-3 2.5-5 5-5s5 2 5 5c0 2-2 3-5 3s-5-1-5-3z%22/%3E%3C/svg%3E"); }
+#sm { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 21V10a6 6 0 0112 0v11M6 16h3M15 16h3%22/%3E%3C/svg%3E"); }
+#sa { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%227%22/%3E%3Cpath d=%22M12 2v5M12 17v5M2 12h5M17 12h5%22/%3E%3C/svg%3E"); }
 body.mob #lnch svg { width: 56%; height: 56%; }
 #fan button svg { width: 54%; height: 54%; }
 
@@ -164,18 +161,18 @@ body.mob #sk > div:not(#sawrap), body.mob #s5, body.mob #sa { border-radius: 50%
 /* ============ Computador: mesma disposição do protótipo — sem o barco; diamantes inclinados para fora nas pontas, botões entre eles ============ */
 body:not(.mob) #hb { --gw: 100px; filter: none; }
 body:not(.mob) #hb .end { display: none; }
-body:not(.mob) #deck { height: auto; gap: 26px; padding: 0 0 12px; background: none; border: 0; box-shadow: none; align-items: flex-end; }
+body:not(.mob) #deck { height: auto; gap: 26px; padding: 0 0 26px; background: none; border: 0; box-shadow: none; align-items: flex-end; }
 body:not(.mob) #hb .gw { width: 100px; height: 110px; --g: 100px; }
 body:not(.mob) #gwl { --tilt: 20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
 body:not(.mob) #gwr { --tilt: -20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
 body:not(.mob) #hb .gem .orb { inset: 5px; }
 /* o líquido fica na horizontal mesmo com o diamante inclinado */
 body:not(.mob) .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
-body:not(.mob) .lq i { bottom: calc(var(--g) * .641); transform: scaleY(.475); transform-origin: 50% 100%; }
+body:not(.mob) .lq i { bottom: calc(var(--g) * .45); transform: scaleY(.55); transform-origin: 50% 100%; }
 /* nível no centro de cada diamante */
-body:not(.mob) #deck .lv { bottom: 67px; font-size: 13px; transform: translate(-50%, 50%); }
-body:not(.mob) #lvp { left: 50px; right: auto; }
-body:not(.mob) #lva { left: auto; right: 50px; transform: translate(50%, 50%); }
+body:not(.mob) #deck .lv { bottom: 9px; font-size: 13px; transform: none; }
+body:not(.mob) #lvp { left: 126px; right: auto; }
+body:not(.mob) #lva { left: auto; right: 126px; }
 /* barras de XP: só embaixo da fileira de botões */
 body:not(.mob) #xpp { left: 126px; right: calc(50% + 1px); bottom: 0; }
 body:not(.mob) #xpa { right: 126px; left: calc(50% + 1px); bottom: 0; }
