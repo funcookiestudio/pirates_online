@@ -44,8 +44,8 @@ function fuse(grp, keep) {
 /* ---- skins ---- u/f: manga/antebraço (0 = pele) · st: meias/botas · hat: tri|straw|cap|band|kerch|hood|toque */
 const PJC = 0xa88a58, PJD = 0x7a6238;
 /** Roupa inicial: saco de batata rasgado (juta), sem chapéu, pés descalços */
-export const PJM = { t: PJC, fl: PJD, u: PJC, f: PJC, pa: PJD, st: PJD, sh: 0x6a4a30, hc: PJD, hair: 0x4a2f20, ex: [], rags: 1 };
-export const PJF = { b: PJC, sk: PJD, u: PJC, f: PJC, st: PJD, sh: 0x6a4a30, hem: 0x8a6e42, hc: PJD, hair: 0x8a3b2a, ex: [], rags: 1 };
+export const PJM = { t: 0xddd2b4, u: 0xddd2b4, f: 0xddd2b4, pa: 0x76664a, cal: 1, bare: 1, st: 0, sh: 0x4a3524, belt: 0x4a3322, hc: 0x4a3524, hair: 0x4a2f20, ex: ['pM', 'ruff'] };   // camisa simples remendada, calça até a canela com remendos, gola com babados
+export const PJF = { b: 0x6f7a68, fi: 0xe6dcc0, belt: 0x5a4430, sk: 0x7d8a76, hem: 0x68705e, u: 0xe6dcc0, f: 0, bare: 1, st: 0, sh: 0x5a4030, hc: 0x4a3524, hair: 0x8a3b2a, ex: ['pF'] };   // vestido de camponesa desbotado e remendado
 export const SKM = {
   pirata: { t: 0x8a2433, fl: 0x8a2433, vest: 0xe9d9a8, belt: 0x2c4b78, u: 0x8a2433, f: 0x8a2433, cuff: GOLD, pa: 0xb59a6a, st: WHITE, sh: 0x1d1d22, buck: 1, hat: 'tri', hc: 0x1d1d22, hair: 0x4a2f20, ex: ['jabot', 'patch', 'mo'] },
   taberneiro: { t: 0xf1ead6, vest: 0x7a4a2b, belt: 0x3b2a1c, ap: WHITE, u: 0xf1ead6, f: 0, pa: 0x5b4a3a, st: 0xe9e2cc, sh: 0x3b2a1c, hat: 'cap', hc: WHITE, hair: 0x6b4a2f, mo: 0x6b4a2f, ex: ['towel'] },
@@ -110,10 +110,16 @@ export function buildHuman(F, d) {
   function leg(x) {
     const hip = at(new THREE.Group(), x, 1.1, 0); root.add(hip);
     const tw = F ? .44 : .5, sw = F ? .4 : .44, td = F ? .5 : .55, sd = F ? .46 : .48, fw = F ? .52 : .56;
-    put(B(tw, .5, td, .09, F ? d.st : d.pa), 0, -.2, 0, hip);
+    const LEGC = d.bare ? SKIN : d.st;   // perna de fora (sem meia)
+    put(B(tw, .5, td, .09, F ? LEGC : d.pa), 0, -.2, 0, hip);
     const knee = at(new THREE.Group(), 0, -.45, 0); hip.add(knee);
     const pg = d.ex && d.ex.includes('peg') && x > 0;   // perna de pau
-    put(B(pg ? .26 : sw, .42, pg ? .28 : sd, .08, pg ? WOOD : d.st), 0, -.2, 0, knee);
+    put(B(pg ? .26 : sw, .42, pg ? .28 : sd, .08, pg ? WOOD : LEGC), 0, -.2, 0, knee);
+    if (d.cal && !F) { put(B(sw + .06, .26, sd + .06, .05, d.pa), 0, -.12, 0, knee); put(B(sw + .08, .05, sd + .08, .02, 0x5a4c34), 0, -.26, 0, knee); }   // barra da calça (meia-canela)
+    if (ex.includes('pM')) {   // remendos da calça
+      put(B(.26, .22, .04, .015, x < 0 ? 0x8a6a4a : 0x6a7a86), x < 0 ? .04 : -.03, -.18, td / 2 + .01, hip);
+      if (x > 0) put(B(.2, .2, .04, .015, 0x9a7a5a), .03, -.1, sd / 2 + .04, knee);
+    }
     const ank = at(new THREE.Group(), 0, -.42, 0); knee.add(ank);
     put(B(pg ? .3 : fw, .3, pg ? .34 : .8, .08, pg ? WOOD : d.sh), 0, -.08, pg ? 0 : .1, ank);
     put(B(fw + .02, .12, .3, .04, 0x2a1d14), 0, -.17, -.18, ank);
@@ -186,12 +192,26 @@ export function buildHuman(F, d) {
   if (ex.includes('bag')) { put(B(.7, .5, .25, .08, 0x7a5230), 0, 1.4, -.55); put(B(.5, .12, .28, .04, 0x5a3a28), 0, 1.62, -.55); put(B(.16, .2, .1, .04, 0x6fa84a), .2, 1.7, -.6); }
   if (ex.includes('bottles')) { put(B(.12, .2, .12, .03, 0x6fa84a), -.34, 1.18, .46); put(B(.12, .2, .12, .03, 0xc23b3b), .34, 1.18, .46); }
 
+  if (ex.includes('pM')) {   // camisa simples com remendos
+    put(B(.34, .3, .04, .015, 0x8a7a5a), -.34, 1.8, .44); put(B(.28, .22, .04, .015, 0x6a7a86), .3, 1.4, .44); put(B(.3, .26, .04, .015, 0x9a7a5a), .4, 1.9, -.43);
+  }
+  if (ex.includes('ruff')) {   // gola larga com babados
+    put(B(1.0, .14, .72, .05, 0xf0ead8), 0, 2.24, 0);
+    [-.4, -.2, 0, .2, .4].forEach((x, i) => put(B(.19, .16, .1, .03, 0xf0ead8), x, 2.2 + (i % 2) * .04, .38));
+    [-.5, .5].forEach(x => put(B(.1, .15, .5, .03, 0xe6dfc8), x, 2.2, 0));
+    put(B(.5, .1, .1, .03, 0xe6dfc8), 0, 2.07, .45); put(B(.34, .09, .1, .03, 0xf0ead8), 0, 1.97, .45);   // babado em cascata no peito
+  }
+  if (ex.includes('pF')) {   // remendos desbotados do vestido
+    put(B(.3, .24, .04, .015, 0x9a7a5a), -.3, 1.02, .45); put(B(.26, .26, .04, .015, 0x6e7f94), .32, .92, .45);
+    put(B(.04, .22, .28, .015, 0xa8827a), .62, 1.08, .08); put(B(.22, .22, .04, .015, 0xb5a77a), .2, 1.56, .34);
+  }
   // braços
   function arm(x) {
     const sh = at(new THREE.Group(), x, F ? 2.1 : 2.05, 0); root.add(sh);
     const elb = at(new THREE.Group(), 0, -.42, 0); sh.add(elb);
     if (F) {
       put(B(.42, .5, .46, .09, d.u || SKIN), 0, -.2, 0, sh);
+      if (ex.includes('pF')) put(B(.04, .2, .24, .015, 0x8a8a6a), Math.sign(x) * .23, -.22, 0, sh);
       if (d.ruf) put(B(.48, .12, .52, .04, d.ruf), 0, -.02, 0, elb);
       put(B(.34, .32, .38, .07, d.f || SKIN), 0, -.18, 0, elb);
       if (d.cuff) put(B(.38, .08, .42, .03, d.cuff), 0, -.32, 0, elb);
@@ -199,6 +219,7 @@ export function buildHuman(F, d) {
     } else {
       put(B(.44, .5, .48, .09, d.u || SKIN), 0, -.2, 0, sh);
       put(B(.4, .32, .44, .08, d.f || SKIN), 0, -.14, 0, elb);
+      if (ex.includes('pM')) put(B(.3, .18, .04, .015, 0x8a7a5a), 0, -.1, -.23, elb);
       if (d.cuff) put(B(.5, .16, .54, .05, d.cuff), 0, -.32, 0, elb);
       if (ex.includes('jabot')) put(B(.42, .08, .46, .03, WHITE), 0, -.42, 0, elb);
       put(B(.38, .3, .42, .08, SKIN), 0, -.52, 0, elb);

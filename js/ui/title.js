@@ -1,7 +1,7 @@
 /* Tela inicial "Tiny Pirates": cena 3D (heróis de frente atacando, inimigos de costas, aves voando) atrás do título HTML. */
 import { VERSION } from '../core/version.js';
 import { enemyModel } from '../entities/character.js';
-import { buildHuman, SKM, SKF } from '../entities/human.js';
+import { buildHuman, SKM, SKF, PJM, PJF } from '../entities/human.js';
 import { ENEMY_KINDS } from '../data/enemies.js';
 import { mkParrot, mkRaven } from '../pets/models.js';
 import { WEAPONS } from '../data/weapons.js';
@@ -88,7 +88,7 @@ function scene3d(root, cv) {
   const gl = new THREE.PointLight(0xffc860, 2.6, 15, 1.4); sc.add(gl);   // brilho do tesouro: ilumina os heróis pelo lado de dentro
   const rim = new THREE.DirectionalLight(0x7a98d8, .7); rim.position.set(-6, 5, -4); sc.add(rim);
   // heróis com roupa de pirata (melhor que a roupa inicial) e a aparência escolhida
-  const mk = (f, a) => { const L = resolveLook(f, cleanLook(f, a)), base = f ? SKF.pirata : SKM.pirata; return buildHuman(f, Object.assign({}, base, { skin: L.skin, hair: L.hair, look: L, ex: f ? ['earring'] : [] })); };
+  const mk = (f, a) => { const L = resolveLook(f, cleanLook(f, a)), base = f ? PJF : PJM; return buildHuman(f, Object.assign({}, base, { skin: L.skin, hair: L.hair, look: L, ex: [...base.ex, ...(f ? ['earring'] : [])] })); };
   const hm = mk(false, { hs: 2, hc: 2, sk: 2, ey: 3, bs: 3, bc: 2 }), hf = mk(true, { hs: 6, hc: 7, sk: 1, ey: 2, bs: 2 });
   const pirate = enemyModel(ENEMY_KINDS[7]), skel = enemyModel(ENEMY_KINDS[5]);
   const raven = mkRaven(), parrot = mkParrot();
