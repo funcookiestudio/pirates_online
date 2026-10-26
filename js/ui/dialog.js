@@ -17,6 +17,7 @@ import './questboard.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 import { startPet } from '../systems/pet.js';
+import { speak, stopSpeech, initNarrator } from '../systems/narrator.js';
 let cur = null, li = 0, tab = 'buy', stock = [];
 
 const plain = it => it.pot || it.food || it.mat || it.ammo;
@@ -157,7 +158,7 @@ function renderShop() {
 }
 
 const HORSE_COST = 120;
-function say(txt) { $('dtx').textContent = txt; }
+function say(txt) { $('dtx').textContent = txt; speak(txt, cur && cur.name); }
 
 /** Caixa do gato: acariciar ou sair */
 export function openPetBox(cat) {
@@ -239,7 +240,7 @@ function openShop() {
 function closeShop() { $('shop').style.display = 'none'; if (cur) $('dlg').style.display = 'block'; }
 
 export function closeDialog() {
-  cur = null;
+  cur = null; stopSpeech();
   $('dlg').style.display = 'none';
   closeShop();
 }
@@ -247,6 +248,9 @@ export function closeDialog() {
 export const dialogOpen = () => !!cur;
 
 export function initDialog() {
+  initNarrator();
+  const sp = document.createElement('button'); sp.id = 'dsp'; sp.title = 'Ouvir a fala de novo'; sp.textContent = '🔊';
+  $('dx').before(sp); sp.onclick = () => speak($('dtx').textContent, cur && cur.name, true);
   $('dx').onclick = closeDialog;
   $('shx').onclick = closeShop;
   $('shb').onclick = () => { tab = 'buy'; renderShop(); };

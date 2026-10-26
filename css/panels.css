@@ -380,3 +380,4 @@
   #acfg .ahd { padding-top: calc(env(safe-area-inset-top) + 8px); }
   #dlg .dh button, #shop .dh button, #bedcard .dh button, #cvp .cvh i { min-width: 44px; min-height: 44px; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; }
 }
+#acfg .ahb { flex: 1; min-height: 38px; border-radius: 8px; border: 2px solid #a07a3a; background: #1d1610; color: #e8d9b0; font-size: 13px; cursor: pointer; }
