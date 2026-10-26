@@ -99,6 +99,10 @@ const QUESTS = [
     stages: [{ k: 'boss', n: 1, kind: KIND.CONTRA, elite: true, name: 'Cão Rouco', at: () => POST_DATA[1] ? freePoint(POST_DATA[1].x + 4, POST_DATA[1].z + 4, 1) : null, hud: () => '🗡 Derrote o Cão Rouco, o devedor elite, no Posto dos Contrabandistas' }],
     choice: [['💰 Entregar a bolsa (mais ouro)', { g: 1.5 }], ['🤐 Dizer que ele fugiu (uma arma Mágica, menos ouro)', { g: .5, magic: 1 }]],
     reward: {}, rewardTxt: 'conforme a sua escolha' },
+  { id: 'procurado', giver: 'Mural de Missões', title: 'Procurado: Capitão Maldito', lv: 12, tier: 'epica',
+    say: { ask: 'PROCURADO: Capitão Maldito, vivo ou morto! A recompensa é generosa. Ele é um chefe de verdade: leve poções, bombas e um bom equipamento. Ele ressurge depois de um tempo, mas só o primeiro abate vale a recompensa.', on: 'O Capitão Maldito vaga pela costa leste, no Fortim. Derrube-o e volte ao Mural.', ready: 'O cartaz está riscado: O Capitão Maldito caiu! Cobre sua recompensa.' },
+    stages: [{ k: 'wanted', n: 1, hud: () => '☠ Derrote o Capitão Maldito (chefe da costa leste, no Fortim)' }],
+    reward: { magic: 1, pot: 5, bmb: 3 }, rewardTxt: 'uma arma Mágica, 5 poções e 3 bombas' },
   { id: 'arsenal', giver: 'Capitã Sal', title: 'Mão Firme', lv: 5, tier: 'curta',
     say: { ask: 'Arremesso é arte de quem não perde a calma, marujo. Pegue estas facas e acerte dez inimigos com elas. Equipe-as no espaço de arma de longa distância e use o botão de ataque. Elas acabam, mas as que não quebram ficam no chão.', on: 'Ainda faltam acertos! Equipe a faca de arremesso no espaço de longa distância e atire nos inimigos.', ready: 'Mão firme, olho vivo! Aqui, mais facas e uns trocados pelo treino.' },
     stages: [{ k: 'throw', n: 10, hud: q => '🎯 Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
@@ -237,6 +241,7 @@ on('enemy:killed', () => {
   const e = state.lastKill;
   if (!e) return;
   active('kill').forEach(([d, q]) => { if (e.t.n === 'Javali' && !e.qid) bump(d, q); });
+  active('wanted').forEach(([d, q]) => { if (e.t.boss && !e.dun) bump(d, q); });
   active('boss').forEach(([d, q]) => { if (e.qid === d.id) bump(d, q); });
 });
 on('shot:thrown-hit', () => { active('throw').forEach(([d, q]) => bump(d, q)); });
@@ -416,6 +421,10 @@ export function questMarks() {
       if (e) out.push({ x: e.x, z: e.z, r: 22, t: d.title });
       else if (st.at) { const p = st.at(); if (p) out.push({ x: p.x, z: p.z, r: 32, t: d.title }); }
       else { const n = npcByShop('farm-granja'); if (n) out.push({ x: n.g.position.x + 16, z: n.g.position.z + 6, r: 32, t: d.title }); }
+    } else if (st.k === 'wanted') {
+      const e = enemies.find(z => !z.dead && z.t.boss && !z.dun);
+      if (e) out.push({ x: e.x, z: e.z, r: 30, t: d.title });
+      else { const f = POST_DATA.find(p => /Capitão Maldito/.test(p.n || p.name || '')); if (f) out.push({ x: f.x, z: f.z, r: 34, t: d.title }); }
     } else if (st.k === 'stalk') {
       const w = WILD.deer.find(a => a.white); if (w) out.push({ x: w.x, z: w.z, r: 34, t: d.title });
     } else if (st.k === 'kill') {
