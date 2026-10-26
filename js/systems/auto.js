@@ -16,7 +16,7 @@ import { STEER, markStuck } from './steer.js';
 import { doorBusy, cancelDoor } from '../world/doors.js';
 import { torchStep } from './torch-auto.js';
 import { lootFilter } from './lootrule.js';
-import { dungeonGimmicks } from '../dungeon/dungeon-scene.js';
+import { dungeonGimmicks, dungeonExit } from '../dungeon/dungeon-scene.js';
 import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
 const STUCK = { x: 0, z: 0, t: 0 };
@@ -146,6 +146,19 @@ export function autoThink(dt) {
     const goal = gimmickGoal(dungeonGimmicks());
     if (goal && !alive.some(e => e.ag && dist(e) < 7)) {
       P.tgt = null; P.tx = goal.x; P.tz = goal.z;
+      return;
+    }
+    // chefe morto: pega o loot próximo e sai pelo portal (volta em segurança à vila), sem caçar o resto da dungeon
+    const ex = dungeonExit();
+    if (ex && !alive.some(e => e.ag && dist(e) < 7)) {
+      let bl = null, bd = 12;
+      if (state.autoCfg.loot) loot.forEach(x => {
+        if (x.dropped || lootBlocked(x) || !lootFilter(x)) return;
+        const d = Math.hypot(x.m.position.x - P.x, x.m.position.z - P.z);
+        if (d < bd) { bd = d; bl = x; }
+      });
+      P.tgt = null;
+      P.tx = bl ? bl.m.position.x : ex.x; P.tz = bl ? bl.m.position.z : ex.z;
       return;
     }
     let best = null, bs = -1e9;

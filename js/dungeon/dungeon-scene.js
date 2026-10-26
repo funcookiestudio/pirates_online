@@ -1,6 +1,6 @@
 /* Cena da dungeon: constrói a grade gerada (célula = 2 m) longe da ilha, move o jogador para dentro,
    povoa com inimigos/chefe/baús e cuida da saída (portal). Mesmo mundo, outro lugar: terreno e A* consultam dgrid.js. */
-import { scene, torch } from '../core/engine.js';
+import { scene, torch, cam } from '../core/engine.js';
 import { enemies, loot } from '../core/registry.js';
 import { M as M0 } from '../core/utils.js';
 import { xray } from '../world/xray.js';
@@ -91,8 +91,10 @@ export function enterDungeon(D, gen) {
   mkInst(new THREE.BoxGeometry(C * .97, .3, C * .97), M(look.floor), fl.filter(([i, j]) => (i + j) % 2 === 0), -.15, 1);
   mkInst(new THREE.BoxGeometry(C * .97, .3, C * .97), M(look.floor2), fl.filter(([i, j]) => (i + j) % 2 === 1), -.15, 1);
   mkInst(new THREE.BoxGeometry(C, .3, C), M(0x0a0a0c), fl, -.32, 0);   // junta escura entre as lajotas
-  mkInst(new THREE.BoxGeometry(C, WH, C), M(look.wall), wl, WH / 2, 1.2);
-  mkInst(new THREE.BoxGeometry(C * 1.04, .22, C * 1.04), M(look.cap), wl, WH + .1, .6);   // beiral claro: dá volume às paredes
+  const wallIm = mkInst(new THREE.BoxGeometry(C, WH, C), M(look.wall), wl, WH / 2, 1.2);
+  const capIm = mkInst(new THREE.BoxGeometry(C * 1.04, .22, C * 1.04), M(look.cap), wl, WH + .1, .6);
+  const wallH = new Float32Array(wl.length).fill(WH), wallTorch = [];   // altura atual de cada parede (rebaixa as que ficam entre a câmera e o jogador)
+  [wallIm, capIm].forEach(im => { im.frustumCulled = false; });   // beiral claro: dá volume às paredes
 
   // salas: brasas nos cantos para dar vida à penumbra
   const ember = new THREE.MeshBasicMaterial({ color: 0xff9030 }), post = M(0x2a2420);
@@ -128,13 +130,14 @@ export function enterDungeon(D, gen) {
     }
   });
   let tn = 0;
-  wl.forEach(([i, j]) => {   // tocha de parede em parede que dá para um piso, espaçadas
+  wl.forEach(([i, j], wn) => {   // tocha de parede em parede que dá para um piso, espaçadas
     if ((i * 7 + j * 13) % 11 !== 0 || tn > 60) return;
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const x = i + dx, y = j + dz;
       if (x < 0 || y < 0 || x >= W || y >= H || !grid[y * W + x]) continue;
       const f = new THREE.Mesh(new THREE.ConeGeometry(.2, .55, 5), flame); f.position.set(wx(i) + dx * (C / 2 + .02), 2, wz(j) + dz * (C / 2 + .02)); g.add(f);
       const br = new THREE.Mesh(new THREE.BoxGeometry(.14, .5, .14), post); br.position.set(f.position.x, 1.55, f.position.z); g.add(br);
+      wallTorch.push({ f, br, wn });
       tn++; break;
     }
   });
@@ -176,7 +179,7 @@ export function enterDungeon(D, gen) {
   scene.add(g);
 
   cur = {
-    D, g, chests, boss, list, gm,
+    D, g, chests, boss, list, gm, wl, wallIm, capIm, wallH, wallTorch,
     portals: [{ g: pIn, x: sx, z: sz, on: true, armed: false }, { g: pOut, x: ex, z: ez + 4, on: false, armed: true }],
     saved: { bg: scene.background, fog: scene.fog, hemi: null, torch: torch.intensity },
   };
@@ -246,6 +249,7 @@ export function updateDungeon(dt, now) {
   });
   if (!cur) return;
   updateGimmicks(cur.gm, dt, t, cur.D);
+  lowerWalls(dt);
   cur.chests.forEach(c => {
     if (c.open) { c.open = Math.min(1, c.open + dt * 2); c.g.userData.lid.rotation.x = -c.open * 1.1; return; }
     if (Math.hypot(P.x - c.x, P.z - c.z) < 1.8) {
@@ -256,4 +260,46 @@ export function updateDungeon(dt, now) {
       log(c.boss ? '👑 Baú do chefe aberto!' : '💰 Baú aberto!');
     }
   });
+}
+
+/** Rebaixa as paredes que ficam entre a câmera e o jogador (como nas casas), para ver o personagem nos corredores */
+const _m = new THREE.Matrix4(), _s = new THREE.Vector3(), _q = new THREE.Quaternion(), _p = new THREE.Vector3();
+const STUB = .5;
+function lowerWalls(dt) {
+  const { wl, wallIm, capIm, wallH, wallTorch } = cur;
+  let cx = cam.position.x - P.x, cz = cam.position.z - P.z;
+  const cl = Math.hypot(cx, cz) || 1; cx /= cl; cz /= cl;
+  const k = Math.min(1, dt * 10);
+  let ch = false;
+  for (let n = 0; n < wl.length; n++) {
+    const x = DG.ox + (wl[n][0] + .5) * C, z = DG.oz + (wl[n][1] + .5) * C, rx = x - P.x, rz = z - P.z, d = Math.hypot(rx, rz);
+    if (d > 16) continue;
+    const dot = rx * cx + rz * cz;
+    const goal = d < 11 && dot > 1.2 && dot / d > .3 ? STUB : WH;
+    const h = wallH[n];
+    if (Math.abs(h - goal) < .01) continue;
+    const nh = Math.abs(goal - h) < .05 ? goal : h + (goal - h) * k;
+    wallH[n] = nh; ch = true;
+    _s.set(1, nh / WH, 1); _p.set(x, nh / 2, z); _m.compose(_p, _q.identity(), _s); wallIm.setMatrixAt(n, _m);
+    _s.set(1, 1, 1); _p.set(x, nh + .1, z); _m.compose(_p, _q, _s); capIm.setMatrixAt(n, _m);
+  }
+  if (ch) { wallIm.instanceMatrix.needsUpdate = true; capIm.instanceMatrix.needsUpdate = true; wallTorch.forEach(w => { w.f.visible = w.br.visible = wallH[w.wn] > WH - .3; }); }
+}
+
+/** Objetivo da dungeon como missão (painel "Missão"): null fora da dungeon */
+export function dungeonQuest() {
+  if (!cur) return null;
+  const { D, boss, gm, list } = cur, left = list.filter(e => !e.dead).length;
+  const head = '🕳 ' + D.name + ' — ';
+  if (boss.dead) return head + '🌀 Missão cumprida! Use o portal de saída para voltar à vila';
+  if (gm && gm.keyObj) return head + '🗝 Pegue a chave que o guardião deixou';
+  if (gm && gm.door && !gm.door.open) return head + (gm.hasKey ? '🚪 Abra a porta trancada' : '🗝 Derrote o guardião e pegue a chave') + ' · ☠ depois, o chefe';
+  return head + '☠ Derrote o chefe (' + left + ' inimigos restantes)';
+}
+
+/** Chefe morto: ponto do portal de saída (o auto vai até ele) */
+export function dungeonExit() {
+  if (!cur || !cur.boss.dead) return null;
+  const p = cur.portals[1];
+  return { x: p.x, z: p.z };
 }
