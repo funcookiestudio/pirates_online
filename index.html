@@ -170,20 +170,20 @@
   </div>
 
   <!-- personagem: equipamento ao redor do retrato · cartão de nível e atributos · mochila -->
-  <div id="pg-char" class="pg">
-    <div class="ptop">
-      <div class="pframe">
-        <div class="pcol" id="eqL"></div>
-        <div class="ppor">
-          <div class="pot" id="potb" title="Poções (E)">🧪<b id="potn"></b></div>
-          <canvas class="pcv" id="cvP"></canvas>
-        </div>
-        <div class="pcol" id="eqR"></div>
-        <div class="pbot" id="eqW"></div>
-        <div class="pattr" id="attr"></div>
-        <div class="pbot" id="eqG"></div>
+  <div class="ptop">
+    <div class="pframe">
+      <div class="pcol" id="eqL"></div>
+      <div class="ppor">
+        <div class="pot" id="potb" title="Poções (E)">🧪<b id="potn"></b></div>
+        <canvas class="pcv" id="cvP"></canvas>
       </div>
-      <div class="bwrap">
+      <div class="pcol" id="eqR"></div>
+      <div class="pbot" id="eqW"></div>
+      <div class="pattr" id="attr"></div>
+      <div class="pbot" id="eqG"></div>
+    </div>
+    <div class="pright">
+      <div id="pg-char" class="pg bwrap">
         <div class="btabs" id="btabs">
           <span data-b="eq" class="on">Equipamento</span><span data-b="cons">Consumíveis</span><span data-b="quest">Missão</span><span data-b="mat">Materiais</span>
           <em id="bsort" title="Organizar mochila">⇅</em>
@@ -194,25 +194,23 @@
           <div id="bag"></div>
         </div>
       </div>
+      <div id="pg-skills" class="pg" hidden>
+        <div class="soon">⚔ Habilidades ativas e passivas</div>
+        <div class="sgrid" id="sgrid"></div>
+        <div class="rb" id="rpl">Resetar personagem</div>
+      </div>
+      <div id="pg-tal" class="pg" hidden>
+        <div class="soon">✦ Talentos: pontos ganhos ao subir de nível</div>
+        <div class="sgrid" id="tgrid"></div>
+      </div>
+      <div id="pg-qst" class="pg" hidden><div id="qlog"></div></div>
     </div>
-
-    <div class="pbelow">
-      <div class="pcard"><div class="pcl2" id="pcl2"></div><div class="pnm2">Capitão</div><div class="pcls">PIRATA</div><div class="pxp2"><i id="pxp2"></i></div></div>
-      <div id="stt"></div>
-    </div>
   </div>
 
-  <!-- habilidades e talentos: espaços reservados para as próximas funções -->
-  <div id="pg-skills" class="pg" hidden>
-    <div class="soon">⚔ Habilidades ativas e passivas do personagem</div>
-    <div class="sgrid" id="sgrid"></div>
-    <div class="rb" id="rpl">Resetar personagem</div>
+  <div class="pbelow">
+    <div class="pcard"><div class="pcl2" id="pcl2"></div><div class="pnm2">Capitão</div><div class="pcls">PIRATA</div><div class="pxp2"><i id="pxp2"></i></div></div>
+    <div id="stt"></div>
   </div>
-  <div id="pg-tal" class="pg" hidden>
-    <div class="soon">✦ Talentos: pontos ganhos ao subir de nível</div>
-    <div class="sgrid" id="tgrid"></div>
-  </div>
-  <div id="pg-qst" class="pg" hidden><div id="qlog"></div></div>
 </div>
 
 <!-- ===== Painel do companheiro (diamante azul): ficha, habilidades e talentos ===== -->

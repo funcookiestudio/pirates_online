@@ -158,9 +158,9 @@ function renderPanel() {
     $('pg-' + t).hidden = tab !== t;
     $('tb-' + t).classList.toggle('on', tab === t);
   });
-  if (tab === 'skills') { grid($('sgrid'), 12); return; }
-  if (tab === 'tal') { grid($('tgrid'), 18); return; }
-  if (tab === 'qst') { renderQuestLog($('qlog'), () => renderPanel()); return; }
+  if (tab === 'skills') grid($('sgrid'), 12);   // o quadro do personagem e os atributos ficam sempre visíveis; só a coluna da direita muda
+  if (tab === 'tal') grid($('tgrid'), 18);
+  if (tab === 'qst') renderQuestLog($('qlog'), () => renderPanel());
 
   const fill = (el, list) => {
     el.innerHTML = '';
@@ -225,7 +225,7 @@ export function fitPanel() {
     if (MOB.matches) {
       ['left', 'top', 'bottom', 'maxHeight', 'overflowY', 'transform', 'transformOrigin', 'width', 'height'].forEach(k => el.style.removeProperty(k.replace(/[A-Z]/g, c => '-' + c.toLowerCase())));
       // sem rolagem: o conteúdo inteiro é reduzido para caber na tela (só a aba Missões rola)
-      const fit = id === 'pnl' ? tab !== 'qst' : true;
+      const fit = true;
       el.classList.toggle('fit', fit);
       if (fit) {
         el.style.height = 'auto';

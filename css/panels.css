@@ -308,9 +308,9 @@
 .pattr .sl { flex: 0 0 var(--s); width: var(--s); aspect-ratio: 1; font-size: calc(var(--s) * .4); }
 
 /* ---------- Aba PERSONAGEM: personagem + equipamento à esquerda, mochila à direita, atributos embaixo ---------- */
-#pg-char .ptop { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 8px; align-items: start; }
-#pg-char .pframe { grid-template-columns: var(--s) minmax(0, 1fr) var(--s); gap: 5px; padding: 6px; }
-#pg-char .bwrap { display: flex; flex-direction: column; margin: 0; min-width: 0; }
+#pnl .ptop { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 8px; align-items: start; }
+#pnl .pframe { grid-template-columns: var(--s) minmax(0, 1fr) var(--s); gap: 5px; padding: 6px; }
+#pg-char.bwrap { display: flex; flex-direction: column; margin: 0; min-width: 0; }
 #pg-char .btabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: auto; margin: 0 0 6px; overflow: visible; }
 #pg-char .btabs span { padding: 6px 4px; font-size: 11px; text-align: center; white-space: nowrap; }
 #pg-char .btabs em { grid-column: 1 / -1; margin: 0; width: 100%; height: 26px; align-self: auto; }
@@ -318,34 +318,34 @@
 #pg-char .bhead { position: static; display: block; right: auto; top: auto; margin: 0 0 4px; text-align: right; }
 #pg-char #bag { grid-template-columns: repeat(var(--bc, 6), minmax(0, 1fr)); gap: 3px; }
 #pg-char #bag .sl { font-size: clamp(12px, calc(var(--s) * .4), 22px); min-width: 0; overflow: hidden; }
-#pg-char .pbelow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; margin-top: 8px; align-items: start; }
-#pg-char .pbelow .pcard { grid-column: 1; grid-row: 1; display: block; padding: 8px; }
-#pg-char .pbelow .st.gold { grid-column: 1; grid-row: 2; }
-#pg-char .pbelow #stt { grid-column: 2; grid-row: 1 / span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-#pg-char .pbelow #stt > * { min-width: 0; }
-#pg-char .pbelow #stt .st small { display: block; }
-#pg-char .pbelow .pcard .pcls, #pg-char .pbelow .pcard .pxp2 { display: block; }
+#pnl .pbelow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; margin-top: 8px; align-items: start; }
+#pnl .pbelow .pcard { grid-column: 1; grid-row: 1; display: block; padding: 8px; }
+#pnl .pbelow .st.gold { grid-column: 1; grid-row: 2; }
+#pnl .pbelow #stt { grid-column: 2; grid-row: 1 / span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+#pnl .pbelow #stt > * { min-width: 0; }
+#pnl .pbelow #stt .st small { display: block; }
+#pnl .pbelow .pcard .pcls, #pnl .pbelow .pcard .pxp2 { display: block; }
 @media (max-width: 700px) {
   #pg-char { --bc: 4; }
-  #pg-char .ptop { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px; }
-  #pg-char .pbelow { grid-template-columns: 1fr; }
-  #pg-char .pbelow .pcard, #pg-char .pbelow .st.gold, #pg-char .pbelow #stt { grid-column: 1; grid-row: auto; }
-  #pg-char .pbelow .pcard { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4px 8px; }
-  #pg-char .pbelow .pcard .pcls, #pg-char .pbelow .pcard .pxp2 { display: none; }
-  #pg-char .pbelow #stt { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #pnl .ptop { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 6px; }
+  #pnl .pbelow { grid-template-columns: 1fr; }
+  #pnl .pbelow .pcard, #pnl .pbelow .st.gold, #pnl .pbelow #stt { grid-column: 1; grid-row: auto; }
+  #pnl .pbelow .pcard { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 4px 8px; }
+  #pnl .pbelow .pcard .pcls, #pnl .pbelow .pcard .pxp2 { display: none; }
+  #pnl .pbelow #stt { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   #pnl.full { --s: clamp(26px, calc((100vw - 64px) / 8.6), 52px); }
 }
 @media (min-width: 701px) { #pg-char { --bc: 6; } }
-#pg-char .pbelow #stt > :only-child, #pg-char .pbelow #stt > :nth-child(3):last-child { grid-column: 1 / -1; }
-@media (max-width: 700px) { #pg-char .pbelow #stt > :nth-child(3):last-child { grid-column: auto; } }
+#pnl .pbelow #stt > :only-child, #pnl .pbelow #stt > :nth-child(3):last-child { grid-column: 1 / -1; }
+@media (max-width: 700px) { #pnl .pbelow #stt > :nth-child(3):last-child { grid-column: auto; } }
 #pg-char .btabs em { grid-column: 1; width: 100%; }
 #pg-char .btabs .bhead { grid-column: 2; display: flex; align-items: center; justify-content: flex-end; margin: 0; text-align: right; }
 #pg-char .btabs .bhead small { font-size: 12px; color: #d8c595; white-space: nowrap; }
 
 /* Quadro do personagem e quadro da mochila com a mesma altura (bases alinhadas) */
-#pg-char .ptop { align-items: stretch; }
-#pg-char .pframe { align-content: start; }
-#pg-char .bwrap { background: radial-gradient(#2e2216, #0c0805); border: 2px solid #4a3a22; padding: 6px; box-sizing: border-box; }
+#pnl .ptop { align-items: stretch; }
+#pnl .pframe { align-content: start; }
+#pg-char.bwrap { background: radial-gradient(#2e2216, #0c0805); border: 2px solid #4a3a22; padding: 6px; box-sizing: border-box; }
 #pg-char .bbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #pg-char #bag { align-content: start; }
 
@@ -361,3 +361,13 @@
 /* Ordenar, ouro e contador: mesma altura na linha */
 #pg-char .btabs em, #pg-char .btabs .st.gold, #pg-char .btabs .bhead { box-sizing: border-box; height: 30px; min-height: 30px; }
 #pg-char .btabs .st.gold { padding-top: 0; padding-bottom: 0; align-items: center; }
+
+/* Coluna da direita: mochila, habilidades, talentos ou missões (o resto do painel não muda de aba) */
+#pnl .pg[hidden] { display: none !important; }
+#pnl .pright { position: relative; min-width: 0; }
+#pnl .pright > .pg:not(.bwrap) { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; background: radial-gradient(#2e2216, #0c0805); border: 2px solid #4a3a22; padding: 8px; box-sizing: border-box; }
+#pnl .pright .sgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: none; gap: 6px; }
+#pnl .pright .soon { margin: 0 0 8px; font-size: 12px; }
+#pnl #pg-qst .ql-cards { grid-template-columns: 1fr; }
+#pnl #pg-qst .ql-sum { grid-template-columns: repeat(2, 1fr); }
+#pnl #pg-qst .qb-tab { padding: 6px 9px; font-size: 12px; min-height: 32px; }
