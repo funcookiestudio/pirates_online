@@ -15,6 +15,7 @@ import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
 import { ISLAND_LV } from '../world/outposts.js';
 import { questMarks } from '../systems/quests.js';
+import { iconKey, iconImg } from './deemoji.js';
 
 let wrap, cv, IMG, open = false, raf = 0, S = 1, OX = 0, OY = 0, Z = 1, PX = 0, PY = 0;
 const E = N / 2, ZMAX = 10;
@@ -58,7 +59,13 @@ function bakeLegend() {
   const g = LG.getContext('2d');
   const leg = [['🏘', 'Vila'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['🐔', 'Sítio das Aves'], ['🐖', 'Granja'], ['🐄', 'Fazenda do Gado'], ['🌿', 'Casa da Herbalista'], ['🔵', 'Você'], ['🟡', 'Região da missão']];
   g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
-  leg.forEach(([ic, t], i) => { const y = 8 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(0, y - 10 * d, 160 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 6 * d, y); });
+  leg.forEach(([ic, t], i) => {
+    const y = 8 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(0, y - 10 * d, 160 * d, 19 * d);
+    const k = iconKey(ic), dot = ic === '🔵' ? '#4aa0ff' : ic === '🟡' ? '#ffd040' : null;
+    if (dot) { g.fillStyle = dot; g.beginPath(); g.arc(14 * d, y, 4.5 * d, 0, 6.28); g.fill(); }
+    else if (k) { const im = iconImg(k); const dr = () => g.drawImage(im, 6 * d, y - 8 * d, 16 * d, 16 * d); if (im.complete) dr(); else im.onload = () => { dr(); }; }
+    g.fillStyle = '#fff'; g.fillText(t, 26 * d, y);
+  });
 }
 
 /** Marcador sob o ponto (px,py) da tela (raio de toque generoso), o mais próximo */
@@ -86,7 +93,7 @@ function draw() {
     const [qx, qy] = toMap(m.x, m.z), r = Math.max(16 * d, m.r * S * Z);
     g.fillStyle = 'rgba(255,208,64,.14)'; g.beginPath(); g.arc(qx, qy, r, 0, 6.28); g.fill();
     g.strokeStyle = `rgba(255,208,64,${.65 + .35 * pul})`; g.lineWidth = (3 + pul) * d; g.beginPath(); g.arc(qx, qy, r, 0, 6.28); g.stroke();
-    g.font = `bold ${fs}px sans-serif`; g.textBaseline = 'alphabetic'; g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText('📜 ' + m.t, qx, qy - r - 5 * d); g.fillStyle = '#ffd040'; g.fillText('📜 ' + m.t, qx, qy - r - 5 * d);
+    g.font = `bold ${fs}px sans-serif`; g.textBaseline = 'alphabetic'; g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(m.t, qx, qy - r - 5 * d); g.fillStyle = '#ffd040'; g.fillText(m.t, qx, qy - r - 5 * d);
   });
   // marcadores com ícone
   const R = 11 * d;
@@ -95,7 +102,7 @@ function draw() {
     if (px < -R || py < -R || px > cv.width + R || py > cv.height + R) return;
     g.fillStyle = m.c; g.strokeStyle = '#000'; g.lineWidth = 2 * d;
     g.beginPath(); g.arc(px, py, R, 0, 6.28); g.fill(); g.stroke();
-    g.font = `${15 * d}px sans-serif`; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(m.ic, px, py + d);
+    const im = iconImg(iconKey(m.ic) || 'pin'); if (im.complete) g.drawImage(im, px - 8 * d, py - 8 * d, 16 * d, 16 * d);
   });
   g.drawImage(LG, 8 * d, 6 * d);
   if (hov) {   // marcador sob o mouse: anel + nome
