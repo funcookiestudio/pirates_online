@@ -12,10 +12,10 @@ const CSS = `
  background:linear-gradient(#04060c 0%,#0b1220 22%,#1a2230 36%,#3a2a28 40%,#120c0b 41%,#0d0807 62%,#050303 100%)}
 #ttl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #ttl canvas.em{pointer-events:none;mix-blend-mode:screen}
-#ttl .moon{position:absolute;left:50%;top:21%;width:min(46vw,46vh);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(#f2e4cc 0 17%,#c8705a66 26%,#7a1c1c33 42%,#0000 68%);animation:ttm 9s ease-in-out infinite}
+#ttl .moon{position:absolute;left:78%;top:19%;width:min(46vw,46vh);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(#f2e4cc 0 17%,#c8705a66 26%,#7a1c1c33 42%,#0000 68%);animation:ttm 9s ease-in-out infinite}
 @keyframes ttm{50%{opacity:.78;transform:translate(-50%,-50%) scale(1.04)}}
 #ttl .sea{position:absolute;left:0;right:0;top:36%;height:6%;background:repeating-linear-gradient(90deg,#0000 0 38px,#6a7a9a14 38px 40px),linear-gradient(#26324a,#0a0e18);opacity:.8}
-#ttl .ship{position:absolute;left:12%;top:25.5%;width:min(26vw,300px);opacity:.78;filter:drop-shadow(0 0 8px #000);animation:ttb 7s ease-in-out infinite;transform-origin:50% 90%}
+#ttl .ship{--sw:min(34vw,56vh);position:absolute;left:calc(25% - var(--sw) / 2);top:calc(39% - var(--sw) * .574);width:var(--sw);opacity:.85;filter:drop-shadow(0 0 8px #000);animation:ttb 7s ease-in-out infinite;transform-origin:50% 90%}
 @keyframes ttb{50%{transform:rotate(1.4deg) translateY(2px)}}
 #ttl .fog{position:absolute;left:-30%;width:160%;height:30%;pointer-events:none;background:radial-gradient(ellipse at 30% 50%,#9aa6bc2e,#0000 62%),radial-gradient(ellipse at 75% 40%,#9aa6bc22,#0000 60%);animation:ttf 38s linear infinite}
 #ttl .fog.a{top:30%}#ttl .fog.b{top:58%;animation-duration:55s;animation-direction:reverse;opacity:.8}
