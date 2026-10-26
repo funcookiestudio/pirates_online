@@ -7,7 +7,7 @@ import { P } from '../entities/player.js';
 import { dropItem } from '../entities/loot.js';
 import { itemReq } from '../data/scaling.js';
 import { slotOf, unequip, pickSlot, canEquipTo, POT_MAX, BOMB_MAX } from '../systems/inventory.js';
-import { bag, eq, equip, BAG_MAX } from '../systems/inventory.js';
+import { bag, eq, equip, BAG_MAX, bagUsed, bagFull, beltSlots, beltStacks } from '../systems/inventory.js';
 import { PST } from '../pets/stats.js';
 import { renderPets, initPetPanel } from './pet-panel.js';
 import { fitHotbar } from './hotbar.js';
@@ -141,9 +141,9 @@ export function renderStats() {
 function renderQuick() {
   const el = $('attr');
   el.innerHTML = '';
-  const cons = (ic, n, lb, tip) => { const d = slot(null, null, lb, ic); d.className = 'sl ' + (n > 0 ? 'r1' : 'ph'); d.innerHTML = '<em>' + ic + '</em><small>x' + n + '</small><u>' + lb + '</u>'; d.title = tip; return d; };
-  el.append(cons('🧪', P.pot, 'POÇÃO', 'Poção de vida (tecla E) · leva até ' + POT_MAX));
-  el.append(cons('💣', P.bmb, 'BOMBA', 'Bomba (tecla W) · leva até ' + BOMB_MAX));
+  const cons = (ic, n, lb, tip, r = 0) => { const d = slot(null, null, lb, ic); d.className = 'sl ' + (n > 0 ? 'r1' : 'ph'); d.innerHTML = '<em>' + ic + '</em><small>x' + n + (r ? ' +' + r : '') + '</small><u>' + lb + '</u>'; d.title = tip + (r ? ' · no cinto: +' + r : ''); return d; };
+  el.append(cons('🧪', P.pot, 'POÇÃO', 'Poção de vida (tecla E) · pilha de ' + POT_MAX + ' no slot; o resto fica no cinto', P.potR));
+  el.append(cons('💣', P.bmb, 'BOMBA', 'Bomba (tecla W) · pilha de ' + BOMB_MAX + ' no slot; o resto fica no cinto', P.bmbR));
   const g = slot(eq.gun, eq.gun ? () => pickE('gun') : null, 'FOGO', '🔫'); mark(g, 'gun', eq.gun);
   if (P.act === 'gun') g.classList.add('act');
   if (selE === 'gun') g.classList.add('sel');
@@ -183,17 +183,24 @@ function renderPanel() {
   const b = $('bag');
   b.innerHTML = '';
   if (btab === 'eq') {
-    for (let i = 0; i < BAG_MAX; i++) { const d = slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; selE = ''; renderPanel(); fitPanel(); } : null); if (bag[i]) d.dataset.drag = 'bag:' + i; b.append(d); }
-    if (sel >= 0) b.children[sel] && b.children[sel].classList.add('sel');
-    $('bcnt').textContent = bag.length + ' / ' + BAG_MAX + (bag.length >= BAG_MAX ? ' · CHEIA' : '');
-    $('bcnt').style.color = bag.length >= BAG_MAX ? '#ff8a6a' : '';
-  } else {
-    for (let i = 0; i < 24; i++) {
-      const d = slot(null);
-      if (btab === 'cons' && i === 0 && P.pot > 0) { d.className = 'sl r1'; d.innerHTML = '🧪<small>x' + P.pot + '</small>'; d.title = 'Poção de vida (E)'; }
+    const st = beltStacks();   // pilhas do cinto ocupam vagas da mochila (depois dos equipamentos)
+    for (let i = 0; i < BAG_MAX; i++) {
+      const d = slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; selE = ''; renderPanel(); fitPanel(); } : null);
+      if (bag[i]) d.dataset.drag = 'bag:' + i;
+      else if (st[i - bag.length]) { const s = st[i - bag.length]; d.className = 'sl r1'; d.innerHTML = (s.k === 'pot' ? '🧪' : '💣') + '<small>x' + s.n + '</small>'; d.title = 'Cinto: ' + (s.k === 'pot' ? 'poções' : 'bombas') + ' · ocupa 1 vaga da mochila'; }
       b.append(d);
     }
-    $('bcnt').textContent = btab === 'cons' ? (P.pot ? 1 : 0) + ' / 24' : '0 / 24';
+    if (sel >= 0) b.children[sel] && b.children[sel].classList.add('sel');
+    $('bcnt').textContent = bagUsed() + ' / ' + BAG_MAX + (beltSlots() ? ' (cinto: ' + beltSlots() + ')' : '') + (bagFull() ? ' · CHEIA' : '');
+    $('bcnt').style.color = bagFull() ? '#ff8a6a' : '';
+  } else {
+    const st = btab === 'cons' ? beltStacks() : [];   // aba Consumíveis = o cinto (as pilhas de reserva)
+    for (let i = 0; i < 24; i++) {
+      const d = slot(null), s = st[i];
+      if (s) { d.className = 'sl r1'; d.innerHTML = (s.k === 'pot' ? '🧪' : '💣') + '<small>x' + s.n + '</small>'; d.title = (s.k === 'pot' ? 'Poções' : 'Bombas') + ' no cinto · ocupa 1 vaga da mochila'; }
+      b.append(d);
+    }
+    $('bcnt').textContent = btab === 'cons' ? 'Cinto: ' + st.length + ' vaga(s) da mochila · slot 🧪' + P.pot + ' 💣' + P.bmb : '0 / 24';
   }
   renderStats();
 }

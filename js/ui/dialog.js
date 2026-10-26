@@ -2,7 +2,7 @@
 import { $ } from '../core/utils.js';
 import { P } from '../entities/player.js';
 import { WEAPONS, RN, AN } from '../data/weapons.js';
-import { bag, chest, addItem, bagFull, BAG_MAX, CHEST_MAX, POT_MAX, BOMB_MAX, PRICE } from '../systems/inventory.js';
+import { bag, chest, addItem, bagFull, bagUsed, beltRoom, beltAdd, BAG_MAX, CHEST_MAX, POT_MAX, BOMB_MAX, PRICE } from '../systems/inventory.js';
 import { emit } from '../core/events.js';
 import { lootText, log } from './notify.js';
 import { tierBonus } from '../data/scaling.js';
@@ -35,14 +35,14 @@ function makeStock(kind) {
   }
   if (FARM_GOODS[kind]) return FARM_GOODS[kind].map(g => ({ food: g.mat ? 0 : 1, ...g, desc: g.mat ? 'Material de artesanato · você tem ' + P[g.mat] : '+' + Math.round(g.hp * 100) + '% vida' + (g.mp ? ' · +' + Math.round(g.mp * 100) + '% mana' : '') + ' · consumo imediato' }));
   if (kind === 'herbs') return [
-    { pot: 1, n: 'Poção de vida (da Ysolde)', price: Math.max(1, Math.round(PRICE.potTavern * .8)), desc: 'Recupera vida (tecla E) · leva até ' + POT_MAX },
+    { pot: 1, n: 'Poção de vida (da Ysolde)', price: Math.max(1, Math.round(PRICE.potTavern * .8)), desc: 'Recupera vida (tecla E) · pilhas de ' + POT_MAX + ' (o resto vai para o cinto)' },
     { food: 1, ic: '🍵', n: 'Chá de camomila', price: 14, hp: .3, mp: .2, desc: '+30% vida · +20% mana · bebe na hora' },
     { food: 1, ic: '🌿', n: 'Tônico de hortelã', price: 18, hp: .1, mp: .6, desc: '+10% vida · +60% mana · bebe na hora' },
     { food: 1, ic: '🧴', n: 'Unguento de arnica', price: 30, hp: .55, desc: '+55% vida · bebe na hora' },
     { food: 1, ic: '🧪', n: 'Elixir de sangue-de-dragão', price: 52, hp: 1, mp: .5, desc: '+100% vida · +50% mana · bebe na hora' },
   ];
-  const s = [{ pot: 1, n: 'Poção de vida', price: kind === 'tavern' ? PRICE.potTavern : PRICE.potTrader, desc: 'Recupera vida (tecla E) · leva até ' + POT_MAX }];
-  if (kind === 'trader') s.push({ pot: 1, bomb: 1, n: 'Bomba', price: PRICE.bomb, desc: 'Explosão em área (tecla W) · leva até ' + BOMB_MAX });
+  const s = [{ pot: 1, n: 'Poção de vida', price: kind === 'tavern' ? PRICE.potTavern : PRICE.potTrader, desc: 'Recupera vida (tecla E) · pilhas de ' + POT_MAX + ' (o resto vai para o cinto)' }];
+  if (kind === 'trader') s.push({ pot: 1, bomb: 1, n: 'Bomba', price: PRICE.bomb, desc: 'Explosão em área (tecla W) · pilhas de ' + BOMB_MAX + ' (o resto vai para o cinto)' });
   return s;
 }
 
@@ -50,14 +50,14 @@ const itemName = it => it.pot || it.food || it.mat ? it.n : it.ty === 'wpn' ? WE
 const stat = it => it.pot || it.food || it.mat ? it.desc : '+' + val(it.ty, it.q, it.wi) + (it.ty === 'wpn' ? ' dano' : ' vida');
 
 function renderChest() {
-  $('shgd').textContent = '🎒 ' + bag.length + '/' + BAG_MAX + ' · 📦 ' + chest.length + '/' + CHEST_MAX;
+  $('shgd').textContent = '🎒 ' + bagUsed() + '/' + BAG_MAX + ' · 📦 ' + chest.length + '/' + CHEST_MAX;
   $('shb').textContent = 'RETIRAR DO BAÚ';
   $('shs').textContent = 'GUARDAR NO BAÚ';
   $('shb').classList.toggle('on', tab === 'buy');
   $('shs').classList.toggle('on', tab === 'sell');
   const box = $('shl');
   box.innerHTML = '';
-  const from = tab === 'buy' ? chest : bag, to = tab === 'buy' ? bag : chest, max = tab === 'buy' ? BAG_MAX : CHEST_MAX;
+  const from = tab === 'buy' ? chest : bag, to = tab === 'buy' ? bag : chest, max = tab === 'buy' ? BAG_MAX : CHEST_MAX, cnt = tab === 'buy' ? bagUsed() : chest.length;   // (o cinto ocupa vagas da mochila)
   if (!from.length) box.innerHTML = '<p class="shn">' + (tab === 'buy' ? 'O baú está vazio.' : 'Sua mochila de equipamentos está vazia.') + '</p>';
   from.forEach((it, i) => {
     const r = document.createElement('div');
@@ -65,9 +65,9 @@ function renderChest() {
     r.innerHTML = '<i>' + icon(it) + '</i><span>' + it.n + '<small>' + RN[it.q] + ' · +' + it.v + '</small></span>';
     const b = document.createElement('button');
     b.textContent = tab === 'buy' ? 'Retirar' : 'Guardar';
-    b.disabled = to.length >= max;
+    b.disabled = cnt >= max;
     b.title = b.disabled ? (tab === 'buy' ? 'Mochila cheia' : 'Baú cheio') : '';
-    b.onclick = () => { if (to.length >= max) return; to.push(from.splice(i, 1)[0]); emit('inventory:changed'); renderChest(); };
+    b.onclick = () => { if (cnt >= max) return; to.push(from.splice(i, 1)[0]); emit('inventory:changed'); renderChest(); };
     r.append(b);
     box.append(r);
   });
@@ -90,16 +90,16 @@ function renderShop() {
       r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (it.pot || it.food || it.mat ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
       const b = document.createElement('button');
       b.textContent = '💰 ' + it.price;
-      const full = it.mat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? P.bmb >= BOMB_MAX : it.pot ? P.pot >= POT_MAX : bagFull();
+      const full = it.mat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? beltRoom('bmb') <= 0 : it.pot ? beltRoom('pot') <= 0 : bagFull();
       b.disabled = P.gold < it.price || full;
-      if (full) b.title = it.food ? 'Você já está satisfeito' : it.pot ? 'Você já leva o máximo' : 'Mochila cheia';
+      if (full) b.title = it.food ? 'Você já está satisfeito' : it.pot ? 'Cinto cheio: sem vagas na mochila' : 'Mochila cheia';
       b.onclick = () => {
         if (P.gold < it.price || full) return;
         P.gold -= it.price;
         if (it.mat) { P[it.mat]++; lootText('+1 ' + it.n); }
         else if (it.food) { P.hp = Math.min(P.max, P.hp + P.max * it.hp); if (it.mp) P.mp = Math.min(P.mmax, P.mp + P.mmax * it.mp); lootText(it.ic + ' ' + it.n); log(it.ic + ' Comeu: ' + it.n); }
-        else if (it.bomb) { P.bmb++; lootText('+ bomba'); }
-        else if (it.pot) { P.pot++; lootText('+ poção'); } else addItem({ ty: it.ty, q: it.q, wi: it.wi });
+        else if (it.bomb) { beltAdd('bmb', 1); lootText('+ bomba'); }
+        else if (it.pot) { beltAdd('pot', 1); lootText('+ poção'); } else addItem({ ty: it.ty, q: it.q, wi: it.wi });
         renderShop();
       };
       r.append(b);
@@ -123,11 +123,11 @@ function renderShop() {
     const price = k === 'tavern' ? 12 : k === 'herbs' ? 14 : 16;
     const r = document.createElement('div');
     r.className = 'shr r1';
-    r.innerHTML = '<i>🧪</i><span>Poção de vida<small>Você tem ' + P.pot + ' · só compro poções</small></span>';
+    r.innerHTML = '<i>🧪</i><span>Poção de vida<small>Você tem ' + (P.pot + P.potR) + ' · só compro poções</small></span>';
     const b = document.createElement('button');
     b.textContent = '+ 💰 ' + price;
-    b.disabled = P.pot <= 0;
-    b.onclick = () => { if (P.pot <= 0) return; P.pot--; P.gold += price; renderShop(); };
+    b.disabled = P.pot + P.potR <= 0;
+    b.onclick = () => { if (P.pot + P.potR <= 0) return; if (P.potR > 0) P.potR--; else P.pot--; P.gold += price; renderShop(); };
     r.append(b);
     box.append(r);
   } else {

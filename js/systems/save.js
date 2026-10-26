@@ -16,7 +16,7 @@ import { inDungeon } from '../dungeon/dungeon-scene.js';
 
 import { activeChar, saveKey } from '../core/chars.js';
 const KEY = saveKey(activeChar() && activeChar().id);   // um save por personagem
-const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb'];
+const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb', 'potR', 'bmbR'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
 
 export { safeSpot };

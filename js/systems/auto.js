@@ -14,6 +14,8 @@ import { VILLAGE_R } from '../core/village-const.js';
 import { setAuto, fleeStep } from './stamina.js';
 import { STEER, markStuck } from './steer.js';
 import { doorBusy, cancelDoor } from '../world/doors.js';
+import { torchStep } from './torch-auto.js';
+import { lootFilter } from './lootrule.js';
 import { dungeonGimmicks } from '../dungeon/dungeon-scene.js';
 import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
@@ -68,6 +70,8 @@ export function autoThink(dt) {
     }
   }
 
+  torchStep(dt);   // tocha no escuro (troca a arma de 2 mãos por uma de 1 mão) e guarda de dia
+
   // sem poções/bombas: vai até o NPC comprar (auto refil)
   if (refillStep()) return;
   // mochila cheia: vende no ferreiro e guarda no baú
@@ -91,7 +95,7 @@ export function autoThink(dt) {
   if (state.autoCfg.usePot && P.hp < P.max * state.autoCfg.potHp / 100 && P.pot > 0 && thr.length) potion();
 
   // sem poção e quase morrendo: foge
-  if (P.hp < P.max * .25 && P.pot <= 0 && thr.length) {
+  if (P.hp < P.max * .25 && P.pot + P.potR <= 0 && thr.length) {
     let fx = 0, fz = 0;
     thr.forEach(e => { fx += P.x - e.x; fz += P.z - e.z; });
     const l = Math.hypot(fx, fz) || 1;
@@ -158,7 +162,7 @@ export function autoThink(dt) {
       P.tgt = null;
       let bl = null, bd = 18;
       if (state.autoCfg.loot) loot.forEach(x => {
-        if (x.dropped || lootBlocked(x)) return;
+        if (x.dropped || lootBlocked(x) || !lootFilter(x)) return;
         const d = Math.hypot(x.m.position.x - P.x, x.m.position.z - P.z);
         if (d < bd) { bd = d; bl = x; }
       });

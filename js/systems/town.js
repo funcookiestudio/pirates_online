@@ -2,7 +2,7 @@
    e ao baú guardar o que vale a pena, e volta a lutar. Regras: qualidade ≥ storeMin → guarda no baú · qualidade ≤ sellMax → vende. */
 import { state } from '../core/state.js';
 import { P } from '../entities/player.js';
-import { bag, chest, CHEST_MAX } from './inventory.js';
+import { bag, chest, CHEST_MAX, bagUsed } from './inventory.js';
 import { npcByShop, npcChest } from '../entities/npc.js';
 import { danger } from './stamina.js';
 import { behindWall, npcStand } from './steer.js';
@@ -32,7 +32,7 @@ export function townStep() {
   if ((!c.sellMax && !c.storeMin)) { active = false; return false; }
   const sell = toSell(), store = toStore().slice(0, Math.max(0, CHEST_MAX - chest.length));
   if (!sell.length && !store.length) { active = false; if (state.trip === 'sell' || state.trip === 'chest') state.trip = null; return false; }
-  if (!active && bag.length < c.bagAt) return false;
+  if (!active && bagUsed() < c.bagAt) return false;
   active = true;
   if (danger()) return false;                       // inimigo perto: luta primeiro
   if (sell.length) {

@@ -1,7 +1,7 @@
 /* Atualização do jogador a cada frame: movimento, ataque, colisões, regeneração e animação. */
 import { safeSpot } from './safe.js';
 import { updateBedPending, animateBed, sleeping } from './bed.js';
-import { refreshTorch, torchLit } from './inventory.js';
+import { refreshTorch, torchLit, beltTick } from './inventory.js';
 import { snapInterior, interiorWaypoint } from '../world/interior-nav.js';
 import { houseNear, houseAt, descendThen, upperContains } from '../world/floors.js';
 import { VIZ, STEER, BODY_IN, bodyR, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
@@ -117,6 +117,7 @@ function stuckWatch(dt) {
 /** Anda até o destino/alvo, ataca ao chegar no alcance, colide com árvores/pedras e regenera */
 function moveAndAct(dt) {
   const px = P.x, pz = P.z;
+  beltTick(dt);   // slot de poção/bomba vazio: saca uma pilha do cinto
   if (state.autoOn) autoThink(dt);
   if (P.tgt && P.tgt.dead) P.tgt = null;
   stairTick();

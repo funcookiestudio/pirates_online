@@ -115,14 +115,27 @@
       <select id="ac-potHp"><option value="25">25%</option><option value="40">40%</option><option value="50">50%</option><option value="60">60%</option><option value="75">75%</option></select> <b id="acv-potHp" hidden></b></label>
   </div>
   <div class="acs">
+    <h4>💰 Loot <small>(o que o auto coleta · o "Coletar loot" de cima liga/desliga a busca)</small></h4>
+    <label><input type="checkbox" id="ac-lootGold"> 🪙 Ouro</label>
+    <label><input type="checkbox" id="ac-lootPot"> 🧪 Poções</label>
+    <div class="acr"><label><input type="checkbox" id="ac-lootWpn"> ⚔ Armas</label><select id="ac-lootWpnQ"><option value="1">Comum ou melhor</option><option value="2">Mágico ou melhor</option><option value="3">Só Lendário</option></select></div>
+    <div class="acr"><label><input type="checkbox" id="ac-lootArm"> 🛡 Armaduras</label><select id="ac-lootArmQ"><option value="1">Comum ou melhor</option><option value="2">Mágico ou melhor</option><option value="3">Só Lendário</option></select></div>
+    <label><input type="checkbox" id="ac-lootUpgrade"> ⬆ Só armas/armaduras melhores que as equipadas <small>(respeita o nível exigido)</small></label>
+    <small>Com a mochila no limite de "ir à vila", só pega o que vale mais que o pior item guardado.</small>
+  </div>
+  <div class="acs">
     <h4>🛡 Equipamento</h4>
     <label><input type="checkbox" id="ac-equip"> Equipar itens melhores</label>
+    <div class="acr"><span>🔥 Tocha</span><select id="ac-torch"><option value="1">Automática (só no escuro)</option><option value="2">Sempre acesa</option><option value="0">Nunca acesa</option></select></div>
+    <label><input type="checkbox" id="ac-torchSwap"> Trocar arma de 2 mãos por uma de 1 mão no escuro <small>(sem arma de 1 mão, a tocha não é equipada; ao clarear a de 2 mãos volta)</small></label>
   </div>
   <div class="acs">
     <h4>🛒 Compras <small>(taverna: poções · mercadora: bombas)</small></h4>
     <label><input type="checkbox" id="ac-refill"> Comprar sozinho quando acabar</label>
-    <div class="acr"><span>🧪 Poções: comprar quando ter ≤</span><select id="ac-potMin"><option>0</option><option>1</option><option>2</option><option>3</option></select><span>até</span><select id="ac-potTarget"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
-    <div class="acr"><span>💣 Bombas: comprar quando ter ≤</span><select id="ac-bombMin"><option>0</option><option>1</option><option>2</option></select><span>até</span><select id="ac-bombTarget"><option>0</option><option>1</option><option>2</option><option>3</option></select></div>
+    <div class="acr"><span>🧪 Poções: comprar quando ter ≤</span><select id="ac-potMin"><option>0</option><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option></select><span>até</span><select id="ac-potTarget"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>10</option><option>15</option><option>20</option><option>25</option><option>30</option></select></div>
+    <div class="acr"><span>💣 Bombas: comprar quando ter ≤</span><select id="ac-bombMin"><option>0</option><option>1</option><option>2</option><option>3</option><option>6</option></select><span>até</span><select id="ac-bombTarget"><option>0</option><option>1</option><option>2</option><option>3</option><option>6</option><option>9</option><option>12</option><option>15</option></select></div>
+    <div class="acr"><span>🎒 Vagas da mochila para o cinto (até)</span><select id="ac-beltMax"><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option><option>10</option></select></div>
+    <small>Totais contam o slot equipado + o cinto. Pilhas de 5 poções / 3 bombas, cada uma ocupa 1 vaga da mochila.</small>
     <div class="acr"><span>💰 Ouro de reserva (não gastar)</span><input type="range" id="ac-reserve" min="0" max="1000" step="50"><b id="acv-reserve"></b></div>
   </div>
   <div class="acs">

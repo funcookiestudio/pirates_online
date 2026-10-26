@@ -144,7 +144,7 @@ initHotbarFit();
 const loaded = loadGame();
 if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets nem outros itens
   eq.wpn = { ty: 'wpn', q: 1, v: WEAPONS[0].b, il: 1, w: 0, n: WEAPONS[0].n }; eq.gun = eq.arm = eq.off = null; bag.length = 0;
-  P.pot = 2; P.bmb = 0; P.gold = 0; setWeapon('wpn'); unequipPet(true);
+  P.pot = 2; P.bmb = 0; P.potR = P.bmbR = 0; P.gold = 0; setWeapon('wpn'); unequipPet(true);
 } // antes de povoar a ilha: a vida dos inimigos depende do nível
 buildOutposts();
 buildPois();

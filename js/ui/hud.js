@@ -56,8 +56,8 @@ export function updateOverlays(now) {
     sty('ebi', 'width', Math.max(0, e.hp / e.max * 100) + '%');
   } else eh.style.display = 'none';
 
-  txt('pc', P.pot);
-  txt('bc', P.bmb);
+  txt('pc', P.pot + (P.potR ? '+' + P.potR : ''));
+  txt('bc', P.bmb + (P.bmbR ? '+' + P.bmbR : ''));
   const bossAlive = enemies.some(z => z.t.boss && !z.dead);
   const np = nearestPost(P.x, P.z, 26);
   txt('qt', P.dead ? '' : questHud() ? questHud() : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : ''));

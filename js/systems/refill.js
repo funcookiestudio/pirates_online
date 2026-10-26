@@ -3,20 +3,26 @@
 import { state } from '../core/state.js';
 import { P } from '../entities/player.js';
 import { npcByShop } from '../entities/npc.js';
-import { POT_MAX, BOMB_MAX, PRICE } from './inventory.js';
+import { PRICE, beltRoom, beltAdd } from './inventory.js';
 import { danger } from './stamina.js';
 import { behindWall, npcStand } from './steer.js';
 import { dwell } from './dwell.js';
 import { lootText, log } from '../ui/notify.js';
 
+/** Quantas unidades de `k` comprar? Conta slot + cinto; compra quando o total cai a `min` ou menos, até `target`; limitada por ouro, vagas e `beltMax` */
+function toBuy(k, tot, min, target, price, gold) {
+  const c = state.autoCfg;
+  if (!(target > 0 && tot <= min && tot < target && gold >= price)) return 0;
+  return Math.max(0, Math.min(target - tot, beltRoom(k, c.beltMax), Math.floor(gold / price)));
+}
+
 /** Qual compra falta fazer? { kind: 'tavern' | 'trader', pot, bomb } ou null */
 function plan() {
   const c = state.autoCfg, gold = P.gold - c.reserve;
-  const needPot = c.potTarget > 0 && P.pot <= c.potMin && P.pot < c.potTarget && gold >= PRICE.potTavern;
-  const needBomb = c.bombTarget > 0 && P.bmb <= c.bombMin && P.bmb < c.bombTarget && gold >= PRICE.bomb;
-  if (needPot) return { kind: 'tavern', pot: Math.min(POT_MAX, c.potTarget) - P.pot > 0 ? Math.min(Math.min(POT_MAX, c.potTarget) - P.pot, Math.floor(gold / PRICE.potTavern)) : 0, bomb: 0 };
-  if (needBomb) return { kind: 'trader', pot: 0, bomb: Math.min(Math.min(BOMB_MAX, c.bombTarget) - P.bmb, Math.floor(gold / PRICE.bomb)) };
-  return null;
+  const np = toBuy('pot', P.pot + P.potR, c.potMin, c.potTarget, PRICE.potTavern, gold);
+  if (np > 0) return { kind: 'tavern', pot: np, bomb: 0 };
+  const nb = toBuy('bmb', P.bmb + P.bmbR, c.bombMin, c.bombTarget, PRICE.bomb, gold);
+  return nb > 0 ? { kind: 'trader', pot: 0, bomb: nb } : null;
 }
 
 /** Retorna true quando este frame foi usado para ir ao NPC / comprar (o resto do auto fica parado) */
@@ -33,8 +39,8 @@ export function refillStep() {
     P.tgt = null; P.tx = P.x; P.tz = P.z; P.g.rotation.y = Math.atan2(nx - P.x, nz - P.z);
     if (!dwell('buy-' + pl.kind, 2.5)) return true;           // negocia alguns segundos
     dwell(null);
-    if (pl.pot) { P.pot += pl.pot; P.gold -= pl.pot * PRICE.potTavern; lootText('+' + pl.pot + ' poção(ões)'); }
-    if (pl.bomb) { P.bmb += pl.bomb; P.gold -= pl.bomb * PRICE.bomb; lootText('+' + pl.bomb + ' bomba(s)'); }
+    if (pl.pot) { const n = beltAdd('pot', pl.pot); P.gold -= n * PRICE.potTavern; lootText('+' + n + ' poção(ões)'); }
+    if (pl.bomb) { const n = beltAdd('bmb', pl.bomb); P.gold -= n * PRICE.bomb; lootText('+' + n + ' bomba(s)'); }
     state.trip = null;
     P.tx = P.x; P.tz = P.z;
     return false;

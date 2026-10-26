@@ -6,8 +6,10 @@ import { M } from '../core/utils.js';
 import { goldAt, rollQuality } from '../data/scaling.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from './player.js';
-import { addItem, bagFull, lootBlocked, POT_MAX } from '../systems/inventory.js';
+import { addItem, bagFull, lootBlocked, beltAdd } from '../systems/inventory.js';
 import { lootText, log } from '../ui/notify.js';
+import { state } from '../core/state.js';
+import { lootFilter } from '../systems/lootrule.js';
 
 /** Modelo de uma arma caída: arma deitada + anel e feixe de luz da raridade */
 function dropModel(wi, q) {
@@ -94,7 +96,7 @@ export function applyLoot(l, tag) {
     P.gold += g;
     lootText(p + '+' + g + ' ouro');
   } else if (l.ty === 'pot') {
-    if (P.pot < POT_MAX) { P.pot++; lootText(p + '+ poção'); }
+    if (beltAdd('pot', 1)) lootText(p + '+ poção');
   } else if (bagFull()) {
     // chegou com a mochila cheia (ex.: o companheiro trazia na boca): solta no chão, sem ninguém pegar sozinho
     dropItem(l.it || { ty: l.ty, q: l.q, w: l.wi, v: 0, n: '' }, l);
@@ -110,7 +112,7 @@ function notifyFull(pot) {
   const n = performance.now();
   if (n - fullT < 3000) return;
   fullT = n;
-  lootText(pot ? '🧪 Poções no limite (5)' : '🎒 Mochila cheia!');
+  lootText(pot ? '🧪 Cinto cheio (sem vagas na mochila)' : '🎒 Mochila cheia!');
   if (pot) return;
 }
 
@@ -125,6 +127,7 @@ export function updateLoot(dt, now) {
     l.m.visible = l.life < LOOT_LIFE - 10 || Math.floor(l.life * 5) % 2 === 0; // pisca nos últimos 10 s
     const d = Math.hypot(P.x - l.m.position.x, P.z - l.m.position.z);
     if (l.dropped && !l.armed && d > 2.6) l.armed = true;
+    if (d < 1.3 && state.autoOn && !l.dropped && !lootFilter(l)) continue;   // auto ligado: o que o filtro recusa fica no chão mesmo passando perto
     if (d < 1.3 && lootBlocked(l)) { notifyFull(l.ty === 'pot'); continue; }
     if (d < 1.3 && (!l.dropped || l.armed)) {
       applyLoot(l);
