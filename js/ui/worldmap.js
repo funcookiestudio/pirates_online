@@ -26,31 +26,52 @@ function layout() {
   OX = (cv.width - N * S) / 2; OY = (cv.height - N * S) / 2;
 }
 
+let BG = null, MK = [], hov = null;
+/** Camada estática (relevo, moldura, marcadores, legenda) desenhada UMA vez por abertura/redimensionamento: o quadro só redesenha o que muda */
+function bake() {
+  BG = document.createElement('canvas'); BG.width = cv.width; BG.height = cv.height;
+  const g = BG.getContext('2d'), d = devicePixelRatio || 1, fs = 12 * d;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(IMG, OX, OY, N * S, N * S);
+  g.strokeStyle = '#a07a3a'; g.lineWidth = 3 * d; g.strokeRect(OX, OY, N * S, N * S);
+  g.textAlign = 'center';
+  MK = [{ x: 0, z: 0, c: '#c8962e', n: 'Vila', ic: '🏘' }];
+  POST_DATA.forEach(p => MK.push({ x: p.x, z: p.z, c: '#b02828', n: p.name, ic: '⛺' }));
+  pois.forEach(p => MK.push({ x: p.x, z: p.z, c: p.c, n: p.n, ic: p.ic || '📍' }));
+  MK.forEach(m => {
+    [m.px, m.py] = toMap(m.x, m.z);
+    const r = 11 * d;
+    g.fillStyle = m.c; g.strokeStyle = '#000'; g.lineWidth = 2 * d;
+    g.beginPath(); g.arc(m.px, m.py, r, 0, 6.28); g.fill(); g.stroke();
+    g.font = `${15 * d}px sans-serif`; g.textBaseline = 'middle';
+    g.fillStyle = '#fff'; g.fillText(m.ic, m.px, m.py + d);
+  });
+  const leg = [['🏘', 'Vila'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['🐔', 'Sítio das Aves'], ['🐖', 'Granja'], ['🐄', 'Fazenda do Gado'], ['🌿', 'Casa da Herbalista'], ['🔵', 'Você'], ['✖', 'Destino']];
+  g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
+  leg.forEach(([ic, t], i) => { const y = 16 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(8 * d, y - 10 * d, 160 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 14 * d, y); });
+}
+
+/** Marcador sob o ponto (px,py) do canvas (raio de toque generoso), o mais próximo */
+function markerAt(px, py) {
+  const d = devicePixelRatio || 1, R = 16 * d;
+  let best = null, bd = R;
+  MK.forEach(m => { const q = Math.hypot(m.px - px, m.py - py); if (q < bd) { bd = q; best = m; } });
+  return best;
+}
+
 function draw() {
   if (!open) return;
   const g = cv.getContext('2d'), d = devicePixelRatio || 1, fs = 12 * d;
   g.clearRect(0, 0, cv.width, cv.height);
-  g.imageSmoothingEnabled = false;
-  g.drawImage(IMG, OX, OY, N * S, N * S);
-  g.strokeStyle = '#a07a3a'; g.lineWidth = 3 * d; g.strokeRect(OX, OY, N * S, N * S);
-  g.font = `bold ${fs}px sans-serif`; g.textAlign = 'center';
-  // marcadores com ícone: disco colorido + emoji + nome
-  const tag = (x, z, col, txt, ic) => {
-    const [px, py] = toMap(x, z), r = 11 * d;
-    g.fillStyle = col; g.strokeStyle = '#000'; g.lineWidth = 2 * d;
-    g.beginPath(); g.arc(px, py, r, 0, 6.28); g.fill(); g.stroke();
-    g.font = `${15 * d}px sans-serif`; g.textBaseline = 'middle';
-    g.fillStyle = '#fff'; g.fillText(ic, px, py + d);
-    g.font = `bold ${fs}px sans-serif`; g.textBaseline = 'alphabetic';
-    if (false && txt) { g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(txt, px, py + r + 13 * d); g.fillStyle = '#fff'; g.fillText(txt, px, py + r + 13 * d); }
-  };
-  tag(0, 0, '#c8962e', 'Vila', '🏘');
-  POST_DATA.forEach(p => tag(p.x, p.z, '#b02828', p.name, '⛺'));
-  pois.forEach(p => tag(p.x, p.z, p.c, p.n, p.ic || '📍'));
-  // legenda
-  const leg = [['🏘', 'Vila'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['🐔', 'Sítio das Aves'], ['🐖', 'Granja'], ['🐄', 'Fazenda do Gado'], ['🌿', 'Casa da Herbalista'], ['🔵', 'Você'], ['✖', 'Destino']];
-  g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
-  leg.forEach(([ic, t], i) => { const y = 16 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(8 * d, y - 10 * d, 160 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 14 * d, y); });
+  if (!BG || BG.width !== cv.width || BG.height !== cv.height) bake();
+  g.drawImage(BG, 0, 0);
+  if (hov) {   // marcador sob o mouse: anel + nome
+    g.strokeStyle = '#ffd040'; g.lineWidth = 3 * d; g.beginPath(); g.arc(hov.px, hov.py, 14 * d, 0, 6.28); g.stroke();
+    g.font = `bold ${fs + d}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const w = g.measureText(hov.n).width + 12 * d, ty = hov.py - 20 * d;
+    g.fillStyle = '#000c'; g.fillRect(hov.px - w / 2, ty - 13 * d, w, 18 * d);
+    g.fillStyle = '#fff'; g.fillText(hov.n, hov.px, ty);
+  }
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   // jogador (seta pulsante)
   const [qx, qy] = toMap(P.x, P.z), pulse = 1 + .25 * Math.sin(performance.now() / 250);
@@ -69,7 +90,7 @@ export function toggleWorldMap(on = !open) {
   open = on;
   wrap.style.display = on ? 'flex' : 'none';
   if (on) wrap.querySelector('#wmhead b').textContent = (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name + ' · Nv ' + ISLAND_LV().join('–');
-  if (on) { if (!IMG) IMG = terrainImage(); layout(); draw(); } else cancelAnimationFrame(raf);
+  if (on) { if (!IMG) IMG = terrainImage(); layout(); BG = null; hov = null; draw(); } else cancelAnimationFrame(raf);
 }
 export const worldMapOpen = () => open;
 
@@ -87,14 +108,20 @@ export function initWorldMap() {
     if (e.code === 'KeyM') toggleWorldMap();
     else if (e.code === 'Escape' && open) toggleWorldMap(false);
   });
-  addEventListener('resize', () => { if (open) layout(); });
+  addEventListener('resize', () => { if (open) { layout(); BG = null; } });
+  cv.addEventListener('mousemove', e => {
+    const r = cv.getBoundingClientRect(), d = cv.width / r.width;
+    hov = markerAt((e.clientX - r.left) * d, (e.clientY - r.top) * d);
+    cv.style.cursor = hov ? 'pointer' : 'crosshair';
+  });
   cv.addEventListener('click', e => {
     const r = cv.getBoundingClientRect(), d = cv.width / r.width;
-    const [wx, wz] = toWorld((e.clientX - r.left) * d, (e.clientY - r.top) * d);
+    const px = (e.clientX - r.left) * d, py = (e.clientY - r.top) * d, m = markerAt(px, py);
+    const [cx, cz] = toWorld(px, py), wx = m ? m.x : cx, wz = m ? m.z : cz;   // clicou num ícone: vai EXATAMENTE para a coordenada dele
     if (Math.abs(wx + VX) > E || Math.abs(wz + VZ) > E) return;
     if (P.sit > 0 || P.sitT) standUp();
     state.autoHold = 6; P.tgt = null;
-    const f = freePoint(wx, wz, .7);
+    const f = m ? { x: m.x, z: m.z } : freePoint(wx, wz, .7);   // ponto livre só para cliques no terreno
     P.tx = f.x; P.tz = f.z;
     mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z);
   });

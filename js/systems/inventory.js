@@ -104,6 +104,7 @@ export function addItem(l) {
 export function pickSlot(it, better) {
   if (better && P.lv < itemReq(it)) return null;      // auto-equipar só itens que o nível permite
   if (isTorch(it)) return !better && canEquipTo(it, 'off') ? 'off' : null;   // o auto-equipar não mexe na tocha: torch-auto.js cuida dela (só no escuro)
+  if (better && it.ty === 'wpn' && WEAPONS[it.w].big && isTorch(eq.off) && (state.autoCfg.torch === 2 || (state.autoCfg.torch === 1 && isDark()))) return null;   // tocha em uso: o auto-equipar não volta à arma de 2 mãos (o torch-auto a guarda e devolve quando clarear)
   const s = slotOf(it);
   if (s === 'arm') return !eq.arm || !better || it.v > eq.arm.v ? 'arm' : null;
   const main = eq[s];
