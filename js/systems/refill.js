@@ -5,7 +5,7 @@ import { P } from '../entities/player.js';
 import { npcByShop } from '../entities/npc.js';
 import { POT_MAX, BOMB_MAX, PRICE } from './inventory.js';
 import { danger } from './stamina.js';
-import { freePoint } from './steer.js';
+import { behindWall, npcStand } from './steer.js';
 import { dwell } from './dwell.js';
 import { lootText, log } from '../ui/notify.js';
 
@@ -29,7 +29,7 @@ export function refillStep() {
   if (!n) return false;
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
   if (!state.trip) { state.trip = pl.kind; log('🛒 Sem ' + (pl.pot ? 'poções' : 'bombas') + ': indo até ' + n.info.name); }
-  if (d < 3.2) {
+  if (d < 3.2 && !behindWall(P.x, P.z, nx, nz)) {   // (NPC dentro de casa e o jogador fora: não negocia pela parede, entra pela porta)
     P.tgt = null; P.tx = P.x; P.tz = P.z; P.g.rotation.y = Math.atan2(nx - P.x, nz - P.z);
     if (!dwell('buy-' + pl.kind, 2.5)) return true;           // negocia alguns segundos
     dwell(null);
@@ -39,7 +39,7 @@ export function refillStep() {
     P.tx = P.x; P.tz = P.z;
     return false;
   }
-  const dx = P.x - nx, dz = P.z - nz, k = 2.2 / (d || 1), f = freePoint(nx + dx * k, nz + dz * k, .6);
+  const f = npcStand(n, P.x, P.z);
   P.tgt = null; P.tx = f.x; P.tz = f.z;
   return true;
 }

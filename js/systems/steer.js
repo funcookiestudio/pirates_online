@@ -3,7 +3,7 @@
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
 import { dIn, dPath } from '../dungeon/dgrid.js';
-import { houseNear } from '../world/floors.js';
+import { houseNear, houseAt } from '../world/floors.js';
 import { walkable, swimmable, nearObstacle, roadAt, heightAt } from '../world/terrain.js';
 
 /** O jogador pode passar por água (nadar); inimigos e pets não */
@@ -284,6 +284,16 @@ export function freePoint(x, z, r = .6) {
     }
   }
   return { x, z };
+}
+
+/** O ponto (x,z) está dentro de uma casa e quem está em (px,pz) está fora dela? Não dá para negociar através da parede: tem que entrar pela porta */
+export const behindWall = (px, pz, x, z) => { const h = houseAt(x, z, .2); return !!h && houseAt(px, pz, .2) !== h; };
+
+/** Onde ficar para negociar com o NPC `n`: o `talkAt` se ele mora dentro de uma casa (o caminho abre a porta), senão 2,2 m dele na direção de (px,pz) */
+export function npcStand(n, px, pz) {
+  if (n.talkAt) return { x: n.talkAt[0], z: n.talkAt[1] };
+  const nx = n.g.position.x, nz = n.g.position.z, dx = px - nx, dz = pz - nz, k = 2.2 / (Math.hypot(dx, dz) || 1);
+  return freePoint(nx + dx * k, nz + dz * k, .6);
 }
 
 /** O dono ficou preso neste ponto: o próximo caminho passa longe dele */

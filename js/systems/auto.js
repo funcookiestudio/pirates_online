@@ -13,10 +13,12 @@ import { MOUNT, toggleMount } from './mount.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { setAuto, fleeStep } from './stamina.js';
 import { STEER, markStuck } from './steer.js';
+import { doorBusy, cancelDoor } from '../world/doors.js';
 import { dungeonGimmicks } from '../dungeon/dungeon-scene.js';
 import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
 const STUCK = { x: 0, z: 0, t: 0 };
+let DB = 0;  // tempo seguido passando por uma porta
 let MT = 0; // intervalo para tentar montar
 let AT = 0; // intervalo para reavaliar o alvo
 let AI = 0; // intervalo para checar equipamentos melhores
@@ -33,6 +35,9 @@ export function autoThink(dt) {
   AI -= dt;
   if (state.fleeing) { fleeStep(); return; }   // sem ouro: foge para a vila (o clique do jogador também pode assumir)
   if (state.autoHold > 0) return;
+  // passando por uma porta (ir ao tile, abrir, atravessar): o auto não mexe no destino, senão a porta nunca abre (limite de 8 s por segurança)
+  if (doorBusy()) { DB += dt; STUCK.t = 0; if (DB < 8) return; cancelDoor(); }
+  DB = 0;
 
   // travado (querendo andar e sem sair do lugar): tenta um ponto livre ao redor
   STUCK.t += dt;

@@ -5,7 +5,7 @@ import { P } from '../entities/player.js';
 import { bag, chest, CHEST_MAX } from './inventory.js';
 import { npcByShop, npcChest } from '../entities/npc.js';
 import { danger } from './stamina.js';
-import { freePoint } from './steer.js';
+import { behindWall, npcStand } from './steer.js';
 import { emit } from '../core/events.js';
 import { dwell } from './dwell.js';
 import { lootText, log } from '../ui/notify.js';
@@ -18,8 +18,8 @@ const toSell = () => { const c = state.autoCfg; return c.sellMax ? bag.filter(it
 
 function goTo(n, kind) {
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
-  if (d < 3.2) return true;
-  const dx = P.x - nx, dz = P.z - nz, k = 2.2 / (d || 1), f = freePoint(nx + dx * k, nz + dz * k, .6);
+  if (d < 3.2 && !behindWall(P.x, P.z, nx, nz)) return true;   // (NPC dentro de casa e o jogador fora: entra pela porta)
+  const f = npcStand(n, P.x, P.z);
   const now = performance.now();
   if (!state.trip && now - (goTo.last || -1e9) > 45000) { goTo.last = now; log(kind === 'sell' ? '💰 Mochila cheia: indo vender ao ferreiro' : '📦 Indo guardar itens no baú'); }
   state.trip = kind; P.tgt = null; P.tx = f.x; P.tz = f.z;
