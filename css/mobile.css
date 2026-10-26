@@ -1,0 +1,113 @@
+/* HUD de uma mão (celular, retrato e paisagem). Tudo vive sob body.mob; no computador nada muda.
+   Os controles que se tocam o tempo todo ficam num arco em volta do polegar; o topo só informa. */
+
+/* o líquido dos diamantes só se separa da moldura no celular */
+.lq { display: contents; }
+#lnch, #fan, #fanbk, #joyb, #joyk { display: none; }
+
+body.mob {
+  --g1: 88px; --g2: 54px;                                   /* largura dos diamantes: herói e companheiro */
+  --gwid: calc(var(--g1) * .799 + 3px + var(--g2) * .835);  /* largura do conjunto de diamantes */
+  --cx: 62px; --cy: 96px;                                   /* centro do botão grande (auto combate) a partir do canto do polegar */
+  --tilt: -37deg;
+  --eb: env(safe-area-inset-bottom, 0px);
+  --eo: env(safe-area-inset-left, 0px);                     /* lado dos diamantes */
+  --ei: env(safe-area-inset-right, 0px);                    /* lado do arco */
+}
+body.mob.hand-l { --tilt: 37deg; --eo: env(safe-area-inset-right, 0px); --ei: env(safe-area-inset-left, 0px); }
+@media (orientation: landscape) { body.mob { --g1: 80px; --g2: 50px; --cx: 58px; --cy: 66px; } }
+
+/* ---- o barco some: ficam só os diamantes, as habilidades e as barras de XP ---- */
+body.mob #hb { position: fixed; inset: 0; left: 0; transform: none !important; width: auto; display: block; filter: none; pointer-events: none; z-index: 5; }
+body.mob #hb .end { display: none; }
+body.mob #deck { position: absolute; inset: 0; height: auto; padding: 0; background: none; border: 0; box-shadow: none; display: block; pointer-events: none; }
+body.mob #deck .xp { bottom: calc(var(--eb) + 2px); height: 5px; }
+
+/* ---- diamantes ---- */
+body.mob #hb .gw { position: absolute; margin: 0; transform-origin: 50% 50%; transform: rotate(var(--tilt)); pointer-events: auto; }
+body.mob #gwl { --g: var(--g1); width: var(--g1); height: calc(var(--g1) * 1.1); left: calc(var(--eo) + var(--g1) * .032); bottom: calc(var(--eb) + 10px - var(--g1) * .191); }
+body.mob #gwr { --g: var(--g2); width: var(--g2); height: calc(var(--g2) * 1.1); left: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .032); bottom: calc(var(--eb) + 10px - var(--g2) * .191); }
+body.mob.hand-l #gwl { left: auto; right: calc(var(--eo) + var(--g1) * .032); }
+body.mob.hand-l #gwr { left: auto; right: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .032); }
+body.mob #gwr::before { content: ""; position: absolute; inset: -6px; }
+body.mob #hb .gem .orb { inset: 5px; }
+/* o líquido continua na horizontal, mesmo com o diamante inclinado */
+body.mob .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
+body.mob .lq i { bottom: calc(var(--g) * .641); transform: scaleY(.475); transform-origin: 50% 100%; }
+/* nível no centro de cada diamante */
+body.mob #deck .lv { right: auto; transform: translate(-50%, 50%); font-size: 11px; }
+body.mob #lvp { left: calc(var(--eo) + var(--g1) * .532); bottom: calc(var(--eb) + 10px + var(--g1) * .359); }
+body.mob #lva { left: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .532); bottom: calc(var(--eb) + 10px + var(--g2) * .359); font-size: 9px; }
+body.mob.hand-l #deck .lv { left: auto; transform: translate(50%, 50%); }
+body.mob.hand-l #lvp { right: calc(var(--eo) + var(--g1) * .532); }
+body.mob.hand-l #lva { right: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .532); }
+
+/* ---- habilidades em arco ---- */
+body.mob #sk { display: contents; }
+body.mob #sk div, body.mob #s5 {
+  --sz: 44px; position: absolute; width: var(--sz); height: var(--sz); border-radius: 12px; font-size: 20px; pointer-events: auto;
+  right: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); left: auto;
+  bottom: calc(var(--eb) + var(--cy) + var(--dy) - var(--sz) / 2);
+}
+body.mob.hand-l #sk div, body.mob.hand-l #s5 { left: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); right: auto; }
+body.mob #sk small, body.mob #s5 small { display: none; }
+body.mob #s5 { margin: 0; }
+body.mob #sm.none { display: none; }
+body.mob #sr { --dx: 94px;    --dy: 0px; }
+body.mob #s2 { --dx: 79.7px;  --dy: 49.8px; }
+body.mob #s3 { --dx: 44.1px;  --dy: 83px; }
+body.mob #s4 { --dx: 0px;     --dy: 94px; }
+body.mob #s1 { --sz: 42px; --dx: 155.8px; --dy: 62.9px; font-size: 18px; }
+body.mob #s5 { --sz: 42px; --dx: 103.4px; --dy: 132.4px; font-size: 18px; }
+body.mob #sm { --sz: 42px; --dx: 23.4px;  --dy: 166.4px; font-size: 18px; }
+/* auto combate: botão grande no centro do arco */
+body.mob #sawrap { top: auto; left: auto; transform: none; gap: 0; right: calc(var(--ei) + var(--cx) - 34px); bottom: calc(var(--eb) + var(--cy) - 34px); z-index: 6; }
+body.mob.hand-l #sawrap { right: auto; left: calc(var(--ei) + var(--cx) - 34px); }
+body.mob #sa { width: 68px; height: 68px; border-radius: 16px; font-size: 30px; }
+body.mob #at { display: none; }
+
+/* ---- botão de menu: centro da base ---- */
+body.mob #lnch {
+  display: grid; place-items: center; position: fixed; z-index: 7; left: 50%; margin-left: -23px; width: 46px; height: 46px;
+  bottom: calc(var(--eb) + 18px); border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: #e0c27a;
+  background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604);
+  box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 0 0 5px #a07a3a, 0 6px 14px #000b; transition: transform .2s;
+}
+body.mob.menu-open #lnch { transform: rotate(45deg); }
+body.mob #fan { display: block; position: fixed; z-index: 8; left: 50%; width: 0; height: 46px; bottom: calc(var(--eb) + 18px); pointer-events: none; }
+body.mob #fan button {
+  position: absolute; left: -23px; top: 0; width: 46px; height: 46px; border-radius: 50%; border: 0; padding: 0; color: #e4d8bd; cursor: pointer;
+  background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604); box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 4px 12px #000b;
+  opacity: 0; transform: scale(.4); pointer-events: none; transition: transform .22s cubic-bezier(.2, .9, .3, 1.2), opacity .15s;
+}
+body.mob.menu-open #fan button { opacity: 1; pointer-events: auto; transform: translate(var(--fx), var(--fy)) scale(1); }
+body.mob.menu-open #fanbk { display: block; position: fixed; inset: 0; z-index: 6; background: #0006; }
+/* com o menu aberto, o arco e os diamantes apagam (um grupo por vez, sem poluir) */
+body.mob.menu-open #sk div, body.mob.menu-open #s5, body.mob.menu-open #sawrap, body.mob.menu-open #hb .gw { opacity: .15; pointer-events: none; }
+/* painel ou diálogo aberto: nada do HUD de baixo fica por cima */
+body.mob.ui-open #hb, body.mob.ui-open #lnch, body.mob.ui-open #fan { visibility: hidden; }
+
+/* ---- joystick flutuante (modo Joystick) ---- */
+#joyb, #joyk { position: fixed; z-index: 4; pointer-events: none; border-radius: 50%; }
+#joyb { width: 100px; height: 100px; margin: -50px 0 0 -50px; border: 2px solid #e0c89066; background: radial-gradient(#e0c8901a, #0000 70%); }
+#joyk { width: 46px; height: 46px; margin: -23px 0 0 -23px; background: radial-gradient(circle at 40% 30%, #f6e3b0, #9a7a3a); box-shadow: 0 2px 8px #000a; }
+body.joy-on #joyb, body.joy-on #joyk { display: block; }
+
+/* ---- ícones em traço dourado (os mesmos do protótipo): o emoji some e a máscara desenha o ícone ---- */
+body.mob #sk div, body.mob #s5, body.mob #sa { font-size: 0; }
+body.mob #sk div em, body.mob #s5 > em, body.mob #sa > em { font-size: 11px; }
+body.mob #sk div::before, body.mob #s5::before, body.mob #sa::before {
+  content: ""; display: block; width: 58%; height: 58%; background: #e0c27a; position: relative; z-index: 1; pointer-events: none;
+  -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
+}
+body.mob #sa::before { width: 52%; height: 52%; }
+body.mob #s1 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 19L17 7M14 4h6v6M5 19l-1 3 3-1M8 16l3 3%22/%3E%3C/svg%3E"); }
+body.mob #s2 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4a8 8 0 108 8M12 8a4 4 0 104 4%22/%3E%3C/svg%3E"); }
+body.mob #s3 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2210%22 cy=%2214%22 r=%226%22/%3E%3Cpath d=%22M14 9l4-4M17 3l1 2M19 5l2 1%22/%3E%3C/svg%3E"); }
+body.mob #s4 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 3h6M10 3v5l-5 9a3 3 0 003 4h8a3 3 0 003-4l-5-9V3M8 15h8%22/%3E%3C/svg%3E"); }
+body.mob #sr { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 12h12M11 7l5 5-5 5M3 7h6M3 17h6%22/%3E%3C/svg%3E"); }
+body.mob #s5 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%227%22 cy=%2210%22 r=%222%22/%3E%3Ccircle cx=%2212%22 cy=%227%22 r=%222%22/%3E%3Ccircle cx=%2217%22 cy=%2210%22 r=%222%22/%3E%3Cpath d=%22M7 17c0-3 2.5-5 5-5s5 2 5 5c0 2-2 3-5 3s-5-1-5-3z%22/%3E%3C/svg%3E"); }
+body.mob #sm { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 21V10a6 6 0 0112 0v11M6 16h3M15 16h3%22/%3E%3C/svg%3E"); }
+body.mob #sa { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%227%22/%3E%3Cpath d=%22M12 2v5M12 17v5M2 12h5M17 12h5%22/%3E%3C/svg%3E"); }
+body.mob #lnch svg { width: 56%; height: 56%; }
+body.mob #fan button svg { width: 54%; height: 54%; }

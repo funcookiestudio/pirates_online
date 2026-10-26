@@ -86,14 +86,18 @@ export function refreshMountButton() {
   if (!b) return;
   if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
   if (!b.querySelector('i')) b.insertAdjacentHTML('beforeend', '<i style="position:absolute;left:3px;right:3px;bottom:3px;height:4px;border-radius:2px;background:rgba(0,0,0,.5);overflow:hidden"><b style="display:block;height:100%;width:100%;background:#7ad84a"></b></i>');
-  b.style.display = MOUNT.owned ? '' : 'none';
+  b.style.display = '';   // o espaço do cavalo é fixo: sem cavalo o botão fica apagado
+  b.classList.toggle('none', !MOUNT.owned);
   b.classList.toggle('on', MOUNT.on);
   // ícone de estado (como no companheiro): ● verde = cavalo ativo (montado, chamado ou parado fora da vila) · botão apagado = no estábulo
   if (!b.querySelector('u')) b.insertAdjacentHTML('beforeend', '<u style="position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;border:1px solid #1c1208;text-decoration:none"></u>');
   const act = MOUNT.on || !!(MOUNT.root && MOUNT.root.visible);
   b.querySelector('u').style.background = MOUNT.on ? '#7ad84a' : act ? '#e0c050' : '#666';
   b.title = 'Montaria (H; segurar o botão ou Shift+H dispensa o cavalo): ' + (MOUNT.on ? 'montado — desmontar' : act ? 'cavalo ativo — ir montar' : 'chamar o cavalo');
-  b.style.opacity = act ? '1' : '.6';
+  b.style.opacity = !MOUNT.owned ? '.3' : act ? '1' : '.6';
+  b.style.filter = MOUNT.owned ? '' : 'grayscale(1)';
+  b.style.pointerEvents = MOUNT.owned ? '' : 'none';
+  if (!MOUNT.owned) b.title = 'Montaria: ainda sem cavalo';
 }
 
 /** Montado em terra firme, fora da vila e das dungeons */

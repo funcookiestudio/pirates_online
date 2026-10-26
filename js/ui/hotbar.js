@@ -6,6 +6,7 @@ import { $ } from '../core/utils.js';
 const HB_MIN = .5;
 export function fitHotbar() {
   const hb = $('hb');
+  if (document.body.classList.contains('mob')) { hb.style.transform = ''; document.documentElement.style.setProperty('--hbh', '112px'); return; }   // HUD de uma mão: sem barco, só diamantes e arco
   hb.style.transform = 'translateX(-50%)';
   // retrato no celular: o barco ocupa toda a largura da tela, com 4 px de folga em cada ponta
   const portrait = innerHeight > innerWidth && innerWidth <= 700;

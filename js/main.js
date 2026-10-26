@@ -53,6 +53,7 @@ import { DOG } from './pets/dog.js';
 import { refreshPetButton, initHotbarFit } from './ui/hotbar.js';
 import { initPanel } from './ui/panel.js';
 import { initWorldMap } from './ui/worldmap.js';
+import { initMobileHud } from './ui/mobilehud.js';
 import { dungeonGimmicks, updateDungeon, inDungeon, leaveDungeon } from './dungeon/dungeon-scene.js';
 import { initCaves, clickCave, DUNGEONS } from './world/caves.js';
 import { updateStatusBars, updateOverlays } from './ui/hud.js';
@@ -142,6 +143,7 @@ initDialog();
 initSettings(); initUpdater();
 setWeapon();
 refreshPetButton();
+initMobileHud();
 initHotbarFit();
 const loaded = loadGame();
 if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets nem outros itens

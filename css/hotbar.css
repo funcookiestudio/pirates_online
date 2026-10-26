@@ -121,10 +121,14 @@
 #sk {
   position: relative;
   display: flex;
-  gap: 6px;
-  margin: 0 14px 4px;
+  flex: 1 1 auto;
+  min-width: 480px;               /* seis espaços fixos, repartidos igualmente entre os dois diamantes */
+  justify-content: space-evenly;
+  margin: 0 10px 4px;
 }
-#sk div, #sa {
+#s5 { flex: none; margin: 0 6px 4px 0; }   /* companheiro (R): junto do diamante azul */
+#sm.none i, #sm.none u { display: none; }
+#sk div, #s5, #sa {
   position: relative;
   width: 56px;
   height: 56px;
@@ -139,12 +143,12 @@
   background: radial-gradient(#3a2a1a, #0a0604);
   box-shadow: inset 0 0 8px #000, 0 2px 0 #0009;
 }
-#sk div.on, #sa.on {
+#sk div.on, #s5.on, #sa.on {
   border-color: #ff7a3a;
   box-shadow: inset 0 0 8px #000, 0 0 10px #ff7a3a;
 }
-#sk small, #sa > small { position: absolute; left: 3px; bottom: 1px; font-size: 10px; color: #e0c890; }
-#sk em, #sa > em { position: absolute; right: 3px; top: 1px; font-size: 11px; font-style: normal; color: #fff; }
+#sk small, #s5 > small, #sa > small { position: absolute; left: 3px; bottom: 1px; font-size: 10px; color: #e0c890; }
+#sk em, #s5 > em, #sa > em { position: absolute; right: 3px; top: 1px; font-size: 11px; font-style: normal; color: #fff; }
 #sk .cd { position: absolute; left: 0; right: 0; bottom: 0; background: #000b; }
 
 /* Anel de fôlego em volta do botão de auto combate: esvazia no sentido anti-horário a partir do topo */

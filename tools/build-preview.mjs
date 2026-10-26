@@ -2,7 +2,7 @@
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
-const css = ['base', 'hud', 'hotbar', 'panels'].map(n => readFileSync(`css/${n}.css`, 'utf8')).join('\n');
+const css = ['base', 'hud', 'hotbar', 'panels', 'mobile'].map(n => readFileSync(`css/${n}.css`, 'utf8')).join('\n');
 const html = readFileSync('index.html', 'utf8');
 const body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<!-- Three.js'));
 const three = html.match(/<script src="(https:\/\/cdnjs[^"]+three[^"]+)">/)[1];

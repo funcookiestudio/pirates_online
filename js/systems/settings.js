@@ -20,7 +20,7 @@ import { debugGrid, navVersion, interiorRoute } from '../world/interior-nav.js';
 import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
 
 const KEY = 'pirata-ajustes';
-export const CFG = { diag: '', q: 'auto', fps: false, hl: 'tile', hlhide: true, names: true, tiles: false, dbg: false, vis: true };
+export const CFG = { diag: '', q: 'auto', fps: false, hl: 'tile', hlhide: true, names: true, tiles: false, dbg: false, vis: true, ctl: 'tap', hand: 'r' };
 try { Object.assign(CFG, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* sem armazenamento: usa o padrão */ }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(CFG)); } catch (e) { /* ignora */ } };
 
@@ -187,6 +187,9 @@ export function initSettings() {
   const fu = $('gx-full'); fu.checked = CFG.full !== undefined ? !!CFG.full : matchMedia('(pointer:coarse)').matches; fu.onchange = () => { CFG.full = fu.checked; save(); applyFull(fu.checked); };
   const nm = $('gx-names'); nm.checked = CFG.names !== false; nm.onchange = () => { CFG.names = nm.checked; save(); };
   const dg2 = $('gx-diag'); dg2.onchange = () => { CFG.diag = dg2.value; };   /* não é salvo: volta ao normal ao recarregar */
+  { const ctl = $('gx-ctl'), hd = $('gx-hand'); ctl.value = CFG.ctl; hd.value = CFG.hand;
+    ctl.onchange = () => { CFG.ctl = ctl.value; save(); window.dispatchEvent(new Event('hudcfg')); };
+    hd.onchange = () => { CFG.hand = hd.value; save(); window.dispatchEvent(new Event('hudcfg')); }; }
   const vs = $('gx-vis'); vs.checked = CFG.vis !== false; vs.onchange = () => { CFG.vis = vs.checked; save(); };
   // aba Mapa: gerar/escolher a seed da ilha (recarrega com a nova semente; o personagem é salvo antes)
   {

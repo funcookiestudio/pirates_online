@@ -19,7 +19,7 @@ import { doorClick, doorTileClick, cancelDoor, exitClick, roomClick } from '../w
 import { bedClick } from '../world/beds.js';
 import { cabinetClick } from '../world/cabinets.js';
 import { snapInterior } from '../world/interior-nav.js';
-import { PICKDBG, flashBlocked } from './settings.js';
+import { PICKDBG, flashBlocked, CFG } from './settings.js';
 import { wakeUp } from './bed.js';
 import { catAt } from '../entities/wildlife.js';
 import { petWalk, cancelPetWalk, endPet, petting } from './pet.js';
@@ -31,6 +31,36 @@ const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 let down = false;
+let stick = null;   // joystick flutuante (celular, modo Joystick): { id, x, y, t, moved }
+const _v = new THREE.Vector3();
+const joyOn = () => CFG.ctl === 'joy' && document.body.classList.contains('mob');
+function endStick() { stick = null; document.body.classList.remove('joy-on'); }
+/** Anda na direção do dedo, relativa à câmera: o destino é um ponto logo à frente do personagem */
+function stickGo(jx, jy) {
+  if (P.sit > 0 || P.sitT) standUp();
+  if (P.bed) wakeUp();
+  MOUNT.want = false; state.autoHold = 2.5; P.tgt = null;
+  cancelStair(); cancelDoor(); cancelTalk(); cancelPetWalk();
+  cam.getWorldDirection(_v);
+  let fx = _v.x, fz = _v.z; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
+  const dx = -fz * jx - fx * jy, dz = fx * jx - fz * jy;   // direita da câmera = (-fz, fx) · para cima na tela = frente
+  let f = freePoint(P.x + dx * 4, P.z + dz * 4, .7);
+  const sn = snapInterior(P.x, P.z, f.x, f.z);
+  if (sn === null) return;
+  if (sn) f = { x: sn[0], z: sn[1] };
+  P.tx = f.x; P.tz = f.z;
+}
+function stickMove(e) {
+  const dx = e.clientX - stick.x, dy = e.clientY - stick.y, m = Math.hypot(dx, dy);
+  if (m > 10) stick.moved = true;
+  if (!stick.moved) return;
+  const R = 50, k = m > R ? R / m : 1, ux = dx * k, uy = dy * k;
+  const b = $('joyb'), n = $('joyk');
+  document.body.classList.add('joy-on');
+  b.style.left = stick.x + 'px'; b.style.top = stick.y + 'px';
+  n.style.left = stick.x + ux + 'px'; n.style.top = stick.y + uy + 'px';
+  if (m > 14) stickGo(ux / R, uy / R);
+}
 
 /** Clique/toque na tela: seleciona um inimigo próximo ou define o destino no chão */
 function pick(cx, cy) {
@@ -119,6 +149,7 @@ export function initInput() {
     return { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), a: Math.atan2(b.clientY - a.clientY, b.clientX - a.clientX) };
   };
 
+  for (const id of ['joyb', 'joyk']) { const d = document.createElement('div'); d.id = id; document.body.append(d); }
   cv.addEventListener('contextmenu', e => e.preventDefault());
   cv.addEventListener('wheel', e => { e.preventDefault(); if (e.shiftKey) tiltBy(-e.deltaY * .002); else zoomBy(Math.exp(e.deltaY * .0015)); }, { passive: false });
 
@@ -132,7 +163,8 @@ export function initInput() {
     }
     if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX, y: e.clientY }; return; }
     pts.set(e.pointerId, e);
-    if (pts.size === 2) { clearTimeout(wait); down = false; P.tgt = null; P.tx = P.x; P.tz = P.z; cancelStair(); cancelDoor(); gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
+    if (pts.size === 2) { endStick(); clearTimeout(wait); down = false; P.tgt = null; P.tx = P.x; P.tz = P.z; cancelStair(); cancelDoor(); gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
+    if (e.pointerType === 'touch' && joyOn()) { stick = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: false }; return; }
     if (e.pointerType === 'touch') {
       // espera um instante: se um segundo dedo chegar, era o início de um gesto e o personagem não anda
       down = true; pick(e.clientX, e.clientY);   // sem espera: anda no mesmo instante (se virar gesto de dois dedos, o passo é desfeito)
@@ -147,6 +179,7 @@ export function initInput() {
       else if (cg && cg.m) { if (cg.m === 'rot') rotateBy(-(e.clientX - cg.x) * .008); else tiltBy((e.clientY - cg.y) * .006); cg.x = e.clientX; cg.y = e.clientY; }
       return;
     }
+    if (stick && e.pointerId === stick.id) { stickMove(e); return; }
     if (orbit) { if (e.buttons & 6) { rotateBy(-(e.clientX - orbit.x) * .008); tiltBy((e.clientY - orbit.y) * .006); orbit.x = e.clientX; orbit.y = e.clientY; } return; }
     if (pts.has(e.pointerId)) pts.set(e.pointerId, e);
     if (pts.size === 2 && gest) {
@@ -166,6 +199,11 @@ export function initInput() {
 
   const end = e => {
     if (CAMUI.open) { pts.delete(e.pointerId); cg = null; down = false; return; }
+    if (stick && e.pointerId === stick.id) {
+      const s = stick, tap = e.type === 'pointerup' && !s.moved && performance.now() - s.t < 450;
+      endStick();
+      if (tap) pick(s.x, s.y); else { P.tx = P.x; P.tz = P.z; }
+    }
     if (e.button === 1 || e.button === 2) orbit = null;
     pts.delete(e.pointerId);
     if (pts.size < 2) gest = null;

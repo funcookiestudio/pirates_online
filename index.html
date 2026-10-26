@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/hud.css">
 <link rel="stylesheet" href="css/hotbar.css">
 <link rel="stylesheet" href="css/panels.css">
+<link rel="stylesheet" href="css/mobile.css">
 </head>
 <body class="pre">
 
@@ -47,17 +48,17 @@
     <div class="xp" id="xpp" title="XP do jogador"><i id="xpb"></i></div>
     <div class="xp" id="xpa" title="XP do companheiro"><i id="pxh"></i></div>
     <b class="lv" id="lvp" title="Nível do jogador"></b><b class="lv" id="lva" title="Nível do companheiro"></b>
-    <div class="gw" id="gwl" title="Personagem (I)"><div class="gem"><div class="orb" id="ohp"><i id="hp"></i><span id="hpt"></span></div></div></div>
+    <div class="gw" id="gwl" title="Personagem (I)"><div class="gem"><div class="orb" id="ohp"><div class="lq"><i id="hp"></i></div><span id="hpt"></span></div></div></div>
     <div id="sk">
       <div id="s1" title="Trocar de arma (X)"><span id="s1i">⚔</span><small>X</small></div>
       <div id="s2">🌀<small>Q</small><b class="cd" id="c2"></b></div>
       <div id="s3">💣<small>W</small><em id="bc"></em><b class="cd" id="c3"></b></div>
       <div id="sr" title="Esquiva (Espaço)">💨<small>Esp</small><b class="cd" id="c6"></b></div>
       <div id="s4">🧪<small>E</small><em id="pc"></em></div>
-      <div id="sm" title="Montaria (H): chamar / montar / desmontar" style="display:none">🐴<small>H</small></div>
-      <div id="s5" class="on" title="Companheiro (R): coletar / atacar e coletar"><span id="pi">🦜</span><small>R</small><em id="pm">⚔</em></div>
+      <div id="sm" class="none" title="Montaria (H): chamar / montar / desmontar">🐴<small>H</small></div>
     </div>
-    <div class="gw" id="gwr" title="Companheiro (P)"><div class="gem"><div class="orb" id="omp" title="Vida do companheiro"><i id="mp"></i><span id="mpt"></span></div></div></div>
+    <div id="s5" class="on" title="Companheiro (R): coletar / atacar e coletar"><span id="pi">🦜</span><small>R</small><em id="pm">⚔</em></div>
+    <div class="gw" id="gwr" title="Companheiro (P)"><div class="gem"><div class="orb" id="omp" title="Vida do companheiro"><div class="lq"><i id="mp"></i></div><span id="mpt"></span></div></div></div>
   </div>
 
   <!-- proa -->
@@ -91,6 +92,9 @@
   </div>
   <div class="atab" id="at-jg" hidden>
   <div class="acs">
+    <h4>🕹 Controle no celular</h4>
+    <div class="acr"><span>Como andar</span><select id="gx-ctl"><option value="tap">Toque (tocar no chão)</option><option value="joy">Joystick (arrastar o dedo)</option></select></div>
+    <div class="acr"><span>Mão dominante</span><select id="gx-hand"><option value="r">Destra</option><option value="l">Canhota</option></select></div>
     <h4>🎯 Cliques</h4>
     <div class="acr"><span>Marcador do destino</span><select id="gx-hl"><option value="tile">Tile (quadrado no chão)</option><option value="ring">Anel</option><option value="off">Desligado</option></select></div>
     <label><input type="checkbox" id="gx-hlhide"> Esconder o marcador ao chegar</label>
