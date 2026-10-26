@@ -262,6 +262,8 @@ function buildOne(spot) {
   const pens = [];
   let PA, PB;
 
+  if (vr.id === 'granja') { const cp = toWorld(spot, f, -3.5, -4); CAT_SPOTS.push({ x: cp.x, z: cp.z, v: 'caramelo', r: 5 }); }   // cachorro caramelo da granja
+  if (vr.id === 'gado') { const cp = toWorld(spot, f, 3.5, -4); CAT_SPOTS.push({ x: cp.x, z: cp.z, v: 'pastor', r: 6 }); }   // cão pastor da fazenda do gado
   if (vr.id === 'aves') {
     const a = pen(...A, 0xe8c040), b = pen(...B, 0xd8a050, true); PA = a; PB = b;
     { const hw = toWorld(spot, f, -8, -12); spot.bed = buildAvesHouse(hw.x, hw.z, f.th, by).bed; }

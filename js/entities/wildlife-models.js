@@ -170,6 +170,8 @@ export const CAT_VARIANTS = {
   preto:   { fur: 0x1c1c22, dk: 0x1c1c22, wh: 0x1c1c22, pk: 0x5a3a44, eye: 0xe8c030, stripes: false, whisker: 0x1c1c22 },
   branco:  { fur: 0xf4f2ec, dk: 0xf4f2ec, wh: 0xf4f2ec, pk: 0xf0a8b4, eye: 0x4a9ad8, stripes: false },
   cinza:   { fur: 0x8c929c, dk: 0x5e646e, wh: 0xdcdde0, pk: 0xe8a0aa, eye: 0xd8a020 },
+  caramelo: { fur: 0xc89a5a, dk: 0x9a6a30, wh: 0xe8d4a8, pk: 0x111111, eye: 0x3a2410, dog: true, stripes: false, snout: 0xe8d4a8, ear: 0x8a5a28 },
+  pastor:  { fur: 0x1c1c22, dk: 0x1c1c22, wh: 0xf4f0e8, pk: 0x111111, eye: 0x5a3a14, dog: true, stripes: false, snout: 0xf4f0e8, ear: 0x1c1c22, tip: 0xf4f0e8 },
   tuxedo:  { fur: 0x1c1c22, dk: 0x1c1c22, wh: 0xf4f0e8, pk: 0xe8909e, eye: 0x6ac040 }
 };
 
@@ -196,9 +198,10 @@ export function mkCat(variant = 'laranja') {
   h.position.set(0, .72, .42);
   h.add(
     wb(.3, .26, .28, fur, 0, 0, 0),
-    wb(.14, .1, .1, wh, 0, -.06, .17), // focinho
-    wb(.05, .04, .03, pk, 0, -.02, .23),
-    wb(.04, .03, .02, dk, 0, .14, .14) // marca na testa
+    ...(P.dog ? [wb(.15, .12, .2, P.snout, 0, -.07, .2), wb(.07, .05, .04, pk, 0, -.03, .31)] : [   // cachorro: focinho longo e nariz preto
+      wb(.14, .1, .1, wh, 0, -.06, .17), // focinho
+      wb(.05, .04, .03, pk, 0, -.02, .23),
+      wb(.04, .03, .02, dk, 0, .14, .14)]) // marca na testa
   );
   // olhos abertos (g.eyes) e pálpebras fechadas (g.lids), para a animação de dormir
   const eyes = new THREE.Group();
@@ -215,7 +218,7 @@ export function mkCat(variant = 'laranja') {
   g.eyes = eyes;
   g.lids = lids;
   // bigodes: 3 fios de cada lado, abertos em leque, curtos e levemente caídos
-  for (const k of [-1, 1]) {
+  if (!P.dog) for (const k of [-1, 1]) {
     [[-.02, .06], [-.055, -.12], [-.09, -.3]].forEach(([y, a]) => {
       const w = wb(.19, .012, .012, P.whisker || 0xf0f0f0, k * .155, y, .18);
       w.rotation.z = k * a;
@@ -226,8 +229,9 @@ export function mkCat(variant = 'laranja') {
   const ear = k => {
     const e = new THREE.Group();
     e.position.set(k * .1, .13, -.02);
-    e.add(wb(.1, .12, .05, fur, 0, .06, 0), wb(.06, .08, .02, pk, 0, .05, .03));
-    e.rotation.z = -k * .3; // inclinada para fora
+    if (P.dog) { e.add(wb(.1, .22, .05, P.ear, 0, -.07, 0)); e.position.y = .1; e.rotation.z = -k * .55; }   // orelha caída
+    else { e.add(wb(.1, .12, .05, fur, 0, .06, 0), wb(.06, .08, .02, pk, 0, .05, .03));
+    e.rotation.z = -k * .3; } // inclinada para fora
     h.add(e);
     return e;
   };
@@ -255,7 +259,7 @@ export function mkCat(variant = 'laranja') {
   tp.position.set(0, .56, -.3);
   g.add(tp);
   for (let i = 0; i < 6; i++) {
-    tp.add(wb(.06, .06, .13, i % 2 || i > 4 ? dk : fur, 0, 0, -.065));
+    tp.add(wb(.06, .06, .13, P.tip && i > 3 ? P.tip : i % 2 || i > 4 ? dk : fur, 0, 0, -.065));
     const n = new THREE.Group();
     n.position.z = -.13;
     tp.add(n);

@@ -3,7 +3,7 @@
    · Javali  — parado, andar, correr, fuçar, investida, PANCADA (cabeça baixa, raspa a pata e levanta o focinho), recuo, cambaleio
    · Gato    — parado, andar, correr, sentar, LAMBER A PATA, ESPREGUIÇAR, arranhar e dormir (com Zzz); pisca e mexe as orelhas
    makeAnimal(kind, variant) devolve o animal; animate(A, dt, t, mode, o) pose o corpo. Quem comanda (IA) escolhe o modo. */
-import { mkDeer, mkBoar, mkCat } from './wildlife-models.js';
+import { mkDeer, mkBoar, mkCat, CAT_VARIANTS } from './wildlife-models.js';
 
 const sm = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }, env = (u, a, b) => sm((u - a) / (b - a));
 const lim = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -68,12 +68,13 @@ const BOAR = {
 const YAW = [.8, 1.1, .7, .4, .1, 0];
 const CAT = {
   k: { Aw: .5, Ar: .75, ew: .9, er: 1.1, tr: .1, yr: .09 }, piv: [.43, -.28], sc: 1.15,
-  modes: ['idle', 'walk', 'run', 'sit', 'groom', 'stretch', 'swipe', 'sleep'],
+  modes: ['idle', 'walk', 'run', 'sit', 'groom', 'stretch', 'swipe', 'sleep', 'pet'],
   pose: {
     idle: (t) => ({ hx: Math.sin(t * 1.3) * .05, hy: Math.sin(t * .7) * .6, ta: .25, y: Math.sin(t * 1.8) * .006 }),
     walk: (t, A) => Object.assign(gaitP(A.ph, false, CAT.k), { hx: Math.sin(A.ph * 2) * .03, ta: .3 }),
     run: (t, A) => Object.assign(gaitP(A.ph, true, CAT.k), { hx: -.1, ta: .12 }),
     sit: (t) => ({ tilt: -1, y: -.2, hl: -.4, hr: -.4, khl: 1.4, khr: 1.4, fl: 1, fr: 1, hx: 1 + Math.sin(t * 1.3) * .04, hy: Math.sin(t * .7) * .5, ta: .3 }),
+    pet: (t) => ({ tilt: -1, y: -.2, hl: -.4, hr: -.4, khl: 1.4, khr: 1.4, fl: 1, fr: 1, hx: .72 + Math.sin(t * 2.4) * .05, hy: Math.sin(t * 1.1) * .08, hdy: .03, ta: .55, tc: .08, ez: -.12, br: Math.sin(t * 5) * .006 }),   // sentado, cabeça erguida contra a mão, olhos fechados, rabo balançando
     groom: (t) => { const l = Math.sin(t * 9) * .5 + .5;   // sentado, levanta a pata dianteira e lambe
       return { tilt: -1, y: -.2, hl: -.4, hr: -.4, khl: 1.4, khr: 1.4, fl: 1, fr: -.75 + l * .12, kfr: 1.7, hx: 1.38 - l * .1, hy: -.25, ta: .2, ez: -.05 }; },
     stretch: (t) => { const u = .5 + .5 * Math.sin(t * .9);   // reverência: peito no chão, traseiro erguido, rabo para cima
@@ -87,11 +88,11 @@ const CAT = {
   apply(A, p, t) {
     const m = A.m, sl = A.W.sleep, blink = ((t * .9 + A.t0) % 4.3) < .13;
     m.scale.setScalar(1 + p.br);
-    m.eyes.visible = sl < .5 && !blink; m.lids.visible = !m.eyes.visible;
+    m.eyes.visible = sl < .5 && !blink && A.W.pet < .5; m.lids.visible = !m.eyes.visible;
     m.head.rotation.x = p.hx; m.head.rotation.y = p.hy; m.head.position.y = .72 + p.hdy;
     const flick = Math.max(0, Math.sin(t * .7 + A.t0 * 3)) > .97 ? Math.sin(t * 40) * .25 : 0;   // orelha estremece de vez em quando
     m.earL.rotation.z = .3 + Math.sin(t * 9) * .05 * (1 - sl) + p.ez + flick; m.earR.rotation.z = -.3 - Math.sin(t * 9) * .05 * (1 - sl) - p.ez;
-    m.tail.forEach((s, i) => { s.rotation.x = (i ? .05 + p.tc : .7 + p.tf) + p.ta * .2; s.rotation.y = Math.sin(t * 2 - i * .5) * p.ta * .8 + p.tcy * YAW[i]; });
+    m.tail.forEach((s, i) => { s.rotation.x = (i ? .05 + p.tc : .7 + p.tf) + p.ta * .2; s.rotation.y = Math.sin(t * 2 - i * .5) * p.ta * .8 + p.tcy * YAW[i] + (A.dog ? Math.sin(t * 11 - i * .5) * .22 * (A.W.sit + A.W.pet + A.W.idle) * (i + 1) / 3 : 0); });
   },
 };
 
@@ -103,9 +104,9 @@ export function makeAnimal(kind, variant) {
   const root = new THREE.Group(), rig = new THREE.Group(), [py, pz] = D.piv;
   rig.position.set(0, py, pz); rig.rotation.order = 'YXZ'; m.position.set(0, -py, -pz);
   rig.add(m); root.add(rig); root.scale.setScalar(D.sc);
-  const A = { kind, D, g: root, rig, m, W: {}, ph: Math.random() * 6, bt: 0, gu: 0, t0: Math.random() * 20, mode: 'idle', spd: 0 };
+  const A = { kind, variant, D, g: root, rig, m, W: {}, ph: Math.random() * 6, bt: 0, gu: 0, t0: Math.random() * 20, mode: 'idle', spd: 0 };
   D.modes.forEach(n => A.W[n] = n === 'idle' ? 1 : 0);
-  if (kind === 'cat') A.zs = zzz(root);
+  if (kind === 'cat') { A.zs = zzz(root); if (CAT_VARIANTS[variant] && CAT_VARIANTS[variant].dog) { A.dog = true; root.scale.setScalar(D.sc * 1.3); } }
   return A;
 }
 

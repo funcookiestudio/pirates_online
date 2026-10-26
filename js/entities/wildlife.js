@@ -120,7 +120,9 @@ function thinkCat(a, dt, t) {
   a.tm -= dt;
   let mode = 'idle', sp = 0;
   // gato se esquiva de quem chega muito perto: trota para longe e depois volta a sentar
-  if (d < 1.6 && !P.dead && a.st !== 'avoid' && (a.st !== 'sleep' || d < 1.1)) { a.st = 'avoid'; a.tm = rnd(1.2, 2); }
+  if (a.pet) { a.hd = turn(a.hd, Math.atan2(dx, dz), dt * 3); a.v *= .8; return ['pet', 0]; }   // sendo acariciado: fica sentado, olhos fechados
+  const mv = Math.hypot(P.vx || 0, P.vz || 0) > .6 && !a.want;   // só foge de quem se aproxima correndo; parado ou clicando nele, o gato fica
+  if (d < 1.6 && mv && !a.A.dog && !P.dead && a.st !== 'avoid' && (a.st !== 'sleep' || d < 1.1)) { a.st = 'avoid'; a.tm = rnd(1.2, 2); }
   if (a.st === 'avoid') {
     stepTo(a, Math.atan2(-dx, -dz) + Math.sin(t * 3) * .3, 3.6, dt); mode = 'run'; sp = a.v;
     if (a.tm <= 0) { a.st = 'sit'; a.tm = rnd(3, 6); }
@@ -139,6 +141,7 @@ function thinkCat(a, dt, t) {
       if (wd < .5 || a.tm <= 0) { a.st = 'sit'; a.tm = rnd(4, 10); } else { stepTo(a, Math.atan2(wx, wz), 1.0, dt); mode = 'walk'; sp = a.v; }
     } else pickCat(a);
     // curioso: sentado, vira a cabeça (o corpo) para o jogador que passa a 3–8 m
+    if (a.want) { if (a.st === 'walk' || a.st === 'groom' || a.st === 'stretch') { a.st = 'sit'; a.tm = 6; } a.hd = turn(a.hd, Math.atan2(dx, dz), dt * 2); }
     if ((a.st === 'sit' || a.st === 'idle') && d < 8 && d > 2) a.hd = turn(a.hd, Math.atan2(dx, dz), dt * 1.5);
   }
   return [mode, sp];
@@ -161,6 +164,13 @@ function openNear(cx, cz) {
     return [x, z];
   }
   return [cx, cz];
+}
+
+/** Gato mais perto do ponto (clique) */
+export function catAt(x, z) {
+  let b = null, bd = 1.3;
+  CATS.forEach(a => { if (!a.A.g.visible) return; const d = Math.hypot(a.x - x, a.z - z); if (d < bd) { bd = d; b = a; } });
+  return b;
 }
 
 export function buildWildlife() {

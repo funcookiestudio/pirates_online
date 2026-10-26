@@ -23,6 +23,8 @@ import { gunPose, aimOffset, reloadWeight, BIG, TORCH_ARM } from '../entities/pl
 import { attack, impact } from './combat.js';
 import { autoThink } from './auto.js';
 import { updateSit, animateSit } from './rest.js';
+import { openPetBox } from '../ui/dialog.js';
+import { PET, petting, updatePet, animatePet, updatePetWalk } from './pet.js';
 import { updateStamina } from './stamina.js';
 import { applySwap, placeWeapons } from '../entities/holster.js';
 import { updateSwap } from './swap.js';
@@ -39,8 +41,10 @@ export function updatePlayer(dt) {
     updateSwap(dt);
     updateAim(dt);
     updateBedPending();
+    updatePetWalk(c => openPetBox(c));
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
     else if (sleeping()) { P.vx = P.vz = 0; }   // deitado/dormindo: a cama conduz o corpo (bed.js)
+    else if (petting()) updatePet(dt);           // ajoelhado acariciando um gato
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
     else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
     else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
@@ -218,6 +222,7 @@ function clampToWorld() {
 function animate(dt) {
   if (sleeping() && animateBed(dt)) return;
   if (P.roll > 0) { animateRoll(); return; }
+  if (PET.k > 0) { animatePet(dt); return; }
   if (P.sit > 0) { animateSit(dt); return; }
   P.rum = P.rum || 0;
   P.rum += ((P.rumOn ? 1 : 0) - P.rum) * (1 - Math.exp(-dt * 6));

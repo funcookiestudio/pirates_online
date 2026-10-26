@@ -13,6 +13,7 @@ import { ROOM_PRICE, roomRented, rentRoom, cancelRent, rentDue } from '../world/
 import { questSay, questButtons } from '../systems/quest.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
+import { startPet } from '../systems/pet.js';
 let cur = null, li = 0, tab = 'buy', stock = [];
 
 const icon = it => it.ic ? it.ic : it.bomb ? '💣' : it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
@@ -148,10 +149,20 @@ function renderShop() {
 const HORSE_COST = 120;
 function say(txt) { $('dtx').textContent = txt; }
 
+/** Caixa do gato: acariciar ou sair */
+export function openPetBox(cat) {
+  openDialog({ name: cat.A.dog ? 'Cachorro' : 'Gato', title: cat.A.dog ? 'Cachorro da fazenda' : cat.A.variant === 'preto' ? 'Gato preto' : 'Gatinho', ic: cat.A.dog ? '🐶' : '🐱', petCat: cat, lines: [cat.A.dog ? 'Au! (ele abana o rabo, todo feliz com a visita)' : 'Miau... (ele te olha de olhos semicerrados e se aproxima devagar)'] });
+}
+
 function buttons() {
   const b = $('dbt');
   b.innerHTML = '';
   const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); };
+  if (cur.petCat) {
+    add('🤚 Acariciar', () => { const c = cur.petCat; closeDialog(); startPet(c); });
+    add('Sair', closeDialog);
+    return;
+  }
   questButtons(cur).forEach(([t, f]) => add(t, () => f(say, buttons)));   // botões da missão em andamento
   if (cur.stable) {
     COATS.forEach((k, i) => {

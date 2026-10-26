@@ -21,6 +21,8 @@ import { cabinetClick } from '../world/cabinets.js';
 import { snapInterior } from '../world/interior-nav.js';
 import { PICKDBG, flashBlocked } from './settings.js';
 import { wakeUp } from './bed.js';
+import { catAt } from '../entities/wildlife.js';
+import { petWalk, cancelPetWalk, endPet, petting } from './pet.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
 import { toggleMount, dismissHorse, MOUNT } from './mount.js';
@@ -69,6 +71,7 @@ function pick(cx, cy) {
 
   { const up = P.up && floorLevelH() > 0; PICKDBG.x = aim.x; PICKDBG.z = aim.z; PICKDBG.y = up ? groundY(P.x, P.z) + floorLevelH() : groundY(aim.x, aim.z); PICKDBG.on = true; PICKDBG.up = up; }
   cancelStair(); cancelDoor();
+  if (petting()) { endPet(); return; }   // qualquer clique encerra o afago
   if (doorClick(ray)) return;
   if (doorTileClick(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
   if (bedClick(ray)) return;
@@ -79,7 +82,9 @@ function pick(cx, cy) {
   if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
   const n = npcAt(aim.x, aim.z);
   if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, markY(n.g.position.x, n.g.position.z), n.g.position.z); return; }
-  cancelTalk();
+  const ct = P.up ? null : catAt(aim.x, aim.z);
+  if (ct) { P.tgt = null; petWalk(ct); mark.position.set(ct.x, markY(ct.x, ct.z), ct.z); return; }
+  cancelTalk(); cancelPetWalk();
 
   let best = null, bd = 2.2;
   enemies.forEach(e => {
