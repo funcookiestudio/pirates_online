@@ -24,21 +24,21 @@ const CSS = `
 #ttl .storm{position:absolute;left:0;top:0;width:60%;height:46%;pointer-events:none;background:radial-gradient(ellipse at 6% 62%,#02030acc,#0000 62%),radial-gradient(ellipse at 22% 30%,#0a0e1ccc,#0000 58%),radial-gradient(ellipse at 38% 52%,#141b2e99,#0000 55%)}
 #ttl .flash{position:absolute;left:0;top:14%;width:48%;height:30%;pointer-events:none;background:radial-gradient(ellipse at 14% 55%,#dfe8ff,#7f95c8 28%,#0000 66%);opacity:0;mix-blend-mode:screen;z-index:2}
 #ttl .bolt{z-index:2;filter:drop-shadow(0 0 5px #9fb8ff);position:absolute;left:9%;top:17%;width:7%;height:22%;pointer-events:none;opacity:0}
-#ttl .tt{position:absolute;left:0;right:0;top:48%;transform:translateY(-50%)}
+#ttl .tt{position:absolute;left:0;right:0;top:calc(3.2vh + env(safe-area-inset-top,0px));pointer-events:none}
 #ttl h1{position:relative;margin:0;text-align:center;font-family:'Cinzel Decorative','Cinzel',Georgia,serif;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:.08em}
-#ttl h1 .t1{display:block;font-size:clamp(22px,min(6.5vw,8vh),64px);letter-spacing:.6em;padding-left:.6em;color:#b83a30;text-shadow:0 0 14px #b0201855,0 2px 0 #1a0505}
-#ttl h1 .t2{display:block;font-size:clamp(46px,min(15vw,19vh),150px);margin-top:.04em;background:linear-gradient(#fff6dc 8%,#e2c27a 40%,#8a6428 58%,#e8cf94 78%,#7a5a22);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #1a0d05) drop-shadow(0 0 22px #a0201855)}
+#ttl h1 .t1{display:block;font-size:clamp(16px,min(4.6vw,5.6vh),44px);letter-spacing:.6em;padding-left:.6em;color:#b83a30;text-shadow:0 0 14px #b0201855,0 2px 0 #1a0505}
+#ttl h1 .t2{display:block;font-size:clamp(38px,min(11vw,14.5vh),116px);margin-top:.04em;background:linear-gradient(#fff6dc 8%,#e2c27a 40%,#8a6428 58%,#e8cf94 78%,#7a5a22);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #1a0d05) drop-shadow(0 0 22px #a0201855)}
 #ttl h1 small{display:flex;align-items:center;justify-content:center;gap:.9em;font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:clamp(11px,min(2.4vw,3vh),20px);letter-spacing:.7em;color:#c9b58a;margin-top:1.1em;padding-left:.7em;text-shadow:0 2px 6px #000}
 #ttl h1 small::before,#ttl h1 small::after{content:'';width:min(16vw,150px);height:1px;background:linear-gradient(90deg,#0000,#c9a45c,#0000)}
-#ttl .tag{margin:clamp(8px,2vh,18px) 0 0;text-align:center;font-family:'IM Fell English','Cinzel',Georgia,serif;font-style:italic;font-size:clamp(13px,min(2.6vw,3vh),20px);letter-spacing:.06em;color:#a89878;text-shadow:0 2px 6px #000}
-#ttl button{position:absolute;top:100%;left:0;right:0;margin:clamp(46px,9vh,90px) auto 0;width:max-content;appearance:none;font:inherit;font-size:clamp(15px,3.4vw,22px);font-weight:700;letter-spacing:.42em;text-transform:uppercase;padding:.85em 3.4em .85em 3.8em;color:#e8d4a8;cursor:pointer;
+#ttl .tag{margin:clamp(6px,1.4vh,14px) 0 0;text-align:center;font-family:'IM Fell English','Cinzel',Georgia,serif;font-style:italic;font-size:clamp(13px,min(2.6vw,3vh),20px);letter-spacing:.06em;color:#a89878;text-shadow:0 2px 6px #000}
+#ttl button{pointer-events:auto;position:fixed;left:0;right:0;bottom:calc(5vh + env(safe-area-inset-bottom,0px));margin:0 auto;width:max-content;appearance:none;font:inherit;font-size:clamp(15px,3.4vw,22px);font-weight:700;letter-spacing:.42em;text-transform:uppercase;padding:.85em 3.4em .85em 3.8em;color:#e8d4a8;cursor:pointer;
  background:linear-gradient(#2e1714,#120808 60%,#1e0e0c);border:1px solid #8a6a3a;box-shadow:inset 0 0 0 3px #0008,inset 0 0 18px #7a1c1c66,0 0 24px #000c,0 0 30px #7a1c1c33;
  clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px);text-shadow:0 2px 4px #000;transition:color .25s,box-shadow .25s,filter .25s;animation:ttp 3.4s ease-in-out infinite}
 #ttl button:hover{color:#fff;filter:brightness(1.25);box-shadow:inset 0 0 0 3px #0008,inset 0 0 26px #b0282866,0 0 34px #b0282855}
 #ttl button:active{transform:translateY(2px)}
 @keyframes ttp{50%{border-color:#c9a45c}}
 #ttl .ver{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(6px + env(safe-area-inset-bottom,0px));font-size:11px;letter-spacing:.2em;color:#8a7c60;text-shadow:0 1px 2px #000}
-@media (orientation:landscape) and (max-height:480px){#ttl{padding-top:2vh;padding-bottom:3vh}#ttl .tag{display:none}#ttl h1 small{margin-top:.5em}#ttl button{margin-top:clamp(18px,5vh,40px);padding:.5em 2.4em;font-size:clamp(13px,5vh,20px)}}
+@media (orientation:landscape) and (max-height:480px){#ttl{padding-top:2vh;padding-bottom:3vh}#ttl .tag{display:none}#ttl h1 small{margin-top:.5em}#ttl button{bottom:calc(3vh + env(safe-area-inset-bottom,0px));padding:.5em 2.4em;font-size:clamp(13px,5vh,20px)}}
 `;
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -97,6 +97,7 @@ function scene3d(root, cv) {
   const gun = WEAPONS[WEAPONS.findIndex(w => /Mosquete/.test(w.n))].build(); gun.position.set(0, -.32, 0); hm.arm.fa.add(gun);
   const torch = WEAPONS[WEAPONS.findIndex(w => /Tocha/.test(w.n))].build(); torch.position.y = .12;
   const tg = new THREE.Group(); tg.position.set(0, -.32, 0); tg.add(torch); hf.armL.fa.add(tg);
+  const tl = new THREE.PointLight(0xff8a30, 1.4, 9, 1.6); tl.position.set(0, .45, .1); tg.add(tl);   // luz da tocha (treme)
   const all = [hm, hf, pirate, skel];
   const blob = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .5, depthWrite: false });
   const shadows = all.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(.6, 20).rotateX(-Math.PI / 2), blob); sc.add(m); return m; });
@@ -105,6 +106,10 @@ function scene3d(root, cv) {
   const box = new THREE.Box3(), h0 = all.map(g => { g.scale.setScalar(1); box.setFromObject(g); return box.max.y - box.min.y; });
   hm.rotation.y = .5; hf.rotation.y = -.5; pirate.rotation.y = Math.PI - .35; skel.rotation.y = Math.PI + .35;
 
+  // faíscas douradas subindo do baú
+  const NS = 48, sp = new Float32Array(NS * 3), sph = Array.from({ length: NS }, () => [Math.random(), Math.random() * 6.28, .5 + Math.random()]);
+  const spg = new THREE.BufferGeometry(); spg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  const sparks = new THREE.Points(spg, new THREE.PointsMaterial({ color: 0xffd070, size: .13, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false })); sparks.frustumCulled = false; sc.add(sparks);
   const DIST = 16;
   let W = 1, H = 1, hero = 1, ene = 1, hx = 1, ex = 1;
   /** posiciona `g` com os pés em (sx, sy) da tela (0..1) e altura `hs` (fração da altura da tela) */
@@ -116,20 +121,20 @@ function scene3d(root, cv) {
     shadows[i].position.set(g.position.x, g.position.y + .02, z); shadows[i].scale.setScalar(sH * 1.1);
     return sH;
   }
-  let bs = 1, birdY = 0;
+  let bs = 1, birdY = 0, chestS = 1, T = 0, px = 0, py = 0, tx = 0, ty = 0;
   function layout() {
     W = innerWidth; H = innerHeight; const aspect = W / H;
     ren.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75)); ren.setSize(W, H, false);
     cam.aspect = aspect; cam.position.set(0, 0, DIST); cam.lookAt(0, 0, 0); cam.updateProjectionMatrix();
     const portrait = aspect < 1;
-    const hh = portrait ? Math.min(.28, .8 * aspect * .9) : .36;            // altura dos heróis (fração da tela)
-    const fy = .6;                                          // pés dos heróis (retrato: título no centro)
+    const hh = portrait ? Math.min(.26, .8 * aspect * .9) : .33;            // altura dos heróis (fração da tela)
+    const fy = portrait ? .72 : .75;                                          // pés dos heróis (retrato: título no centro)
     const hxs = portrait ? .27 : .24;                                         // distância ao centro (fração da largura)
     const eh = hh * 2.1, exs = portrait ? .3 : .27;
     bs = place(0, hm, .5 - hxs, fy, hh, -3, 1); place(1, hf, .5 + hxs, fy, hh, -3);   // menino e menina com a mesma escala
     place(2, pirate, .5 - exs, 1.2, eh, 5); place(3, skel, .5 + exs, 1.2, eh, 5);
     { const z = -7, half = Math.tan(15 * Math.PI / 180) * (DIST - z), cs = .86 * Math.min(.34 * 2 * half * aspect / 1.2, hh * 2 * half * .95 / 1.0);
-      tre.scale.setScalar(cs); tre.position.set(0, (.5 - fy - .075) * 2 * half, z); gl.position.set(0, tre.position.y + cs * .9, z + 2.2); }
+      tre.scale.setScalar(cs); tre.position.set(0, (.5 - fy - .005) * 2 * half, z); chestS = cs; gl.position.set(0, tre.position.y + cs * .9, z + 2.2); }
     hero = hh; birdY = hh;
     const ps = bs * .55; raven.scale.setScalar(ps); parrot.scale.setScalar(ps);
   }
@@ -154,10 +159,34 @@ function scene3d(root, cv) {
     parrot.position.set(hf.position.x, hf.position.y + y, -2.6); parrot.rotation.set(0, -.5, .12);
     [raven, parrot].forEach(g => { const f = .75; if (g.pw) g.pw.forEach(w => { w.sh.rotation.set(0, 0, -w.s * f); w.tip.rotation.set(0, 0, -w.s * f * .5); }); else if (g.wl) { g.wl.rotation.z = f; g.wr.rotation.z = -f; } });
   }
-  function frame() { pose(); ren.render(sc, cam); }
+  /** movimento ocioso: respiração, tocha tremendo, aves em voo, faíscas, câmera lenta com parallax */
+  function idle() {
+    const w = Math.sin;
+    [hm, hf].forEach((g, i) => { g.up.rotation.x += w(T * 1.5 + i * 1.7) * .014; g.head.rotation.x += w(T * 1.5 + i * 1.7 + .6) * .012; });
+    hf.arm.rotation.z += w(T * 1.1) * .03; hf.armL.rotation.x += w(T * 1.3) * .035; hm.arm.rotation.x += w(T * .9) * .015;
+    [pirate, skel].forEach((g, i) => { g.up.rotation.x += w(T * 1.2 + i * 2) * .018; });
+    tl.intensity = 1.25 + w(T * 13) * .22 + w(T * 7.3 + 1) * .2 + w(T * 31) * .1;
+    gl.intensity = 2.5 + w(T * 2.1) * .3 + w(T * 9) * .12;
+    // aves: voo em círculo e batida de asas
+    [[raven, 0], [parrot, 2]].forEach(([g, o]) => {
+      g.position.x += w(T * .8 + o) * bs * .35; g.position.y += w(T * 1.7 + o) * bs * .12; g.rotation.z += Math.cos(T * .8 + o) * .15;
+      const f = .35 + (w(T * 11 + o) * .5 + .5) * .75;
+      if (g.pw) g.pw.forEach(q => { q.sh.rotation.set(0, 0, -q.s * f); q.tip.rotation.set(0, 0, -q.s * f * .5); }); else if (g.wl) { g.wl.rotation.z = f; g.wr.rotation.z = -f; }
+    });
+    for (let i = 0; i < NS; i++) { const [ph, a, v] = sph[i], k = (T * .12 * v + ph) % 1;
+      sp[i * 3] = tre.position.x + Math.cos(a + T * .6) * chestS * (.15 + k * .5); sp[i * 3 + 1] = tre.position.y + chestS * (.5 + k * 2.4); sp[i * 3 + 2] = tre.position.z + w(a * 3 + T) * chestS * .3; }
+    spg.attributes.position.needsUpdate = true; sparks.material.opacity = .55 + w(T * 3) * .25;
+    // câmera: aproximação lenta e leve parallax; um pouco mais baixa, olhando os heróis de baixo
+    px += (tx - px) * .04; py += (ty - py) * .04;
+    const k = Math.min(1, T / 26), e = k * (2 - k);
+    cam.position.set(px * .8, -.5 + py * .35, DIST - 2.2 * e); cam.lookAt(0, .25, 0);
+  }
+  function frame() { pose(); idle(); ren.render(sc, cam); }
+  const mv = e => { tx = (e.clientX / innerWidth - .5) * 2; ty = -(e.clientY / innerHeight - .5) * 2; };
+  addEventListener('pointermove', mv);
   const redraw = () => { layout(); frame(); };
   redraw(); addEventListener('resize', redraw);
-  return { frame, dispose() { removeEventListener('resize', redraw); sc.traverse(c => { if (c.geometry) c.geometry.dispose(); }); ren.dispose(); } };
+  return { frame, tick(dt) { T += dt; frame(); }, dispose() { removeEventListener('resize', redraw); removeEventListener('pointermove', mv); sc.traverse(c => { if (c.geometry) c.geometry.dispose(); }); ren.dispose(); } };
 }
 
 /** Mostra a tela inicial; resolve quando o jogador toca em Jogar */
@@ -198,6 +227,7 @@ export function runTitle() {
         ex.fillStyle = 'hsla(' + o.h + ',100%,60%,' + al + ')'; ex.shadowColor = 'hsla(' + o.h + ',100%,55%,.9)'; ex.shadowBlur = 8;
         ex.beginPath(); ex.arc(o.x * W, o.y * H, o.r, 0, 6.283); ex.fill();
       });
+      if (S) S.tick(dt);
       raf = requestAnimationFrame(emb);
     };
     raf = requestAnimationFrame(emb);
