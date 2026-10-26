@@ -27,7 +27,8 @@ const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 function clear(x, z, a, len, r) {
   const dx = Math.sin(a), dz = Math.cos(a);
   // relevo, mar e vegetação (com o raio do corpo) ao longo do caminho, de meio em meio metro
-  for (let t = .5; t < len + .5; t += .5) {
+  const ds = dIn(x, z) ? .2 : .5;   // na dungeon amostra mais fino: com 0,5 m a reta raspava nas quinas das paredes sem ser vista
+  for (let t = ds; t < len + ds; t += ds) {
     const px = x + dx * Math.min(t, len), pz = z + dz * Math.min(t, len);
     if (!(SW ? swimmable : walkable)(px, pz) || nearObstacle(px, pz, r)) return false;
   }
@@ -193,7 +194,7 @@ function localPath(sx, sz, gx, gz, r, strict) {
 
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
 function findPath(sx, sz, gx, gz, r, bad) {
-  if (dIn(sx, sz)) return dPath(sx, sz, gx, gz);      // dentro da dungeon: caminho pela grade
+  if (dIn(sx, sz)) return dPath(sx, sz, gx, gz, bad);      // dentro da dungeon: caminho pela grade (destino em parede/inalcançável vai ao piso mais perto)
   if (houseNear(sx, sz) || houseNear(gx, gz)) {   // casas: grade fina de 25 cm
     // 1º com o raio real do corpo (o mesmo da colisão): vãos estreitos nas quinas ficam fechados; 2º, se não houver caminho completo, com folga menor
     const lp = localPath(sx, sz, gx, gz, r, true) || localPath(sx, sz, gx, gz, Math.min(r, .42));
