@@ -22,7 +22,7 @@ export function updateEnemyLabels() {
     c.sort((a, b) => a[0] - b[0]);
     for (let i = 0; i < c.length && k < N; i++) {
       const e = c[i][1];
-      v3.set(e.g.position.x, (e.t.boss ? 3.6 : 2.4), e.g.position.z).project(cam);
+      v3.set(e.g.position.x, (e.t.boss ? 3.6 : e.t.lblY || 2.4), e.g.position.z).project(cam);
       if (v3.z >= 1 || Math.abs(v3.x) > 1.05 || Math.abs(v3.y) > 1.05) continue;
       const L = els[k++], x = Math.round((v3.x * .5 + .5) * innerWidth), y = Math.round((-v3.y * .5 + .5) * innerHeight);
       const df = e.lv - P.lv, col = df >= 5 ? '#ff6060' : df >= 3 ? '#ffa050' : df >= -2 ? '#f0e060' : df >= -4 ? '#80e080' : '#b0b0b0';

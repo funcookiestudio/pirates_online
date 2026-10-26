@@ -4,7 +4,7 @@
    c = cores do corpo: [pele, camisa, calça, chapéu] */
 
 /** Índices dos tipos no array ENEMY_KINDS */
-export const KIND = { SKELETON: 0, GHOST: 1, BOSS: 2, GRUMETE: 3, CONTRA: 4, GUERREIRO: 5, SOMBRA: 6, CORSARIO: 7, BRUTO: 8 };
+export const KIND = { SKELETON: 0, GHOST: 1, BOSS: 2, GRUMETE: 3, CONTRA: 4, GUERREIRO: 5, SOMBRA: 6, CORSARIO: 7, BRUTO: 8, JAVALI: 9 };
 
 export const ENEMY_KINDS = [
   { n: 'Esqueleto',              lv: 2,  hm: 1.1, dm: 1.55,  s: 2.6, c: [0xddd8c0, 0xbbb69a, 0x6a6a5a, 0x333333], xm: .47 },
@@ -16,4 +16,5 @@ export const ENEMY_KINDS = [
   { n: 'Sombra das Ondas',       lv: 5,  hm: 1.2, dm: 2.0, s: 3.5, c: [0x4a5a8a, 0x1a2244, 0x10162a, 0x0a0a18], xm: .45 },
   { n: 'Corsário Amaldiçoado',   lv: 7,  hm: 2.2, dm: 2.05, s: 2.4, c: [0xb8a090, 0x5a1a3a, 0x201020, 0x300a20], xm: .52, sc: 1.15 },
   { n: 'Brutamontes Naufragado', lv: 9,  hm: 3.0, dm: 2.3, s: 1.9, c: [0x9a7a60, 0x4a3a2a, 0x2a2a20, 0x5a4a2a], xm: .6, sc: 1.35 },
+  { n: 'Javali',                lv: 3,  hm: 1.7, dm: 1.75, s: 3.4, c: [0x5a4634, 0x2e2218, 0x8a7258, 0x1c1410], xm: .5, sc: 1.2, animal: 'boar', hbY: 1.7, lblY: 2.0 },   // selvagem da floresta: hostil, investe
 ];

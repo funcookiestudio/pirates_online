@@ -1,4 +1,5 @@
 /* Corpo "de blocos" usado pelo jogador, NPCs e inimigos: humanos com skins e esqueleto (ver human.js). */
+import { makeAnimal } from './wildlife-anim.js';
 import { buildHuman, buildSkeleton, SKM, SKF, PJM, PJF, hideSword } from './human.js';
 import { resolveLook } from './look.js';
 export { hideSword };
@@ -31,6 +32,7 @@ export function playerModel(female, look) {
 
 /** Inimigo do tipo `t` (ENEMY_KINDS): esqueletos usam o esqueleto; os demais, humanos pintados com as cores do tipo */
 export function enemyModel(t) {
+  if (t.animal) { const A = makeAnimal(t.animal); A.g.userData.A = A; return A.g; }   // javali: corpo de quadrúpede (wildlife-anim.js)
   const [sk, sh, pa, ht] = t.c;
   if (/Esqueleto/.test(t.n)) return buildSkeleton({ bone: sk, armor: /Guerreiro/.test(t.n) });
   const base = { skin: sk, t: sh, fl: undefined, u: sh, f: sh, pa, st: pa, sh: 0x1d1d22, hc: ht, hair: ht, belt: 0x2a2018, buck: 0, cuff: 0, vest: 0, ex: [] };

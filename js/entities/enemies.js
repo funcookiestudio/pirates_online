@@ -14,6 +14,7 @@ import { petPos, petPerched, hurtPet } from '../pets/manager.js';
 import { log } from '../ui/notify.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { enemyStats, ELITE, takenMult } from '../data/scaling.js';
+import { animateEnemyBoar } from './wildlife-anim.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
@@ -31,7 +32,7 @@ export function spawn(k, x, z, pat, o = {}) {
 
   // barra de vida sobre a cabeça
   const hb = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .12), new THREE.MeshBasicMaterial({ color: elite ? 0xe8b020 : 0xc0302c }));
-  hb.position.y = t.boss ? 4.2 : 2.6 + (t.sc ? (t.sc - 1) * 1.6 : 0);
+  hb.position.y = t.boss ? 4.2 : t.hbY ? t.hbY / (t.sc || 1) : 2.6 + (t.sc ? (t.sc - 1) * 1.6 : 0);
   hb.visible = false;
   g.add(hb);
 
@@ -41,7 +42,7 @@ export function spawn(k, x, z, pat, o = {}) {
 
   const hp = st.hp;
   enemies.push({
-    g, hb, t, k, ms, pat,
+    g, hb, t, k, ms, pat, A: g.userData.A,
     lv, elite, dmg: st.d, xpv: st.xp,   // nível e estatísticas desta instância
     hp, max: hp,
     x, z, hx: x, hz: z,           // posição e "casa" (ponto de origem)
@@ -65,6 +66,7 @@ function animateDeath(e, dt) {
   e.z += e.kz * dt;
   e.kx *= f;
   e.kz *= f;
+  if (e.A) { e.g.rotation.z = 1.45 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) - .05 * u, e.z); return; }   // quadrúpede tomba de lado
   e.g.rotation.x = 1.55 * (1 - Math.pow(1 - u, 3));
   e.g.position.set(e.x, groundY(e.x, e.z) - .12 * u, e.z);
 }
@@ -201,6 +203,12 @@ function animate(e, c, dt) {
   else if (e.st === 'chase' && Math.hypot(e.vx, e.vz) > .3) turnTo(e.g, Math.atan2(e.vx, e.vz), 6, dt);
 
   const mv = Math.min(1, Math.hypot(e.vx, e.vz) / T.s);
+  if (e.A) {   // javali: pose de quadrúpede, sem braços
+    animateEnemyBoar(e, c, dt, groundY);
+    e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
+    e.hb.scale.x = Math.max(.01, e.hs); e.hb.quaternion.copy(cam.quaternion); e.hb.parent.updateMatrixWorld();
+    return;
+  }
 
   let ta = -.4, tf = -.3, tl = mv * .08;
   if (e.st === 'wind') {

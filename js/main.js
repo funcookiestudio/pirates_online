@@ -34,6 +34,7 @@ import * as FLOORS from './world/floors.js';
 import { updateRoyals } from './entities/royals.js';
 import { updateFarmFx } from './world/farm-granja.js';
 import { updateAlchemist } from './world/alchemist-house.js';
+import { buildWildlife, updateWildlife, WILD } from './entities/wildlife.js';
 import { refreshProps } from './world/floors.js';
 import { updateDayNight } from './world/daynight.js';
 import { initBackground } from './systems/background.js';
@@ -95,6 +96,7 @@ function tick(now) {
   S('updateRoyals', () => updateRoyals(realDt));
   S('updateFarmFx', () => updateFarmFx(realDt));
   S('updateAlchemist', () => updateAlchemist(realDt));
+  S('updateWildlife', () => updateWildlife(realDt));
   S('separate', () => separate());
   S('updateLoot', () => updateLoot(dt, now));
   S('updateBombs', () => updateBombs(dt));
@@ -150,6 +152,7 @@ const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
 const mr = mergeStatics(worldBefore, dyn);
 if (location.hash === '#dev') console.log('merge', mr);
 buildFarm();
+buildWildlife();   // cervos, javalis e gatos (criados depois da fusão para continuarem animáveis)
 initMount(MOUNT.owned, MOUNT.coat);   // cavalo comprado espera junto ao portão leste   // animais de fazenda (enfeite) — criados depois da fusão para continuarem animáveis
 // o jogo sempre começa na vila, com o personagem sentado descansando (clicar no mundo o levanta)
 if (savedPos && safeSpot(savedPos.x, savedPos.z)) { P.x = P.tx = savedPos.x; P.z = P.tz = savedPos.z; P.sit = P.sitT = 0; if (savedPos.up) { P.up = true; refreshProps(); } }   // volta onde parou (vila, fazenda ou porto)
@@ -158,5 +161,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? '💾 Progresso carregado' : '🦜 Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, unequipPet, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, unequipPet, dungeonGimmicks, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

@@ -23,6 +23,7 @@ import { buildAvesHouse } from '../world/farm-aves-house.js';
 import { buildGranjaDecor } from '../world/farm-granja.js';
 import { buildGadoDecor } from '../world/farm-gado.js';
 import { buildAlchemistHouse } from '../world/alchemist-house.js';
+import { CAT_SPOTS } from './wild-spots.js';
 const E = N / 2;
 
 export const FARMSITE = { ok: false, sites: [] };
@@ -219,6 +220,7 @@ function buildOne(spot) {
     lamp(-6.5, 5); lamp(6.5, 5); barrel(11.5, -4); crate(12.4, -3.2); wood(-13.5, -13);
     const np = toWorld(spot, f, -1.3, -2.2);
     makeNpc('citizen', np.x, np.z, Math.atan2(f.fx, f.fz), vr.cols, vr.v, vr.npc);
+    const cp = toWorld(spot, f, 4.5, -1.5); CAT_SPOTS.push({ x: cp.x, z: cp.z, v: 'preto', r: 5 });   // o gato preto da herbalista
     pois.push({ n: vr.n, x: spot.x, z: spot.z, c: '#b060ff', ic: vr.ic });
   }
   // ---- layout em "T": casa e celeiro ao fundo, pátio de terra, corredor central até o portão; cercados à esquerda, lavoura à direita ----
@@ -321,5 +323,6 @@ function buildOne(spot) {
   ];
   initFarmer(fn, { sched, bed: spot.bed || null, door: doorP, fld: FLD, cutRow: r => { FLD.cut[r] = CLOCK.total; fn.rfT = 0; } });
   FARMSITE.sites.push({ x: spot.x, z: spot.z, pens: pens.map(pn => ({ kinds: pn.kinds, den: pn.den, perch: pn.perch, pond: pn.pond, pts: pn.at.map(([lx, lz]) => toWorld(spot, f, lx, lz)) })) });
+  if (vr.id === 'aves') { const cp = toWorld(spot, f, 3, -4); CAT_SPOTS.push({ x: cp.x, z: cp.z, v: 'tuxedo', r: 5 }); }   // gato da Dona Marta
   pois.push({ n: vr.n, x: spot.x, z: spot.z, c: '#9ad060', ic: vr.ic });
 }
