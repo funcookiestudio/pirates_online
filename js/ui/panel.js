@@ -214,11 +214,15 @@ export function togglePanel() {
 
 /** Encolhe o painel (escala) quando o conteúdo não cabe na altura da tela, para nunca precisar de barra de rolagem */
 const PANEL_MIN = .55;
+/** Celular: os painéis ocupam a tela inteira (com rolagem), em vez de encolher sobre a hotbar */
+export const MOB = matchMedia('(max-width: 700px), (pointer: coarse) and (max-height: 520px)');
 export function fitPanel() {
   fitHotbar();
   ['pnl', 'pnl2'].forEach(id => {
     const el = $(id);
     if (el.style.display !== 'block') return;
+    el.classList.toggle('full', MOB.matches);
+    if (MOB.matches) { ['left', 'top', 'bottom', 'maxHeight', 'overflowY', 'transform', 'transformOrigin'].forEach(k => el.style.removeProperty(k.replace(/[A-Z]/g, c => '-' + c.toLowerCase()))); return; }
     el.style.maxHeight = 'none';
     el.style.overflowY = 'visible';
     el.style.transform = 'translateX(-50%)';
