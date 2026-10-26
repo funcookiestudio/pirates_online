@@ -117,7 +117,6 @@ export function renderStats() {
   const W = WEAPONS[P.wid];
   $('pcl2').textContent = 'NÍVEL ' + P.lv;
   $('pxp2').style.width = Math.min(100, P.xp / P.nxt * 100) + '%';
-  $('potn').textContent = P.pot;
   $('gld').textContent = P.gold;
   // só mexe no DOM quando algo mudou (renderStats roda a cada 0,4 s: recriar os botões a cada vez engolia toques e piscava)
   const put = (el, html, key = html) => { if (el._h === key) return false; el._h = key; el.innerHTML = html; return true; };
@@ -138,6 +137,7 @@ export function renderStats() {
       $('idr').onclick = () => { const it = bag.splice(sel, 1)[0]; sel = -1; dropItem(it); renderPanel(); fitPanel(); };
     }
   } else put(itm, '');
+  $('pnl').classList.toggle('isel', !!itm.innerHTML);   // item aberto: o CSS esconde o cartão de nível e os de atributos
   renderQuick();
 }
 
