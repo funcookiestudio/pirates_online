@@ -101,7 +101,7 @@ export function bomb() {
 /** Bebe uma poção de vida (tecla E) */
 export function potion() {
   if (P.pot > 0 && !P.dead) {
-    P.pot--;
+    P.pot--; emit('potion:used');
     P.hp = Math.min(P.max, P.hp + 60);
     puff(P.x, 1, P.z, 0xff6060, 4, 8);
   }

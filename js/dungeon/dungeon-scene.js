@@ -17,6 +17,7 @@ import { addItem, refreshTorch } from '../systems/inventory.js';
 import { levelUp } from '../entities/player.js';
 import { WEAPONS } from '../data/weapons.js';
 import { hash } from './dungeongen.js';
+import { emit } from '../core/events.js';
 import { buildGimmicks, updateGimmicks, gimmickMarks } from './dungeon-gimmicks.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
@@ -195,11 +196,13 @@ export function enterDungeon(D, gen) {
   for (const [dx, dz] of [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [-2, -2]]) { if (grid[Math.floor((sz + dz - oz) / C) * W + Math.floor((sx + dx - ox) / C)]) { px = sx + dx; pz = sz + dz; break; } }
   P.x = P.tx = px; P.z = P.tz = pz; P.vx = P.vz = 0; P.tgt = null; P.sit = P.sitT = 0;
   state.dunRet = { x: D.fx, z: D.fz };
+  state.dunNow = D; emit('dungeon:enter');
   log('🕳 ' + D.name + ' · Nv ' + D.lv + ' — ' + (cur.gm.door ? 'ache a chave, abra a porta e derrote o chefe' : 'derrote o chefe e saia pelo portal') + ' · cuidado com os espinhos');
 }
 
 export function leaveDungeon(msg) {
   if (!cur) return;
+  state.dunNow = cur.D; emit('dungeon:leave');
   const { D, g, saved } = cur;
   scene.remove(g);
   g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
@@ -240,7 +243,7 @@ export function updateDungeon(dt, now) {
   const t = now / 1000;
   dSee(P.x, P.z, 7);
   cur.portals.forEach(p => { if (p.g.visible) { p.g.children[0].rotation.z = t; p.g.children[0].scale.setScalar(1 + Math.sin(t * 3) * .04); } });
-  if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('✨ Chefe derrotado! O portal de saída se abriu'); firstClear(cur.D); }
+  if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('✨ Chefe derrotado! O portal de saída se abriu'); state.dunNow = cur.D; emit('dungeon:clear'); firstClear(cur.D); }
   cur.portals.forEach(p => {
     if (!p.on) return;
     const d = Math.hypot(P.x - p.x, P.z - p.z);

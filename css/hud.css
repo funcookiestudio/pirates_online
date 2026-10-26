@@ -168,7 +168,7 @@
 .dh b { display: block; color: #f0c870; font-size: 16px; letter-spacing: 1px; }
 .dh small { color: #b09a70; font-size: 12px; }
 .dh button { background: none; border: 0; color: #c9b48a; font-size: 18px; cursor: pointer; }
-#dtx, #bct { margin: 10px 0; font-size: 14px; line-height: 1.45; font-style: italic; min-height: 2.9em; }
+#dtx, #bct { white-space: pre-line; margin: 10px 0; font-size: 14px; line-height: 1.45; font-style: italic; min-height: 2.9em; }
 #dbt, #bcb { display: flex; flex-wrap: wrap; gap: 6px; }
 #dbt button, #bcb button, .shr button { padding: 8px 12px; font-size: 13px; background: #2a1f14; color: #f0d9a0; border: 2px solid #a07a3a; cursor: pointer; }
 #dbt button:hover, .shr button:hover:not(:disabled) { background: #3a2a18; }

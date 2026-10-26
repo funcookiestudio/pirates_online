@@ -65,14 +65,57 @@ const QMAP = Object.fromEntries(QUESTS.map(d => [d.id, d]));
 const Q = () => state.quests || (state.quests = {});
 const stageOf = (d, q) => d.stages[q.i];
 
+// ---- Contratos de dungeon (Mural): condição extra numa dungeon, repetível; paga ao derrotar o chefe cumprindo a condição ----
+export const CONTRACTS = {
+  nopot: { n: 'Sem poções', ic: '🧪', hint: 'derrote o chefe da dungeon sem usar nenhuma poção' },
+  trap: { n: 'Sem espinhos', ic: '⚠', hint: 'derrote o chefe sem pisar em nenhuma armadilha' },
+  speed: { n: 'Relâmpago', ic: '⏱', hint: 'derrote o chefe em até 8 minutos', limit: 480 },
+};
+const fmt = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+/** Texto do contrato para o painel ('' se não há) */
+export function contractHud() {
+  const c = state.contract; if (!c) return '';
+  const d = CONTRACTS[c.c], r = c.run;
+  if (!d) return '';
+  if (!r) return d.ic + ' Contrato ' + d.n + ': entre numa dungeon';
+  return d.ic + ' Contrato ' + d.n + (r.fail ? ': ✖ ' + r.fail : ': ✔' + (d.limit ? ' ' + fmt(Math.max(0, d.limit - r.t)) : ''));
+}
+const failC = why => { const r = state.contract && state.contract.run; if (r && !r.fail) { r.fail = why; log('✖ Contrato falhou: ' + why); } };
+on('dungeon:enter', () => { const c = state.contract; if (c && !c.run) { c.run = { lv: state.dunNow.lv, t: 0, a: 0, fail: '' }; log('📜 Contrato valendo: ' + CONTRACTS[c.c].hint); } });
+on('potion:used', () => { if (state.contract && state.contract.c === 'nopot') failC('você usou uma poção'); });
+on('trap:hit', () => { if (state.contract && state.contract.c === 'trap') failC('você pisou numa armadilha'); });
+on('dungeon:leave', () => { const c = state.contract; if (c && c.run) { state.contract = null; log('📜 Contrato cancelado: você saiu da dungeon sem concluí-la'); saveGame(); } });
+on('dungeon:clear', () => {
+  const c = state.contract; if (!c || !c.run) return;
+  const r = c.run, share = r.t > 0 ? Math.min(1, r.a / r.t) : 0, lv = r.lv;
+  state.contract = null;
+  if (r.fail) { log('📜 Contrato não pago: ' + r.fail); saveGame(); return; }
+  const mult = Math.max(.6, 1 - .4 * share) * (share < .1 ? 1.25 : 1), xp = Math.round(xpToNext(lv) * .3 * mult), gold = Math.round(goldAt(lv) * 12 * mult);
+  P.xp += xp; P.gold += gold; levelUp();
+  if (share < .1 && Math.random() < .35) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(lv + 2, 2), il: lv + 2 });
+  log('🏆 Contrato cumprido (' + CONTRACTS[c.c].n + '): +' + xp + ' XP · +' + gold + ' ouro' + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
+  saveGame();
+});
+
+/** Texto do quadro de missões: todas as missões e o estado de cada uma */
+export function boardText() {
+  const lines = QUESTS.map(d => {
+    const q = Q()[d.id], tag = q && q.s === 'done' ? '✔' : q ? '▶' : P.lv >= d.lv ? '📜' : '🔒';
+    return tag + ' ' + d.title + ' (Nv ' + d.lv + ') — ' + d.giver + (q && q.s === 'done' ? ' · concluída' : q ? ' · em andamento' : P.lv >= d.lv ? '' : ' · requer Nv ' + d.lv);
+  });
+  return lines.join('\n') + '\n\n' + (state.contract ? contractHud() : '📜 Contrato de dungeon: nenhum ativo');
+}
+
 /** Pílulas de progresso do HUD: até 2 missões ativas */
 export function questsHud() {
   const out = [];
   QUESTS.forEach(d => {
     const q = Q()[d.id];
     if (!q || q.s === 'done') return;
-    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + stageOf(d, q).hud(q));
+    const sh = q.t > 0 ? q.a / q.t : 0, pen = sh >= .1 ? '  ⚠ auto −' + Math.round(40 * sh) + '%' : '';   // quanto da recompensa o auto já custou
+    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + stageOf(d, q).hud(q) + pen);
   });
+  if (state.contract && !state.contract.run) out.push(contractHud());
   return out.slice(0, 2).join('  ·  ') || null;
 }
 
@@ -91,6 +134,11 @@ export function questsSay(cur) {
 /** Botões do diálogo: aceitar / receber recompensa */
 export function questsButtons(cur) {
   const out = [];
+  if (cur.board) {
+    out.push(['📋 Ver quadro de missões', say => say(boardText())]);
+    if (state.contract) out.push(['❌ Cancelar o contrato atual (' + CONTRACTS[state.contract.c].n + ')', (say, rebuild) => { state.contract = null; saveGame(); say('Contrato cancelado.'); rebuild(); }]);
+    else Object.entries(CONTRACTS).forEach(([k, c]) => out.push([c.ic + ' Contrato de dungeon: ' + c.n, (say, rebuild) => { state.contract = { c: k, run: null }; saveGame(); say('Contrato aceito: ' + c.hint + '. Vale para a PRÓXIMA dungeon em que você entrar e se repete quantas vezes quiser. Paga 30% do XP do nível da dungeon e 12× o ouro dos inimigos, e o auto ganha menos. Sair da dungeon sem concluir cancela o contrato.'); rebuild(); }]));
+  }
   QUESTS.forEach(d => {
     if (d.giver !== cur.name) return;
     const q = Q()[d.id];
@@ -200,6 +248,8 @@ function ensureBoss(d) {
 export function updateQuests(dt) {
   const list = QUESTS.map(d => [d, Q()[d.id]]).filter(([d, q]) => q && q.s === 'on');
   list.forEach(([d, q]) => { q.t += dt; if (state.autoOn) q.a += dt; });
+  const cr = state.contract && state.contract.run;
+  if (cr) { cr.t += dt; if (state.autoOn) cr.a += dt; const lim = CONTRACTS[state.contract.c].limit; if (lim && cr.t > lim) failC('o tempo acabou'); }
   updateCollects(dt, list);
   if ((T -= dt) > 0) return;
   T = 1.5;

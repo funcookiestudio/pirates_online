@@ -4,6 +4,7 @@ import { enemies } from '../core/registry.js';
 import { M as M0 } from '../core/utils.js';
 import { xray } from '../world/xray.js';
 import { P, hurtP } from '../entities/player.js';
+import { emit } from '../core/events.js';
 import { spawn } from '../entities/enemies.js';
 import { puff } from '../systems/effects.js';
 import { log } from '../ui/notify.js';
@@ -128,7 +129,7 @@ export function updateGimmicks(gm, dt, t, D) {
         tr.sp.scale.y = Math.min(1, .15 + tr.tm / .12);
         if (!tr.hit && Math.hypot(P.x - tr.x, P.z - tr.z) < 1.05) {
           tr.hit = true;
-          hurtP(Math.round(P.max * .06 + D.lv * 2), 0, 0);
+          hurtP(Math.round(P.max * .06 + D.lv * 2), 0, 0); emit('trap:hit');
           puff(P.x, .4, P.z, 0xc0c8d0, 3, 5);
         }
         if (tr.tm >= UP) { tr.st = 3; tr.tm = 0; }

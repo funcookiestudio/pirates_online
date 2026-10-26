@@ -42,7 +42,7 @@ export function saveGame() {
       player: Object.fromEntries(PLAYER_FIELDS.map(f => [f, P[f]])),
       bag, chest, eq, act: P.act, pets,
       pet: state.pet.id,
-      quest: state.quest, quests: state.quests, owned: state.owned,
+      quest: state.quest, quests: state.quests, contract: state.contract, owned: state.owned,
       petOff: !!state.petOff,
       petAttack: state.petAttack,
       autoCfg: state.autoCfg,
@@ -93,6 +93,7 @@ export function loadGame() {
     state.dunDone = s.dunDone && typeof s.dunDone === 'object' ? s.dunDone : {};
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });
+    state.contract = s.contract && typeof s.contract === 'object' && typeof s.contract.c === 'string' ? { c: s.contract.c, run: null } : null;
     state.quests = s.quests && typeof s.quests === 'object' ? s.quests : {};
     state.quest = s.quest && Number.isFinite(s.quest.st) ? { st: s.quest.st | 0 } : { st: 0 };
     state.owned = s.owned && typeof s.owned === 'object' ? s.owned : {};   // saves antigos não tinham companheiros próprios: começam sem nenhum
