@@ -150,3 +150,32 @@ body.lay-edit #sk > div:not(#sawrap), body.lay-edit #s5, body.lay-edit #sawrap, 
 }
 body.lay-edit .led-on { outline-style: solid !important; outline-color: #fff4d6 !important; }
 body.lay-edit #hb, body.lay-edit #deck { visibility: visible; }
+
+/* ============ Botões de ação redondos, iguais aos do protótipo (celular e computador) ============ */
+#sk > div:not(#sawrap), #s5, #sa {
+  border-radius: 50%; border: 0; background: radial-gradient(circle at 50% 30%, #2b201b, #0f0a09);
+  box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 0 0 5px #a07a3a, 0 6px 14px #000b;
+}
+#sa { background: radial-gradient(circle at 50% 30%, #8a2a22, #2c0a08); }
+#sk > div:not(#sawrap).on, #s5.on, #sa.on { box-shadow: 0 0 0 2px #ff7a3a, 0 0 0 4px #0c0807, 0 0 0 5px #ff7a3a, 0 0 12px #ff7a3a, 0 6px 14px #000b; }
+body.mob #sk > div:not(#sawrap), body.mob #s5, body.mob #sa { border-radius: 50%; }
+#sk > div:not(#sawrap):active, #s5:active, #sa:active { transform: scale(.92); }
+
+/* ============ Computador: mesma disposição do protótipo — sem o barco; diamantes inclinados para fora nas pontas, botões entre eles ============ */
+body:not(.mob) #hb { --gw: 100px; filter: none; }
+body:not(.mob) #hb .end { display: none; }
+body:not(.mob) #deck { height: auto; gap: 26px; padding: 0 0 12px; background: none; border: 0; box-shadow: none; align-items: flex-end; }
+body:not(.mob) #hb .gw { width: 100px; height: 110px; --g: 100px; }
+body:not(.mob) #gwl { --tilt: 20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
+body:not(.mob) #gwr { --tilt: -20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
+body:not(.mob) #hb .gem .orb { inset: 5px; }
+/* o líquido fica na horizontal mesmo com o diamante inclinado */
+body:not(.mob) .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
+body:not(.mob) .lq i { bottom: calc(var(--g) * .641); transform: scaleY(.475); transform-origin: 50% 100%; }
+/* nível no centro de cada diamante */
+body:not(.mob) #deck .lv { bottom: 67px; font-size: 13px; transform: translate(-50%, 50%); }
+body:not(.mob) #lvp { left: 50px; right: auto; }
+body:not(.mob) #lva { left: auto; right: 50px; transform: translate(50%, 50%); }
+/* barras de XP: só embaixo da fileira de botões */
+body:not(.mob) #xpp { left: 126px; right: calc(50% + 1px); bottom: 0; }
+body:not(.mob) #xpa { right: 126px; left: calc(50% + 1px); bottom: 0; }
