@@ -1,4 +1,4 @@
-/* Painel do personagem (tecla I): atributos, equipamento e mochila. */
+/* Painéis do personagem (tecla I): Personagem · Habilidades · Talentos · Missões, no formato de folha do protótipo. */
 import { state } from '../core/state.js';
 import { on } from '../core/events.js';
 import { $, isPanelOpen } from '../core/utils.js';
@@ -13,33 +13,47 @@ import { renderPets, initPetPanel } from './pet-panel.js';
 import { fitHotbar } from './hotbar.js';
 import { showPlayer, showItem, initPreview } from './preview.js';
 import { renderQuestLog } from './questlog.js';
+import { CFG } from '../systems/settings.js';
+import { svg } from './icons.js';
 import { clearSave } from '../systems/save.js';
 import { resetPlayer, armedButton } from '../systems/reset.js';
 
-/** Uma casinha de item (arma ou armadura); `fn` é o clique (equipar). `label`/`ph` = rótulo e ícone do espaço vazio */
+/** Ícone de um item: tocha, arma de fogo, espada ou armadura */
+const iconOf = it => it.ty === 'wpn' ? (WEAPONS[it.w].torch ? 'torch' : WEAPONS[it.w].gun ? 'gun' : 'sword') : 'chest';
+const RCOL = ['', 'var(--common)', 'var(--magic)', 'var(--legend)'];
+
+/** Uma casinha de item (arma ou armadura); `fn` é o clique. `label`/`ph` = rótulo e ícone do espaço vazio */
 function slot(it, fn, label, ph) {
   const d = document.createElement('div');
-  d.className = 'sl' + (it ? ' r' + it.q : ph ? ' ph' : '');
+  d.className = 'sl' + (it ? ' r' + it.q : ph ? ' ph' : ' empty');
   if (it) {
-    d.innerHTML = (it.ty === 'wpn' ? (WEAPONS[it.w].torch ? '🔥' : WEAPONS[it.w].gun ? '🔫' : '⚔') : '🛡') + '<small>+' + it.v + '</small>';
+    d.innerHTML = svg(iconOf(it)) + '<span class="v">+' + it.v + '</span>';
     d.title = it.n + ' (' + RN[it.q] + (it.il ? ', Nv ' + it.il : '') + ') +' + it.v + (it.ty === 'wpn' ? ' dano · ' + (WEAPONS[it.w].torch ? 'mão 2, com arma de 1 mão' : WEAPONS[it.w].big ? '2 mãos' : '1 mão') : ' vida');
     if (it.ty === 'wpn' && WEAPONS[it.w].big) d.insertAdjacentHTML('beforeend', '<b class="hand2">2M</b>');
-  } else if (ph) d.innerHTML = '<em>' + ph + '</em>';
-  if (label) d.insertAdjacentHTML('beforeend', '<u>' + label + '</u>');
+  } else {
+    d.innerHTML = (ph ? svg(ph) : '') + (label ? '<u>' + label + '</u>' : '');
+  }
   if (fn) d.onclick = fn;
   return d;
 }
-
-/** Aba aberta: 'char' · 'skills' · 'tal'; e aba da mochila: 'eq' · 'cons' · 'quest' · 'mat' */
-let tab = 'char', btab = 'eq', sel = -1, selE = '';   // sel = item da mochila · selE = espaço equipado selecionado
-
-/** Espaços de equipamento (como em telas de ARPG): [id, rótulo, ícone]. Só os que têm item no jogo funcionam por enquanto. */
-const LEFT = [['helm', 'ELMO', '🪖'], ['amulet', 'AMULETO', '📿'], ['arm', 'PEITORAL', '🦺'], ['ring1', 'ANEL', '💍']];
-const RIGHT = [['gloves', 'LUVAS', '🧤'], ['legs', 'CALÇAS', '👖'], ['boots', 'BOTAS', '🥾'], ['ring2', 'ANEL', '💍']];
-
-function stat(ic, name, val, sub, tip) {
-  return '<div class="st" title="' + (tip || '') + '"><i>' + ic + '</i><span>' + name + (sub ? '<small>' + sub + '</small>' : '') + '</span><b>' + val + '</b></div>';
+/** Casinha de consumível (poção/bomba) com a quantidade */
+function consSlot(k, n, label, title) {
+  const d = document.createElement('div');
+  d.className = 'sl cons' + (n > 0 ? '' : ' ph');
+  d.innerHTML = svg(k === 'pot' ? 'potion' : 'bomb') + '<span class="ct">x' + n + '</span>' + (label ? '<u>' + label + '</u>' : '');
+  d.title = title;
+  return d;
 }
+
+/** Aba aberta: 'char' · 'skills' · 'tal' · 'qst'; e aba da mochila: 'eq' · 'cons' · 'quest' · 'mat' */
+let tab = 'char', btab = 'eq', sel = -1, selE = '', selSk = 'q', selTn = '';   // sel = item da mochila · selE = espaço equipado selecionado
+
+const TABS = [['char', 'person', 'Personagem'], ['skills', 'burst', 'Habilidades'], ['tal', 'star', 'Talentos'], ['qst', 'scroll', 'Missões']];
+/** Espaços de equipamento: [id, rótulo, ícone]. Só os que têm item no jogo funcionam por enquanto. */
+const LEFT = [['helm', 'ELMO', 'head'], ['amulet', 'AMULETO', 'amulet'], ['arm', 'PEITORAL', 'chest'], ['ring1', 'ANEL', 'ring']];
+const RIGHT = [['gloves', 'LUVAS', 'glove'], ['legs', 'CALÇAS', 'legs'], ['boots', 'BOTAS', 'boots'], ['ring2', 'ANEL', 'ring']];
+
+const tile = (name, val, sub, tip) => '<div class="stt-i" title="' + (tip || '') + '"><small>' + name + '</small><b>' + val + '</b><u>' + sub + '</u></div>';
 
 /** Marca um espaço de equipamento: aceita soltar itens (data-drop) e, com item, pode ser arrastado de volta (data-drag) */
 function mark(d, k, it) { d.dataset.drop = k; if (it) d.dataset.drag = 'eq:' + k; }
@@ -103,86 +117,137 @@ function initDrag() {
 /** Seleciona (ou fecha) a prévia de um item equipado */
 function pickE(k) { selE = selE === k ? '' : k; sel = -1; renderPanel(); fitPanel(); }
 
-/** Atualiza cartão do personagem e atributos */
+/** Detalhe do item (cobre só a área do nível/atributos): nome pela raridade, atributo principal, comparação com o equipado e afixos */
 function itemCard(it, worn) {
   const isW = it.ty === 'wpn', W = isW ? WEAPONS[it.w] : null, old = worn ? null : eq[pickSlot(it, false)];
-  const diff = worn ? 0 : old ? it.v - old.v : it.v, df = diff ? ' <small>(' + (diff > 0 ? '+' : '') + diff + ' vs. equipado)</small>' : '';
-  return '<div class="st icard r' + it.q + '"><i>' + (isW ? (W.gun ? '🔫' : '⚔') : '🛡') + '</i><span>' + it.n + '<small>' + RN[it.q] + (it.il ? ' · Nv ' + it.il : '') + (isW ? (W.torch ? ' · segunda mão (ilumina)' : W.gun ? ' · arma de fogo' : ' · corpo a corpo') + (W.big ? ' · 2 MÃOS' : W.torch ? '' : ' · 1 mão') : ' · armadura') + '</small></span></div>' +
-    stat(isW ? '⚔' : '🛡', isW ? 'ATAQUE' : 'DEFESA / VIDA', '+' + it.v, df.replace(/<\/?small>/g, '')) +
-    (isW ? stat('⏱', 'VELOCIDADE', (1 / (W.cd || 1)).toFixed(1) + '/s', 'Recarga ' + (W.cd || 1) + 's') : '') +
-    (worn ? '<div class="iact"><button id="ieq">DESEQUIPAR</button><button id="idr">FECHAR</button></div>' : (P.lv < itemReq(it) ? stat('🔒', 'EXIGE NÍVEL', itemReq(it), 'Você está no nível ' + P.lv) : '') + '<div class="iact"><button id="ieq">EQUIPAR</button><button id="idr">DROPAR</button></div>');
+  const diff = worn ? 0 : old ? it.v - old.v : it.v;
+  const kind = isW ? (W.torch ? 'Tocha · segunda mão' : W.gun ? 'Arma de fogo' : W.big ? 'Arma de duas mãos' : 'Arma de uma mão') : 'Armadura';
+  const li = [];
+  if (it.il) li.push('<li>Nível do item ' + it.il + '</li>');
+  if (isW) { li.push('<li>Velocidade ' + (1 / (W.cd || 1)).toFixed(1) + ' ataques/s</li>'); li.push('<li>Recarga ' + (W.cd || 1) + ' s</li>'); if (W.torch) li.push('<li>Ilumina o caminho</li>'); }
+  else li.push('<li>Aumenta a vida máxima</li>');
+  if (it.q === 3) li.push('<li class="lg">Item lendário</li>');
+  if (!worn && P.lv < itemReq(it)) li.push('<li class="bad">Exige nível ' + itemReq(it) + ' (você: ' + P.lv + ')</li>');
+  return '<div class="dtl"><div class="dh"><div class="sl r' + it.q + '">' + svg(iconOf(it)) + '</div><div style="min-width:0"><div class="nm" style="color:' + RCOL[it.q] + '">' + it.n + '</div><div class="ty">' + RN[it.q] + ' · ' + kind + '</div></div></div>' +
+    '<div class="big" style="color:' + RCOL[it.q] + '">+' + it.v + '<small>' + (isW ? 'Ataque' : 'Vida') + '</small>' + (diff ? '<span class="dl ' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲ +' : '▼ ') + diff + '</span>' : '') + '</div>' +
+    '<ul>' + li.join('') + '</ul></div>' +
+    '<div class="dbt">' + (worn ? '<button class="btn pri" id="ieq">Remover</button><button class="btn" id="idr">Fechar</button>' : '<button class="btn pri" id="ieq">Equipar</button><button class="btn" id="idr">Descartar</button>') + '</div>';
 }
 
 export function renderStats() {
   const W = WEAPONS[P.wid];
-  $('pcl2').textContent = 'NÍVEL ' + P.lv;
+  $('pcl2').textContent = 'Nv ' + P.lv;
+  const em = document.querySelector('#mid .lvc em'); if (em) em.textContent = Math.floor(P.xp) + ' / ' + P.nxt + ' XP';
   $('pxp2').style.width = Math.min(100, P.xp / P.nxt * 100) + '%';
   $('gld').textContent = P.gold;
   // só mexe no DOM quando algo mudou (renderStats roda a cada 0,4 s: recriar os botões a cada vez engolia toques e piscava)
   const put = (el, html, key = html) => { if (el._h === key) return false; el._h = key; el.innerHTML = html; return true; };
   put($('stt'),
-    stat('⚔', 'ATAQUE', P.dmg, 'DPS ' + (P.dmg * W.mul / (W.cd || 1)).toFixed(1) + ' · Vel. ' + (1 / (W.cd || 1)).toFixed(1) + '/s<br>Crítico 15% · x2', 'Dano, DPS, velocidade de ataque e crítico') +
-    stat('🛡', 'DEFESA', (eq.arm ? eq.arm.v : 0), 'Redução de dano ' + Math.round((P.dr || 0) * 100) + '%', 'Defesa da armadura') +
-    stat('❤', 'VIDA', P.max, 'Atual ' + Math.ceil(P.hp) + '<br>Mana ' + Math.floor(P.mp) + ' / ' + P.mmax, 'Vida máxima'));
-  // informações do item selecionado: abaixo dos cartões de ataque, defesa e vida (que continuam visíveis)
+    tile('Ataque', P.dmg, 'DPS ' + (P.dmg * W.mul / (W.cd || 1)).toFixed(1) + ' · Crít. 15%', 'Dano, DPS, velocidade de ataque e crítico') +
+    tile('Defesa', (eq.arm ? eq.arm.v : 0), 'Redução ' + Math.round((P.dr || 0) * 100) + '%', 'Defesa da armadura') +
+    tile('Vida', P.max, Math.ceil(P.hp) + ' atual · Mana ' + Math.floor(P.mp) + '/' + P.mmax, 'Vida máxima'));
   const itm = $('itm');
   if (selE && eq[selE]) {
-    if (put(itm, itemCard(eq[selE], true), 'e' + selE + itemCard(eq[selE], true))) {
+    const h = itemCard(eq[selE], true);
+    if (put(itm, h, 'e' + selE + h)) {
       $('ieq').onclick = () => { const k = selE; selE = ''; unequip(k); };
       $('idr').onclick = () => { selE = ''; renderPanel(); fitPanel(); };
     }
   } else if (sel >= 0 && bag[sel]) {
-    if (put(itm, itemCard(bag[sel]), 'b' + sel + itemCard(bag[sel]))) {
+    const h = itemCard(bag[sel]);
+    if (put(itm, h, 'b' + sel + h)) {
       $('ieq').onclick = () => { const i = sel; sel = -1; equip(i); };
       $('idr').onclick = () => { const it = bag.splice(sel, 1)[0]; sel = -1; dropItem(it); renderPanel(); fitPanel(); };
     }
   } else put(itm, '');
-  $('pnl').classList.toggle('isel', !!itm.innerHTML);   // item aberto: o CSS esconde o cartão de nível e os de atributos
-  renderQuick();
+  itm.hidden = !itm.innerHTML;   // item aberto: o detalhe cobre o nível e os atributos, sem mudar o tamanho dos outros cards
 }
 
-/** Linha central sob o retrato: poção, bomba e arma de fogo (a mão 2 fica no canto) */
-function renderQuick() {
-  const el = $('attr');
-  el.innerHTML = '';
-  const cons = (ic, n, lb, tip, r = 0) => { const d = slot(null, null, lb, ic); d.className = 'sl ' + (n > 0 ? 'r1' : 'ph'); d.innerHTML = '<em>' + ic + '</em><small>x' + n + (r ? ' +' + r : '') + '</small><u>' + lb + '</u>'; d.title = tip + (r ? ' · no cinto: +' + r : ''); return d; };
-  el.append(cons('🧪', P.pot, 'POÇÃO', 'Poção de vida (tecla E) · pilha de ' + POT_MAX + ' no slot; o resto fica no cinto', P.potR));
-  el.append(cons('💣', P.bmb, 'BOMBA', 'Bomba (tecla W) · pilha de ' + BOMB_MAX + ' no slot; o resto fica no cinto', P.bmbR));
-  const g = slot(eq.gun, eq.gun ? () => pickE('gun') : null, 'FOGO', '🔫'); mark(g, 'gun', eq.gun);
-  if (P.act === 'gun') g.classList.add('act');
-  if (selE === 'gun') g.classList.add('sel');
-  el.append(g);
+/* ---------- Habilidades: o que o jogo tem de verdade. Pontos, níveis de habilidade e passivas novas ainda não existem. ---------- */
+const SKILLS = [
+  { id: 'q', n: 'Giro', ic: 'whirl', k: 'Q', t: 'Recarga 3 s', d: 'Gira a lâmina causando 2× de dano num raio de 4 m e empurra os inimigos.' },
+  { id: 'w', n: 'Bomba', ic: 'bomb', k: 'W', t: 'Recarga 5 s · gasta 1 bomba', d: 'Lança uma bomba até 12 m de distância. Gasta uma bomba do estoque.' },
+  { id: 'e', n: 'Poção', ic: 'potion', k: 'E', t: 'Gasta 1 poção', d: 'Bebe uma poção e recupera 60 de vida. Gasta uma poção do estoque.' },
+  { id: 'sp', n: 'Esquiva', ic: 'dash', k: 'ESP', t: 'Recarga 3,5 s', d: 'Rola para o lado e foge do perigo. Na água vira um mergulho; montado não rola.' },
+  { id: 'x', n: 'Trocar arma', ic: 'swap', k: 'X', t: 'Sem recarga', d: 'Alterna entre a arma de corpo a corpo e a de fogo.' },
+  { id: 'r', n: 'Companheiro', ic: 'paw', k: 'R', t: 'Alterna o modo', d: 'Alterna o companheiro entre só coletar e atacar e coletar.' },
+  { id: 't', n: 'Auto combate', ic: 'target', k: 'T', t: 'Liga e desliga', d: 'O personagem luta, coleta e vende sozinho. Ajuste as regras no ⚙ de Ajustes.' },
+  { id: 'h', n: 'Montaria', ic: 'boots', k: 'H', t: 'Liga e desliga', d: 'Monta e desmonta. Montado você corre mais, mas não consegue rolar.' },
+];
+const PASSIVES = [
+  { id: 'crit', n: 'Golpe crítico', ic: 'burst', k: '', t: 'Passiva', d: () => '15% de chance de acerto crítico, causando o dobro de dano.' },
+  { id: 'dr', n: 'Armadura', ic: 'chest', k: '', t: 'Passiva', d: () => 'A armadura equipada reduz o dano recebido em ' + Math.round((P.dr || 0) * 100) + '%.' },
+];
+
+function renderSkills() {
+  const all = SKILLS.concat(PASSIVES);
+  if (!all.some(x => x.id === selSk)) selSk = 'q';
+  const cur = all.find(x => x.id === selSk), ds = typeof cur.d === 'function' ? cur.d() : cur.d;
+  const sc = x => '<button class="sc' + (x.id === selSk ? ' sel' : '') + '" data-sk="' + x.id + '" title="' + x.n + '">' + svg(x.ic) + (x.k ? '<kbd>' + x.k + '</kbd>' : '') + '</button>';
+  const lk = n => Array.from({ length: n }, () => '<div class="sc lock" title="Em breve">' + svg('lock') + '</div>').join('');
+  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2><p class="pts">Pontos de atributo e níveis de habilidade: <b>em breve</b></p>' +
+    '<div class="sgrid"><p class="sgh">Ativas</p>' + SKILLS.map(sc).join('') +
+    '<p class="sgh">Passivas</p>' + PASSIVES.map(sc).join('') + lk(2) +
+    '<p class="sgh">Bloqueadas</p>' + lk(4) + '</div>' +
+    '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc">' + svg(cur.ic) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + cur.n + '</div><div class="ty">' + (cur.k ? 'Tecla ' + (cur.k === 'ESP' ? 'Espaço' : cur.k) + ' · ' : '') + cur.t + '</div></div></div>' +
+    '<p class="ds">' + ds + '</p><button class="btn pri big" disabled>Melhorar · em breve</button></div>' +
+    '<div class="pact rst"></div>';
+  $('skp').querySelector('.rst').append(rplEl);
+  $('skp').querySelectorAll('[data-sk]').forEach(b => { b.onclick = () => { selSk = b.dataset.sk; renderSkills(); }; });
 }
 
-const grid = (el, n) => { el.innerHTML = ''; for (let i = 0; i < n; i++) el.append(slot(null, null, '', '🔒')); };
+/* ---------- Talentos: três ramos de seis nós. Ainda sem regras no jogo, tudo bloqueado. ---------- */
+const BRANCH = [['Lâmina', 'sword', '#e8776b'], ['Pólvora', 'gun', '#f0b04a'], ['Mar', 'plank', '#5b9bf0']];
+function renderTal() {
+  const cur = selTn ? selTn.split(':') : null;
+  let h = '<div class="tlh"><h2 class="pt">Talentos</h2><span class="pts">Pontos: <b>0</b></span><button class="btn sm" disabled>Redefinir</button></div><div class="ttree">';
+  BRANCH.forEach(([n, ic, col], b) => {
+    h += '<div class="tcol" style="--bc:' + col + '"><h3>' + n + '</h3>';
+    for (let i = 0; i < 6; i++) h += '<button class="tn' + (selTn === b + ':' + i ? ' sel' : '') + '" data-tn="' + b + ':' + i + '" title="Em breve">' + svg(i % 3 === 2 ? 'lock' : ic) + '<i>0/3</i></button>';
+    h += '</div>';
+  });
+  h += '</div><div class="sdet tdet"><div style="display:flex;gap:10px;align-items:center"><div class="tn" style="' + (cur ? '--bc:' + BRANCH[+cur[0]][2] : '') + '">' + svg(cur ? BRANCH[+cur[0]][1] : 'lock') + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' +
+    (cur ? 'Talento de ' + BRANCH[+cur[0]][0] + ' · ' + (+cur[1] + 1) : 'Talentos') + '</div><div class="ty">Bloqueado</div></div></div>' +
+    '<p class="ds dim">Os talentos chegam numa próxima versão: cada ramo terá seis nós para evoluir com pontos de personagem.</p><button class="btn pri big" disabled>Aprender · em breve</button></div>';
+  $('tlp').innerHTML = h;
+  $('tlp').querySelectorAll('[data-tn]').forEach(b => { b.onclick = () => { selTn = b.dataset.tn; renderTal(); }; });
+}
 
 function renderPanel() {
-  $('pnl').dataset.tab = tab;   // o CSS do celular usa isso: habilidades, talentos e missões ganham tela própria
-  ['char', 'skills', 'tal', 'qst'].forEach(t => {
+  $('pnl').dataset.tab = tab;
+  TABS.forEach(([t]) => {
     $('pg-' + t).hidden = tab !== t;
     $('tb-' + t).classList.toggle('on', tab === t);
   });
-  if (tab === 'skills') grid($('sgrid'), 12);   // o quadro do personagem e os atributos ficam sempre visíveis; só a coluna da direita muda
-  if (tab === 'tal') grid($('tgrid'), 18);
+  if (tab === 'skills') renderSkills();
+  if (tab === 'tal') renderTal();
   if (tab === 'qst') renderQuestLog($('qlog'), () => renderPanel());
+  if (tab !== 'char') return;
 
-  const fill = (el, list) => {
-    el.innerHTML = '';
-    list.forEach(([id, lb, ic]) => { const d = slot(id === 'arm' ? eq.arm : null, id === 'arm' && eq.arm ? () => pickE('arm') : null, lb, ic); if (selE === id) d.classList.add('sel'); if (id === 'arm') mark(d, 'arm', eq.arm); el.append(d); });
-  };
   if (selE && !eq[selE]) selE = '';
   const shown = sel >= 0 && bag[sel] ? bag[sel] : selE ? eq[selE] : null;
   if (shown) showItem(shown); else showPlayer();
+  const fill = (el, list) => {
+    el.innerHTML = '';
+    list.forEach(([id, lb, ic]) => {
+      const it = eq[id] || null, d = slot(it, it ? () => pickE(id) : null, lb, ic);
+      if (selE === id) d.classList.add('sel');
+      if (id === 'arm') mark(d, 'arm', it);
+      el.append(d);
+    });
+  };
   fill($('eqL'), LEFT);
   fill($('eqR'), RIGHT);
-  const w = slot(eq.wpn, eq.wpn ? () => pickE('wpn') : null, 'MÃO 1', '⚔');
-  const o = slot(eq.off, eq.off ? () => pickE('off') : null, 'MÃO 2', '✋'); mark(o, 'off', eq.off); mark(w, 'wpn', eq.wpn);
-  o.title = eq.off ? o.title : 'Mão 2 livre: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas)';
+  const w = slot(eq.wpn, eq.wpn ? () => pickE('wpn') : null, 'MÃO 1', 'sword');
+  const o = slot(eq.off, eq.off ? () => pickE('off') : null, 'MÃO 2', 'hand');
+  const g = slot(eq.gun, eq.gun ? () => pickE('gun') : null, 'FOGO', 'gun');
+  mark(o, 'off', eq.off); mark(w, 'wpn', eq.wpn); mark(g, 'gun', eq.gun);
+  if (!eq.off) o.title = 'Mão 2 livre: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas)';
   if (P.act === 'wpn') w.classList.add('act');
-  if (selE === 'wpn') w.classList.add('sel'); if (selE === 'off') o.classList.add('sel');
-  $('eqW').innerHTML = $('eqG').innerHTML = '';
-  $('eqW').append(w);
-  $('eqG').append(o);
+  if (P.act === 'gun') g.classList.add('act');
+  if (selE === 'wpn') w.classList.add('sel'); if (selE === 'off') o.classList.add('sel'); if (selE === 'gun') g.classList.add('sel');
+  $('eqW').innerHTML = $('eqG').innerHTML = $('eqF').innerHTML = '';
+  $('eqW').append(w); $('eqG').append(o); $('eqF').append(g);
 
   // mochila: abas Equipamento / Consumíveis / Missão / Materiais
   document.querySelectorAll('#btabs span').forEach(e => e.classList.toggle('on', e.dataset.b === btab));
@@ -193,20 +258,24 @@ function renderPanel() {
     for (let i = 0; i < BAG_MAX; i++) {
       const d = slot(bag[i], bag[i] ? () => { sel = sel === i ? -1 : i; selE = ''; renderPanel(); fitPanel(); } : null);
       if (bag[i]) d.dataset.drag = 'bag:' + i;
-      else if (st[i - bag.length]) { const s = st[i - bag.length]; d.className = 'sl r1'; d.innerHTML = (s.k === 'pot' ? '🧪' : '💣') + '<small>x' + s.n + '</small>'; d.title = 'Cinto: ' + (s.k === 'pot' ? 'poções' : 'bombas') + ' · ocupa 1 vaga da mochila'; }
+      else if (st[i - bag.length]) { const s = st[i - bag.length]; const c = consSlot(s.k, s.n, '', 'Cinto: ' + (s.k === 'pot' ? 'poções' : 'bombas') + ' · ocupa 1 vaga da mochila'); b.append(c); continue; }
       b.append(d);
     }
     if (sel >= 0) b.children[sel] && b.children[sel].classList.add('sel');
-    $('bcnt').textContent = bagUsed() + ' / ' + BAG_MAX + (beltSlots() ? ' (cinto: ' + beltSlots() + ')' : '') + (bagFull() ? ' · CHEIA' : '');
+    $('bcnt').textContent = bagUsed() + '/' + BAG_MAX + (bagFull() ? ' · CHEIA' : '');
+    $('bcnt').title = beltSlots() ? 'Cinto ocupa ' + beltSlots() + ' vaga(s)' : '';
     $('bcnt').style.color = bagFull() ? '#ff8a6a' : '';
   } else {
-    const st = btab === 'cons' ? beltStacks() : [];   // aba Consumíveis = o cinto (as pilhas de reserva)
-    for (let i = 0; i < 24; i++) {
-      const d = slot(null), s = st[i];
-      if (s) { d.className = 'sl r1'; d.innerHTML = (s.k === 'pot' ? '🧪' : '💣') + '<small>x' + s.n + '</small>'; d.title = (s.k === 'pot' ? 'Poções' : 'Bombas') + ' no cinto · ocupa 1 vaga da mochila'; }
-      b.append(d);
+    let n = 0;
+    if (btab === 'cons') {   // o que está equipado nos atalhos (poção E, bomba W) e as pilhas de reserva do cinto
+      b.append(consSlot('pot', P.pot, 'POÇÃO', 'Poção de vida (tecla E) · pilha de ' + POT_MAX + ' no slot; o resto fica no cinto'));
+      b.append(consSlot('bomb', P.bmb, 'BOMBA', 'Bomba (tecla W) · pilha de ' + BOMB_MAX + ' no slot; o resto fica no cinto'));
+      beltStacks().forEach(s => b.append(consSlot(s.k, s.n, '', (s.k === 'pot' ? 'Poções' : 'Bombas') + ' no cinto · ocupa 1 vaga da mochila')));
+      n = b.children.length;
     }
-    $('bcnt').textContent = btab === 'cons' ? 'Cinto: ' + st.length + ' vaga(s) da mochila · slot 🧪' + P.pot + ' 💣' + P.bmb : '0 / 24';
+    for (let i = n; i < BAG_MAX; i++) b.append(slot(null));
+    $('bcnt').textContent = btab === 'cons' ? 'Cinto: ' + beltStacks().length : '0/' + BAG_MAX;
+    $('bcnt').title = ''; $('bcnt').style.color = '';
   }
   renderStats();
 }
@@ -216,50 +285,20 @@ export function togglePanel() {
   if (isPanelOpen()) closePanel(); else openTab('char');
 }
 
-/** Encolhe o painel (escala) quando o conteúdo não cabe na altura da tela, para nunca precisar de barra de rolagem */
-const PANEL_MIN = .55;
-/** Celular: os painéis ocupam a tela inteira (com rolagem), em vez de encolher sobre a hotbar */
+/** Celular: folha que sobe da base (retrato) ou entra pela lateral (paisagem); computador: janela central */
 export const MOB = matchMedia('(max-width: 900px), (orientation: portrait), (pointer: coarse) and (max-height: 520px)');
 export function fitPanel() {
   fitHotbar();
+  const o = !MOB.matches ? 'd' : innerWidth > innerHeight ? 'l' : 'p', h = CFG.hand === 'l' ? 'l' : 'r';
+  let any = false;
   ['pnl', 'pnl2'].forEach(id => {
     const el = $(id);
     if (el.style.display !== 'block') return;
-    el.classList.toggle('full', MOB.matches);
-    if (MOB.matches) {
-      ['left', 'top', 'bottom', 'maxHeight', 'overflowY', 'transform', 'transformOrigin', 'width', 'height'].forEach(k => el.style.removeProperty(k.replace(/[A-Z]/g, c => '-' + c.toLowerCase())));
-      // sem rolagem: o conteúdo inteiro é reduzido para caber na tela (só a aba Missões rola)
-      const fit = id === 'pnl2' || tab === 'char';   // a ficha cabe na tela; as outras abas rolam
-      el.classList.toggle('fit', fit);
-      if (fit) {
-        el.style.height = 'auto';
-        const H = el.scrollHeight, k = Math.max(.6, Math.min(1, innerHeight / H));
-        el.style.height = '';
-        if (k < 1) { el.style.width = (innerWidth / k) + 'px'; el.style.height = (innerHeight / k) + 'px'; el.style.transform = 'scale(' + k.toFixed(3) + ')'; el.style.transformOrigin = '0 0'; }
-        if (H * k > innerHeight + 1) el.style.overflowY = 'auto';   // telas muito baixas: último recurso
-      }
-      return;
-    }
-    el.style.maxHeight = 'none';
-    el.style.overflowY = 'visible';
-    el.style.transform = 'translateX(-50%)';
-    // espaço livre: acima da hotbar (que também pode estar reduzida) e dentro da largura da tela
-    // o painel nasce do topo do convés da hotbar, centralizado entre os diamantes, e cresce para cima
-    const hb = $('hb').getBoundingClientRect();
-    const avail = hb.top - 2 - 8 - 6;
-    el.style.top = 'auto';
-    el.style.bottom = (innerHeight - hb.top + 2) + 'px';
-    el.style.transformOrigin = '50% 100%';
-    el.style.left = (hb.left + hb.width / 2) + 'px';
-    let k = Math.min(1, avail / el.offsetHeight, (innerWidth - 4) / el.offsetWidth);
-    if (k < PANEL_MIN) {
-      // tela muito baixa: tamanho mínimo e, só nesse caso, rolagem interna para nada ser cortado
-      k = PANEL_MIN;
-      el.style.maxHeight = (avail / k) + 'px';
-      el.style.overflowY = 'auto';
-    }
-    el.style.transform = 'translateX(-50%) scale(' + k.toFixed(3) + ')';
+    any = true;
+    if (el.dataset.o !== o) el.dataset.o = o;
+    if (el.dataset.h !== h) el.dataset.h = h;
   });
+  $('pbk').style.display = any ? 'block' : 'none';
 }
 
 /** Abre o painel do personagem ('char') ou do companheiro ('pets'); clicar de novo no mesmo fecha */
@@ -270,8 +309,8 @@ export function openTab(t) {
   if (wasOpen) return;
   other.style.display = 'none';
   mine.style.display = 'block';
-  if (t === 'pets') renderPets(); else { tab = 'char'; renderPanel(); }
   fitPanel();
+  if (t === 'pets') renderPets(); else { tab = 'char'; renderPanel(); }
 }
 
 /** Troca de aba (personagem / companheiros) */
@@ -284,9 +323,35 @@ function setTab(t) {
 export function closePanel() {
   $('pnl').style.display = 'none';
   $('pnl2').style.display = 'none';
+  $('pbk').style.display = 'none';
   $('acfg').style.display = 'none';   // Esc também fecha os ajustes
 }
 
+/** Arrastar a alça fecha a folha (para baixo no retrato, para a borda na paisagem) */
+function initSheets() {
+  $('pbk').onclick = closePanel;
+  document.querySelectorAll('.sheet .grab').forEach(g => {
+    const el = g.closest('.sheet');
+    let s = null;
+    g.addEventListener('pointerdown', e => { s = { x: e.clientX, y: e.clientY, id: e.pointerId, d: 0 }; g.setPointerCapture(e.pointerId); el.classList.add('drag'); });
+    g.addEventListener('pointermove', e => {
+      if (!s || e.pointerId !== s.id) return;
+      const p = el.dataset.o === 'p', dx = e.clientX - s.x;
+      s.d = p ? Math.max(0, e.clientY - s.y) : el.dataset.h === 'l' ? Math.min(0, dx) : Math.max(0, dx);
+      el.style.transform = p ? 'translateY(' + s.d + 'px)' : 'translateX(' + s.d + 'px)';
+    });
+    const up = () => {
+      if (!s) return;
+      const far = Math.abs(s.d) > 90;
+      s = null; el.classList.remove('drag'); el.style.transform = '';
+      if (far) closePanel();
+    };
+    g.addEventListener('pointerup', up);
+    g.addEventListener('pointercancel', up);
+  });
+}
+
+let rplEl = null;
 /** Mantém o painel atualizado quando itens ou companheiros mudam */
 export function initPanel() {
   initPreview();
@@ -300,10 +365,12 @@ export function initPanel() {
     $('rst').textContent = 'Clique de novo para apagar tudo';
     armed = setTimeout(() => { armed = null; $('rst').textContent = 'Apagar progresso salvo'; }, 3000);
   };
-  ['char', 'skills', 'tal', 'qst'].forEach(t => { $('tb-' + t).onclick = () => setTab(t); });
+  TABS.forEach(([t, ic, lb]) => { const b = $('tb-' + t); b.innerHTML = svg(ic) + '<span>' + lb + '</span>'; b.onclick = () => setTab(t); });
+  rplEl = document.createElement('button'); rplEl.className = 'btn';
+  armedButton(rplEl, 'Resetar personagem', resetPlayer);
+  initSheets();
   document.querySelectorAll('#btabs span').forEach(e => { e.onclick = () => { btab = e.dataset.b; renderPanel(); fitPanel(); }; });
   $('bsort').onclick = () => { bag.sort((a, c) => c.q - a.q || c.v - a.v); renderPanel(); };
-  armedButton($('rpl'), 'Resetar personagem', resetPlayer);
   // ajustes do auto (botão ⚙)
   Object.keys(state.autoCfg).forEach(k => {
     const c = $('ac-' + k);

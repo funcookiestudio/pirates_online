@@ -11,10 +11,12 @@
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Tiny Pirates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/hud.css">
 <link rel="stylesheet" href="css/hotbar.css">
 <link rel="stylesheet" href="css/panels.css">
+<link rel="stylesheet" href="css/sheet.css">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body class="pre">
@@ -170,92 +172,78 @@
   </div>
   </div>
 </div>
-<div id="pnl">
+<div id="pbk"></div>
+<div id="pnl" class="sheet" data-o="d">
+  <div class="grab"><i></i></div>
+  <div class="sbody">
+    <!-- personagem: equipamento ao redor do retrato · cartão de nível e atributos (ou o item aberto) · mochila -->
+    <section id="pg-char" class="pg">
+      <div class="inv">
+        <div class="pd">
+          <div class="pcol" id="eqL"></div>
+          <div class="pmid">
+            <div class="ppor"><div class="pgold" title="Ouro"><i>$</i><b id="gld"></b></div><canvas class="pcv" id="cvPl"></canvas></div>
+            <div class="hands"><div id="eqW"></div><div id="eqG"></div><div id="eqF"></div></div>
+          </div>
+          <div class="pcol" id="eqR"></div>
+        </div>
+        <div class="mid" id="mid">
+          <div class="lvc"><b id="pcl2"></b><span>Pirata</span><em>Capitão</em><div class="xpb"><i id="pxp2"></i></div></div>
+          <div class="stt" id="stt"></div>
+          <div class="det" id="itm" hidden></div>
+        </div>
+        <div class="bg">
+          <div class="btabs" id="btabs">
+            <span data-b="eq" class="on">Equip.</span><span data-b="cons">Consum.</span><span data-b="quest">Missão</span><span data-b="mat">Mater.</span>
+            <em id="bsort" title="Organizar mochila">⇅</em><small id="bcnt"></small>
+          </div>
+          <div class="bag" id="bag"></div>
+        </div>
+      </div>
+    </section>
+    <section id="pg-skills" class="pg" hidden><div class="skp" id="skp"></div></section>
+    <section id="pg-tal" class="pg" hidden><div class="tlp" id="tlp"></div></section>
+    <section id="pg-qst" class="pg" hidden><div id="qlog"></div></section>
+  </div>
   <div class="ptabs">
-    <span id="tb-char" class="on">PERSONAGEM</span><span id="tb-skills">HABILIDADES</span><span id="tb-tal">TALENTOS</span><span id="tb-qst">MISSÕES</span>
+    <button id="tb-char" class="stab on"></button><button id="tb-skills" class="stab"></button><button id="tb-tal" class="stab"></button><button id="tb-qst" class="stab"></button>
     <b id="pcl" title="Fechar (Esc)">✕</b>
-  </div>
-
-  <!-- personagem: equipamento ao redor do retrato · cartão de nível e atributos · mochila -->
-  <div class="pbody">
-  <div class="ptop">
-    <div class="pframe">
-      <div class="pcol" id="eqL"></div>
-      <div class="ppor">
-        <div class="pgold" title="Ouro"><i>$</i><b id="gld"></b></div>
-        <canvas class="pcv" id="cvP"></canvas>
-      </div>
-      <div class="pcol" id="eqR"></div>
-      <div class="pbot" id="eqW"></div>
-      <div class="pattr" id="attr"></div>
-      <div class="pbot" id="eqG"></div>
-    </div>
-    <div class="pright">
-      <div id="pg-char" class="pg bwrap">
-        <div class="btabs" id="btabs">
-          <span data-b="eq" class="on">Equipamento</span><span data-b="cons">Consumíveis</span><span data-b="quest">Missão</span><span data-b="mat">Materiais</span>
-          <em id="bsort" title="Organizar mochila">⇅</em>
-          <div class="bhead"><small id="bcnt"></small></div>
-        </div>
-        <div class="bbody">
-          <div id="bag"></div>
-        </div>
-      </div>
-      <div id="pg-skills" class="pg" hidden>
-        <div class="soon">⚔ Habilidades ativas e passivas</div>
-        <div class="sgrid" id="sgrid"></div>
-        <div class="rb" id="rpl">Resetar personagem</div>
-      </div>
-      <div id="pg-tal" class="pg" hidden>
-        <div class="soon">✦ Talentos: pontos ganhos ao subir de nível</div>
-        <div class="sgrid" id="tgrid"></div>
-      </div>
-      <div id="pg-qst" class="pg" hidden><div id="qlog"></div></div>
-    </div>
-  </div>
-
-  <div class="pbelow">
-    <div class="pcard"><div class="pcl2" id="pcl2"></div><div class="pnm2">Capitão</div><div class="pcls">PIRATA</div><div class="pxp2"><i id="pxp2"></i></div></div>
-    <div id="stt"></div>
-    <div id="itm"></div>
-  </div>
   </div>
 </div>
 
 <!-- ===== Painel do companheiro (diamante azul): ficha, habilidades e talentos ===== -->
-<div id="pnl2" class="panel">
-  <div class="ptabs">
-    <span id="pt-main" class="on">COMPANHEIRO</span><span id="pt-skills">HABILIDADES</span><span id="pt-tal">TALENTOS</span>
-    <b id="pcl2x" title="Fechar (Esc)">✕</b>
-  </div>
-  <div id="pg-pmain" class="pg">
-    <div class="ptop">
-      <div class="pframe">
-        <div class="pcol" id="peL"></div>
-        <div class="ppor"><canvas class="pcv" id="cvA"></canvas>
-          <div class="ppn2" id="ppn2"></div>
-          <div class="parr"><button id="pprev" title="Companheiro anterior">◀</button><span id="pdots"></span><button id="pnext" title="Próximo companheiro">▶</button></div>
+<div id="pnl2" class="sheet" data-o="d">
+  <div class="grab"><i></i></div>
+  <div class="sbody">
+    <section id="pg-pmain" class="pg">
+      <div class="inv pinv">
+        <div class="pd">
+          <div class="pcol" id="peL"></div>
+          <div class="pmid">
+            <div class="ppor"><div class="pgold" id="ppn2"></div><canvas class="pcv" id="cvA"></canvas>
+              <button class="parw l" id="pprev" title="Companheiro anterior">◀</button><button class="parw r" id="pnext" title="Próximo companheiro">▶</button>
+              <div class="pdots" id="pdots"></div></div>
+            <div class="hands"><div id="peW"></div><div id="peG"></div></div>
+          </div>
+          <div class="pcol" id="peR"></div>
         </div>
-        <div class="pcol" id="peR"></div>
-        <div class="pbot" id="peW"></div>
-        <div class="pattr" id="pattr"></div>
-        <div class="pbot" id="peG"></div>
+        <div class="mid">
+          <div class="lvc" id="plvc"><b id="ppl"></b><span id="ppn"></span><em>Companheiro</em><div class="xpb"><i id="pxb"></i></div></div>
+          <div class="stt" id="pstt"></div>
+        </div>
+        <div class="bg">
+          <div class="pact"><button class="btn big" id="usep"></button><span id="rpp"></span></div>
+          <p class="hint">Mochila, equipamentos e atributos do companheiro chegam em breve. Ele ganha XP lutando.</p>
+          <div class="bagoff" inert><div class="btabs"><span class="on">Equip.</span><span>Consum.</span><span>Missão</span><span>Mater.</span><small>0 / 24</small></div><div class="bag" id="pbag"></div></div>
+        </div>
       </div>
-      <div class="pside">
-        <div class="pcard"><div class="pcl2" id="ppl"></div><div class="pnm2" id="ppn"></div><div class="pcls">COMPANHEIRO</div><div class="pxp2"><i id="pxb"></i></div></div>
-        <div id="pstt"></div>
-        <div class="st gold"><span class="use" id="usep"></span><span class="rb" id="rpp" style="margin:0"></span></div>
-      </div>
-    </div>
-    <div class="bwrap">
-      <div class="btabs"><span class="on">Equipamento</span><span>Consumíveis</span><span>Missão</span><span>Materiais</span></div>
-      <div class="bbody"><div class="bhead"><small>0 / 24</small></div><div id="pbag"></div></div>
-    </div>
-    </div>
-  <div id="pg-pskills" class="pg" hidden><div id="tree"></div></div>
-  <div id="pg-ptal" class="pg" hidden>
-    <div class="soon">✦ Talentos do companheiro</div>
-    <div class="sgrid" id="ptgrid"></div>
+    </section>
+    <section id="pg-pskills" class="pg" hidden><div class="tlp" id="tree"></div></section>
+    <section id="pg-ptal" class="pg" hidden><div class="tlp" id="ptgrid"></div></section>
+  </div>
+  <div class="ptabs">
+    <button id="pt-main" class="stab on"></button><button id="pt-skills" class="stab"></button><button id="pt-tal" class="stab"></button>
+    <b id="pcl2x" title="Fechar (Esc)">✕</b>
   </div>
 </div>
 

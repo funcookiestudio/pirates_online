@@ -2,7 +2,7 @@
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
-const css = ['base', 'hud', 'hotbar', 'panels', 'mobile'].map(n => readFileSync(`css/${n}.css`, 'utf8')).join('\n');
+const css = ['base', 'hud', 'hotbar', 'panels', 'sheet', 'mobile'].map(n => readFileSync(`css/${n}.css`, 'utf8')).join('\n');
 const html = readFileSync('index.html', 'utf8');
 const body = html.slice(html.indexOf('<body>') + 6, html.indexOf('<!-- Three.js'));
 const three = html.match(/<script src="(https:\/\/cdnjs[^"]+three[^"]+)">/)[1];
@@ -13,6 +13,7 @@ const js = out.outputFiles[0].text.replaceAll('</script', '<\\/script');
 mkdirSync('preview', { recursive: true });
 writeFileSync('preview/preview.html',
 `<title>Pirata ARPG</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
 ${css}
 </style>

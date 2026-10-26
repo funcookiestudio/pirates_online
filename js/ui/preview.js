@@ -137,7 +137,7 @@ function idleItem(g, t) {
 
 /** Mostra o item `it` (arma 3D girável ou armadura vestida) no canvas do personagem */
 export function showItem(it) {
-  if (!vp) vp = makeView('cvP');
+  if (!vp) vp = makeView('cvPl');
   setModel(vp, 'i' + it.ty + it.w + '_' + it.q + '_' + it.v, () => buildItem(it), idleItem);
 }
 
@@ -190,7 +190,7 @@ let vp = null, va = null;
 
 /** Mostra o personagem (com a arma que está na mão) no canvas `cvP` */
 export function showPlayer() {
-  if (!vp) vp = makeView('cvP');
+  if (!vp) vp = makeView('cvPl');
   setModel(vp, 'p' + P.wid, buildPlayer, idlePlayer);
 }
 
