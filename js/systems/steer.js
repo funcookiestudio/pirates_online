@@ -51,6 +51,7 @@ function clear(x, z, a, len, r) {
 export function steer(x, z, wx, wz, r, mem, goal = 99) {
   const sp = Math.hypot(wx, wz);
   if (sp < .01) return [wx, wz];
+  if (dIn(x, z)) return [wx, wz];   // dungeon: o caminho (dPath) já contorna as paredes; o leque lateral só empurrava para dentro delas nos corredores de 2 m
   const a0 = Math.atan2(wx, wz), len = Math.min(goal, 2.2 + r + sp * .25);
   if (clear(x, z, a0, len, r)) { if (mem) mem.side = 0; return [wx, wz]; }
   const first = mem && mem.side ? mem.side : (Math.random() < .5 ? 1 : -1);

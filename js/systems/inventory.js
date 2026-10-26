@@ -94,7 +94,7 @@ export function pickSlot(it, better) {
   if (!main) return s;
   const big = WEAPONS[it.w].big || WEAPONS[main.w].big, off = eq.off, offSame = off && slotOf(off) === s;
   if (!off && !big) return 'off';
-  const low = offSame && off.v < main.v ? 'off' : s;
+  const low = offSame && !isTorch(off) && off.v < main.v ? 'off' : s;   // a tocha não é arma fraca: senão o auto-equipar a trocava por uma arma da mochila e o torch-auto devolvia (vai-e-vem)
   return !better || it.v > eq[low].v ? low : null;
 }
 
@@ -161,7 +161,7 @@ export function applyWeaponBonus() {
 /** Modelo da tocha na mão livre e alcance da luz */
 /** Está escuro? Pela luz ambiente do mundo (dia .85 · dungeon .5 · noite .26), com histerese para não piscar no entardecer */
 let DARK = false;
-export function isDark() { const d = (.85 - hemi.intensity) / .55; DARK = DARK ? d > .25 : d > .5; return DARK; }
+export function isDark() { if (DG.on) return true; const d = (.85 - hemi.intensity) / .55; DARK = DARK ? d > .25 : d > .5; return DARK; }
 /** Tocha acesa na mão: não com arma de 2 mãos; só no escuro (noite, dungeon, tempestade) — de dia fica guardada.
     Ajuste do auto: Automática (1) · Sempre acesa (2) · Nunca (0) */
 export const torchLit = () => { const m = state.autoCfg.torch; return m !== 0 && !WEAPONS[P.wid].big && (m === 2 || isDark()); };
