@@ -42,15 +42,15 @@ function draw() {
     g.font = `${15 * d}px sans-serif`; g.textBaseline = 'middle';
     g.fillStyle = '#fff'; g.fillText(ic, px, py + d);
     g.font = `bold ${fs}px sans-serif`; g.textBaseline = 'alphabetic';
-    if (txt) { g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(txt, px, py + r + 13 * d); g.fillStyle = '#fff'; g.fillText(txt, px, py + r + 13 * d); }
+    if (false && txt) { g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(txt, px, py + r + 13 * d); g.fillStyle = '#fff'; g.fillText(txt, px, py + r + 13 * d); }
   };
   tag(0, 0, '#c8962e', 'Vila', '🏘');
   POST_DATA.forEach(p => tag(p.x, p.z, '#b02828', p.name, '⛺'));
   pois.forEach(p => tag(p.x, p.z, p.c, p.n, p.ic || '📍'));
   // legenda
-  const leg = [['🏘', 'Vila'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['🌾', 'Fazenda']];
+  const leg = [['🏘', 'Vila'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['🐔', 'Sítio das Aves'], ['🐖', 'Granja'], ['🐄', 'Fazenda do Gado'], ['🌿', 'Casa da Herbalista'], ['🔵', 'Você'], ['✖', 'Destino']];
   g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
-  leg.forEach(([ic, t], i) => { const y = 16 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(8 * d, y - 10 * d, 150 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 14 * d, y); });
+  leg.forEach(([ic, t], i) => { const y = 16 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(8 * d, y - 10 * d, 160 * d, 19 * d); g.fillStyle = '#fff'; g.fillText(ic + ' ' + t, 14 * d, y); });
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   // jogador (seta pulsante)
   const [qx, qy] = toMap(P.x, P.z), pulse = 1 + .25 * Math.sin(performance.now() / 250);
