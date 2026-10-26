@@ -18,4 +18,5 @@ try {
   await runCharSelect();
   await import('./main.js');
   hideCharSelect();
+  document.body.classList.remove('pre');   // agora sim mostra o HUD
 })();
