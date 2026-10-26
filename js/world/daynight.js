@@ -35,12 +35,24 @@ export const isNight = h => h >= 21 || h < 6;
 export const isEvening = h => h >= 20.5 || h < 6;
 
 let glass = null, glassT = 0;
+import { HL } from './house-lights.js';
+/** Janelas acendem ao entardecer (vidros 0xbfe0f0|id: materiais fundidos por quadra, coletados uma vez); a casa cujo morador deitou para dormir apaga */
+function glowWindows() {
+  if (!glass) { glass = new Map(); scene.traverse(o => { const m = o.isMesh && o.material; if (m && !Array.isArray(m) && m.transparent && m.emissive) { const hx = m.color.getHex(); if ((hx >> 4) === 0xbfe0f) glass.set(m, hx & 15); } }); }
+  const base = stars.material.opacity;
+  for (const id in HL.pos) {
+    const p = HL.pos[id], off = id != 6 && HL.asleep && HL.asleep(p[0], p[1], 9) ? 1 : 0, c = HL.lit[id] ?? 1;
+    HL.lit[id] = c + (off ? 0 : 1) * 0 + ((1 - off) - c) * .03;
+  }
+  glass.forEach((id, m) => { const k = HL.pos[id] ? HL.lit[id] ?? 1 : 1, gl = base * k; m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; });
+}
 export function updateDayNight(inDungeon) {
   const h = hourNow();
   if (++glassT === 90) glass = null;   // recolhe os vidros depois que o mundo foi fundido
   stars.visible = !inDungeon && stars.material.opacity > .02;
   if (inDungeon) { lastH = -1; return; }
   stars.position.copy(cam.position);
+  glowWindows();
   if (Math.abs(h - lastH) < .01) return;
   lastH = h;
   let i = 0; while (i < K.length - 2 && h >= K[i + 1][0]) i++;
@@ -52,8 +64,4 @@ export function updateDayNight(inDungeon) {
   hemi.intensity = a[4] + (b[4] - a[4]) * u;
   torch.intensity = a[5] + (b[5] - a[5]) * u;
   stars.material.opacity = Math.max(0, Math.min(1, (.6 - hemi.intensity) / .3));   // as estrelas surgem quando escurece
-  // janelas das casas acendem ao entardecer (vidros de cor 0xbfe0f0: materiais fundidos por quadra, coletados uma vez)
-  if (!glass) { glass = new Set(); scene.traverse(o => { const m = o.isMesh && o.material; if (m && !Array.isArray(m) && m.transparent && m.emissive && m.color.getHex() === 0xbfe0f0) glass.add(m); }); }
-  const gl = stars.material.opacity;
-  glass.forEach(m => { m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; /* quase opacos: não dá para espiar o interior por fora */ });
 }

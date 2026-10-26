@@ -2,6 +2,7 @@
    chaminé alta, lareira com caldeirão, bancada de destilação, estante de livros, escrivaninha, cama no canto e torre de observatório com esfera armilar.
    Fica longe da vila (o povo da cidade não lida bem com ela). Mesmo molde da casa da Dona Marta: porta clicável, corte de telhado e paredes ao entrar. */
 import { scene } from '../core/engine.js';
+import { regLight } from './house-lights.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
@@ -19,6 +20,7 @@ export function updateAlchemist(dt) {
 }
 
 export function buildAlchemistHouse(x, z, th, y0 = 0) {
+  regLight(5, x, z);
   const root = new THREE.Group();
   root.position.set(x, y0, z); root.rotation.y = th;
   const KS = 1.28, S = new THREE.Group(); S.scale.setScalar(KS); root.add(S);
@@ -175,9 +177,9 @@ export function buildAlchemistHouse(x, z, th, y0 = 0) {
   };
   bed(5.6, .4); bed(5.6, 1.9); bed(5.6, 3.4);
   for (const [px, pz] of [[-7, -2], [-7, 2], [-4.2, -2], [-4.2, 2]]) B(.1, px < -5 ? 2.4 : 2.8, .1, px, px < -5 ? 1.3 : 1.5, pz, TM);
-  for (const zz of [-2, 2]) tr(B(2.8, 2.2, .04, -5.6, 1.2, zz, 0xbfe0f0), .35);
-  tr(B(.04, 2.2, 4, -7, 1.2, 0, 0xbfe0f0), .35);
-  { const r = tr(B(3.1, .06, 4.3, -5.6, 2.7, 0, 0xbfe0f0), .35); r.rotation.z = .12; } B(3.1, .1, .1, -5.6, 2.55, -2, TM); B(3.1, .1, .1, -5.6, 2.55, 2, TM);
+  for (const zz of [-2, 2]) tr(B(2.8, 2.2, .04, -5.6, 1.2, zz, 0xbfe0f5), .35);
+  tr(B(.04, 2.2, 4, -7, 1.2, 0, 0xbfe0f5), .35);
+  { const r = tr(B(3.1, .06, 4.3, -5.6, 2.7, 0, 0xbfe0f5), .35); r.rotation.z = .12; } B(3.1, .1, .1, -5.6, 2.55, -2, TM); B(3.1, .1, .1, -5.6, 2.55, 2, TM);
   for (const zz of [-1.3, 1.3]) { B(2.4, .35, .8, -5.6, .2, zz, WOOD2); B(2.3, .1, .7, -5.6, .38, zz, 0x4a3322); for (let i = 0; i < 5; i++) C(0, .2, .5, 5, -6.5 + i * .45, .7, zz, [0x3f8a3a, 0x5aa04a][i % 2]); }
   G(new THREE.IcosahedronGeometry(.25, 0), -5.6, .4, 0, 0xff77cc, 0x882255);
   C(.4, .5, .42, 10, 1.8, .21, 4.4, WOOD); C(.5, .4, .42, 10, 1.8, .6, 4.4, WOOD); for (const hh of [.1, .4, .72]) { const q = C(.5, .5, .06, 10, 1.8, hh, 4.4, IRON); q.scale.set(1.02, 1, 1.02); } tr(C(.37, .37, .03, 10, 1.8, .81, 4.4, 0x3a8fc0), .85);

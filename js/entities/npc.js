@@ -10,6 +10,7 @@ import { person, hideSword } from './character.js';
 import { gait, gaitSpeed } from './gait.js';
 import { collide, steer, navTarget } from '../systems/steer.js';
 import { tickClock, hourNow } from '../core/clock.js';
+import { HL } from '../world/house-lights.js';
 import { isEvening, isNight } from '../world/daynight.js';
 import { lieDown, standFromBed, makeZzz } from './sleep.js';
 import { SLEEP } from './sleep.js';
@@ -126,6 +127,7 @@ function tnScript(n, dt, tn) {
   }
 }
 
+HL.asleep = (x, z, r) => list.some(n => n.sl > .5 && Math.hypot(n.g.position.x - x, n.g.position.z - z) < r);   // janela da casa apaga quando o morador dorme
 const LABEL_R = 9;   // nome do NPC só aparece com o jogador a menos de 9 m
 let want = null, talking = null;
 export const cancelTalk = () => { want = null; };

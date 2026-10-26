@@ -2,6 +2,7 @@
    chaminé e cata-vento de galo. Por dentro: lareira com panela, mesa de refeições, aparador de louça, estante de potes, cama com colcha, berço, guarda-roupa,
    roca de fiar, relógio de cuco, gaiola de canário e cestas de ovos. Mesmo molde das casas da vila: porta clicável, corte do telhado e das paredes quando se entra. */
 import { scene } from '../core/engine.js';
+import { regLight } from './house-lights.js';
 import { props } from '../core/registry.js';
 import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
@@ -14,6 +15,8 @@ export const AVES_HOUSE = { w: 8, d: 6 };      // dimensões externas (m): o res
 
 /** style (opcional): { PL, PL2, SH, QUILT, QUILT2, roof:[4 cores] } troca a paleta para as outras fazendas */
 export function buildAvesHouse(x, z, th, y0 = 0, style = {}) {
+  const LID = 8 + (style.lid || 0), GL = 0xbfe0f0 | LID;
+  regLight(LID, x, z);
   const root = new THREE.Group();
   root.position.set(x, y0, z); root.rotation.y = th;
   const KS = 1.28, S = new THREE.Group(); S.scale.setScalar(KS); root.add(S);
@@ -58,7 +61,7 @@ export function buildAvesHouse(x, z, th, y0 = 0, style = {}) {
     const h = y1 - y0, y = (y0 + y1) / 2, s = Math.sign(f);
     W(ax, f, c, y1 + .07, w + .3, .14, T + .14, TM, g); W(ax, f, c, y0 - .05, w + .4, .1, T + .28, STONE, g);
     W(ax, f, c, y, w, .06, T + .06, TM, g); W(ax, f, c, y, .06, h, T + .06, TM, g);
-    tr(W(ax, f, c, y, w, h, .03, 0xbfe0f0, g), .4);
+    tr(W(ax, f, c, y, w, h, .03, GL, g), .4);
     for (const k of [-1, 1]) {
       W(ax, f, c + k * (w / 2 + .04), y, .1, h, T + .1, TM, g);
       const uc = c + k * (w / 2 + w / 4 + .16); W(ax, f + s * .2, uc, y, w / 2, h, .06, SH, g);
@@ -107,7 +110,7 @@ export function buildAvesHouse(x, z, th, y0 = 0, style = {}) {
     const dx = -2.4, zf = 1.9, yf = RT - 2.2 * zf / 3.6;
     B(1.5, 1.6, 1.7, dx, yf + .32, zf - .85, PL, roof); B(1.56, .14, 1.76, dx, yf + 1.12, zf - .85, TM, roof); B(1.56, .14, 1.76, dx, yf - .48, zf - .85, TM, roof);
     for (const sx of [-.7, .7]) B(.12, 1.6, .14, dx + sx, yf + .32, zf, TM, roof);
-    tr(B(.8, .9, .04, dx, yf + .32, zf + .02, 0xbfe0f0, roof), .45); B(.9, .1, .1, dx, yf - .18, zf + .08, WOOD2, roof);
+    tr(B(.8, .9, .04, dx, yf + .32, zf + .02, GL, roof), .45); B(.9, .1, .1, dx, yf - .18, zf + .08, WOOD2, roof);
     for (const s of [-1, 1]) { const q = B(1.1, .1, 1.95, dx + s * .55, yf + 1.4, zf - .85, 0xa84828, roof); q.rotation.z = -s * .75; }
     B(.18, .18, 2.0, dx, yf + 1.88, zf - .85, 0x8c3a22, roof);
   }
