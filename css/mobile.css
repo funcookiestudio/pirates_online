@@ -44,12 +44,12 @@ body.mob.hand-l #lva { right: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2
 
 /* ---- habilidades em arco ---- */
 body.mob #sk { display: contents; }
-body.mob #sk div, body.mob #s5 {
+body.mob #sk > div:not(#sawrap), body.mob #s5 {
   --sz: 44px; position: absolute; width: var(--sz); height: var(--sz); border-radius: 12px; font-size: 20px; pointer-events: auto;
   right: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); left: auto;
   bottom: calc(var(--eb) + var(--cy) + var(--dy) - var(--sz) / 2);
 }
-body.mob.hand-l #sk div, body.mob.hand-l #s5 { left: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); right: auto; }
+body.mob.hand-l #sk > div:not(#sawrap), body.mob.hand-l #s5 { left: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); right: auto; }
 body.mob #sk small, body.mob #s5 small { display: none; }
 body.mob #s5 { margin: 0; }
 body.mob #sm.none { display: none; }
@@ -73,19 +73,20 @@ body.mob #lnch {
   background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604);
   box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 0 0 5px #a07a3a, 0 6px 14px #000b; transition: transform .2s;
 }
-body.mob.menu-open #lnch { transform: rotate(45deg); }
-body.mob #fan { display: block; position: fixed; z-index: 8; left: 50%; width: 0; height: 46px; bottom: calc(var(--eb) + 18px); pointer-events: none; }
-body.mob #fan button {
+body.menu-open #lnch { transform: rotate(45deg); }
+#fan { display: block; position: fixed; z-index: 30; left: 50%; top: 0; width: 0; height: 46px; pointer-events: none; }
+#fan button {
   position: absolute; left: -23px; top: 0; width: 46px; height: 46px; border-radius: 50%; border: 0; padding: 0; color: #e4d8bd; cursor: pointer;
   background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604); box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 4px 12px #000b;
   opacity: 0; transform: scale(.4); pointer-events: none; transition: transform .22s cubic-bezier(.2, .9, .3, 1.2), opacity .15s;
 }
-body.mob.menu-open #fan button { opacity: 1; pointer-events: auto; transform: translate(var(--fx), var(--fy)) scale(1); }
-body.mob.menu-open #fanbk { display: block; position: fixed; inset: 0; z-index: 6; background: #0006; }
+body.menu-open #fan button { opacity: 1; pointer-events: auto; transform: translate(var(--fx), var(--fy)) scale(1); }
+body.menu-open #fanbk { display: block; position: fixed; inset: 0; z-index: 29; background: #0006; }
 /* com o menu aberto, o arco e os diamantes apagam (um grupo por vez, sem poluir) */
-body.mob.menu-open #sk div, body.mob.menu-open #s5, body.mob.menu-open #sawrap, body.mob.menu-open #hb .gw { opacity: .15; pointer-events: none; }
+body.mob.menu-open #sk > div:not(#sawrap), body.mob.menu-open #s5, body.mob.menu-open #sawrap, body.mob.menu-open #hb .gw { opacity: .15; pointer-events: none; }
 /* painel ou diálogo aberto: nada do HUD de baixo fica por cima */
-body.mob.ui-open #hb, body.mob.ui-open #lnch, body.mob.ui-open #fan { visibility: hidden; }
+body.mob.ui-open #hb, body.mob.ui-open #fan { visibility: hidden; }
+body.mob #sawrap, body.mob #lnch { pointer-events: auto; }
 
 /* ---- joystick flutuante (modo Joystick) ---- */
 #joyb, #joyk { position: fixed; z-index: 4; pointer-events: none; border-radius: 50%; }
@@ -94,9 +95,9 @@ body.mob.ui-open #hb, body.mob.ui-open #lnch, body.mob.ui-open #fan { visibility
 body.joy-on #joyb, body.joy-on #joyk { display: block; }
 
 /* ---- ícones em traço dourado (os mesmos do protótipo): o emoji some e a máscara desenha o ícone ---- */
-body.mob #sk div, body.mob #s5, body.mob #sa { font-size: 0; }
-body.mob #sk div em, body.mob #s5 > em, body.mob #sa > em { font-size: 11px; }
-body.mob #sk div::before, body.mob #s5::before, body.mob #sa::before {
+body.mob #sk > div:not(#sawrap), body.mob #s5, body.mob #sa { font-size: 0; }
+body.mob #sk > div:not(#sawrap) em, body.mob #s5 > em, body.mob #sa > em { font-size: 11px; }
+body.mob #sk > div:not(#sawrap)::before, body.mob #s5::before, body.mob #sa::before {
   content: ""; display: block; width: 58%; height: 58%; background: #e0c27a; position: relative; z-index: 1; pointer-events: none;
   -webkit-mask: var(--ic) center / contain no-repeat; mask: var(--ic) center / contain no-repeat;
 }
@@ -110,4 +111,42 @@ body.mob #s5 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2
 body.mob #sm { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 21V10a6 6 0 0112 0v11M6 16h3M15 16h3%22/%3E%3C/svg%3E"); }
 body.mob #sa { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%227%22/%3E%3Cpath d=%22M12 2v5M12 17v5M2 12h5M17 12h5%22/%3E%3C/svg%3E"); }
 body.mob #lnch svg { width: 56%; height: 56%; }
-body.mob #fan button svg { width: 54%; height: 54%; }
+#fan button svg { width: 54%; height: 54%; }
+
+/* ============ Computador: a barra do navio ganha o menu no centro e o auto combate: 4 botões | menu | 4 botões ============ */
+body:not(.mob) #sk { min-width: 650px; align-items: center; }
+body:not(.mob) #sk > * { margin: 0 !important; }
+body:not(.mob) #s2 { order: 1; } body:not(.mob) #s3 { order: 2; } body:not(.mob) #s4 { order: 3; } body:not(.mob) #s1 { order: 4; }
+body:not(.mob) #lnch { order: 5; }
+body:not(.mob) #sr { order: 6; } body:not(.mob) #sawrap { order: 7; } body:not(.mob) #s5 { order: 8; } body:not(.mob) #sm { order: 9; }
+body:not(.mob) #sawrap { position: relative; left: auto; top: auto; transform: none; gap: 0; flex: none; z-index: 1; }
+body:not(.mob) #at { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+body:not(.mob) #lnch {
+  display: grid; place-items: center; position: relative; flex: none; width: 54px; height: 54px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: #e0c27a;
+  background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604);
+  box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 0 0 5px #a07a3a, 0 6px 14px #000b; transition: transform .2s;
+}
+body:not(.mob) #lnch svg { width: 56%; height: 56%; }
+/* com o menu aberto os diamantes e os botões apagam, como no celular */
+body.menu-open:not(.mob) #sk > :not(#lnch), body.menu-open:not(.mob) #hb .gw { opacity: .15; pointer-events: none; }
+
+/* ============ Editor de disposição (Ajustes ▸ Jogo) ============ */
+#ledit {
+  display: none; position: fixed; z-index: 60; left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 8px); box-sizing: border-box;
+  padding: 8px 10px; border: 2px solid #a07a3a; border-radius: 10px; background: #0c0807f2; color: #e8d9b0; box-shadow: 0 6px 20px #000c;
+}
+#ledit .lh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+#ledit .lh b { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: #e0a458; }
+#ledit .lh span { font-size: 12px; color: #b8a88a; }
+#ledit label { display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #a89878; min-height: 34px; }
+#ledit label[hidden] { display: none; }
+#ledit input[type=range] { flex: 1; min-height: 30px; accent-color: #e0a458; }
+#ledit .la { display: flex; gap: 8px; margin-top: 4px; }
+#ledit .la button { flex: 1; min-height: 44px; border-radius: 8px; border: 2px solid #a07a3a; background: #1d1610; color: #e8d9b0; font-size: 13px; cursor: pointer; }
+#ledit .la button.pri { background: #5a3a14; color: #fff4d6; }
+@media (orientation: landscape) { #ledit { right: auto; width: 46%; } body.hand-l #ledit { left: auto; right: 8px; } }
+body.lay-edit #sk > div:not(#sawrap), body.lay-edit #s5, body.lay-edit #sawrap, body.lay-edit #lnch, body.lay-edit #hb .gw {
+  outline: 2px dashed #e0c27a; outline-offset: 3px; touch-action: none; cursor: grab; opacity: 1 !important; pointer-events: auto !important; z-index: 31;
+}
+body.lay-edit .led-on { outline-style: solid !important; outline-color: #fff4d6 !important; }
+body.lay-edit #hb, body.lay-edit #deck { visibility: visible; }

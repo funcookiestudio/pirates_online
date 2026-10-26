@@ -447,3 +447,19 @@
   #pnl .pbelow .pcard, #pnl.full .pbelow .pcard { grid-column: 1; grid-row: 1; width: 100%; align-self: stretch; }
   #pnl .pbelow #stt, #pnl.full .pbelow #stt { grid-column: 1; grid-row: 2; }
 }
+
+/* ---------- Celular: abas embaixo, ao alcance do polegar (como no protótipo) ---------- */
+#pnl.full, #pnl2.full { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 68px); }
+#pnl.full .ptabs, #pnl2.full .ptabs {
+  position: fixed; left: 0; right: 0; bottom: 0; top: auto; margin: 0; z-index: 5; justify-content: space-around; gap: 2px; overflow: visible;
+  padding: 4px max(8px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom, 0px) + 6px) max(8px, env(safe-area-inset-left));
+  border-bottom: 0; border-top: 2px solid #6b4a1a; box-shadow: 0 -6px 14px #000a;
+}
+#pnl.full .ptabs span, #pnl2.full .ptabs span {
+  flex: 1; text-align: center; padding: 14px 2px 12px; margin: 0; border-bottom: 0; border-top: 3px solid transparent; font-size: 11px; letter-spacing: 0; white-space: nowrap;
+}
+#pnl.full .ptabs span.on, #pnl2.full .ptabs span.on { border-top-color: #e0a458; background: #1d1610; }
+#pnl.full .ptabs b, #pnl2.full .ptabs b { flex: none; margin: 0; min-width: 44px; text-align: center; }
+
+/* Mochila do companheiro: reservada para o futuro (desabilitada por enquanto) */
+#pnl2 .bwrap { opacity: .35; filter: grayscale(1); pointer-events: none; user-select: none; }

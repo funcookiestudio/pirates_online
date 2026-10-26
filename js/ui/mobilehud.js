@@ -5,6 +5,7 @@ import { CFG } from '../systems/settings.js';
 import { fitHotbar } from './hotbar.js';
 import { openTab } from './panel.js';
 import { toggleWorldMap } from './worldmap.js';
+import { applyLayout, initLayout } from './layout.js';
 
 const MOB = matchMedia('(max-width: 900px), (orientation: portrait), (pointer: coarse) and (max-height: 520px)');
 /** abre o painel do personagem já na aba pedida (o toque do botão nunca fecha o painel que já está aberto) */
@@ -30,13 +31,16 @@ const setMenu = on => body.classList.toggle('menu-open', on);
 function apply() {
   body.classList.toggle('mob', MOB.matches);
   body.classList.toggle('hand-l', CFG.hand === 'l');
-  if (!MOB.matches) setMenu(false);
   placeFan();
   fitHotbar();
+  applyLayout();
 }
-/** distribui os ícones num leque (do lado esquerdo ao direito) acima do botão central */
+/** distribui os ícones num leque acima do botão de menu (onde quer que ele esteja: base da tela, dentro da hotbar ou onde o jogador pôs) */
 function placeFan() {
-  const n = ITEMS.length, r = innerWidth > innerHeight ? 104 : 120;
+  const ln = $('lnch'), fan = $('fan'), rc = ln.getBoundingClientRect();
+  fan.style.left = (rc.left + rc.width / 2) + 'px';
+  fan.style.top = (rc.top + rc.height / 2 - 23) + 'px';
+  const n = ITEMS.length, r = !MOB.matches ? 150 : innerWidth > innerHeight ? 104 : 120;
   document.querySelectorAll('#fan button').forEach((b, i) => {
     const a = (16 + (148 / (n - 1)) * i) * Math.PI / 180;
     b.style.setProperty('--fx', Math.round(-Math.cos(a) * r) + 'px');
@@ -53,10 +57,12 @@ export function initMobileHud() {
     b.onclick = e => { e.stopPropagation(); setMenu(false); fn(); };
     fan.append(b);
   });
-  body.append(bk, fan, ln);
-  ln.onclick = () => setMenu(!body.classList.contains('menu-open'));
+  body.append(bk, fan);
+  $('sk').append($('sawrap'), $('s5'), ln);   // auto combate, companheiro e menu entram na barra de botões (no computador ficam 4 | menu | 4)
+  ln.onclick = () => { placeFan(); setMenu(!body.classList.contains('menu-open')); };
   bk.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); setMenu(false); };
   addEventListener('keydown', e => { if (e.code === 'Escape') setMenu(false); });
+  initLayout();
   addEventListener('hudcfg', apply);
   addEventListener('resize', apply);
   addEventListener('orientationchange', () => setTimeout(apply, 250));
