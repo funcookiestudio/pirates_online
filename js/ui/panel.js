@@ -280,6 +280,7 @@ function setTab(t) {
 export function closePanel() {
   $('pnl').style.display = 'none';
   $('pnl2').style.display = 'none';
+  $('acfg').style.display = 'none';   // Esc também fecha os ajustes
 }
 
 /** Mantém o painel atualizado quando itens ou companheiros mudam */
@@ -321,6 +322,7 @@ export function initPanel() {
     sync();
     a.style.display = a.style.display === 'block' ? 'none' : 'block';
   };
+  $('acx').onclick = () => { $('acfg').style.display = 'none'; };
   initDrag();
   on('inventory:changed', () => { if ($('pnl').style.display === 'block') renderPanel(); });
   on('pets:changed', () => { if ($('pnl2').style.display === 'block') renderPets(); });
