@@ -180,8 +180,6 @@ for(let i=0;i<8;i++)B(.8,.1,.55,((i*.7)%1.6)-.8,.03,5.2+i*.9,STONE2).rotation.y=
 function brl(x,z,y){C(.4,.5,.4,10,x,y+.21,z,WOOD);C(.5,.4,.4,10,x,y+.6,z,WOOD);for(const h of[.1,.4,.72]){const q=C(.5,.5,.06,10,x,y+h,z,IRON);q.scale.set(1.02,1,1.02)}}
 brl(4.6,4.5,0);brl(5.7,4.5,0);brl(5.15,4.5,.8);
 tbl(-3.8,5.8,1.8,.9);bnc(-3.8,5.1,1.8);bnc(-3.8,6.5,1.8);
-for(const z of[-.3,.3])B(.1,1,.1,-6.5,.5,5.5+z,WOOD2);B(.12,.1,1,-6.5,.95,5.5,WOOD2);
-for(const z of[-.2,.2])B(.1,.7,.1,-6.8,.4,6.4+z*3,WOOD2);
   const K = TAVERN_SC;
   scene.add(root);
   const at = (lx, lz) => [x + lx * Math.cos(th) + lz * Math.sin(th), z - lx * Math.sin(th) + lz * Math.cos(th)];

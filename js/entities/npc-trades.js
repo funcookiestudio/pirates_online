@@ -125,12 +125,12 @@ function buildChair(n) {
   box(.56, .05, .52, WOOD, 0, .4, 0, root);
   [-.24, .24].forEach(x => box(.06, .6, .06, WOOD2, x, .72, -.24, root)); [.62, .8, .98].forEach(y => box(.5, .07, .04, WOOD, 0, y, -.25, root));
   // cesto com novelo de cordas, caixote com caneca e peixe
-  const bk = new THREE.Group(); bk.position.set(-.85, 0, .15); root.add(bk); cyl(.24, .2, .26, 0x9a7a4a, 0, .13, 0, bk, 10); cyl(.2, .2, .02, 0x6a4a2a, 0, .26, 0, bk, 10);
+  const bk = new THREE.Group(); bk.position.set(-1.5, 0, .3); root.add(bk); cyl(.24, .2, .26, 0x9a7a4a, 0, .13, 0, bk, 10); cyl(.2, .2, .02, 0x6a4a2a, 0, .26, 0, bk, 10);
   cyl(.15, .15, .14, TWINE, 0, .34, 0, bk, 8); box(.3, .02, .02, 0xb8a070, .05, .38, .1, bk);
-  const cr = new THREE.Group(); cr.position.set(.85, 0, .1); root.add(cr); box(.46, .38, .46, WOOD, 0, .19, 0, cr); box(.5, .04, .5, WOOD2, 0, .4, 0, cr);
+  const cr = new THREE.Group(); cr.position.set(-.85, 0, .1); root.add(cr); box(.46, .38, .46, WOOD, 0, .19, 0, cr); box(.5, .04, .5, WOOD2, 0, .4, 0, cr);
   cyl(.06, .05, .13, 0x8a6a3a, -.1, .47, .05, cr, 8); box(.1, .04, .24, 0x8aa0b0, .1, .43, -.06, cr).rotation.y = .4;
   // secador de redes: dois postes e uma travessa, com redes prontas penduradas
-  const dr = new THREE.Group(); dr.position.set(-2.3, 0, .6); dr.rotation.y = -.2; root.add(dr);
+  const dr = new THREE.Group(); dr.position.set(.95, 0, .95); dr.rotation.y = .8; dr.scale.setScalar(.65); root.add(dr);
   [-.9, .9].forEach(x => box(.08, 1.7, .08, WOOD2, x, .85, 0, dr)); box(2, .07, .07, WOOD, 0, 1.62, 0, dr);
   [[-.5, .8, 1.15], [.45, .7, 1.05]].forEach(([x, w, h]) => { const nt = mkNet(w, h, 7, 7); nt.position.set(x, 1.6, .05); dr.add(nt); });
   // rede em produção (no colo): cresce ao longo do dia
