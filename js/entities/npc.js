@@ -68,7 +68,7 @@ export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
   let lab = null;
   if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }
   const n = { info, lab, g, role, hx: x, hz: z, ry, ph: Math.random() * 6, t: 2 + Math.random() * 4, tx: x, tz: z, vx: 0, vz: 0, sm: { side: 0 } };
-  if (work && work.talkAt) { n.talkAt = work.talkAt; n.doorId = work.doorId; }
+  if (work && work.talkAt) { n.talkAt = work.talkAt; n.doorId = work.doorId; n.sbed = work.bed || null; }
   if (work && work.kind === 'tenant') n.tn = work.room;
   if (work && work.kind === 'smith') initSmith(n, work.at, work.th, work.pts);
   list.push(n);
@@ -340,12 +340,14 @@ export function updateNpcs(dt, now) {
         }
       } else if (isEvening(hourNow()) && !n.job) {   // anoitece: volta para casa; das 21h às 6h dorme
         const h = hourNow(), awake = talking === n, sleepy = isNight(h) && !awake;
-        n.tx = n.hx; n.tz = n.hz;
-        if (sleepy && Math.hypot(g.position.x - n.hx, g.position.z - n.hz) < .7) {
+        const sb = n.sbed;   // quem tem cama em casa deita nela
+        n.tx = sb && sleepy ? sb.ax : n.hx; n.tz = sb && sleepy ? sb.az : n.hz;
+        if (sleepy && Math.hypot(g.position.x - n.tx, g.position.z - n.tz) < .7) {
+          const bx = sb ? sb.x : n.hx, bz = sb ? sb.z : n.hz, by = sb ? sb.y : groundY(n.hx, n.hz), bry = sb ? sb.ry : n.ry;
           n.sl = Math.min(1, (n.sl || 0) + dt / 1.6); n.vx = n.vz = 0;
-          g.position.set(n.hx, groundY(n.hx, n.hz), n.hz); g.rotation.y = n.ry;
+          g.position.set(bx, by, bz); g.rotation.y = bry;
           lieDown(g, n.sl, t); const zz = n.zz || (n.zz = makeZzz());
-          zz.update(n.hx - Math.sin(n.ry) * 1.7, g.position.y + .55, n.hz - Math.cos(n.ry) * 1.7, t, n.sl > .95);
+          zz.update(bx - Math.sin(bry) * 1.7, by + .55, bz - Math.cos(bry) * 1.7, t, n.sl > .95);
           return;
         }
       } else if (n.sl > 0) {   // amanheceu: levanta

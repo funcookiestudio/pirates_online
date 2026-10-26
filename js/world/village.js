@@ -118,7 +118,7 @@ export function buildVillage() {
     const [fx, fz, th, at, pts] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
     DOORS_PT.push(doorFront(kind + '-front', 1.2) || { p: at(0, 3.9 * 1.28), f: [-Math.cos(a), -Math.sin(a)] });
     if (kind === 'smith') { citizen(...at(...pts.home), th + pts.ay, looks[k], { kind: 'smith', at, th, pts }, k); }
-    else kn = citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId } : undefined, k);
+    else kn = citizen(fx, fz, th + (kind === 'cartog' ? pts.ay : 0), looks[k], pts && pts.talkAt ? { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId, bed: pts.bed } : undefined, k);
     if (kind === 'tavern') {   // moradores da taberna (cada um com seu quarto no andar de cima)
       const K = TAVERN_SC;
       // cada um tem o seu quarto no andar de cima: Breu na frente (cama da direita), Polly nos fundos

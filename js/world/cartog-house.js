@@ -136,9 +136,9 @@ B(.6,.5,.05,1.8,1.9,-2.82,TM);B(.5,.4,.06,1.8,1.9,-2.81,0xdcd0a0);B(.38,.1,.07,1
 B(.7,.9,.05,3.0,1.8,-2.82,TM);B(.6,.8,.06,3.0,1.8,-2.81,0xe6dcb4);B(.4,.35,.07,3.0,1.85,-2.8,0x7aa0b8);B(.12,.12,.07,3.1,2.05,-2.8,0xa83a2a);
 {const q=new THREE.Mesh(new THREE.CircleGeometry(.3,3,0,1.2),M(0xb08a30));q.position.set(.6,2.0,-2.78);S.add(q);const q2=new THREE.Mesh(new THREE.TorusGeometry(.3,.015,4,8,1.2),M(0x6b5230));q2.position.set(.6,2.0,-2.76);S.add(q2)}
 B(.7,.9,.05,-3.94,1.8,-1.4,TM);B(.6,.8,.06,-3.93,1.8,-1.4,0xe6dcb4);
-// cama no canto
+// cama no canto (encosto na parede leste)
 {const ox=2.9,oz=-2.1;for(const x of[1.95,3.85])for(const z of[-2.6,-1.6])B(.12,.5,.12,x,.35,z,TM);
- B(2.0,.12,1.05,ox,.5,oz,WOOD2);B(1.95,.2,1.0,ox,.62,oz,0xd6c394);B(1.4,.1,1.02,ox+.2,.75,oz,0x2f4a6a);B(.4,.12,.7,2.25,.78,oz,0xf0ead8);B(.1,1.1,1.1,1.9,.85,oz,WOOD2)}
+ B(2.0,.12,1.05,ox,.5,oz,WOOD2);B(1.95,.2,1.0,ox,.62,oz,0xd6c394);B(1.4,.1,1.02,ox-.2,.75,oz,0x2f4a6a);B(.4,.12,.7,3.55,.78,oz,0xf0ead8);B(.1,1.1,1.1,3.9,.85,oz,WOOD2)}
 // barril de rolos de mapas e lanterna
 C(.22,.26,.7,8,3.4,.4,2.2,WOOD);for(let i=0;i<5;i++){const rl=C(.045,.045,.9,6,3.3+(i%3)*.1,1.0,2.1+((i*1.3)%1)*.2,[0xd8c9a0,0xe6dcb4,0xc9b48a][i%3]);rl.rotation.z=.25-i*.1}
 B(.02,.5,.02,0,2.65,0,IRON);B(.2,.3,.2,0,2.25,0,0xffd890,S,0xffb040);B(.28,.05,.28,0,2.43,0,IRON);
@@ -163,8 +163,9 @@ for(const q of[[-1.75,1.3],[1.75,-1.3],[-3.5,.5]]){B(.01,.25,.01,q[0],2.7,q[1],0
   let FD; DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); FD = dd; [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
   // cama: o dorminhoco deita de costas, cabeça no travesseiro
   { const hit = new THREE.Mesh(new THREE.BoxGeometry(1.0, .7, 2.0), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(2.9, .8, -2.1); hit.rotation.y = Math.PI / 2; hit.userData.dyn = 1; S.add(hit);
-    const bf = at(3.7 * K, -2.1 * K), ba = at(3.0 * K, -1.0 * K);
-    addBed({ x: bf[0], z: bf[1], y: 0.8 * K + .18, ry: th + (Math.PI / 2), ax: ba[0], az: ba[1], hit }); }
+    const bf = at(2.1 * K, -2.1 * K), ba = at(3.0 * K, -1.0 * K);
+    pts.bed = { x: bf[0], z: bf[1], y: 0.8 * K + .18, ry: th - Math.PI / 2, ax: ba[0], az: ba[1] };
+    addBed({ x: bf[0], z: bf[1], y: 0.8 * K + .18, ry: th - (Math.PI / 2), ax: ba[0], az: ba[1], hit }); }
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
   shellRects(HOUSES[HOUSES.length - 1], [-1.4,1.2], FD, FURN, []);

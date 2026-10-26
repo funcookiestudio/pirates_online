@@ -6,6 +6,7 @@ import { xray } from './xray.js';
 import { bakeGroup } from './merge.js';
 import { registerFloors, refreshProps, HOUSES } from './floors.js';
 import { addDoor } from './doors.js';
+import { addBed } from './beds.js';
 import { shellRects } from './imap.js';
 
 export const TRADER_SC = 1.28;
@@ -109,8 +110,10 @@ for(const y of[.9,1.5,2.1]){B(7.2,.06,.4,0,y,-2.78,WOOD2)}
 for(let i=0;i<11;i++){const x=-3.3+i*.66;C(.1,.12,.3,7,x,1.07,-2.78,[0xa0623a,0x8a5030,0xc9b48a][i%3]);
  C(.05,.07,.35,6,x+.2,1.7,-2.78,[0x2f6a3a,0x6a2a2a,0x3a4a7a][i%3]);
  const b=C(.14,.14,.4,8,x,2.32,-2.78,[0xb83a2a,0x2f5a8a,0xd8c9a0,0x4a7a3a][i%4]);b.rotation.z=Math.PI/2}
-// barris e sacas à esquerda; caixotes empilhados
-for(const [x,z] of[[-3.3,-1.9],[-2.5,-2.3]]){C(.38,.45,.45,10,x,.35,z,WOOD);C(.45,.38,.45,10,x,.75,z,WOOD);for(const y of[.25,.55,.85]){const q=C(.46,.46,.05,10,x,y,z,IRON);q.scale.set(1.02,1,1.02)}}
+// cama da Capitã Sal no canto esquerdo (encosto na parede) · barris ao lado
+{const ox=-2.9,oz=-2.1;for(const x of[-3.85,-1.95])for(const z of[-2.6,-1.6])B(.12,.5,.12,x,.35,z,TM);
+ B(2.0,.12,1.05,ox,.5,oz,WOOD2);B(1.95,.2,1.0,ox,.62,oz,0xd6c394);B(1.4,.1,1.02,ox+.2,.75,oz,SH);B(.4,.12,.7,-3.55,.78,oz,0xf0ead8);B(.1,1.1,1.1,-3.9,.85,oz,WOOD2)}
+for(const [x,z] of[[-1.2,-2.3],[-.4,-2.3]]){C(.38,.45,.45,10,x,.35,z,WOOD);C(.45,.38,.45,10,x,.75,z,WOOD);for(const y of[.25,.55,.85]){const q=C(.46,.46,.05,10,x,y,z,IRON);q.scale.set(1.02,1,1.02)}}
 for(const [x,z] of[[-3.4,.3],[-3.3,1.2]]){B(.7,.6,.7,x,.4,z,0x9a7444);B(.5,.5,.6,x,.95,z,0x8a6238)}
 {const sk=new THREE.Mesh(new THREE.SphereGeometry(.38,7,5),M(0xcdb88a));sk.scale.set(1,.9,.75);sk.position.set(-2.6,.35,.4);S.add(sk)}
 // cordas e ferragens penduradas na parede lateral, balança de pratos pequena e lampiões
@@ -128,12 +131,15 @@ B(.05,.9,1.3,3.93,1.8,-.1,TM);B(.06,.8,1.2,3.92,1.8,-.1,0xe6dcb4);B(.07,.4,.7,3.
   for (let u = -4; u <= 4.01; u += .9) { if (u < -2.45 || u > -.35) block(u * K, 3.1 * K, .45); block(u * K, -3.1 * K, .45); }
   for (let v = -2.2; v <= 2.21; v += .9) { block(-4 * K, v * K, .45); block(4 * K, v * K, .45); }
   // mobília: o balcão fecha o lado direito (a Capitã fica atrás); a esquerda fica livre
-  const FURN = [[0, -.5, .55], [.9, -.5, .55], [1.8, -.5, .55], [2.7, -.5, .55], [3.4, -.5, .5], [3.2, -2.1, .5], [-3.3, -1.9, .45], [-2.5, -2.3, .45], [-3.4, .3, .5], [-3.3, 1.2, .5],
+  const FURN = [[0, -.5, .55], [.9, -.5, .55], [1.8, -.5, .55], [2.7, -.5, .55], [3.4, -.5, .5], [3.2, -2.1, .5], [-3.3, -2.1, .5], [-2.5, -2.1, .5], [-1.2, -2.3, .45], [-.4, -2.3, .45], [-3.4, .3, .5], [-3.3, 1.2, .5],
    [3.0, 4.2, .6], [3.6, 4.9, .5], [2.2, 5.0, .45], [-3.3, 4.7, .7]];
   FURN.forEach(([fx, fz, r]) => block(fx * K, fz * K, r));
-  const pts = { ay: 0, door: [-1.4 * K, 3.4 * K], talkAt: at(1.4 * K, 1.0 * K), doorId: 'trader-front' };
+  const bf = at(-2.1 * K, -2.1 * K), ba = at(-2.9 * K, -1.0 * K);
+  const pts = { bed: { x: bf[0], z: bf[1], y: 0.8 * K + .18, ry: th + Math.PI / 2, ax: ba[0], az: ba[1] }, ay: 0, door: [-1.4 * K, 3.4 * K], talkAt: at(1.4 * K, 1.0 * K), doorId: 'trader-front' };
   [wB, wL, wR].forEach(q => bakeGroup(q)); bakeGroup(front, DR.map(d => d.p)); bakeGroup(roof);
   let FD; DR.forEach(d => { const dd = addDoor(d, { x, z, th, K }); FD = dd; [-2.2, -1.5, -.8, -.1].forEach(lx => block(lx * K, 3.1 * K, .45, dd)); });
+  { const hit = new THREE.Mesh(new THREE.BoxGeometry(1.0, .7, 2.0), new THREE.MeshBasicMaterial({ visible: false })); hit.position.set(-2.9, .8, -2.1); hit.rotation.y = Math.PI / 2; hit.userData.dyn = 1; S.add(hit);
+    addBed({ x: bf[0], z: bf[1], y: 0.8 * K + .18, ry: th + Math.PI / 2, ax: ba[0], az: ba[1], hit }); }
   refreshProps();
   registerFloors({ x, z, th, K, hx: 4.2, hz: 3.2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: 3 }, { g: wB, nx: 0, nz: -1, D: 3 }, { g: wL, nx: -1, nz: 0, D: 4 }, { g: wR, nx: 1, nz: 0, D: 4 }], noStair: true });
   shellRects(HOUSES[HOUSES.length - 1], [-1.4,1.2], FD, FURN.slice(5), [[-.3,-1,3.5,0]]);
