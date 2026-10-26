@@ -198,9 +198,9 @@ function animateDog(dt, t, g, pos, c) {
 
   DOG.jy += (c.ju - DOG.jy) * Math.min(1, dt * 20);
   const rat = !!g.tailSegs;
-  g.rotation.x = (rat ? -1.1 : -.55) * sm + OV.bx * ow + DOG.v * .008 + Math.sin(ph * 2) * .05 * gp;
+  g.rotation.x = (rat ? -.5 : -.55) * sm + OV.bx * ow + DOG.v * .008 + Math.sin(ph * 2) * .05 * gp;
   g.rotation.z = DOG.roll;
-  pos.y = groundY(pos.x, pos.z) + Math.abs(Math.sin(ph)) * .04 * amp - (rat ? .02 : .105) * sm - .03 * ow + DOG.jy + (rat ? .32 * sm : 0) + (DOG.v === 0 && !sm ? Math.sin(t * 2) * .008 : 0);
+  pos.y = groundY(pos.x, pos.z) + Math.abs(Math.sin(ph)) * .04 * amp + (rat ? .03 : -.105) * sm - .03 * ow + DOG.jy + (DOG.v === 0 && !sm ? Math.sin(t * 2) * .008 : 0);
 
   DOG.mu = Math.max(0, DOG.mu - dt);
   g.head.rotation.x = .5 * sm + OV.hd * ow + Math.sin(t * 1.3) * .06 + Math.sin(ph * 2) * .05 * amp + (DOG.mu > 0 ? .5 * DOG.mu / .25 : 0);
@@ -210,10 +210,10 @@ function animateDog(dt, t, g, pos, c) {
     g.earL.rotation.z -= .3; g.earR.rotation.z += .3;
   }
   if (rat && DOG.v > 4.5) g.legs.forEach(l => { l.knee.rotation.x += .25; });   // corrida: joelhos mais dobrados
-  if (rat) {   // rato: rabo em segmentos que ondulam; parado, fica em pé sobre as patas de trás
+  if (rat) {   // rato: rabo em segmentos que ondulam; parado, senta como o cachorro
     const ta = .25 + .2 * ow;
     g.tailSegs.forEach((q, i) => { q.rotation.x = (i ? .05 : .25) + ta * .2; q.rotation.y = Math.sin(t * 3 - i * .6) * ta * .8 * (1 + DOG.v * .15); });
-    g.legs.forEach((l, i) => { if (i >= 2) l.rotation.x = l.rotation.x * (1 - sm) + 1.15 * sm; else l.rotation.x += .0; });
+    g.legs.forEach((l, i) => { if (i >= 2) { l.rotation.x = l.rotation.x * (1 - sm) - 1.3 * sm; l.knee.rotation.x += .4 * sm; } else { l.rotation.x = l.rotation.x * (1 - sm) + .5 * sm; l.scale.y = 1 + .3 * sm; } });   // sentado: traseiro no chão, patas de trás dobradas, as da frente apoiadas
     g.head.rotation.x += 0;
   } else {
     g.tail.rotation.x = .8 - .9 * sm + .5 * ow;

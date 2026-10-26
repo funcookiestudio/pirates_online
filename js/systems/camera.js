@@ -44,4 +44,5 @@ export function updateCamera(dt) {
   cam.lookAt(rig.x + sx, rig.y + 1.2 * (1 - zoom), rig.z + sz);
 
   torch.position.set(P.x, rig.y + 4, P.z);
+  torch.visible = !!(P.torchM && P.torchM.visible);   // o personagem não tem luz própria: só ilumina o caminho com a tocha na mão
 }

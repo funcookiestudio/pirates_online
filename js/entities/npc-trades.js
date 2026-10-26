@@ -116,8 +116,8 @@ function mkAxe() {
 function buildChair(n) {
   const S = CTX.tavern, T = n.tr, K = 1.28;
   let c = null;
-  for (const [a, b] of [[3.0, 6.0], [3.2, 6.6], [2.6, 6.3], [3.4, 7.0], [-3.4, 6.1], [-3.8, 6.5]]) { const [x, z] = S.at(a * K, b * K); if (freeAt(x, z, 1.3)) { c = [a * K, b * K]; break; } }
-  if (!c) c = [3.0 * K, 6.0 * K];
+  for (const [a, b] of [[3.2, 3.95], [3.1, 4.25], [2.9, 4.6], [3.3, 5.0], [-3.2, 4.1], [-3.4, 4.6]]) { const [x, z] = S.at(a * K, b * K); if (freeAt(x, z, 1.3)) { c = [a * K, b * K]; break; } }
+  if (!c) c = [3.2 * K, 3.95 * K];
   const [wx, wz] = S.at(c[0], c[1]);
   const root = new THREE.Group(); root.position.set(wx, groundY(wx, wz), wz); root.rotation.y = S.th; root.userData.dyn = 1; scene.add(root);
   // cadeira de madeira com encosto (o sentado olha para +z local, a frente da taverna)
@@ -130,7 +130,7 @@ function buildChair(n) {
   const cr = new THREE.Group(); cr.position.set(.85, 0, .1); root.add(cr); box(.46, .38, .46, WOOD, 0, .19, 0, cr); box(.5, .04, .5, WOOD2, 0, .4, 0, cr);
   cyl(.06, .05, .13, 0x8a6a3a, -.1, .47, .05, cr, 8); box(.1, .04, .24, 0x8aa0b0, .1, .43, -.06, cr).rotation.y = .4;
   // secador de redes: dois postes e uma travessa, com redes prontas penduradas
-  const dr = new THREE.Group(); dr.position.set(2.0, 0, -.9); dr.rotation.y = .5; root.add(dr);
+  const dr = new THREE.Group(); dr.position.set(-2.3, 0, .6); dr.rotation.y = -.2; root.add(dr);
   [-.9, .9].forEach(x => box(.08, 1.7, .08, WOOD2, x, .85, 0, dr)); box(2, .07, .07, WOOD, 0, 1.62, 0, dr);
   [[-.5, .8, 1.15], [.45, .7, 1.05]].forEach(([x, w, h]) => { const nt = mkNet(w, h, 7, 7); nt.position.set(x, 1.6, .05); dr.add(nt); });
   // rede em produção (no colo): cresce ao longo do dia

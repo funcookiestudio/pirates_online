@@ -73,10 +73,10 @@ const CAT = {
     idle: (t) => ({ hx: Math.sin(t * 1.3) * .05, hy: Math.sin(t * .7) * .6, ta: .25, y: Math.sin(t * 1.8) * .006 }),
     walk: (t, A) => Object.assign(gaitP(A.ph, false, CAT.k), { hx: Math.sin(A.ph * 2) * .03, ta: .3 }),
     run: (t, A) => Object.assign(gaitP(A.ph, true, CAT.k), { hx: -.1, ta: .12 }),
-    sit: (t) => ({ tilt: -1, y: -.2, hl: -.4, hr: -.4, khl: 1.4, khr: 1.4, fl: 1, fr: 1, hx: 1 + Math.sin(t * 1.3) * .04, hy: Math.sin(t * .7) * .5, ta: .3 }),
-    pet: (t) => ({ tilt: -1, y: -.2, hl: -.4, hr: -.4, khl: 1.4, khr: 1.4, fl: 1, fr: 1, hx: .72 + Math.sin(t * 2.4) * .05, hy: Math.sin(t * 1.1) * .08, hdy: .03, ta: .55, tc: .08, ez: -.12, br: Math.sin(t * 5) * .006 }),   // sentado, cabeça erguida contra a mão, olhos fechados, rabo balançando
+    sit: (t) => ({ tilt: -1, y: -.3, hl: -1.2, hr: -1.2, khl: 1, khr: 1, fl: 1, fr: 1, hx: 1 + Math.sin(t * 1.3) * .04, hy: Math.sin(t * .7) * .5, ta: .3 }),
+    pet: (t) => ({ tilt: -1, y: -.3, hl: -1.2, hr: -1.2, khl: 1, khr: 1, fl: 1, fr: 1, hx: .72 + Math.sin(t * 2.4) * .05, hy: Math.sin(t * 1.1) * .08, hdy: .03, ta: .55, tc: .08, ez: -.12, br: Math.sin(t * 5) * .006 }),   // sentado, cabeça erguida contra a mão, olhos fechados, rabo balançando
     groom: (t) => { const l = Math.sin(t * 9) * .5 + .5;   // sentado, levanta a pata dianteira e lambe
-      return { tilt: -1, y: -.2, hl: -.4, hr: -.4, khl: 1.4, khr: 1.4, fl: 1, fr: -.75 + l * .12, kfr: 1.7, hx: 1.38 - l * .1, hy: -.25, ta: .2, ez: -.05 }; },
+      return { tilt: -1, y: -.3, hl: -1.2, hr: -1.2, khl: 1, khr: 1, fl: 1, fr: -.75 + l * .12, kfr: 1.7, hx: 1.38 - l * .1, hy: -.25, ta: .2, ez: -.05 }; },
     stretch: (t) => { const u = .5 + .5 * Math.sin(t * .9);   // reverência: peito no chão, traseiro erguido, rabo para cima
       return { tilt: .42 * u, y: -.05 * u, fl: -1.05 * u, fr: -1.05 * u, kfl: .3 * u, kfr: .3 * u, hl: .15 * u, hr: .15 * u, hx: -.5 * u, ta: .6, tc: .25 * u }; },
     swipe: (t, A) => { const u = A.gu; if (u >= 1) return CAT.pose.idle(t);
@@ -88,6 +88,7 @@ const CAT = {
   apply(A, p, t) {
     const m = A.m, sl = A.W.sleep, blink = ((t * .9 + A.t0) % 4.3) < .13;
     m.scale.setScalar(1 + p.br);
+    const sw = Math.min(1, A.W.sit + A.W.pet + A.W.groom); m.legs[0].scale.y = m.legs[1].scale.y = 1 + .4 * sw;   // sentado: as patas da frente se estendem até o chão
     m.eyes.visible = sl < .5 && !blink && A.W.pet < .5; m.lids.visible = !m.eyes.visible;
     m.head.rotation.x = p.hx; m.head.rotation.y = p.hy; m.head.position.y = .72 + p.hdy;
     const flick = Math.max(0, Math.sin(t * .7 + A.t0 * 3)) > .97 ? Math.sin(t * 40) * .25 : 0;   // orelha estremece de vez em quando
