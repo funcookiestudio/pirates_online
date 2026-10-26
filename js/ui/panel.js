@@ -119,21 +119,25 @@ export function renderStats() {
   $('pxp2').style.width = Math.min(100, P.xp / P.nxt * 100) + '%';
   $('potn').textContent = P.pot;
   $('gld').textContent = P.gold;
-  $('stt').innerHTML =
+  // só mexe no DOM quando algo mudou (renderStats roda a cada 0,4 s: recriar os botões a cada vez engolia toques e piscava)
+  const put = (el, html, key = html) => { if (el._h === key) return false; el._h = key; el.innerHTML = html; return true; };
+  put($('stt'),
     stat('⚔', 'ATAQUE', P.dmg, 'DPS ' + (P.dmg * W.mul / (W.cd || 1)).toFixed(1) + ' · Vel. ' + (1 / (W.cd || 1)).toFixed(1) + '/s<br>Crítico 15% · x2', 'Dano, DPS, velocidade de ataque e crítico') +
     stat('🛡', 'DEFESA', (eq.arm ? eq.arm.v : 0), 'Redução de dano ' + Math.round((P.dr || 0) * 100) + '%', 'Defesa da armadura') +
-    stat('❤', 'VIDA', P.max, 'Atual ' + Math.ceil(P.hp) + '<br>Mana ' + Math.floor(P.mp) + ' / ' + P.mmax, 'Vida máxima');
+    stat('❤', 'VIDA', P.max, 'Atual ' + Math.ceil(P.hp) + '<br>Mana ' + Math.floor(P.mp) + ' / ' + P.mmax, 'Vida máxima'));
   // informações do item selecionado: abaixo dos cartões de ataque, defesa e vida (que continuam visíveis)
-  const itm = $('itm'); itm.innerHTML = '';
+  const itm = $('itm');
   if (selE && eq[selE]) {
-    itm.innerHTML = itemCard(eq[selE], true);
-    $('ieq').onclick = () => { const k = selE; selE = ''; unequip(k); };
-    $('idr').onclick = () => { selE = ''; renderPanel(); fitPanel(); };
+    if (put(itm, itemCard(eq[selE], true), 'e' + selE + itemCard(eq[selE], true))) {
+      $('ieq').onclick = () => { const k = selE; selE = ''; unequip(k); };
+      $('idr').onclick = () => { selE = ''; renderPanel(); fitPanel(); };
+    }
   } else if (sel >= 0 && bag[sel]) {
-    itm.innerHTML = itemCard(bag[sel]);
-    $('ieq').onclick = () => { const i = sel; sel = -1; equip(i); };
-    $('idr').onclick = () => { const it = bag.splice(sel, 1)[0]; sel = -1; dropItem(it); renderPanel(); fitPanel(); };
-  }
+    if (put(itm, itemCard(bag[sel]), 'b' + sel + itemCard(bag[sel]))) {
+      $('ieq').onclick = () => { const i = sel; sel = -1; equip(i); };
+      $('idr').onclick = () => { const it = bag.splice(sel, 1)[0]; sel = -1; dropItem(it); renderPanel(); fitPanel(); };
+    }
+  } else put(itm, '');
   renderQuick();
 }
 
