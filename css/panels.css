@@ -302,3 +302,7 @@
   .qb-hd { padding-top: calc(env(safe-area-inset-top) + 10px); }
   #acfg { left: 0; top: 0; width: 100%; max-width: none; max-height: none; height: 100dvh; border-radius: 0; z-index: 20; }
 }
+
+/* Poção, bomba e arma de fogo: mesmo tamanho dos outros espaços (lado --s), centralizados */
+.pattr { justify-content: center; }
+.pattr .sl { flex: 0 0 var(--s); width: var(--s); aspect-ratio: 1; font-size: calc(var(--s) * .4); }

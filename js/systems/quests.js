@@ -201,6 +201,17 @@ export function pegarCartaz(id) {
   c.push(id); log('📌 Cartaz guardado: ' + d.title + ' — veja na aba Missões do inventário'); saveGame(); return 'ok';
 }
 export function soltarCartaz(id) { state.cartazes = (state.cartazes || []).filter(x => x !== id); saveGame(); }
+/** Para onde ir numa missão ativa: o item/área mais perto (exato) ou a região; {remo:true} se a etapa é de outra ilha; null se não há local (ex.: dentro de dungeon) */
+export function questSpot(id) {
+  const d = QMAP[id], q = Q()[id]; if (!d || !q || q.s !== 'on') return null;
+  const st = stageOf(d, q); if (!here(st)) return { remo: true };
+  let best = null, bd = 1e9;
+  PK.filter(p => p.id === id && p.si === q.i).forEach(p => { const dd = Math.hypot(p.x - P.x, p.z - P.z); if (dd < bd) { bd = dd; best = { x: p.x, z: p.z }; } });
+  if (best) return best;
+  const m = questMarks().find(m => m.t === d.title);
+  return m ? { x: m.x, z: m.z, region: true } : null;
+}
+export const questGiver = id => QMAP[id] ? QMAP[id].giver : '';
 export function setTrack(id) { state.qtrack = id || null; }
 
 /** Dados do painel do Mural: uma linha por missão, já com estado, progresso e recompensa estimada */
@@ -239,6 +250,8 @@ export function questsHud() {
     out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + (here(st) ? st.hud(q) : '⛵ viaje para a ' + ISLN[st.isl] + ' (Capitão Remo, no porto)') + pen);
   });
   if (state.contract && !state.contract.run) out.push(contractHud());
+  const nc = (state.cartazes || []).length;
+  if (nc && out.length < 2) out.push('📌 ' + nc + (nc > 1 ? ' cartazes' : ' cartaz') + ' no inventário (aba Missões)');
   return out.slice(0, 2).join('  ·  ') || null;
 }
 

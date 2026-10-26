@@ -1,5 +1,6 @@
 /* Painel do Mural de Missões: cartões por missão, abas com contagem, progresso e recompensa estimada, contratos de dungeon.
    Adaptativo: tela cheia no celular (rolável, com margens seguras), duas colunas em telas largas. */
+import { goQuest, goLabel, GO } from './questgo.js';
 import { BOARDUI, boardData, boardAct, contractList, setContract, setTrack, pegarCartaz, soltarCartaz } from '../systems/quests.js';
 
 const TIERS = { curta: ['Curta', '#6cc070'], media: ['Média', '#5aa0e0'], longa: ['Longa', '#b07ae0'], epica: ['Épica', '#e0b84a'] };
@@ -41,6 +42,11 @@ export function questCard(q, rr = render) {
       b.addEventListener('click', e => { e.stopPropagation(); if (boardAct(q.id)) rr(); });
       d.appendChild(b);
     } else if (q.state === 'open') d.appendChild(el('div', 'qb-hint', 'Fale com ' + esc(q.giver) + ' para aceitar.'));
+    if (q.state !== 'done' && q.state !== 'lock') {
+      const gb = el('button', 'qb-btn qb-go', goLabel(q));
+      gb.addEventListener('click', e => { e.stopPropagation(); goQuest(q); });
+      d.appendChild(gb);
+    }
     if (q.state === 'open') {
       const pb = el('button', 'qb-btn qb-pin' + (q.cartaz ? ' off' : ''), q.cartaz ? '🗑 Soltar cartaz' : '📌 Pegar cartaz');
       pb.addEventListener('click', e => { e.stopPropagation(); if (q.cartaz) soltarCartaz(q.id); else pegarCartaz(q.id); rr(); });
@@ -93,5 +99,6 @@ function render() {
   pn.append(hd, tabs, list); root.appendChild(pn);
 }
 
+GO.close = () => { if (root) root.style.display = 'none'; after = null; };
 function close() { if (root) root.style.display = 'none'; if (after) { const f = after; after = null; f(); } }
 BOARDUI.open = cb => { after = cb || null; tab = boardData().some(q => q.state === 'open') ? 'open' : 'on'; openId = null; render(); root.style.display = 'flex'; };
