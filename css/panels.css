@@ -341,3 +341,23 @@
 #pg-char .btabs em { grid-column: 1; width: 100%; }
 #pg-char .btabs .bhead { grid-column: 2; display: flex; align-items: center; justify-content: flex-end; margin: 0; text-align: right; }
 #pg-char .btabs .bhead small { font-size: 12px; color: #d8c595; white-space: nowrap; }
+
+/* Quadro do personagem e quadro da mochila com a mesma altura (bases alinhadas) */
+#pg-char .ptop { align-items: stretch; }
+#pg-char .pframe { align-content: start; }
+#pg-char .bwrap { background: radial-gradient(#2e2216, #0c0805); border: 2px solid #4a3a22; padding: 6px; box-sizing: border-box; }
+#pg-char .bbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#pg-char #bag { align-content: start; }
+
+/* Linha da mochila: [⇅ ordenar] [💰 ouro] [nº de itens] */
+#pg-char .btabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#pg-char .btabs span { grid-column: span 2; }
+#pg-char .btabs em { grid-column: span 1; }
+#pg-char .btabs .st.gold { grid-column: span 2; padding: 2px 6px; min-height: 26px; justify-content: center; gap: 4px; }
+#pg-char .btabs .st.gold i { font-size: 14px; width: auto; }
+#pg-char .btabs .st.gold b { font-size: 13px; color: #ffe08a; }
+#pg-char .btabs .bhead { grid-column: span 1; }
+#pg-char .btabs .st.gold i { font-weight: bold; color: #ffe08a; letter-spacing: -1px; }
+/* Ordenar, ouro e contador: mesma altura na linha */
+#pg-char .btabs em, #pg-char .btabs .st.gold, #pg-char .btabs .bhead { box-sizing: border-box; height: 30px; min-height: 30px; }
+#pg-char .btabs .st.gold { padding-top: 0; padding-bottom: 0; align-items: center; }
