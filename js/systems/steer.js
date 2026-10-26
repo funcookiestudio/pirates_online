@@ -13,6 +13,14 @@ export const setSwim = v => { SW = v; };
 let MAPPED = false;
 export const setMapped = v => { MAPPED = v; };
 
+/** Raio do corpo do jogador dentro/junto de casas (a grade dos interiores usa o mesmo valor + folga) */
+export const BODY_IN = .3;
+/** Raio do corpo do jogador em (x,z): fino a menos de 0,3 m de uma casa, 0,5 fora. Fonte única: a colisão (clampToWorld) e o planejamento
+    (navTarget/steer) usam o mesmo valor, senão o plano passa por vãos em que o corpo real não cabe e o personagem trava nas quinas */
+export const bodyR = (x, z) => houseNear(x, z, .3) ? BODY_IN : .5;
+/** Memória de navegação do jogador (lado escolhido, caminho, pontos onde travou) */
+export const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
+
 const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 
 /** O caminho reto de (x,z) na direção `a` por `len` metros está livre para um corpo de raio `r`? */
@@ -128,7 +136,7 @@ function nearestFree(cx, cz) {
 export const pathTo = (sx, sz, gx, gz, r = .5) => findPath(sx, sz, gx, gz, r);
 
 /** Caminho fino (células de 25 cm) para dentro e em volta de casas: enxerga paredes, móveis e portas de verdade */
-function localPath(sx, sz, gx, gz, r) {
+function localPath(sx, sz, gx, gz, r, strict) {
   const x0 = Math.min(sx, gx) - 3, z0 = Math.min(sz, gz) - 3, x1 = Math.max(sx, gx) + 3, z1 = Math.max(sz, gz) + 3;
   if (x1 - x0 > 30 || z1 - z0 > 30) return null;
   const S = .25, W = Math.ceil((x1 - x0) / S), H = Math.ceil((z1 - z0) / S);
@@ -169,6 +177,7 @@ function localPath(sx, sz, gx, gz, r) {
       if (ng < gS[n]) { gS[n] = ng; from[n] = c; push([ng + Math.hypot(x - gc, z - gr), n]); }
     }
   }
+  if (strict && !found) return null;   // com o corpo inteiro não há caminho completo: quem chamou tenta de novo com folga menor
   const end = found ? g : best; if (!found && best === s) return null;
   const pts = []; for (let c = end; c !== -1; c = from[c]) pts.push([x0 + ((c % W) + .5) * S, z0 + (((c / W) | 0) + .5) * S]);
   pts.reverse(); if (found) pts[pts.length - 1] = [gx, gz];
@@ -185,7 +194,11 @@ function localPath(sx, sz, gx, gz, r) {
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
 function findPath(sx, sz, gx, gz, r, bad) {
   if (dIn(sx, sz)) return dPath(sx, sz, gx, gz);      // dentro da dungeon: caminho pela grade
-  if (houseNear(sx, sz) || houseNear(gx, gz)) { const lp = localPath(sx, sz, gx, gz, Math.min(r, .42)); if (lp) return lp; }   // casas: grade fina de 25 cm
+  if (houseNear(sx, sz) || houseNear(gx, gz)) {   // casas: grade fina de 25 cm
+    // 1º com o raio real do corpo (o mesmo da colisão): vãos estreitos nas quinas ficam fechados; 2º, se não houver caminho completo, com folga menor
+    const lp = localPath(sx, sz, gx, gz, r, true) || localPath(sx, sz, gx, gz, Math.min(r, .42));
+    if (lp) return lp;
+  }
   if (!grid || gridN !== props.length) buildGrid();
   const s = nearestFree(cell(sx), cell(sz)), g = nearestFree(Math.max(0, Math.min(N - 1, cell(gx))), Math.max(0, Math.min(N - 1, cell(gz))));
   if (s < 0 || g < 0) return null;
@@ -250,7 +263,7 @@ export function navTarget(mem, x, z, gx, gz, r, now) {
   if (d < .5 || (!(mem.road && d > 14) && clear(x, z, Math.atan2(gx - x, gz - z), d, r))) { mem.path = null; return [gx, gz]; }
   const t = now || performance.now();
   if (!mem.path || Math.hypot(mem.gx - gx, mem.gz - gz) > 2.5 || (!mem.road && t - mem.pt > 1200)) {
-    if (mem.gx != null && Math.hypot(mem.gx - gx, mem.gz - gz) > 6) mem.bad = null;   // novo destino: esquece os pontos de travamento
+    if (mem.bad) mem.bad = mem.bad.filter(b => t - b[2] < 25000);   // pontos de travamento expiram com o tempo (a quina continua ruim mesmo se o destino mudar)
     mem.path = findPath(x, z, gx, gz, r, mem.bad);
     mem.gx = gx; mem.gz = gz; mem.pt = t;
   }
@@ -275,6 +288,6 @@ export function freePoint(x, z, r = .6) {
 
 /** O dono ficou preso neste ponto: o próximo caminho passa longe dele */
 export function markStuck(mem, x, z) {
-  mem.bad = [...(mem.bad || []).slice(-3), [x, z]];
+  mem.bad = [...(mem.bad || []).slice(-3), [x, z, performance.now()]];
   mem.path = null; mem.pt = 0;
 }

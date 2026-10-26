@@ -4,7 +4,7 @@ import { updateBedPending, animateBed, sleeping } from './bed.js';
 import { refreshTorch, torchLit } from './inventory.js';
 import { snapInterior, interiorWaypoint } from '../world/interior-nav.js';
 import { houseNear, houseAt, descendThen, upperContains } from '../world/floors.js';
-import { VIZ, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
+import { VIZ, STEER, BODY_IN, bodyR, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
@@ -114,8 +114,6 @@ function stuckWatch(dt) {
   if (SW.n >= 2) { P.tx = P.x; P.tz = P.z; SW.n = 0; }                                               // não há caminho: para
 }
 
-export const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
-
 /** Anda até o destino/alvo, ataca ao chegar no alcance, colide com árvores/pedras e regenera */
 function moveAndAct(dt) {
   const px = P.x, pz = P.z;
@@ -141,10 +139,11 @@ function moveAndAct(dt) {
   if (want > 0) {
     setSwim(true);
     setMapped(!!mapAt(P.x, P.z));
-    const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, houseNear(P.x, P.z) ? BODY_IN : .5);
+    const br = bodyR(P.x, P.z);   // mesmo raio da colisão (clampToWorld)
+    const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, br);
     VIZ.wp = [nx, nz]; VIZ.path = STEER.path;
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
-    [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, houseNear(P.x, P.z) ? BODY_IN : .5, STEER, Math.min(nd, d - rng));
+    [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, br, STEER, Math.min(nd, d - rng));
     setSwim(false); setMapped(false);
   }
   const k = 1 - Math.exp(-dt * (want > Math.hypot(P.vx, P.vz) ? 6 : 9));
@@ -196,17 +195,14 @@ function moveAndAct(dt) {
   P.hp = Math.min(P.max, P.hp + dt * .5);
 }
 
-/** Raio do corpo dentro de casas (a grade dos interiores usa o mesmo valor + folga) */
-const BODY_IN = .3;
-
-/** Colisão com árvores e pedras e limite da ilha */
+/** Colisão com árvores e pedras e limite da ilha (BODY_IN e bodyR vêm de steer.js: o planejamento usa o mesmo corpo) */
 let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
-  const inH = houseNear(P.x, P.z, .3), mh = !MOUNT.on && mapAt(P.x, P.z);
+  const body = MOUNT.on ? .9 : bodyR(P.x, P.z), mh = !MOUNT.on && mapAt(P.x, P.z);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
   props.forEach(p => {
     if (mh && p.map) return;   // dentro de casa com mapa: colisão por retângulos (abaixo)
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
-    const rr = p.r + (MOUNT.on ? .9 : inH ? BODY_IN : .5);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
+    const rr = p.r + body;
     if (dd < rr) {
       P.x = p.position.x + ex / dd * rr;
       P.z = p.position.z + ez / dd * rr;

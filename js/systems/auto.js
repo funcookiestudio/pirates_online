@@ -12,6 +12,7 @@ import { dodge } from './dodge.js';
 import { MOUNT, toggleMount } from './mount.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { setAuto, fleeStep } from './stamina.js';
+import { STEER, markStuck } from './steer.js';
 import { dungeonGimmicks } from '../dungeon/dungeon-scene.js';
 import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
@@ -38,6 +39,7 @@ export function autoThink(dt) {
   if (Math.hypot(P.x - STUCK.x, P.z - STUCK.z) > .6 || Math.hypot(P.tx - P.x, P.tz - P.z) < 1.2 || P.sit || P.sitT) { STUCK.x = P.x; STUCK.z = P.z; STUCK.t = 0; }
   else if (STUCK.t > 3) {
     STUCK.t = 0; AT = 0;
+    markStuck(STEER, P.x, P.z);   // o A* passa a evitar este ponto (senão refaz o mesmo caminho pela mesma quina)
     const a = Math.random() * 6.28;
     P.tgt = null; P.tx = P.x + Math.cos(a) * 5; P.tz = P.z + Math.sin(a) * 5;
     state.autoHold = .8;
