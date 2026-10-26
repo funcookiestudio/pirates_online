@@ -33,6 +33,13 @@ function makeStock(kind) {
     return s;
   }
   if (FARM_GOODS[kind]) return FARM_GOODS[kind].map(g => ({ food: g.mat ? 0 : 1, ...g, desc: g.mat ? 'Material de artesanato · você tem ' + P[g.mat] : '+' + Math.round(g.hp * 100) + '% vida' + (g.mp ? ' · +' + Math.round(g.mp * 100) + '% mana' : '') + ' · consumo imediato' }));
+  if (kind === 'herbs') return [
+    { pot: 1, n: 'Poção de vida (da Ysolde)', price: Math.max(1, Math.round(PRICE.potTavern * .8)), desc: 'Recupera vida (tecla E) · leva até ' + POT_MAX },
+    { food: 1, ic: '🍵', n: 'Chá de camomila', price: 14, hp: .3, mp: .2, desc: '+30% vida · +20% mana · bebe na hora' },
+    { food: 1, ic: '🌿', n: 'Tônico de hortelã', price: 18, hp: .1, mp: .6, desc: '+10% vida · +60% mana · bebe na hora' },
+    { food: 1, ic: '🧴', n: 'Unguento de arnica', price: 30, hp: .55, desc: '+55% vida · bebe na hora' },
+    { food: 1, ic: '🧪', n: 'Elixir de sangue-de-dragão', price: 52, hp: 1, mp: .5, desc: '+100% vida · +50% mana · bebe na hora' },
+  ];
   const s = [{ pot: 1, n: 'Poção de vida', price: kind === 'tavern' ? PRICE.potTavern : PRICE.potTrader, desc: 'Recupera vida (tecla E) · leva até ' + POT_MAX }];
   if (kind === 'trader') s.push({ pot: 1, bomb: 1, n: 'Bomba', price: PRICE.bomb, desc: 'Explosão em área (tecla W) · leva até ' + BOMB_MAX });
   return s;
@@ -112,7 +119,7 @@ function renderShop() {
     box.append(r);
   } else if (k !== 'smith') {
     // taverna e mercadora só compram o que vendem: poções
-    const price = k === 'tavern' ? 12 : 16;
+    const price = k === 'tavern' ? 12 : k === 'herbs' ? 14 : 16;
     const r = document.createElement('div');
     r.className = 'shr r1';
     r.innerHTML = '<i>🧪</i><span>Poção de vida<small>Você tem ' + P.pot + ' · só compro poções</small></span>';

@@ -57,6 +57,7 @@ for (const seed of seeds) {
   if (dd(vil, por) < 45 || dd(vil, por) > 110) bad.push('vila↔porto ' + Math.round(dd(vil, por)) + ' m');
   if (hAt(L.castle) - hAt(vil) < 1) bad.push('castelo não está no alto');
   if (L.farms.length < 3) bad.push('fazendas ' + L.farms.length);
+  { const hb = L.farms.filter(f => f.herb); if (hb.length !== 1) bad.push('casa da herbalista ausente'); else { const far = Math.hypot(hb[0].x - vil.x, hb[0].z - vil.z); if (far < 150) bad.push('herbalista perto da vila ' + Math.round(far) + ' m'); } }
   if (L.camps.length < 8) bad.push('acampamentos ' + L.camps.length);
   if (L.dungeons.length < 5) bad.push('dungeons ' + L.dungeons.length);
   for (const c of L.camps) if (hAt(c) < .8) bad.push('acampamento na água');

@@ -33,6 +33,7 @@ import { initInput } from './systems/input.js';
 import * as FLOORS from './world/floors.js';
 import { updateRoyals } from './entities/royals.js';
 import { updateFarmFx } from './world/farm-granja.js';
+import { updateAlchemist } from './world/alchemist-house.js';
 import { refreshProps } from './world/floors.js';
 import { updateDayNight } from './world/daynight.js';
 import { initBackground } from './systems/background.js';
@@ -93,6 +94,7 @@ function tick(now) {
   S('updateFarm', () => updateFarm(realDt));
   S('updateRoyals', () => updateRoyals(realDt));
   S('updateFarmFx', () => updateFarmFx(realDt));
+  S('updateAlchemist', () => updateAlchemist(realDt));
   S('separate', () => separate());
   S('updateLoot', () => updateLoot(dt, now));
   S('updateBombs', () => updateBombs(dt));

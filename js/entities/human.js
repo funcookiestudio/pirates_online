@@ -73,6 +73,7 @@ Object.assign(SKM, {
 });
 Object.assign(SKF, {
   mercadora: { b: 0x2a6a4a, lace: 1, fi: 0xe9d9a8, belt: 0xb08a30, sk: 0x4a2a2a, hem: GOLD, u: 0x2a6a4a, ruf: 0xe9d9a8, f: 0, cuff: GOLD, st: WHITE, sh: 0x3b2a1c, buck: 1, hat: 'tri', hc: 0x2a2a30, hair: 0x2a1f1a, ex: ['earring', 'purse'] },
+  herbalista: { b: 0x2f4a3a, lace: 1, fi: 0xe6dfcc, belt: 0x4a2f1e, sk: 0x24382c, hem: 0x8a6a3a, u: 0xe6dfcc, ruf: 0xcfd8c0, f: 0x3a2a1c, cuff: 0x6b4a2a, st: 0x3a2a1c, sh: 0x2a1c14, hat: 'hood', hc: 0x2c4a3a, hair: 0xe9e7f0, ex: ['earring', 'bag', 'bottles', 'cloak', 'amulet', 'herbs'] },
   avicultora: { b: 0xb04a6a, lace: 1, fi: WHITE, belt: 0x5a3a28, sk: 0x7a3a5a, u: WHITE, f: 0, st: WHITE, sh: 0x5a3a28, hat: 'bonnet', hc: WHITE, hair: 0xd8a84a, ap: WHITE, bib: 1, ex: [] },
 });
 /* Realeza: rei (azul real, ouro, arminho, barba grisalha) e rainha (púrpura e ouro, colar de rubi, tiara) */
@@ -151,6 +152,14 @@ export function buildHuman(F, d) {
     put(B(F ? 1.34 : 1.54, .22, .16, .05, 0xf4f0e6), 0, F ? .45 : .3, -.56);
     [-.45, 0, .45].forEach(x => put(B(.1, .1, .18, .02, 0x15151a), x, F ? .45 : .3, -.56));
   }
+  if (ex.includes('cloak')) {     // capa de viagem verde-musgo com bainha de couro e broche de prata
+    put(B(1.34, 2.0, .12, .05, 0x2c4a3a), 0, 1.3, -.57);
+    put(B(1.38, .2, .16, .05, 0x1f3328), 0, .35, -.57);
+    put(B(1.36, .12, .9, .08, 0x2c4a3a), 0, 2.2, 0);
+    put(B(.14, .14, .06, .03, 0xcfd6dc), .3, 2.18, .46);
+  }
+  if (ex.includes('amulet')) { put(B(.4, .06, .06, .02, 0x3a2a1c), 0, 2.02, .44); put(B(.22, .26, .07, .03, 0xcfd6dc), 0, 1.84, .46); put(B(.1, .1, .08, .03, 0x6fe08a), 0, 1.84, .5); }
+  if (ex.includes('herbs')) { [-.55, -.45, -.35].forEach((x, i) => put(B(.07, .46, .05, .02, [0x4f8a3c, 0x6fa84a, 0x3f7a30][i]), x * 1.15, 1.0 - i * .02, .52).rotation.z = .3 - i * .25); put(B(.2, .06, .08, .02, 0x8a6a3a), -.62, 1.22, .52); put(B(.1, .12, .08, .03, 0xb060ff), -.8, 1.12, .5); }
   if (ex.includes('ermine')) {
     put(B(F ? 1.2 : 1.5, .3, F ? .9 : 1.0, .1, 0xf4f0e6), 0, F ? 2.28 : 2.3, 0);
     [-.5, -.2, .2, .5].forEach(x => put(B(.08, .14, .06, .02, 0x15151a), x * (F ? .9 : 1.1), F ? 2.25 : 2.3, F ? .46 : .52));

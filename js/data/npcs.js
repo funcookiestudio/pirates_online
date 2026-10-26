@@ -40,8 +40,11 @@ export const FARMER_AVES = { name: 'Dona Marta', title: 'Criadora de aves', ic: 
 export const FARMER_GRANJA = { name: 'Seu Zé', title: 'Granjeiro', ic: '🐖', skin: ['granjeiro', 0], shop: 'farm-granja',
   lines: ['Eita, visita! Chegue, que o porco tá gordo e a lã das ovelhas tá no ponto.', 'Roça é trabalho de sol a sol, mas não troco por mar nenhum.', 'Se ouvir barulho de ovelha à noite, é só o vento. Eu acho...'] };
 
+export const HERBALIST = { name: 'Ysolde Folha-Prata', title: 'Herbalista', ic: '🌿', shop: 'herbs', skin: ['herbalista', 1],
+  lines: ['Shh... não pise nas mandrágoras, elas gritam. Ah, uma visita! Raro por aqui.', 'O povo da vila diz que eu faço bruxaria. Faço é remédio — e remédio bom fica longe de gente fofoqueira.', 'Colho de madrugada, com a lua ainda alta: é quando as ervas guardam mais força. Minhas poções curam o que o rum só esquece.', 'Se um dia o Capitão Maldito te rasgar o peito, traga-me uma folha de sangue-de-dragão e eu costuro o resto com chá.'] };
+
 export const ISLANDS = [
-  { seed: 'bussola', name: 'Ilha Natal', cost: 0, tier: 0 },
+  { seed: 'brisa', name: 'Ilha Natal', cost: 0, tier: 0 },
   { seed: 'corvo', name: 'Ilha do Corvo', cost: 25, tier: 1 },
   { seed: 'tormenta', name: 'Ilha da Tormenta', cost: 25, tier: 2 },
   { seed: 'caveira', name: 'Ilha da Caveira', cost: 25, tier: 3 },

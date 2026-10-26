@@ -86,6 +86,22 @@ export function planCore(c) {
     farms.push({ x: bs[0], z: bs[1] });
     taken.push([bs[0], bs[1], 70]);
   }
+  // 3) casa da herbalista: terreno plano e bem longe da vila (o povo da cidade não lida bem com ela), fora do caminho das fazendas
+  {
+    let bs = null, bv = -1e9;
+    for (let z = 20; z < N - 20; z += 6) for (let x = 20; x < N - 20; x += 6) {
+      const dv = Math.hypot(x - best.vx, z - best.vz);
+      if (dv < 150 || dv > 360) continue;
+      if (taken.some(([tx, tz, r]) => Math.hypot(tx - x, tz - z) < r + 20)) continue;
+      const dd = dev(x, z, 20);
+      if (dd > 1.1 || H[at(x, z)] < 1 || H[at(x, z)] > 8) continue;
+      let m = 1e9; for (const f of farms) m = Math.min(m, Math.hypot(f.x - x, f.z - z));
+      if (m < 90) continue;
+      const v = -dd * 8 + Math.min(dv, 300) * .08 + Math.min(m, 200) * .05 + hashN(x, z) * 2;
+      if (v > bv) { bv = v; bs = [x, z]; }
+    }
+    if (bs) farms.push({ x: bs[0], z: bs[1], herb: 1 });
+  }
   return { port, dock: best.d, vil, castle, farms };
 }
 

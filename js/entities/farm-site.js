@@ -14,7 +14,7 @@ import { pois } from '../world/pois.js';
 import { makeNpc } from './npc.js';
 import { initFarmer } from './farmer.js';
 import { CLOCK } from '../core/clock.js';
-import { HORSEMAN, FARMER_AVES, FARMER_GRANJA } from '../data/npcs.js';
+import { HORSEMAN, FARMER_AVES, FARMER_GRANJA, HERBALIST } from '../data/npcs.js';
 import { ZONES, CASTLE } from '../world/reserve.js';
 import { H } from '../world/terrain.js';
 import { cropGeo, CROP_MAT } from './crops.js';
@@ -22,6 +22,7 @@ import { buildAvesDecor } from '../world/farm-aves.js';
 import { buildAvesHouse } from '../world/farm-aves-house.js';
 import { buildGranjaDecor } from '../world/farm-granja.js';
 import { buildGadoDecor } from '../world/farm-gado.js';
+import { buildAlchemistHouse } from '../world/alchemist-house.js';
 const E = N / 2;
 
 export const FARMSITE = { ok: false, sites: [] };
@@ -32,6 +33,7 @@ const VARIANTS = [
   { id: 'aves', n: 'Sítio das Aves', ic: '🐔', npc: FARMER_AVES, v: 1, cols: [0xe0b090, 0xb04a6a, 0x6a4a30, 0xe8d8a0] },
   { id: 'granja', n: 'Granja', ic: '🐖', npc: FARMER_GRANJA, v: 2, cols: [0xd89c78, 0x4a6aa8, 0x3a3a50, 0x9a7a3a] },
   { id: 'gado', n: 'Fazenda do Gado', ic: '🐄', npc: HORSEMAN, v: 4, cols: [0xd8a880, 0x5a7a3a, 0x5a4020, 0xc8a050] },
+  { id: 'herb', n: 'Casa da Herbalista', ic: '🌿', npc: HERBALIST, v: 3, cols: [0xf0cfb0, 0x2f4a3a, 0x24382c, 0xe9e7f0] },   // fica longe da vila: o povo da cidade não lida bem com ela
 ];
 
 /** Orientação: o portão (+z local) olha para o ponto `t` (estrada mais próxima) */
@@ -74,10 +76,10 @@ function cost(s) {
 export function chooseFarmSite(avoid = []) {
   // as fazendas já têm lugar escolhido pelo gerador do mapa (terreno plano e fértil, longe do cais, castelo e acampamentos) e uma estrada até elas
   const chosen = [];
-  const farms = (isl.layout.farms || []).map((fm, i) => ({ fm, road: isl.roads.find(r => r.n === 'Fazenda ' + (i + 1)) }))
-    .sort((a, b) => Math.hypot(a.fm.x - VX, a.fm.z - VZ) - Math.hypot(b.fm.x - VX, b.fm.z - VZ));
+  const all = (isl.layout.farms || []).map((fm, i) => ({ fm, road: isl.roads.find(r => r.n === 'Fazenda ' + (i + 1)) }));
+  const farms = all.filter(a => !a.fm.herb).sort((a, b) => Math.hypot(a.fm.x - VX, a.fm.z - VZ) - Math.hypot(b.fm.x - VX, b.fm.z - VZ)), herbF = all.find(a => a.fm.herb);
   VARIANTS.forEach((vr, vi) => {
-    const F = farms[vi]; if (!F) return;
+    const F = vr.id === 'herb' ? herbF : farms[vi]; if (!F) return;
     const x = F.fm.x - VX, z = F.fm.z - VZ;
     // o portão olha para a estrada: ponto dela a ~15 m do centro, no trecho que chega à fazenda
     let tx = x, tz = z + 15;
@@ -208,6 +210,17 @@ function buildOne(spot) {
     for (let z = FZ0 - .5; z <= FZ1 + .5; z += 2) { bx(.14, .7, .14, 0x6a4a2a, FX0 - .6, .35, z); bx(.14, .7, .14, 0x6a4a2a, FX1 + .6, .35, z); }
   };
 
+  if (vr.id === 'herb') return herbSite();
+  /** Casa da Herbalista: casa de pedra com torre, estufa e canteiros (alchemist-house.js), portal roxo e a moradora diante da porta */
+  function herbSite() {
+    const hw = toWorld(spot, f, 0, -8);
+    buildAlchemistHouse(hw.x, hw.z, f.th, by);
+    arch(Z1 + 1.5, vr.n, 0x4a2e6b);
+    lamp(-6.5, 5); lamp(6.5, 5); barrel(11.5, -4); crate(12.4, -3.2); wood(-13.5, -13);
+    const np = toWorld(spot, f, -1.3, -2.2);
+    makeNpc('citizen', np.x, np.z, Math.atan2(f.fx, f.fz), vr.cols, vr.v, vr.npc);
+    pois.push({ n: vr.n, x: spot.x, z: spot.z, c: '#b060ff', ic: vr.ic });
+  }
   // ---- layout em "T": casa e celeiro ao fundo, pátio de terra, corredor central até o portão; cercados à esquerda, lavoura à direita ----
   const FS = vr.id === 'aves' ? { post: 0xf1ead8, rail: 0xf1ead8, pick: 1 } : { post: 0x6a4a2a, rail: 0x8a6238, pick: 0 };   // estilo das cercas de cada fazenda
   const post = (x, z, big) => { bx(big ? .3 : .2, big ? 1.5 : 1.2, big ? .3 : .2, FS.post, x, .6, z); if (FS.pick) bx(big ? .38 : .27, .12, big ? .38 : .27, 0xd8c8a8, x, big ? 1.5 : 1.2, z); solid(x, z, .3); };
