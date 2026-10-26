@@ -5,6 +5,8 @@ export const state = {
   HS: 0,            // "hit-stop": tempo restante de câmera lenta num golpe forte
   SHK: 0,           // intensidade do tremor de câmera
   autoOn: false,    // auto combate ligado?
+  quests: {},       // missões de NPCs (quests.js): id → { s, i, n, t, a }
+  lastKill: null,   // último inimigo morto (lido pelos eventos de missão)
   quest: { st: 0 }, // primeira missão (O Rato da Taverna): estágio
   owned: {},        // companheiros que o jogador tem (id → true)
   fleeing: false,   // auto combate sem ouro: fugindo para a vila

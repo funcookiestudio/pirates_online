@@ -8,6 +8,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { P, levelUp } from '../entities/player.js';
 import { aimOffset } from '../entities/player-weapon.js';
 import { dropLoot, dropAmmo } from '../entities/loot.js';
+import { emit } from '../core/events.js';
 import { spendAmmo } from './inventory.js';
 import { PV, petXp } from '../pets/stats.js';
 import { puff } from './effects.js';
@@ -65,6 +66,7 @@ function onKill(e) {
   if (e.pa) petXp(e.pa, xp * .6);
   dropLoot(e);
   levelUp();
+  state.lastKill = e; emit('enemy:killed');
   if (e.t.boss) log(e.dun ? '👑 Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
   else if (e.elite) log('⭐ Elite derrotado! +' + xp + ' XP');
 }
@@ -208,6 +210,7 @@ export function updateShots(dt) {
       const dx = s.t.x - p.x, dy = 1.3 - p.y, dz = s.t.z - p.z, d = Math.hypot(dx, dy, dz);
       if (d < .8) {
         hit(s.t, s.d, { kn: .6 });
+        if (s.th) emit('shot:thrown-hit');   // (missão "Mão Firme")
         if (s.th && s.fx) puff(s.t.x, 1, s.t.z, 0xa77be0, 6, 10);
         if (s.fx && s.fx.stun && !s.t.dead) s.t.sn = Math.max(s.t.sn || 0, s.t.t.boss ? .4 : s.fx.stun);
         if (s.sl) {

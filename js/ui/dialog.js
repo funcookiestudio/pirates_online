@@ -12,6 +12,7 @@ import { SEED } from '../world/terrain.js';
 import { saveGame } from '../systems/save.js';
 import { ROOM_PRICE, roomRented, rentRoom, cancelRent, rentDue } from '../world/doors.js';
 import { questSay, questButtons } from '../systems/quest.js';
+import { questsSay, questsButtons } from '../systems/quests.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 import { startPet } from '../systems/pet.js';
@@ -171,7 +172,7 @@ function buttons() {
     add('Sair', closeDialog);
     return;
   }
-  questButtons(cur).forEach(([t, f]) => add(t, () => f(say, buttons)));   // botões da missão em andamento
+  [...questButtons(cur), ...questsButtons(cur)].forEach(([t, f]) => add(t, () => f(say, buttons)));   // botões da missão em andamento
   if (cur.stable) {
     COATS.forEach((k, i) => {
       if (MOUNT.owned && i <= MOUNT.coat) return;
@@ -215,7 +216,7 @@ function buttons() {
 export function openDialog(info) {
   cur = info;
   li = Math.floor(Math.random() * info.lines.length);
-  const qs = questSay(info);
+  const qs = questSay(info) || questsSay(info);
   $('dic').textContent = info.ic;
   $('dnm').textContent = info.name;
   $('dtt').textContent = info.title;

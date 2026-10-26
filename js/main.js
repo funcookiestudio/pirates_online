@@ -48,6 +48,7 @@ import { buildFarmSite } from './entities/farm-site.js';
 import { buildFarm, updateFarm, FARM } from './entities/farm.js';
 import { updatePets, setPet, unequipPet } from './pets/manager.js';
 import { updateQuest, ratDbg } from './systems/quest.js';
+import { updateQuests } from './systems/quests.js';
 import { DOG } from './pets/dog.js';
 import { refreshPetButton, initHotbarFit } from './ui/hotbar.js';
 import { initPanel } from './ui/panel.js';
@@ -114,6 +115,7 @@ function tick(now) {
   S('updateShots', () => updateShots(realDt));
   S('updatePets', () => updatePets(realDt, now));
   S('updateQuest', () => updateQuest(realDt));
+  S('updateQuests', () => updateQuests(realDt));
   S('updateOverlays', () => updateOverlays(now));
 
   S('updateXray', () => updateXray());
