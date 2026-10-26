@@ -114,19 +114,7 @@ function itemCard(it, worn) {
 }
 
 export function renderStats() {
-  if (selE && eq[selE]) {
-    $('stt').innerHTML = itemCard(eq[selE], true);
-    $('ieq').onclick = () => { const k = selE; selE = ''; unequip(k); };
-    $('idr').onclick = () => { selE = ''; renderPanel(); fitPanel(); };
-    return;
-  }
-  if (sel >= 0 && bag[sel]) {
-    $('stt').innerHTML = itemCard(bag[sel]);
-    $('ieq').onclick = () => { const i = sel; sel = -1; equip(i); };
-    $('idr').onclick = () => { const it = bag.splice(sel, 1)[0]; sel = -1; dropItem(it); renderPanel(); fitPanel(); };
-    return;
-  }
-  const W = WEAPONS[P.wid], cd = P.cdMax || W.cd;
+  const W = WEAPONS[P.wid];
   $('pcl2').textContent = 'NÍVEL ' + P.lv;
   $('pxp2').style.width = Math.min(100, P.xp / P.nxt * 100) + '%';
   $('potn').textContent = P.pot;
@@ -135,6 +123,17 @@ export function renderStats() {
     stat('⚔', 'ATAQUE', P.dmg, 'DPS ' + (P.dmg * W.mul / (W.cd || 1)).toFixed(1) + ' · Vel. ' + (1 / (W.cd || 1)).toFixed(1) + '/s<br>Crítico 15% · x2', 'Dano, DPS, velocidade de ataque e crítico') +
     stat('🛡', 'DEFESA', (eq.arm ? eq.arm.v : 0), 'Redução de dano ' + Math.round((P.dr || 0) * 100) + '%', 'Defesa da armadura') +
     stat('❤', 'VIDA', P.max, 'Atual ' + Math.ceil(P.hp) + '<br>Mana ' + Math.floor(P.mp) + ' / ' + P.mmax, 'Vida máxima');
+  // informações do item selecionado: abaixo dos cartões de ataque, defesa e vida (que continuam visíveis)
+  const itm = $('itm'); itm.innerHTML = '';
+  if (selE && eq[selE]) {
+    itm.innerHTML = itemCard(eq[selE], true);
+    $('ieq').onclick = () => { const k = selE; selE = ''; unequip(k); };
+    $('idr').onclick = () => { selE = ''; renderPanel(); fitPanel(); };
+  } else if (sel >= 0 && bag[sel]) {
+    itm.innerHTML = itemCard(bag[sel]);
+    $('ieq').onclick = () => { const i = sel; sel = -1; equip(i); };
+    $('idr').onclick = () => { const it = bag.splice(sel, 1)[0]; sel = -1; dropItem(it); renderPanel(); fitPanel(); };
+  }
   renderQuick();
 }
 
@@ -154,6 +153,7 @@ function renderQuick() {
 const grid = (el, n) => { el.innerHTML = ''; for (let i = 0; i < n; i++) el.append(slot(null, null, '', '🔒')); };
 
 function renderPanel() {
+  $('pnl').dataset.tab = tab;   // o CSS do celular usa isso: habilidades, talentos e missões ganham tela própria
   ['char', 'skills', 'tal', 'qst'].forEach(t => {
     $('pg-' + t).hidden = tab !== t;
     $('tb-' + t).classList.toggle('on', tab === t);
@@ -225,7 +225,7 @@ export function fitPanel() {
     if (MOB.matches) {
       ['left', 'top', 'bottom', 'maxHeight', 'overflowY', 'transform', 'transformOrigin', 'width', 'height'].forEach(k => el.style.removeProperty(k.replace(/[A-Z]/g, c => '-' + c.toLowerCase())));
       // sem rolagem: o conteúdo inteiro é reduzido para caber na tela (só a aba Missões rola)
-      const fit = true;
+      const fit = id === 'pnl2' || tab === 'char';   // a ficha cabe na tela; as outras abas rolam
       el.classList.toggle('fit', fit);
       if (fit) {
         el.style.height = 'auto';

@@ -1,9 +1,9 @@
 /* Tela cheia forçada: navegadores só permitem após um toque/clique, então entra no primeiro toque
    e tenta de novo no próximo toque se o jogador sair (ex.: botão voltar). */
-import { CFG } from '../systems/settings.js';
 const el = document.documentElement;
 /** Tela cheia: no celular/tablet (toque) liga sozinha; no computador é opcional (ajustes) */
-export const wantFull = () => CFG.full !== undefined ? !!CFG.full : matchMedia('(pointer:coarse)').matches;
+const saved = () => { try { return JSON.parse(localStorage.getItem('pirata-ajustes') || '{}').full; } catch (e) { return undefined; } };   // lê direto do armazenamento: assim funciona já na tela inicial, antes do jogo (e dos ajustes) carregar
+export const wantFull = () => { const f = saved(); return f !== undefined ? !!f : matchMedia('(pointer:coarse)').matches; };
 const req = el.requestFullscreen || el.webkitRequestFullscreen;
 
 function enter() {
@@ -22,8 +22,10 @@ export function applyFull(on) {
   } catch (e) { /* ignora */ }
 }
 
+let started = false;
 export function initFullscreen() {
-  ['pointerup', 'touchend', 'keydown'].forEach(ev => addEventListener(ev, enter, { passive: true }));
+  if (started) return; started = true;
+  ['pointerup', 'touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, enter, { passive: true }));
 }
 
 /** PWA: registra o service worker (só em https/localhost; no preview de arquivo único é ignorado) */

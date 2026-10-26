@@ -381,3 +381,31 @@
   #dlg .dh button, #shop .dh button, #bedcard .dh button, #cvp .cvh i { min-width: 44px; min-height: 44px; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; }
 }
 #acfg .ahb { flex: 1; min-height: 38px; border-radius: 8px; border: 2px solid #a07a3a; background: #1d1610; color: #e8d9b0; font-size: 13px; cursor: pointer; }
+
+/* ---------- Celular em retrato: personagem e equipamento em cima · cartão de nível ao centro · ataque/defesa/vida (+ item) · mochila embaixo ---------- */
+#pnl .pbelow #itm { grid-column: 1 / -1; }
+#pnl .pbelow #itm:empty { display: none; }
+@media (max-width: 900px), (orientation: portrait) {
+  #pnl.full { --s: clamp(40px, calc((100vw - 64px) / 6), 62px); }
+  #pnl.full .pbody { display: flex; flex-direction: column; gap: 8px; }
+  #pnl.full .ptop { display: contents; }
+  #pnl.full .pframe { order: 1; }
+  #pnl.full .pbelow { order: 2; display: flex; flex-direction: column; gap: 8px; margin: 0; }
+  #pnl.full .pbelow .pcard { display: block; align-self: center; width: min(100%, 380px); box-sizing: border-box; text-align: center; padding: 10px 8px 8px; }
+  #pnl.full .pbelow .pcard .pcls, #pnl.full .pbelow .pcard .pxp2 { display: block; }
+  #pnl.full .pbelow #stt { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  #pnl.full .pbelow #stt .st { flex-direction: column; text-align: center; gap: 2px; padding: 6px 4px; }
+  #pnl.full .pbelow #stt .st small { display: none; }
+  #pnl.full .pbelow #stt .st span { font-size: 10px; }
+  #pnl.full .pright { order: 3; }
+  #pnl.full #pg-char { --bc: 8; }
+}
+/* Habilidades, talentos e missões: tela própria (sem o quadro do personagem ao lado) */
+@media (max-width: 900px), (orientation: portrait), (pointer: coarse) and (max-height: 520px) {
+  #pnl.full:not([data-tab="char"]) .pframe, #pnl.full:not([data-tab="char"]) .pbelow { display: none; }
+  #pnl.full:not([data-tab="char"]) .pbody, #pnl.full:not([data-tab="char"]) .ptop { display: block; }
+  #pnl.full .pright > .pg:not(.bwrap) { position: static; min-height: calc(100dvh - 90px); border-width: 0; border-radius: 0; padding: 10px 2px; background: none; }
+  #pnl.full .pright .sgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  #pnl.full #pg-qst .ql-sum { grid-template-columns: repeat(4, 1fr); }
+  #pnl.full #pg-qst .ql-gh { top: 46px; }
+}
