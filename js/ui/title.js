@@ -21,8 +21,9 @@ const CSS = `
 #ttl .fog.a{top:30%}#ttl .fog.b{top:58%;animation-duration:55s;animation-direction:reverse;opacity:.8}
 @keyframes ttf{to{transform:translateX(22%)}}
 #ttl .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,#0000 28%,#000d 100%),linear-gradient(#0008,#0000 25%,#0000 70%,#000b)}
-#ttl .flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 40% 20%,#c8d8ff,#7a90c0 40%,#0000 75%);opacity:0;mix-blend-mode:screen;animation:ttl 11s infinite}
-@keyframes ttl{0%,86%,100%{opacity:0}87%{opacity:.5}88%{opacity:.05}89.5%{opacity:.38}93%{opacity:0}}
+#ttl .storm{position:absolute;left:0;top:0;width:60%;height:46%;pointer-events:none;background:radial-gradient(ellipse at 6% 62%,#02030acc,#0000 62%),radial-gradient(ellipse at 22% 30%,#0a0e1ccc,#0000 58%),radial-gradient(ellipse at 38% 52%,#141b2e99,#0000 55%)}
+#ttl .flash{position:absolute;left:0;top:14%;width:48%;height:30%;pointer-events:none;background:radial-gradient(ellipse at 14% 55%,#dfe8ff,#7f95c8 28%,#0000 66%);opacity:0;mix-blend-mode:screen;z-index:2}
+#ttl .bolt{z-index:2;filter:drop-shadow(0 0 5px #9fb8ff);position:absolute;left:9%;top:17%;width:7%;height:22%;pointer-events:none;opacity:0}
 #ttl .tt{position:absolute;left:0;right:0;top:48%;transform:translateY(-50%)}
 #ttl h1{position:relative;margin:0;text-align:center;font-family:'Cinzel Decorative','Cinzel',Georgia,serif;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:.08em}
 #ttl h1 .t1{display:block;font-size:clamp(22px,min(6.5vw,8vh),64px);letter-spacing:.6em;padding-left:.6em;color:#b83a30;text-shadow:0 0 14px #b0201855,0 2px 0 #1a0505}
@@ -70,7 +71,7 @@ function mkChest() {
   // ao redor: moedas espalhadas, pilhas e joias
   for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, d = .75 + rnd() * .55; coin(Math.cos(a) * d * 1.1, .015 + (rnd() < .2 ? .02 : 0), Math.abs(Math.sin(a)) * d * .7 + .3, .05); }
   [[-.85, .45], [.9, .55], [.55, .85]].forEach(([x, z]) => { for (let k = 0; k < 6; k++) { const c = new THREE.Mesh(coinG, k % 3 ? gold : band); c.position.set(x, .012 + k * .021, z); c.rotation.y = rnd() * 3; g.add(c); } });
-  for (let i = 0; i < 7; i++) { const a = rnd() * 6.28, d = .8 + rnd() * .5; gem(Math.cos(a) * d * 1.1, .07, Math.abs(Math.sin(a)) * d * .6 + .45, i + 2); }
+  for (let i = 0; i < 7; i++) { const a = rnd() * 6.28, d = .8 + rnd() * .5; if ((i + 2) % 6 === 1) continue; gem(Math.cos(a) * d * 1.1, .07, Math.abs(Math.sin(a)) * d * .6 + .45, i + 2); }
   const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, 'rgba(255,224,120,.9)'); gr.addColorStop(1, 'rgba(255,200,60,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -83,7 +84,8 @@ function scene3d(root, cv) {
   ren.setClearColor(0, 0);
   const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 100);
   sc.add(new THREE.HemisphereLight(0x8ea4cc, 0x2a1810, .62));   // luar frio
-  const dl = new THREE.DirectionalLight(0xffa860, .95); dl.position.set(4, 3, 8); sc.add(dl);   // luz quente das tochas
+  const dl = new THREE.DirectionalLight(0xffa860, .22); dl.position.set(4, 3, 8); sc.add(dl);   // resto de luz das tochas
+  const gl = new THREE.PointLight(0xffc860, 2.6, 15, 1.4); sc.add(gl);   // brilho do tesouro: ilumina os heróis pelo lado de dentro
   const rim = new THREE.DirectionalLight(0x7a98d8, .7); rim.position.set(-6, 5, -4); sc.add(rim);
   // heróis com roupa de pirata (melhor que a roupa inicial) e a aparência escolhida
   const mk = (f, a) => { const L = resolveLook(f, cleanLook(f, a)), base = f ? SKF.pirata : SKM.pirata; return buildHuman(f, Object.assign({}, base, { skin: L.skin, hair: L.hair, look: L, ex: f ? ['earring'] : [] })); };
@@ -127,7 +129,7 @@ function scene3d(root, cv) {
     bs = place(0, hm, .5 - hxs, fy, hh, -3, 1); place(1, hf, .5 + hxs, fy, hh, -3);   // menino e menina com a mesma escala
     place(2, pirate, .5 - exs, 1.2, eh, 5); place(3, skel, .5 + exs, 1.2, eh, 5);
     { const z = -7, half = Math.tan(15 * Math.PI / 180) * (DIST - z), cs = .86 * Math.min(.34 * 2 * half * aspect / 1.2, hh * 2 * half * .95 / 1.0);
-      tre.scale.setScalar(cs); tre.position.set(0, (.5 - fy) * 2 * half, z); }
+      tre.scale.setScalar(cs); tre.position.set(0, (.5 - fy - .075) * 2 * half, z); gl.position.set(0, tre.position.y + cs * .9, z + 2.2); }
     hero = hh; birdY = hh;
     const ps = bs * .55; raven.scale.setScalar(ps); parrot.scale.setScalar(ps);
   }
@@ -164,13 +166,27 @@ export function runTitle() {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     const root = document.createElement('div'); root.id = 'ttl';
     if (!document.getElementById('ttl-fonts')) { const l = document.createElement('link'); l.id = 'ttl-fonts'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@900&family=IM+Fell+English:ital@1&display=swap'; document.head.appendChild(l); }
-    root.innerHTML = `<div class="moon"></div><div class="sea"></div><svg class="ship" viewBox="0 0 300 200" fill="#05070c"><path d="M20 140 Q60 170 150 172 Q240 170 285 130 L262 128 L250 110 L50 112 L36 126Z"/><rect x="146" y="14" width="3" height="120"/><rect x="82" y="34" width="3" height="100"/><rect x="214" y="44" width="3" height="90"/><path d="M104 22 L146 24 L144 84 Q124 94 104 84Z M60 44 L82 46 L80 92 Q70 98 60 92Z M174 30 L212 34 L210 92 Q192 102 174 94Z M222 52 L214 54 L216 96 Q232 98 240 90Z"/><path d="M149 14 L172 20 L149 26Z" fill="#2a0a0a"/><rect x="284" y="118" width="14" height="3" transform="rotate(-18 284 118)"/></svg><div class="fog a"></div><canvas></canvas><div class="fog b"></div><canvas class="em"></canvas><div class="flash"></div><div class="vig"></div>
+    root.innerHTML = `<div class="moon"></div><div class="sea"></div><svg class="ship" viewBox="0 0 300 200" fill="#05070c"><path d="M20 140 Q60 170 150 172 Q240 170 285 130 L262 128 L250 110 L50 112 L36 126Z"/><rect x="146" y="14" width="3" height="120"/><rect x="82" y="34" width="3" height="100"/><rect x="214" y="44" width="3" height="90"/><path d="M104 22 L146 24 L144 84 Q124 94 104 84Z M60 44 L82 46 L80 92 Q70 98 60 92Z M174 30 L212 34 L210 92 Q192 102 174 94Z M222 52 L214 54 L216 96 Q232 98 240 90Z"/><path d="M149 14 L172 20 L149 26Z" fill="#2a0a0a"/><rect x="284" y="118" width="14" height="3" transform="rotate(-18 284 118)"/></svg><div class="fog a"></div><canvas></canvas><div class="fog b"></div><canvas class="em"></canvas><div class="storm"></div><div class="flash"></div><svg class="bolt" viewBox="0 0 40 120" fill="none" stroke="#f4f7ff" stroke-width="3.2" stroke-linejoin="round"><path d="M26 0 L14 38 L24 40 L8 80 L18 82 L4 120"/><path d="M16 52 L30 70" stroke-width="1.4"/></svg><div class="vig"></div>
       <div class="tt"><h1><span class="t1">Tiny</span><span class="t2">Pirates</span><small>RPG</small></h1><p class="tag">O mar não perdoa. O tesouro, menos ainda.</p><button>Jogar</button></div><div class="ver">${VERSION}</div>`;
     document.body.appendChild(root);
     let S = null, raf = 0, done = false;
     const ec = root.querySelector('canvas.em'), ex = ec.getContext('2d'), E = [];
     const eReset = (o, init) => { o.x = Math.random(); o.y = init ? Math.random() : 1.05; o.r = .6 + Math.random() * 1.8; o.v = .02 + Math.random() * .07; o.w = Math.random() * 6.28; o.a = .3 + Math.random() * .7; o.h = Math.random() < .25 ? 40 : 18 + Math.random() * 14; };
     for (let i = 0; i < 90; i++) { const o = {}; eReset(o, true); E.push(o); }
+    // relâmpagos aleatórios (fosco e discreto) na tempestade ao fundo, à esquerda
+    const fl = root.querySelector('.flash'), bo = root.querySelector('.bolt'); let lg = 0;
+    const strike = () => {
+      const x = 3 + Math.random() * 28, k = .7 + Math.random() * .6;
+      bo.style.left = x + '%'; bo.style.top = (14 + Math.random() * 6) + '%'; bo.style.transform = 'scale(' + (Math.random() < .5 ? -k : k) + ',' + k + ')';
+      fl.style.left = (x - 14) + '%';
+      const n = 1 + Math.floor(Math.random() * 3), kf = [{ opacity: 0 }];
+      for (let i = 0; i < n; i++) { kf.push({ opacity: .85 - i * .2 }, { opacity: .08 }); }
+      kf.push({ opacity: 0 });
+      const o = { duration: 280 + n * 170, easing: 'steps(1,end)' };
+      fl.animate(kf.map(f => ({ opacity: f.opacity * .75 })), o); bo.animate(kf.map(f => ({ opacity: f.opacity * 1 })), o);
+      lg = setTimeout(strike, 2500 + Math.random() * 9000);
+    };
+    lg = setTimeout(strike, 1800 + Math.random() * 2500);
     let lt = performance.now();
     const emb = now => {
       const dt = Math.min(.05, (now - lt) / 1000); lt = now;
@@ -187,7 +203,7 @@ export function runTitle() {
     raf = requestAnimationFrame(emb);
     try { S = scene3d(root, root.querySelector('canvas')); } catch (e) { console.warn('title 3d', e); root.querySelector('canvas').remove(); }
     const go = () => {
-      if (done) return; done = true; cancelAnimationFrame(raf); removeEventListener('keydown', key, true);
+      if (done) return; done = true; cancelAnimationFrame(raf); clearTimeout(lg); removeEventListener('keydown', key, true);
       root.style.transition = 'opacity .3s'; root.style.opacity = 0;
       setTimeout(() => { if (S) S.dispose(); root.remove(); st.remove(); res(); }, 300);
     };
