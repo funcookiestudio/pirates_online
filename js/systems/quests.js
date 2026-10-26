@@ -18,7 +18,7 @@ import { npcByShop } from '../entities/npc.js';
 import { freePoint } from './steer.js';
 import { log, lootText } from '../ui/notify.js';
 import { saveGame } from './save.js';
-import { WILD, whiteDeer } from '../entities/wildlife.js';
+import { WILD, whiteDeer, goldenHare } from '../entities/wildlife.js';
 import { isNight } from '../world/daynight.js';
 import { hourNow } from '../core/clock.js';
 import { pickWeapon } from '../entities/loot.js';
@@ -28,7 +28,7 @@ import { person } from '../entities/character.js';
 import { gait, gaitSpeed } from '../entities/gait.js';
 import { npcList } from '../entities/npc.js';
 import { pois } from '../world/pois.js';
-import { slideTo } from '../world/terrain.js';
+import { slideTo, SEED } from '../world/terrain.js';
 
 /** [fração do XP do nível, múltiplo do ouro] por tamanho da missão */
 export const TIER = { curta: [.15, 8], media: [.25, 15], longa: [.4, 30], epica: [.6, 60] };
@@ -103,11 +103,55 @@ const QUESTS = [
     say: { ask: 'PROCURADO: Capitão Maldito, vivo ou morto! A recompensa é generosa. Ele é um chefe de verdade: leve poções, bombas e um bom equipamento. Ele ressurge depois de um tempo, mas só o primeiro abate vale a recompensa.', on: 'O Capitão Maldito vaga pela costa leste, no Fortim. Derrube-o e volte ao Mural.', ready: 'O cartaz está riscado: O Capitão Maldito caiu! Cobre sua recompensa.' },
     stages: [{ k: 'wanted', n: 1, hud: () => '☠ Derrote o Capitão Maldito (chefe da costa leste, no Fortim)' }],
     reward: { magic: 1, pot: 5, bmb: 3 }, rewardTxt: 'uma arma Mágica, 5 poções e 3 bombas' },
+  { id: 'cofre', giver: 'Mestre Breu', title: 'O Cofre do Mestre', lv: 10, tier: 'longa',
+    say: { ask: 'Meu antigo mestre guardou o cofre de ferramentas no fundo de uma dungeon, com um guardião para vigiá-lo. Entre numa dungeon de nível 8 ou mais e derrote o chefe. O cofre abre sozinho quando o guardião cai!', on: 'Entre numa dungeon (nível 8 ou mais) e derrote o chefe. Depois, volte aqui.', ready: 'Ahoy! As ferramentas do velho mestre! Tome estes machados, eu fico com o resto.' },
+    stages: [{ k: 'dclear', n: 1, min: 8, hud: q => '🕳 Derrote o chefe de uma dungeon de nível 8+ (' + q.n + '/1)' }],
+    reward: { machado: 10, pot: 3 }, rewardTxt: '10 machados de arremesso e 3 poções' },
+  { id: 'paginas', giver: 'Ysolde Folha-Prata', title: 'Páginas da Tripulação', lv: 8, tier: 'media',
+    say: { ask: 'Os mortos das dungeons carregam páginas do diário da antiga tripulação, e eu quero lê-las. Derrote vinte inimigos DENTRO de dungeons e eu junto o que sobrou deles.', on: 'Os inimigos dentro das dungeons guardam as páginas. Derrote vinte deles.', ready: 'Vinte páginas... que história! Tome, foi um bom trabalho.' },
+    stages: [{ k: 'dkill', n: 20, hud: q => '📖 Derrote inimigos dentro de dungeons (' + q.n + '/20)' }],
+    reward: { pot: 6 }, rewardTxt: '6 poções' },
+  { id: 'cristais', giver: 'Velho Astrolábio', title: 'Cristais que Cantam', lv: 14, tier: 'longa',
+    say: { ask: 'Dizem que o fundo das dungeons canta quando o chefe cai, e o canto dá norte às estrelas. Limpe duas dungeons de nível 12 ou mais, derrotando os chefes, para eu ouvir esse canto.', on: 'Limpe duas dungeons de nível 12+ derrotando os chefes.', ready: 'Ouvi o canto a léguas! O céu está mais claro. Fique com isto, marujo.' },
+    stages: [{ k: 'dclear', n: 2, min: 12, hud: q => '💎 Derrote o chefe de dungeons nível 12+ (' + q.n + '/2)' }],
+    reward: { magic: 1, bmb: 4 }, rewardTxt: 'uma arma Mágica e 4 bombas' },
+  { id: 'rato', giver: 'Zé Carrancudo', title: 'Treinando o Rato', lv: 5, tier: 'curta',
+    say: { ask: 'Meu rato de estimação, o Biscoito, fugiu da gaiola de novo! É esperto e corre aos trancos, mas para para respirar. Pegue-o três vezes: toda vez que você o alcança, ele escapa e se esconde noutro lugar. É treino de pernas, marujo!', on: 'O Biscoito corre aos trancos pela vila e pelos arredores. Aproxime-se dele para pegá-lo.', ready: 'Meu Biscoito! Ele nunca esteve tão ágil. Tome, por ajudar a treinar o bicho.' },
+    stages: [{ k: 'chase', n: 3, hud: q => '🐀 Alcance o Biscoito, o rato fujão (' + q.n + '/3) — ele corre aos trancos' }],
+    reward: { pot: 2, faca: 5 }, rewardTxt: '2 poções e 5 facas de arremesso' },
+  { id: 'atlas', giver: 'Velho Astrolábio', title: 'O Atlas do Cartógrafo', lv: 10, tier: 'longa',
+    say: { ask: 'Falta completar meu atlas: preciso das bordas de três acampamentos distantes, medidas com os próprios pés. Vá até as proximidades do Bivaque Fantasma e dos dois acampamentos seguintes, e eu desenho o resto. Fique fora do alcance dos guardas, se puder!', on: 'Percorra as bordas dos acampamentos mais distantes para eu medir. Os marcos dourados mostram os pontos.', ready: 'Está tudo no atlas! Veja só: cada enseada, cada pico. Você tem olhos de gaivota. Leve esta recompensa.' },
+    stages: [3, 4, 5].map((pi, n) => ({ k: 'goto', r: 6, model: 'ring', spot: () => POST_DATA[pi] && around(POST_DATA[pi], 3, 16), hud: () => '🧭 Marco ' + (n + 1) + '/3: vá até a borda do ' + (POST_DATA[pi] ? POST_DATA[pi].name : 'acampamento') })),
+    reward: { magic: 1, bmb: 3, pot: 3 }, rewardTxt: 'uma arma Mágica, 3 bombas e 3 poções' },
+  { id: 'lebre', giver: 'Dona Marta', title: 'A Lebre Dourada', lv: 9, tier: 'media',
+    say: { ask: 'Uma lebre de pelo dourado anda pelos campos distantes, e dizem que traz sorte a quem a pega. Ela é rápida e esperta, mas se cansa depois de correr um pouco. Alcance-a quando ela parar para respirar!', on: 'A lebre dourada fica nos campos mais distantes da vila. Persiga-a até ela cansar e chegue perto.', ready: 'Você a pegou?! Que sorte linda! Tome, a sorte dela agora também é sua.' },
+    stages: [{ k: 'catch', n: 1, hud: () => '🐇 Alcance a Lebre Dourada quando ela parar cansada' }],
+    reward: { magic: 1, pot: 3 }, rewardTxt: 'uma arma Mágica e 3 poções' },
+  { id: 'corvo', giver: 'Pé-de-Pau Polly', title: 'O Corvo Não Esquece', lv: 8, tier: 'longa',
+    say: { ask: 'Meu velho corvo mensageiro foi levado para a Ilha do Corvo e eu nunca soube o destino dele. Vá até lá (o Capitão Remo leva você no porto), recolha três penas negras e defenda o ninho dele dos fantasmas por um tempo. Ele me reconhece pelas penas!', on: 'Na Ilha do Corvo: recolha as três penas negras e defenda o ninho. Para viajar, fale com o Capitão Remo no porto.', ready: 'Estas penas... é ele mesmo! O velho corvo não esquece nada. Tome, marujo, e obrigado.' },
+    stages: [
+      { k: 'collect', n: 3, isl: 'corvo', model: 'feather', msg: '🪶 Pena negra recolhida', spot: i => landPoint(55 + i * 22, i * 2.3 + .5), hud: q => '🪶 Recolha as penas negras na Ilha do Corvo (' + q.n + '/3)' },
+      { k: 'hold', n: 15, r: 5, isl: 'corvo', model: 'ring', waves: { kind: KIND.GHOST, count: 2, every: 7 }, spot: () => landPoint(100, 3.7), hud: q => '🪶 Defenda o ninho do corvo por ' + Math.max(0, Math.ceil(15 - q.n)) + 's' }],
+    reward: { magic: 1, pot: 4, bmb: 2 }, rewardTxt: 'uma arma Mágica, 4 poções e 2 bombas' },
+  { id: 'viagem', giver: 'Velho Astrolábio', title: 'Faróis da Tormenta', lv: 15, tier: 'longa',
+    say: { ask: 'Na Ilha da Tormenta há três faróis apagados que guiavam os navios antigos. Viaje até lá (Capitão Remo, no porto), acenda cada um ficando junto dele por alguns segundos e defenda-o das Sombras que brotam da tempestade.', on: 'Na Ilha da Tormenta: acenda os três faróis, ficando dentro de cada círculo e se defendendo das Sombras.', ready: 'Vi os três faróis acesos daqui, no horizonte! Os navios voltarão a ter norte. Tome, foi uma proeza.' },
+    stages: [0, 1, 2].map(i => ({ k: 'hold', n: 14, r: 4.5, isl: 'tormenta', model: 'ring', waves: { kind: KIND.SOMBRA, count: 3, every: 8, add: 2 }, spot: () => landPoint(60 + i * 25, i * 2.1 + 1.1),
+      hud: q => '🗼 Farol ' + (i + 1) + '/3: fique dentro do círculo por ' + Math.max(0, Math.ceil(14 - q.n)) + 's e defenda-se das Sombras' })),
+    reward: { magic: 1, bmb: 5, pot: 5 }, rewardTxt: 'uma arma Mágica, 5 bombas e 5 poções' },
+  { id: 'caveira', giver: 'Capitã Sal', title: 'A Caveira de Ouro', lv: 22, tier: 'epica',
+    say: { ask: 'A lenda da Caveira de Ouro é verdadeira: três pedaços dela estão espalhados pela Ilha da Caveira, e o chefe da ilha guarda a testa. Viaje até lá (Capitão Remo, no porto), junte os fragmentos e derrote o chefe. Isto vale uma fortuna... e vai exigir tudo de você.', on: 'Na Ilha da Caveira: recolha os três fragmentos de ouro e derrote o chefe da ilha.', ready: 'A Caveira de Ouro... inteira! Eu juro que nunca vi nada tão bonito. A sua parte, como combinamos, marujo.' },
+    stages: [
+      { k: 'collect', n: 3, isl: 'caveira', model: 'bell', msg: '💀 Fragmento de ouro recolhido', spot: i => landPoint(50 + i * 25, i * 2.1 + .9), hud: q => '💀 Recolha os fragmentos da Caveira de Ouro (' + q.n + '/3) na Ilha da Caveira' },
+      { k: 'wanted', n: 1, isl: 'caveira', hud: () => '☠ Derrote o chefe da Ilha da Caveira' }],
+    reward: { magic: 2, pot: 8, bmb: 5 }, rewardTxt: 'duas armas Mágicas, 8 poções e 5 bombas' },
   { id: 'arsenal', giver: 'Capitã Sal', title: 'Mão Firme', lv: 5, tier: 'curta',
     say: { ask: 'Arremesso é arte de quem não perde a calma, marujo. Pegue estas facas e acerte dez inimigos com elas. Equipe-as no espaço de arma de longa distância e use o botão de ataque. Elas acabam, mas as que não quebram ficam no chão.', on: 'Ainda faltam acertos! Equipe a faca de arremesso no espaço de longa distância e atire nos inimigos.', ready: 'Mão firme, olho vivo! Aqui, mais facas e uns trocados pelo treino.' },
     stages: [{ k: 'throw', n: 10, hud: q => '🎯 Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
     onStart: () => give('Faca de arremesso', 15), reward: { faca: 10 }, rewardTxt: '10 facas de arremesso' },
 ];
+/** Etapas de outra ilha (`isl`): só rodam na ilha certa; nas outras o painel manda viajar */
+const ISLN = { corvo: 'Ilha do Corvo', tormenta: 'Ilha da Tormenta', caveira: 'Ilha da Caveira' };
+const here = st => !st.isl || st.isl === SEED;
 const QMAP = Object.fromEntries(QUESTS.map(d => [d.id, d]));
 const Q = () => state.quests || (state.quests = {});
 const stageOf = (d, q) => d.stages[q.i];
@@ -160,7 +204,8 @@ export function questsHud() {
     const q = Q()[d.id];
     if (!q || q.s === 'done') return;
     const sh = q.t > 0 ? q.a / q.t : 0, pen = sh >= .1 ? '  ⚠ auto −' + Math.round(40 * sh) + '%' : '';   // quanto da recompensa o auto já custou
-    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + stageOf(d, q).hud(q) + pen);
+    const st = q.s === 'ready' ? null : stageOf(d, q);
+    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + (here(st) ? st.hud(q) : '⛵ viaje para a ' + ISLN[st.isl] + ' (Capitão Remo, no porto)') + pen);
   });
   if (state.contract && !state.contract.run) out.push(contractHud());
   return out.slice(0, 2).join('  ·  ') || null;
@@ -224,7 +269,7 @@ function finish(d, opt = {}) {
   if (r.machado) give('Machado de arremesso', r.machado);
   if (r.faca) give('Faca de arremesso', r.faca);
   if (r.torch) addItem({ ty: 'wpn', q: 1, wi: wi('Tocha'), il: 1 });
-  if (r.magic || opt.magic) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(d.lv + 2, 2), il: d.lv + 2 });
+  for (let k = 0; k < (r.magic || 0) + (opt.magic || 0); k++) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(d.lv + 2, 2), il: d.lv + 2 });
   if (share < .1 && Math.random() < .35) addItem({ ty: 'wpn', q: 2, wi: Math.max(0, wi('Faca de arremesso')), il: d.lv, ct: 5 });   // mestria: chance de extra
   q.s = 'done';
   log('🏆 Missão concluída: ' + d.title + ' · +' + xp + ' XP · +' + gold + ' ouro' + (d.rewardTxt ? ' · ' + d.rewardTxt : '') + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
@@ -233,7 +278,7 @@ function finish(d, opt = {}) {
 }
 
 /** Missões ativas cuja etapa atual é do tipo `k` */
-const active = k => QUESTS.map(d => [d, Q()[d.id]]).filter(([d, q]) => q && q.s === 'on' && stageOf(d, q).k === k);
+const active = k => QUESTS.map(d => [d, Q()[d.id]]).filter(([d, q]) => q && q.s === 'on' && stageOf(d, q).k === k && here(stageOf(d, q)));
 const bump = (d, q) => { q.n++; if (q.n >= stageOf(d, q).n) advance(d, q); else saveGame(); };
 
 // ---- eventos do jogo ----
@@ -241,9 +286,11 @@ on('enemy:killed', () => {
   const e = state.lastKill;
   if (!e) return;
   active('kill').forEach(([d, q]) => { if (e.t.n === 'Javali' && !e.qid) bump(d, q); });
+  if (e.dun) active('dkill').forEach(([d, q]) => bump(d, q));
   active('wanted').forEach(([d, q]) => { if (e.t.boss && !e.dun) bump(d, q); });
   active('boss').forEach(([d, q]) => { if (e.qid === d.id) bump(d, q); });
 });
+on('dungeon:clear', () => { const lv = (state.dunNow && state.dunNow.lv) || 0; active('dclear').forEach(([d, q]) => { if (lv >= stageOf(d, q).min) bump(d, q); }); });
 on('shot:thrown-hit', () => { active('throw').forEach(([d, q]) => bump(d, q)); });
 
 // ---- itens no mundo (coletas): barris, fragmentos, ervas, tesouro ----
@@ -254,6 +301,7 @@ function pickMesh(kind, radius = 4) {
   if (kind === 'barrel') { add(new THREE.CylinderGeometry(.42, .36, .8, 10), 0x8a5a2a, .4); [.2, .6].forEach(y => add(new THREE.CylinderGeometry(.43, .43, .06, 10), 0x3a2a1a, y)); }
   else if (kind === 'scroll') { const r = add(new THREE.CylinderGeometry(.12, .12, .6, 8), 0xe8d8a0, .45); r.rotation.z = 1.2; add(new THREE.CylinderGeometry(.13, .13, .08, 8), 0x8a5a2a, .45).rotation.z = 1.2; col = 0xffe080; }
   else if (kind === 'herb') { for (let k = 0; k < 5; k++) { const l = add(new THREE.ConeGeometry(.07, .5, 5), k % 2 ? 0x60d890 : 0x40b870, .25); l.position.x = Math.cos(k * 1.26) * .15; l.position.z = Math.sin(k * 1.26) * .15; l.rotation.z = Math.cos(k * 1.26) * .3; l.rotation.x = Math.sin(k * 1.26) * .3; } col = 0x80ffc0; }
+  else if (kind === 'feather') { const f = add(new THREE.ConeGeometry(.06, .7, 5), 0x1a1a24, .4); f.rotation.z = 1.1; col = 0x9080ff; }
   else if (kind === 'bell') { add(new THREE.ConeGeometry(.28, .45, 10), 0xd8a830, .4); add(new THREE.SphereGeometry(.07, 6, 5), 0x6a4a1a, .15); col = 0xffd060; }
   else if (kind === 'ring') { const t = new THREE.Mesh(new THREE.TorusGeometry(radius, .12, 6, 40), new THREE.MeshBasicMaterial({ color: 0xa0c8ff, transparent: true, opacity: .75 })); t.rotation.x = Math.PI / 2; t.position.y = .15; g.add(t); col = 0xa0c8ff; }
   else { const m = add(new THREE.SphereGeometry(.6, 8, 5, 0, 6.28, 0, 1.5), 0x6a4a2a, 0); m.scale.y = .45; add(new THREE.BoxGeometry(.7, .06, .12), 0xc02020, .45).rotation.y = .78; add(new THREE.BoxGeometry(.7, .06, .12), 0xc02020, .45).rotation.y = -.78; col = 0xff8060; }   // monte de terra com um X vermelho
@@ -388,16 +436,64 @@ function updateStalk(dt, list) {
   });
 }
 
+/** Lebre Dourada: conta quando o jogador a alcança */
+function updateCatch(dt, list) {
+  list.forEach(([d, q]) => {
+    if (stageOf(d, q).k !== 'catch') return;
+    const g = goldenHare(); if (!g) return;
+    if (Math.hypot(P.x - g.x, P.z - g.z) < 2.2 && !P.dead) { lootText('🐇 Você alcançou a Lebre Dourada!'); advance(d, q); }
+  });
+}
+
+/** Biscoito, o rato fujão: foge do jogador aos trancos; ao ser alcançado, conta e reaparece longe */
+const RAT = { g: null, x: 0, z: 0, hd: 0, v: 0, tm: 0, pause: 0 };
+function ratMesh() {
+  const g = new THREE.Group(), L = c => new THREE.MeshLambertMaterial({ color: c });
+  const b = new THREE.Mesh(new THREE.SphereGeometry(.2, 8, 6), L(0x8a7a6a)); b.scale.set(1, .7, 1.7); b.position.y = .16; g.add(b);
+  const h = new THREE.Mesh(new THREE.SphereGeometry(.11, 8, 6), L(0x9a8a7a)); h.scale.set(1, .9, 1.2); h.position.set(0, .18, .36); g.add(h);
+  [-.07, .07].forEach(x => { const e = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 5), L(0xd8a0a0)); e.position.set(x, .3, .3); g.add(e); });
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(.015, .03, .45, 5), L(0xd8a0a0)); t.rotation.x = 1.3; t.position.set(0, .12, -.55); g.add(t);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffe080, transparent: true, opacity: .35, depthWrite: false })); beam.position.y = 3.2; g.add(beam);
+  return g;
+}
+function ratRespawn() {
+  const a = Math.random() * 6.28, r = VILLAGE_R * .5 + Math.random() * 40, p = freePoint(Math.cos(a) * r, Math.sin(a) * r, .6);
+  RAT.x = p.x; RAT.z = p.z;
+}
+function updateRat(dt, list) {
+  const rq = list.find(([d, q]) => stageOf(d, q).k === 'chase');
+  if (!rq) { if (RAT.g) { scene.remove(RAT.g); RAT.g = null; } return; }
+  const [d, q] = rq;
+  if (!RAT.g) { RAT.g = ratMesh(); scene.add(RAT.g); ratRespawn(); }
+  const dx = RAT.x - P.x, dz = RAT.z - P.z, dist = Math.hypot(dx, dz) || 1;
+  if ((RAT.tm -= dt) <= 0) { RAT.go = !RAT.go; RAT.tm = RAT.go ? 1.2 + Math.random() * 1.2 : .6 + Math.random() * .5; }   // corre um pouco, para um pouco
+  const sp = dist < 14 && RAT.go ? 5 : 0;
+  if (sp > 0) {
+    const base = Math.atan2(dx, dz);
+    let best = base, ok = false;
+    for (const off of [0, .6, -.6, 1.2, -1.2, 2]) { const h = base + off; if (walkable(RAT.x + Math.sin(h) * 1.2, RAT.z + Math.cos(h) * 1.2)) { best = h; ok = true; break; } }
+    if (!ok) best = base + 3;
+    RAT.hd += Math.atan2(Math.sin(best - RAT.hd), Math.cos(best - RAT.hd)) * Math.min(1, dt * 12);
+    [RAT.x, RAT.z] = slideTo(RAT.x, RAT.z, RAT.x + Math.sin(RAT.hd) * sp * dt, RAT.z + Math.cos(RAT.hd) * sp * dt);
+  }
+  RAT.g.position.set(RAT.x, groundY(RAT.x, RAT.z), RAT.z); RAT.g.rotation.y = RAT.hd;
+  RAT.g.position.y += sp > 0 ? Math.abs(Math.sin(performance.now() * .02)) * .05 : 0;
+  if (dist < 1.6 && !P.dead) { lootText('🐀 Pegou o Biscoito! Ele escapou...'); ratRespawn(); RAT.go = false; RAT.tm = 1.5; bump(d, q); }
+}
+
 /** Todo quadro: contagem de tempo (para a penalidade do auto) e objetos das missões */
 export function updateQuests(dt) {
-  const list = QUESTS.map(d => [d, Q()[d.id]]).filter(([d, q]) => q && q.s === 'on');
-  list.forEach(([d, q]) => { q.t += dt; if (state.autoOn) q.a += dt; });
+  const all = QUESTS.map(d => [d, Q()[d.id]]).filter(([d, q]) => q && q.s === 'on');
+  all.forEach(([d, q]) => { q.t += dt; if (state.autoOn) q.a += dt; });
+  const list = all.filter(([d, q]) => here(stageOf(d, q)));
   const cr = state.contract && state.contract.run;
   if (cr) { cr.t += dt; if (state.autoOn) cr.a += dt; const lim = CONTRACTS[state.contract.c].limit; if (lim && cr.t > lim) failC('o tempo acabou'); }
   updateCollects(dt, list);
   updateAreas(dt, list);
   updateEscort(dt, list);
   updateStalk(dt, list);
+  updateRat(dt, list);
+  updateCatch(dt, list);
   list.forEach(([d, q]) => {   // limite de tempo da etapa (ex.: voltar antes da maré cobrir)
     const st = stageOf(d, q);
     if (st.limit && q.tl != null && (q.tl -= dt) <= 0) { q.i = st.back || 0; q.n = 0; q.tl = null; clearPk(); log('🌊 Tempo esgotado! ' + d.title + ': recomece pela etapa anterior'); saveGame(); }
@@ -415,6 +511,7 @@ export function questMarks() {
     const q = Q()[d.id];
     if (!q || q.s !== 'on') return;
     const st = stageOf(d, q);
+    if (!here(st)) return;
     if (st.k === 'collect' || st.k === 'goto' || st.k === 'hold' || st.k === 'escort') PK.filter(p => p.id === d.id && p.si === q.i).forEach(p => out.push({ x: p.x + jit(p.x), z: p.z + jit(p.z), r: 18, t: d.title }));
     else if (st.k === 'boss') {
       const e = enemies.find(z => z.qid === d.id && !z.dead);
@@ -425,6 +522,10 @@ export function questMarks() {
       const e = enemies.find(z => !z.dead && z.t.boss && !z.dun);
       if (e) out.push({ x: e.x, z: e.z, r: 30, t: d.title });
       else { const f = POST_DATA.find(p => /Capitão Maldito/.test(p.n || p.name || '')); if (f) out.push({ x: f.x, z: f.z, r: 34, t: d.title }); }
+    } else if (st.k === 'catch') {
+      const g = WILD.hares.find(a => a.gold); if (g) out.push({ x: g.x, z: g.z, r: 34, t: d.title });
+    } else if (st.k === 'chase') {
+      if (RAT.g) out.push({ x: RAT.x, z: RAT.z, r: 30, t: d.title });
     } else if (st.k === 'stalk') {
       const w = WILD.deer.find(a => a.white); if (w) out.push({ x: w.x, z: w.z, r: 34, t: d.title });
     } else if (st.k === 'kill') {

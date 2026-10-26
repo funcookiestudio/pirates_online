@@ -60,7 +60,7 @@ function stepTo(a, hd, sp, dt, avoid = true, snap = false) {
     best = hd + 3;
   }
   a.hd = turn(a.hd, best, dt * a.tr * 12);
-  a.v = snap ? sp : a.v + (sp - a.v) * (1 - Math.exp(-dt * 6));   // snap: a velocidade segue o salto (lebre)
+  a.v = snap ? sp * (a.gold ? 1.2 : 1) : a.v + (sp - a.v) * (1 - Math.exp(-dt * 6));   // snap: a velocidade segue o salto (lebre)
   const nx = a.x + Math.sin(a.hd) * a.v * dt, nz = a.z + Math.cos(a.hd) * a.v * dt;
   [a.x, a.z] = slideTo(a.x, a.z, nx, nz);
   const q = { x: a.x, z: a.z }; collide(q, a.rad); a.x = q.x; a.z = q.z;
@@ -120,6 +120,16 @@ export function whiteDeer() {
   w = makeDeer(far.hx + 4, far.hz + 3, 99); w.white = true;
   w.A.g.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.lerp(new THREE.Color(0xffffff), .85); } });
   return w;
+}
+
+/** Lebre Dourada (missão): cria uma vez, longe da vila, e devolve o bicho */
+export function goldenHare() {
+  let g = HARES.find(a => a.gold); if (g) return g;
+  const far = [...HARES].sort((a, b) => Math.hypot(b.hx, b.hz) - Math.hypot(a.hx, a.hz))[0];
+  if (!far) return null;
+  g = makeHare(far.hx + 3, far.hz + 2); g.gold = true;
+  g.A.g.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.lerp(new THREE.Color(0xffd040), .8); } });
+  return g;
 }
 
 /* ---------- gato ---------- */
@@ -184,8 +194,14 @@ function thinkHare(a, dt, t) {
   const m = MOUNT.on ? 1.35 : 1;
   a.tm -= dt;
   const air = .12 + 1.75 * hareAir(A.hp);   // 0,12 no chão … ~1,9 no pico do salto
-  if (a.st !== 'flee' && d < H_FLEE * m && !P.dead) { a.st = 'flee'; a.tm = rnd(4, 7); a.zz = Math.random() < .5 ? 1 : -1; a.zt = 0; a.stand = 0; }
+  if (a.gold && a.st === 'tired') {   // Lebre Dourada cansada: para, ofegante, e dá chance de alcançá-la
+    a.v = 0; a.hd = turn(a.hd, Math.atan2(dx, dz), dt * 2);
+    if (a.tm <= 0) { a.st = 'flee'; a.tm = rnd(4, 6); a.zt = 0; a.run = 0; }
+    return ['sit', 0];
+  }
+  if (a.st !== 'flee' && d < (a.gold ? 11 : H_FLEE) * m && !P.dead) { a.st = 'flee'; a.tm = rnd(4, 7); a.zz = Math.random() < .5 ? 1 : -1; a.zt = 0; a.stand = 0; }
   if (a.st === 'flee') {
+    if (a.gold && gr && (a.run = (a.run || 0) + dt) > 4.5) { a.st = 'tired'; a.tm = 3.5; a.run = 0; return ['sit', 0]; }
     a.zt -= dt; if (a.zt <= 0) { a.zt = rnd(.35, .8); a.zz = -a.zz; }   // troca de lado a cada poucos saltos: zigue-zague
     stepTo(a, away + a.zz * .7, 7.2 * air, dt, true, true);
     if ((a.tm <= 0 && d > H_SAFE) || d > H_SAFE + 20) { if (gr) { a.st = 'alert'; a.tm = rnd(3, 5); a.hx = a.x; a.hz = a.z; } }
