@@ -94,6 +94,11 @@ const QUESTS = [
     say: { ask: 'Dizem que um cervo branco anda pela mata, o mais distante dos rebanhos. Nunca consegui chegar perto, ele foge de quem corre. Aproxime-se DEVAGAR, sem cavalo, e fique perto dele por alguns segundos. Quero saber que é real!', on: 'O cervo branco fica na manada mais distante da vila. Ande devagar e não corra, ou ele foge.', ready: 'Você o viu de perto?! Ha! Pelo menos um de nós viu... Tome, por sua paciência.' },
     stages: [{ k: 'stalk', n: 6, r: 7, hud: q => '🦌 Aproxime-se devagar do Cervo Branco (' + Math.max(0, Math.ceil(6 - q.n)) + 's) — sem correr, sem cavalo' }],
     reward: { couro: 6, pot: 2 }, rewardTxt: '6 couros e 2 poções' },
+  { id: 'divida', giver: 'Capitã Sal', title: 'Dívida de Sangue', lv: 8, tier: 'longa',
+    say: { ask: 'Um velho devedor, Cão Rouco, sumiu com minha mercadoria e se escondeu entre os contrabandistas. Traga-o a mim... de um jeito ou de outro. Ele é um elite, não o subestime.', on: 'Cão Rouco anda com os contrabandistas, perto do posto deles. Derrote-o e volte aqui.', ready: 'Então o Cão Rouco caiu. Ele tinha esta bolsa. Pode me entregar para eu cobrar a dívida, ou guardar o segredo dele e dizer que fugiu. A escolha é sua, marujo.' },
+    stages: [{ k: 'boss', n: 1, kind: KIND.CONTRA, elite: true, name: 'Cão Rouco', at: () => POST_DATA[1] ? freePoint(POST_DATA[1].x + 4, POST_DATA[1].z + 4, 1) : null, hud: () => '🗡 Derrote o Cão Rouco, o devedor elite, no Posto dos Contrabandistas' }],
+    choice: [['💰 Entregar a bolsa (mais ouro)', { g: 1.5 }], ['🤐 Dizer que ele fugiu (uma arma Mágica, menos ouro)', { g: .5, magic: 1 }]],
+    reward: {}, rewardTxt: 'conforme a sua escolha' },
   { id: 'arsenal', giver: 'Capitã Sal', title: 'Mão Firme', lv: 5, tier: 'curta',
     say: { ask: 'Arremesso é arte de quem não perde a calma, marujo. Pegue estas facas e acerte dez inimigos com elas. Equipe-as no espaço de arma de longa distância e use o botão de ataque. Elas acabam, mas as que não quebram ficam no chão.', on: 'Ainda faltam acertos! Equipe a faca de arremesso no espaço de longa distância e atire nos inimigos.', ready: 'Mão firme, olho vivo! Aqui, mais facas e uns trocados pelo treino.' },
     stages: [{ k: 'throw', n: 10, hud: q => '🎯 Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
@@ -183,6 +188,7 @@ export function questsButtons(cur) {
     if (q && q.s === 'done') return;
     if (!q && P.lv >= d.lv) out.push(['📜 Aceitar missão: ' + d.title + ' (Nv ' + d.lv + ')', (say, rebuild) => { start(d); say(d.say.on); rebuild(); }]);
     else if (!q) out.push(['🔒 ' + d.title + ' — requer Nv ' + d.lv, () => {}]);
+    else if (q.s === 'ready' && d.choice) d.choice.forEach(([lb, o]) => out.push([lb, (say, rebuild) => { finish(d, o); say('Negócio fechado, marujo.'); rebuild(); }]));
     else if (q.s === 'ready') out.push(['🎁 Receber recompensa: ' + d.title, (say, rebuild) => { finish(d); say('Foi um prazer fazer negócio, marujo!'); rebuild(); }]);
   });
   return out;
@@ -202,10 +208,10 @@ function advance(d, q) {
   saveGame();
 }
 
-function finish(d) {
+function finish(d, opt = {}) {
   const q = Q()[d.id], [pc, gm] = TIER[d.tier], share = q.t > 0 ? Math.min(1, q.a / q.t) : 0;
   const mult = Math.max(.6, 1 - .4 * share) * (share < .1 ? 1.25 : 1);   // auto ganha menos · manual ganha bônus de mestria
-  const xp = Math.round(xpToNext(d.lv) * pc * mult), gold = Math.round(goldAt(d.lv) * gm * mult);
+  const xp = Math.round(xpToNext(d.lv) * pc * mult), gold = Math.round(goldAt(d.lv) * gm * mult * (opt.g || 1));
   P.xp += xp; P.gold += gold; levelUp();
   const r = d.reward || {};
   if (r.pot) beltAdd('pot', r.pot);
@@ -214,7 +220,7 @@ function finish(d) {
   if (r.machado) give('Machado de arremesso', r.machado);
   if (r.faca) give('Faca de arremesso', r.faca);
   if (r.torch) addItem({ ty: 'wpn', q: 1, wi: wi('Tocha'), il: 1 });
-  if (r.magic) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(d.lv + 2, 2), il: d.lv + 2 });
+  if (r.magic || opt.magic) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(d.lv + 2, 2), il: d.lv + 2 });
   if (share < .1 && Math.random() < .35) addItem({ ty: 'wpn', q: 2, wi: Math.max(0, wi('Faca de arremesso')), il: d.lv, ct: 5 });   // mestria: chance de extra
   q.s = 'done';
   log('🏆 Missão concluída: ' + d.title + ' · +' + xp + ' XP · +' + gold + ' ouro' + (d.rewardTxt ? ' · ' + d.rewardTxt : '') + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
@@ -324,6 +330,12 @@ function updateEscort(dt, list) {
 let bossOut = false, T = 0;
 function ensureBoss(d) {
   if (bossOut && enemies.some(e => e.qid === d.id && !e.dead)) return;
+  const bs = d.stages.find(x => x.k === 'boss');
+  if (bs && bs.at) {   // chefe de missão com ponto próprio
+    const p = bs.at(); if (!p || Math.hypot(P.x - p.x, P.z - p.z) > 120) return;
+    spawn(bs.kind, p.x, p.z, undefined, { lv: Math.max(d.lv, P.lv), elite: true });
+    enemies[enemies.length - 1].qid = d.id; bossOut = true; log('⭐ ' + bs.name + ' apareceu!'); return;
+  }
   const n = npcByShop('farm-granja');
   const bx = n ? n.g.position.x : P.x, bz = n ? n.g.position.z : P.z;
   if (!n || Math.hypot(P.x - bx, P.z - bz) > 120) return;   // só cria quando o jogador está por perto
@@ -387,7 +399,7 @@ export function updateQuests(dt) {
   });
   if ((T -= dt) > 0) return;
   T = 1.5;
-  const jq = list.find(([d, q]) => d.id === 'javalis' && stageOf(d, q).k === 'boss');
+  const jq = list.find(([d, q]) => stageOf(d, q).k === 'boss');
   if (jq) ensureBoss(jq[0]); else bossOut = false;
 }
 
@@ -402,6 +414,7 @@ export function questMarks() {
     else if (st.k === 'boss') {
       const e = enemies.find(z => z.qid === d.id && !z.dead);
       if (e) out.push({ x: e.x, z: e.z, r: 22, t: d.title });
+      else if (st.at) { const p = st.at(); if (p) out.push({ x: p.x, z: p.z, r: 32, t: d.title }); }
       else { const n = npcByShop('farm-granja'); if (n) out.push({ x: n.g.position.x + 16, z: n.g.position.z + 6, r: 32, t: d.title }); }
     } else if (st.k === 'stalk') {
       const w = WILD.deer.find(a => a.white); if (w) out.push({ x: w.x, z: w.z, r: 34, t: d.title });
