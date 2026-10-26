@@ -241,7 +241,7 @@ export function updateCutaway() {
   for (const h of HOUSES) {
     ensureStubs(h);
     const [px, pz] = toL(h, P.x, P.z);
-    const inside = Math.abs(px) < h.hx && Math.abs(pz) < h.hz && (!h.inBox || h.sc || h.inBox(px, pz));   // taverna: encostar na parede por fora não conta como entrar (hx/hz passam das paredes)
+    const inside = Math.abs(px) < h.hx && Math.abs(pz) < h.hz && (!h.inBox || h.sc || h.inBox(px, pz)) && (!h.gBox || P.up || h.gBox(px, pz));   // taverna: encostar na parede por fora não conta como entrar (hx/hz passam das paredes)
     if (inside) INSIDE = true;
     h.roof.visible = !inside;
     h.shown = inside || DOORS.some(d => d.open && !d.room && d.h.x === h.x && d.h.z === h.z);   // interior à vista (jogador dentro ou porta externa aberta)

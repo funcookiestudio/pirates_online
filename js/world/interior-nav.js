@@ -65,6 +65,8 @@ const free = (g, i, j) => i >= 0 && j >= 0 && i < g.w && j < g.d && !g.blk[j * g
 const center = (g, i, j) => [-g.hx + (i + .5) * CS, -g.hz + (j + .5) * CS];
 
 /** Grade do andar atual da casa que contém o ponto (dentro das paredes + 1 m), ou null */
+/** Dentro das paredes: `inBox` da casa e, no térreo, `gBox` (taverna: o térreo é mais estreito que o andar de cima, o beiral não conta) */
+const ib = (h, u, v, L) => (!h.inBox || h.inBox(u, v)) && (!h.gBox || L || h.gBox(u, v));
 function gridAt(x, z, L) {
   for (const h of HOUSES) {
     const dx = x - h.x, dz = z - h.z;
@@ -112,7 +114,7 @@ const nearestFree = (g, i, j) => {
 /** Pontos livres (mundo) do andar L da casa h, para quem vagueia dentro dela (ex.: o rato da missão) */
 export function freeSpots(h, L = 0) {
   const g = build(h, L), out = [];
-  for (let j = 0; j < g.d; j += 2) for (let i = 0; i < g.w; i += 2) if (free(g, i, j) && free(g, i + 1, j) && free(g, i, j + 1) && (!h.inBox || h.inBox(...center(g, i, j).map(v => v / h.K)))) out.push(toW(h, ...center(g, i, j)));
+  for (let j = 0; j < g.d; j += 2) for (let i = 0; i < g.w; i += 2) if (free(g, i, j) && free(g, i + 1, j) && free(g, i, j + 1) && ib(h, ...center(g, i, j).map(v => v / h.K), g.L)) out.push(toW(h, ...center(g, i, j)));
   return out;
 }
 
@@ -136,7 +138,7 @@ export function snapInterior(x, z, tx, tz) {
   const g = gridAt(tx, tz); if (!g) return undefined;
   if (!gridAt(x, z) || gridAt(x, z).h !== g.h) return undefined;
   const [tu, tv] = toU(g.h, tx, tz);
-  if (g.h.inBox && !g.h.inBox(tu / g.h.K, tv / g.h.K)) return undefined;   // fora das paredes: não é do interior (saída pela porta é tratada à parte)
+  if (!ib(g.h, tu / g.h.K, tv / g.h.K, g.L)) return undefined;   // fora das paredes: não é do interior (saída pela porta é tratada à parte)
   const p = planInterior(x, z, tx, tz);
   if (!p || !p.goal) return null;
   const [gu, gv] = toU(g.h, ...p.goal);
@@ -172,6 +174,6 @@ export const navVersion = () => ver;
 export function debugGrid() {
   const g = gridAt(P.x, P.z); if (!g) return null;
   const cells = [];
-  for (let j = 0; j < g.d; j++) for (let i = 0; i < g.w; i++) { const c = center(g, i, j), hh = g.h; if (hh.inBox ? !hh.inBox(c[0], c[1]) : (hh.hx && (Math.abs(c[0]) > hh.hx || Math.abs(c[1]) > hh.hz))) continue; const [x, z] = toW(g.h, ...c); cells.push({ x, z, free: !(g.h.rects ? g.occ : g.blk)[j * g.w + i] }); }
+  for (let j = 0; j < g.d; j++) for (let i = 0; i < g.w; i++) { const c = center(g, i, j), hh = g.h; if (hh.inBox ? !ib(hh, c[0], c[1], g.L) : (hh.hx && (Math.abs(c[0]) > hh.hx || Math.abs(c[1]) > hh.hz))) continue; const [x, z] = toW(g.h, ...c); cells.push({ x, z, free: !(g.h.rects ? g.occ : g.blk)[j * g.w + i] }); }
   return { h: g.h, L: g.L, cells, size: CS };
 }
