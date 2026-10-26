@@ -63,14 +63,14 @@ function mkChest() {
   const pile = new THREE.Mesh(new THREE.SphereGeometry(.5, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), gold); pile.scale.set(1.05, .55, .6); pile.position.y = .5; g.add(pile);
   let r = 7; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
   const coinG = new THREE.CylinderGeometry(.075, .075, .02, 10);
-  const coin = (x, y, z, tilt) => { const c = new THREE.Mesh(coinG, rnd() < .3 ? band : gold); c.position.set(x, y, z); c.rotation.set(tilt * (rnd() - .5) * 2, rnd() * 3, tilt * (rnd() - .5) * 2); g.add(c); };
+  const coin = (x, y, z, tilt) => { const c = new THREE.Mesh(coinG, rnd() < .3 ? band : gold); c.position.set(x, y, z); c.rotation.set(tilt * (rnd() - .5) * 2, rnd() * 3, tilt * (rnd() - .5) * 2); g.add(c); return c; };
   for (let i = 0; i < 26; i++) coin((rnd() - .5) * .95, .6 + rnd() * .12, (rnd() - .5) * .45, .9);   // moedas sobre a pilha
   const gems = [0xe02848, 0x2a6ae0, 0x28c070, 0xa040e0, 0xf0f0ff, 0xf08020].map(c => M(c, c & 0x7f7f7f));
   const gemG = new THREE.OctahedronGeometry(.075), gem = (x, y, z, k) => { const m = new THREE.Mesh(gemG, gems[k % 6]); m.position.set(x, y, z); m.scale.set(1, 1.3, 1); m.rotation.y = rnd() * 3; g.add(m); };
   for (let i = 0; i < 9; i++) gem((rnd() - .5) * .85, .66 + rnd() * .1, (rnd() - .5) * .38, i);          // joias dentro
   // ao redor: moedas espalhadas, pilhas e joias
-  for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, d = .75 + rnd() * .55; coin(Math.cos(a) * d * 1.1, .015 + (rnd() < .2 ? .02 : 0), Math.abs(Math.sin(a)) * d * .7 + .3, .05); }
-  [[-.85, .45], [.9, .55], [.55, .85]].forEach(([x, z]) => { for (let k = 0; k < 6; k++) { const c = new THREE.Mesh(coinG, k % 3 ? gold : band); c.position.set(x, .012 + k * .021, z); c.rotation.y = rnd() * 3; g.add(c); } });
+  for (let i = 0; i < 24; i++) { const a = rnd() * 6.28, d = .75 + rnd() * .55; coin(Math.cos(a) * d * 1.1, .015 + (rnd() < .2 ? .02 : 0), Math.abs(Math.sin(a)) * d * .7 + .3, .05).scale.setScalar(.78); }
+  [[-.85, .45], [.9, .55], [.55, .85]].forEach(([x, z]) => { for (let k = 0; k < 6; k++) { const c = new THREE.Mesh(coinG, k % 3 ? gold : band); c.scale.setScalar(.78); c.position.set(x, .012 + k * .017, z); c.rotation.y = rnd() * 3; g.add(c); } });
   for (let i = 0; i < 7; i++) { const a = rnd() * 6.28, d = .8 + rnd() * .5; if ((i + 2) % 6 === 1) continue; gem(Math.cos(a) * d * 1.1, .07, Math.abs(Math.sin(a)) * d * .6 + .45, i + 2); }
   const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, 'rgba(255,224,120,.9)'); gr.addColorStop(1, 'rgba(255,200,60,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
