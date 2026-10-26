@@ -12,13 +12,16 @@ import { lootText, log } from '../ui/notify.js';
 
 const SELL_MUL = 4; // preço de venda no ferreiro = valor × 4 (igual ao diálogo)
 let active = false;
+/** Arrumação ao ligar o auto na vila: vende/guarda/compra tudo que precisa, sem esperar a mochila encher (rb/tw = compra e venda sem pendências) */
+export const TIDY = { on: false, rb: false, tw: false };
+export const NEAR = 4.2;   // distância para negociar (o balcão da Capitã Sal impedia de chegar mais perto)
 
 const toStore = () => { const c = state.autoCfg; return c.storeMin ? bag.filter(it => it.q >= c.storeMin) : []; };
 const toSell = () => { const c = state.autoCfg; return c.sellMax ? bag.filter(it => it.q <= c.sellMax && !(c.storeMin && it.q >= c.storeMin)) : []; };
 
 function goTo(n, kind) {
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
-  if (d < 3.2 && !behindWall(P.x, P.z, nx, nz)) return true;   // (NPC dentro de casa e o jogador fora: entra pela porta)
+  if (d < NEAR && !behindWall(P.x, P.z, nx, nz)) return true;   // (NPC dentro de casa e o jogador fora: entra pela porta)
   const f = npcStand(n, P.x, P.z);
   const now = performance.now();
   if (!state.trip && now - (goTo.last || -1e9) > 45000) { goTo.last = now; log(kind === 'sell' ? '💰 Mochila cheia: indo vender ao ferreiro' : '📦 Indo guardar itens no baú'); }
@@ -29,10 +32,10 @@ function goTo(n, kind) {
 /** true = este frame foi usado para ir ao ferreiro/baú */
 export function townStep() {
   const c = state.autoCfg;
-  if ((!c.sellMax && !c.storeMin)) { active = false; return false; }
+  if ((!c.sellMax && !c.storeMin)) { active = false; TIDY.tw = true; if (TIDY.rb) TIDY.on = false; return false; }
   const sell = toSell(), store = toStore().slice(0, Math.max(0, CHEST_MAX - chest.length));
-  if (!sell.length && !store.length) { active = false; if (state.trip === 'sell' || state.trip === 'chest') state.trip = null; return false; }
-  if (!active && bagUsed() < c.bagAt) return false;
+  if (!sell.length && !store.length) { active = false; TIDY.tw = true; if (TIDY.rb) TIDY.on = false; if (state.trip === 'sell' || state.trip === 'chest') state.trip = null; return false; }
+  if (!active && !TIDY.on && bagUsed() < c.bagAt) return false;
   active = true;
   if (danger()) return false;                       // inimigo perto: luta primeiro
   if (sell.length) {

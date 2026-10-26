@@ -5,7 +5,7 @@ import { enemies, loot, respawns, bombs } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { bag, equip, pickSlot, lootBlocked } from './inventory.js';
 import { refillStep } from './refill.js';
-import { townStep } from './town.js';
+import { townStep, TIDY } from './town.js';
 import { autoWeapon } from './swap.js';
 import { spin, bomb, potion } from './combat.js';
 import { dodge } from './dodge.js';
@@ -21,6 +21,7 @@ import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
 const STUCK = { x: 0, z: 0, t: 0 };
 let DB = 0;  // tempo seguido passando por uma porta
+let LAST = -1e9; // última vez que o auto pensou (para detectar que acabou de ser ligado)
 let MT = 0; // intervalo para tentar montar
 let AT = 0; // intervalo para reavaliar o alvo
 let AI = 0; // intervalo para checar equipamentos melhores
@@ -32,6 +33,10 @@ export function togAuto() {
 
 /** Decide o que o jogador faz neste frame (só roda com o auto combate ligado) */
 export function autoThink(dt) {
+  const now = performance.now();
+  if (now - LAST > 1500) { const v = Math.hypot(P.x, P.z) < VILLAGE_R - 1; Object.assign(TIDY, { on: v, rb: false, tw: false }); }   // auto ligado na vila: arruma o inventário primeiro
+  LAST = now;
+  if (TIDY.on && Math.hypot(P.x, P.z) >= VILLAGE_R) TIDY.on = false;
   state.autoHold -= dt;
   AT -= dt;
   AI -= dt;
