@@ -16,6 +16,7 @@ export function lootFilter(l) {
   const c = state.autoCfg;
   if (l.ty === 'gold') return c.lootGold;
   if (l.ty === 'pot') return c.lootPot;
+  if (l.ammo) return true;   // projétil que caiu: sempre recolhe
   const w = l.ty === 'wpn';
   if (!(w ? c.lootWpn : c.lootArm) || l.q < (w ? c.lootWpnQ : c.lootArmQ)) return false;
   const it = lootAsItem(l);

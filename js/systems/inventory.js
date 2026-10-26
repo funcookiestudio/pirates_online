@@ -9,6 +9,7 @@ import { torch as torchLight, hemi } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { log, lootText } from '../ui/notify.js';
 import { hourNow } from '../core/clock.js';
+import { isThrown, ammoInfo, ammoCt, setCt } from '../data/ammo.js';
 
 /** Itens guardados na mochila */
 export const bag = [];
@@ -64,7 +65,7 @@ export function beltTick(dt) {
 /** Preços fixos: poção na taverna / com a mercadora, bomba com a mercadora */
 export const PRICE = { potTavern: 25, potTrader: 32, bomb: 45 };
 /** O item caído `l` não pode ser coletado agora (mochila cheia ou poções no limite)? */
-export const lootBlocked = l => ((l.ty === 'wpn' || l.ty === 'arm') && bagFull()) || (l.ty === 'pot' && beltRoom('pot') <= 0);
+export const lootBlocked = l => ((l.ty === 'wpn' || l.ty === 'arm') && bagFull() && !(isThrown({ ty: l.ty, w: l.wi }) && ammoStack(l.wi))) || (l.ty === 'pot' && beltRoom('pot') <= 0);
 
 /** Equipamento atual: arma corpo a corpo (wpn), arma de fogo (gun) e armadura (arm). Uma arma fica na mão, a outra no coldre. */
 export const eq = { wpn: null, gun: null, arm: null, off: null };   // off = segunda mão (livre): outra arma do mesmo tipo
@@ -74,7 +75,22 @@ export const isTorch = it => !!it && it.ty === 'wpn' && !!WEAPONS[it.w].torch;
 export const slotOf = it => it.ty === 'arm' ? 'arm' : isTorch(it) ? 'off' : (WEAPONS[it.w].gun ? 'gun' : 'wpn');
 
 /** Adiciona à mochila um item caído (`l` = { ty, q, wi }) */
+/** Pilha existente do arremesso `w` (a equipada ou a da mochila) */
+export const ammoStack = w => (isThrown(eq.gun) && eq.gun.w === w ? eq.gun : bag.find(b => isThrown(b) && b.w === w)) || null;
+/** Total de unidades do arremesso `w` (equipada + mochila) */
+export const ammoTotal = w => (isThrown(eq.gun) && eq.gun.w === w ? ammoCt(eq.gun) : 0) + bag.reduce((a, b) => a + (isThrown(b) && b.w === w ? ammoCt(b) : 0), 0);
+export const LAST = { w: null };   // último arremesso usado (o auto repõe esse)
+
 export function addItem(l) {
+  const tw = l.it ? (isThrown(l.it) ? l.it.w : null) : (isThrown({ ty: l.ty, w: l.wi }) ? l.wi : null);
+  if (tw != null) {   // arremesso: soma na pilha que já existe
+    const n = l.it ? ammoCt(l.it) : (l.ct || Math.ceil(ammoInfo(tw).max / 2)), st = ammoStack(tw);
+    if (st) { setCt(st, Math.min(ammoInfo(tw).max, ammoCt(st) + n)); lootText('🎯 ' + st.n); emit('inventory:changed'); return; }
+    if (!l.it) {
+      const it = { ty: 'wpn', q: l.q, v: Math.round(WEAPONS[tw].b * l.q * (1 + ((l.il || 1) - 1) * .2)), il: l.il || 1, w: tw, n: '' };
+      setCt(it, Math.min(ammoInfo(tw).max, n)); bag.push(it); lootText('Item: ' + it.n); emit('inventory:changed'); return;
+    }
+  }
   if (l.it) { bag.push(l.it); lootText('Item: ' + l.it.n); emit('inventory:changed'); return; }
   const v = Math.round((l.ty === 'wpn' ? WEAPONS[l.wi].b : 8) * l.q * (1 + ((l.il || 1) - 1) * .2));
   const it = { ty: l.ty, q: l.q, v, il: l.il || 1, w: l.wi, n: l.ty === 'wpn' ? WEAPONS[l.wi].n : AN[l.q - 1] };
@@ -181,4 +197,23 @@ export function setWeapon(prefer) {
   if (P.models.gun) P.models.gun.visible = !!eq.gun;
   applyWeaponBonus();
   refreshTorch();
+}
+
+/** Gasta 1 unidade do arremesso equipado. Devolve { w, q, keep } (keep = o projétil cai inteiro no chão) ou null se não é arremesso.
+    Acabando a pilha: repõe com outra pilha da mochila ou volta para a arma corpo a corpo. */
+export function spendAmmo() {
+  const it = eq.gun;
+  if (!isThrown(it)) return null;
+  const info = ammoInfo(it.w), c = ammoCt(it) - 1, out = { w: it.w, q: it.q, keep: !info.consume && Math.random() > info.brk };
+  LAST.w = it.w;
+  setCt(it, c);
+  if (c <= 0) {
+    eq.gun = null;
+    log('🎯 Acabaram: ' + WEAPONS[it.w].n);
+    const j = bag.findIndex(b => isThrown(b) && b.w === it.w), j2 = j >= 0 ? j : bag.findIndex(isThrown);
+    P.swap = null;
+    if (j2 >= 0) equip(j2, 'gun'); else setWeapon('wpn');
+  }
+  emit('inventory:changed');
+  return out;
 }

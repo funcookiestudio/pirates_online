@@ -7,7 +7,8 @@ import { M } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P, levelUp } from '../entities/player.js';
 import { aimOffset } from '../entities/player-weapon.js';
-import { dropLoot } from '../entities/loot.js';
+import { dropLoot, dropAmmo } from '../entities/loot.js';
+import { spendAmmo } from './inventory.js';
 import { PV, petXp } from '../pets/stats.js';
 import { puff } from './effects.js';
 import { log, dmgNum } from '../ui/notify.js';
@@ -166,7 +167,8 @@ export function attack(dx, dz) {
   }
   m.position.set(mx, my, mz);
   scene.add(m);
-  shots.push({ m, t, d: P.dmg * W.mul, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0 });
+  const sp = W.thrown ? spendAmmo() : null;   // arremesso é finito: gasta 1 (pode quebrar ou cair no chão)
+  shots.push({ m, t, rec: sp && sp.keep ? sp : null, d: P.dmg * W.mul, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0 });
 }
 
 /** Momento do golpe corpo a corpo: acerta quem está no arco à frente */
@@ -225,6 +227,7 @@ export function updateShots(dt) {
       }
     }
     if (done) {
+      if (s.rec) dropAmmo(p.x + (Math.random() - .5), p.z + (Math.random() - .5), s.rec.w, s.rec.q);
       scene.remove(s.m);
       shots.splice(i, 1);
     }

@@ -3,7 +3,8 @@
 import { state } from '../core/state.js';
 import { P } from '../entities/player.js';
 import { npcByShop } from '../entities/npc.js';
-import { PRICE, beltRoom, beltAdd } from './inventory.js';
+import { PRICE, beltRoom, beltAdd, addItem, bagFull, ammoStack, ammoTotal, LAST, eq } from './inventory.js';
+import { ammoInfo, isThrown } from '../data/ammo.js';
 import { danger } from './stamina.js';
 import { behindWall, npcStand } from './steer.js';
 import { TIDY, NEAR } from './town.js';
@@ -24,25 +25,34 @@ function plan() {
   const np = toBuy('pot', P.pot + P.potR, c.potMin, c.potTarget, PRICE.potTavern, gold);
   if (np > 0) return { kind: 'tavern', pot: np, bomb: 0 };
   const nb = toBuy('bmb', P.bmb + P.bmbR, c.bombMin, c.bombTarget, PRICE.bomb, gold);
-  return nb > 0 ? { kind: 'trader', pot: 0, bomb: nb } : null;
+  if (nb > 0) return { kind: 'trader', pot: 0, bomb: nb, ammo: 0 };
+  // armas de arremesso (finitas): repõe a que o jogador usa
+  const w = isThrown(eq.gun) ? eq.gun.w : LAST.w;
+  if (w != null && c.ammoTarget > 0) {
+    const a = ammoInfo(w), tot = ammoTotal(w), tg = Math.min(c.ammoTarget, a.max);
+    const n = Math.min(tg - tot, Math.floor(gold / a.price));
+    if ((TIDY.on ? tot < tg : tot <= c.ammoMin) && n > 0 && (ammoStack(w) || !bagFull())) return { kind: 'trader', pot: 0, bomb: 0, ammo: n, aw: w };
+  }
+  return null;
 }
 
 /** Retorna true quando este frame foi usado para ir ao NPC / comprar (o resto do auto fica parado) */
 export function refillStep() {
   if (!state.autoCfg.refill) { state.trip = null; TIDY.rb = true; return false; }
   const pl = plan();
-  if (!pl || (pl.pot <= 0 && pl.bomb <= 0)) { state.trip = null; TIDY.rb = true; return false; }
+  if (!pl || (pl.pot <= 0 && pl.bomb <= 0 && !pl.ammo)) { state.trip = null; TIDY.rb = true; return false; }
   if (danger()) return false;                              // inimigo perto: luta primeiro
   const n = npcByShop(pl.kind);
   if (!n) return false;
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
-  if (!state.trip) { state.trip = pl.kind; log('🛒 Sem ' + (pl.pot ? 'poções' : 'bombas') + ': indo até ' + n.info.name); }
+  if (!state.trip) { state.trip = pl.kind; log('🛒 Sem ' + (pl.pot ? 'poções' : pl.bomb ? 'bombas' : 'projéteis') + ': indo até ' + n.info.name); }
   if (d < NEAR && !behindWall(P.x, P.z, nx, nz)) {   // (NPC dentro de casa e o jogador fora: não negocia pela parede, entra pela porta)
     P.tgt = null; P.tx = P.x; P.tz = P.z; P.g.rotation.y = Math.atan2(nx - P.x, nz - P.z);
     if (!dwell('buy-' + pl.kind, 2.5)) return true;           // negocia alguns segundos
     dwell(null);
     if (pl.pot) { const n = beltAdd('pot', pl.pot); P.gold -= n * PRICE.potTavern; lootText('+' + n + ' poção(ões)'); }
     if (pl.bomb) { const n = beltAdd('bmb', pl.bomb); P.gold -= n * PRICE.bomb; lootText('+' + n + ' bomba(s)'); }
+    if (pl.ammo) { const a = ammoInfo(pl.aw); addItem({ ty: 'wpn', q: 1, wi: pl.aw, ct: pl.ammo, il: P.lv }); P.gold -= pl.ammo * a.price; }
     state.trip = null;
     P.tx = P.x; P.tz = P.z;
     return false;

@@ -20,7 +20,7 @@ export const state = {
     loot: true, lootGold: true, lootPot: true, lootWpn: true, lootWpnQ: 1, lootArm: true, lootArmQ: 1, lootUpgrade: false,   // loot: o que coletar (raridade mínima 1 comum · 2 mágico · 3 lendário)
     equip: true, swap: true, torch: 1, torchSwap: true, // geral (torch: 0 nunca · 1 automática no escuro · 2 sempre acesa)
     usePot: true, potHp: 40, dodge: true, bomb: true, spin: true, // combate
-    refill: true, potMin: 0, potTarget: 5, bombMin: 0, bombTarget: 3, beltMax: 6, reserve: 0, // compras (totais = slot + cinto; beltMax = vagas da mochila para o cinto)
+    refill: true, potMin: 0, potTarget: 5, bombMin: 0, bombTarget: 3, ammoMin: 2, ammoTarget: 10, beltMax: 6, reserve: 0, // compras (totais = slot + cinto; beltMax = vagas da mochila para o cinto)
     sellMax: 0, storeMin: 0, bagAt: 20,                         // vendas e baú
   }, // ajustes do auto combate
   pet: PETLIST[0],  // companheiro ativo

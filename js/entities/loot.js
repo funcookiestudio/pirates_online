@@ -88,6 +88,15 @@ export function dropItem(it, from) {
   loot.push({ m, ty, q: it.q, wi, it: it.n ? it : null, life: 0, dropped: true, armed: false });
 }
 
+/** Projétil de arremesso que não quebrou: cai no chão para ser recolhido (1 unidade) */
+export function dropAmmo(x, z, wi, q) {
+  const m = lootModel('wpn', q, wi);
+  m.position.set(x, .3, z);
+  m.position.y += groundY(x, z);
+  scene.add(m);
+  loot.push({ m, ty: 'wpn', q, wi, il: 1, ct: 1, ammo: true, life: LOOT_LIFE - 25 });
+}
+
 /** Aplica o efeito de um item coletado. `tag` (opcional) é o ícone do companheiro que coletou. */
 export function applyLoot(l, tag) {
   const p = tag ? tag + ' ' : '';
