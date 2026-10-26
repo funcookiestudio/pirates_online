@@ -21,6 +21,9 @@ export const bodyR = (x, z) => houseNear(x, z, .3) ? BODY_IN : .5;
 /** Memória de navegação do jogador (lado escolhido, caminho, pontos onde travou) */
 export const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
 
+/** Depuração do auto (mostrada junto do FPS): o que ele está tentando fazer agora */
+export const AUTODBG = { why: '-', stuck: 0 };
+
 const OFFS = [0, .35, .7, 1.05, 1.5, 2.0, 2.6];
 
 /** O caminho reto de (x,z) na direção `a` por `len` metros está livre para um corpo de raio `r`? */

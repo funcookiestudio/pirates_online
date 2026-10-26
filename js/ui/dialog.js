@@ -205,7 +205,7 @@ function buttons() {
       try { localStorage.setItem('pirata-ilha', i.seed); localStorage.setItem('pirata-chegada', '1'); } catch (e) { /* sem armazenamento */ }
       saveGame();
       say('Icem a vela! Rumo à ' + i.name + '...');
-      setTimeout(() => location.reload(), 900);
+      setTimeout(() => { const u = new URL(location.href); u.searchParams.delete('seed'); location.assign(u.toString()); }, 900);   // (tira o ?seed= da aba Mapa, senão ele venceria a ilha escolhida)
     });
   });
   add(cur.board ? '📜 Próximo cartaz' : '💬 Conversar', () => { li = (li + 1) % cur.lines.length; say(cur.lines[li]); });

@@ -6,11 +6,16 @@ import { scene } from '../core/engine.js';
 import { $ } from '../core/utils.js';
 import { houseAt, HOUSES, floorLevelH, onStairMid, stairTiles, castleStairTiles, STAIR } from '../world/floors.js';
 import { inCellN } from '../world/imap.js';
-import { VIZ } from './steer.js';
+import { VIZ, STEER, AUTODBG } from './steer.js';
+import { state } from '../core/state.js';
+import { dungeonQuest } from '../dungeon/dungeon-scene.js';
 import { applyFull } from '../ui/fullscreen.js';
 import { doorTiles } from '../world/doors.js';
 import { saveGame } from './save.js';
-import { groundY } from '../world/terrain.js';
+import { groundY, SEED } from '../world/terrain.js';
+import { DG } from '../dungeon/dgrid.js';
+import { ISLANDS } from '../data/npcs.js';
+import { tierOf, tierBonus } from '../data/scaling.js';
 import { debugGrid, navVersion, interiorRoute } from '../world/interior-nav.js';
 import { setQualityMode, perfRatio, perfFps, DIAG } from './perf.js';
 
@@ -151,7 +156,17 @@ export function updateSettings(dt) {
   if (CFG.fps && fpsEl && (ft += dt) > .5) { ft = 0; fpsEl.textContent = VERSION + ' · ' + Math.round(perfFps()) + ' FPS · ' + Math.round(perfRatio() * 100) + '% res\n'
     + 'js ' + DIAG.js.toFixed(1) + ' · rend ' + DIAG.rend.toFixed(1) + ' · gpu ' + DIAG.gpu.toFixed(1) + ' ms\n'
     + DIAG.calls + ' calls · ' + Math.round(DIAG.tris / 1000) + 'k tri\n'
+    + autoLine()
     + Object.entries(DIAG.sec).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([k, v]) => k.replace('update', '') + ' ' + v.toFixed(1)).join(' · '); }
+}
+
+/** Linhas de depuração do auto (junto do FPS): o que ele quer fazer, para onde vai e se está travado */
+function autoLine() {
+  if (!state.autoOn) return '';
+  const d = Math.hypot(P.tx - P.x, P.tz - P.z), pth = STEER.path ? STEER.path.length : 0, f = v => v.toFixed(1);
+  return '🤖 ' + AUTODBG.why + '\n'
+    + 'pos ' + f(P.x) + ',' + f(P.z) + ' → ' + f(P.tx) + ',' + f(P.tz) + ' · d ' + f(d) + ' · rota ' + pth + ' pts' + (P.tgt ? ' · alvo ' + P.tgt.t.n : '') + '\n'
+    + 'travado ' + f(STEER.st || 0) + 's · evita ' + ((STEER.bad || []).length) + ' · destravadas ' + (AUTODBG.stuckN || 0) + (dungeonQuest() ? '\n' + dungeonQuest() : '') + '\n';
 }
 
 export function initSettings() {
@@ -173,7 +188,31 @@ export function initSettings() {
   const nm = $('gx-names'); nm.checked = CFG.names !== false; nm.onchange = () => { CFG.names = nm.checked; save(); };
   const dg2 = $('gx-diag'); dg2.onchange = () => { CFG.diag = dg2.value; };   /* não é salvo: volta ao normal ao recarregar */
   const vs = $('gx-vis'); vs.checked = CFG.vis !== false; vs.onchange = () => { CFG.vis = vs.checked; save(); };
-  const tabs = document.querySelectorAll('#acfg .atabs span'), setTab = t => { tabs.forEach(e => e.classList.toggle('on', e.dataset.t === t)); ['gx', 'jg', 'au'].forEach(k => { $('at-' + k).hidden = k !== t; }); try { localStorage.setItem(KEY + '-aba', t); } catch (e) { /* ignora */ } };
+  // aba Mapa: gerar/escolher a seed da ilha (recarrega com a nova semente; o personagem é salvo antes)
+  {
+    const isl0 = ISLANDS.find(i => i.seed === SEED), msg = $('mp-msg'), base = msg.textContent;
+    $('mp-cur').textContent = '🏝 ' + (isl0 ? isl0.name : 'Ilha aleatória') + ' · seed "' + SEED + '" · inimigos Nv ' + (1 + tierBonus(tierOf(SEED))) + '+';
+    $('mp-seed').value = isl0 ? '' : SEED;
+    let armed = null;
+    const go = seed => {
+      seed = String(seed || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24);
+      if (!seed) { msg.textContent = 'Digite uma seed (letras, números, - ou _).'; return; }
+      if (seed === SEED) { msg.textContent = 'Você já está nesta ilha.'; return; }
+      if (DG.on) { msg.textContent = '🕳 Saia da dungeon antes de trocar de ilha.'; return; }
+      if (armed !== seed) { armed = seed; msg.textContent = '⚠ Trocar para "' + seed + '"? Clique de novo para confirmar.'; setTimeout(() => { if (armed === seed) { armed = null; msg.textContent = base; } }, 5000); return; }
+      try { localStorage.setItem('pirata-ilha', seed); localStorage.setItem('pirata-chegada', '1'); } catch (e) { /* sem armazenamento: vale o ?seed= abaixo */ }
+      saveGame();
+      msg.textContent = '⛵ Rumo à ilha "' + seed + '"...';
+      const u = new URL(location.href); u.searchParams.set('seed', seed);   // o ?seed= vale mesmo se o navegador bloquear o armazenamento (e substitui um ?seed= antigo)
+      setTimeout(() => location.assign(u.toString()), 600);
+    };
+    const rnd = () => { const w = ['mar', 'vento', 'ouro', 'coral', 'bruma', 'farol', 'recife', 'duna', 'lume', 'sal']; return w[Math.floor(Math.random() * w.length)] + '-' + Math.random().toString(36).slice(2, 7); };
+    let pend = null;
+    $('mp-new').onclick = () => { if (!pend || armed !== pend) pend = rnd(); $('mp-seed').value = pend; go(pend); };
+    $('mp-go').onclick = () => go($('mp-seed').value);
+    $('mp-home').onclick = () => go('brisa');
+  }
+  const tabs = document.querySelectorAll('#acfg .atabs span'), setTab = t => { tabs.forEach(e => e.classList.toggle('on', e.dataset.t === t)); ['gx', 'jg', 'mp', 'au'].forEach(k => { $('at-' + k).hidden = k !== t; }); try { localStorage.setItem(KEY + '-aba', t); } catch (e) { /* ignora */ } };
   tabs.forEach(e => { e.onclick = () => setTab(e.dataset.t); });
   try { setTab(localStorage.getItem(KEY + '-aba') || 'gx'); } catch (e) { setTab('gx'); }
   setQualityMode(CFG.q); show();

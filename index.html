@@ -77,7 +77,7 @@
   <div class="cvb"><button id="cvgo">🕳 Entrar na dungeon</button><button id="cvno">Agora não</button></div>
 </div>
 <div id="acfg">
-  <div class="atabs"><span data-t="gx" class="on">🖥 Gráficos</span><span data-t="jg">🎮 Jogo</span><span data-t="au">🤖 Auto</span></div>
+  <div class="atabs"><span data-t="gx" class="on">🖥 Gráficos</span><span data-t="jg">🎮 Jogo</span><span data-t="mp">🗺 Mapa</span><span data-t="au">🤖 Auto</span></div>
   <div class="atab" id="at-gx">
   <div class="acs">
     <h4>🖥 Gráficos</h4>
@@ -101,6 +101,20 @@
   </div>
   <h4>PROGRESSO</h4>
   <div class="pact"><div id="rst">Apagar progresso salvo</div></div>
+  </div>
+  <div class="atab" id="at-mp" hidden>
+  <div class="acs">
+    <h4>🗺 Ilha atual</h4>
+    <div class="acr"><span id="mp-cur"></span></div>
+    <small>Seu personagem, itens, ouro e companheiros continuam. O mundo é gerado de novo (relevo, vila, postos, dungeons, lebres e cervos) e você chega pelo porto.</small>
+  </div>
+  <div class="acs">
+    <h4>🎲 Nova seed</h4>
+    <div class="acr"><button id="mp-new" type="button">🎲 Gerar nova seed (aleatória)</button></div>
+    <div class="acr"><input id="mp-seed" type="text" maxlength="24" placeholder="digite uma seed" style="flex:1;min-width:0"><button id="mp-go" type="button">Ir</button></div>
+    <div class="acr"><button id="mp-home" type="button">↩ Voltar à Ilha Natal</button></div>
+    <small id="mp-msg">Mesma seed = mesma ilha. Anote a seed para voltar a ela depois.</small>
+  </div>
   </div>
   <div class="atab" id="at-au" hidden>
   <h3>🤖 AUTOPLAY</h3>

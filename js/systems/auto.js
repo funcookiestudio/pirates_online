@@ -12,7 +12,7 @@ import { dodge } from './dodge.js';
 import { MOUNT, toggleMount } from './mount.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { setAuto, fleeStep } from './stamina.js';
-import { STEER, markStuck } from './steer.js';
+import { STEER, markStuck, AUTODBG as AD } from './steer.js';
 import { doorBusy, cancelDoor } from '../world/doors.js';
 import { torchStep } from './torch-auto.js';
 import { lootFilter } from './lootrule.js';
@@ -40,17 +40,17 @@ export function autoThink(dt) {
   state.autoHold -= dt;
   AT -= dt;
   AI -= dt;
-  if (state.fleeing) { fleeStep(); return; }   // sem ouro: foge para a vila (o clique do jogador também pode assumir)
-  if (state.autoHold > 0) return;
+  if (state.fleeing) { AD.why = 'fugindo para a vila'; fleeStep(); return; }   // sem ouro: foge para a vila (o clique do jogador também pode assumir)
+  if (state.autoHold > 0) { AD.why = 'pausa: clique/destravar (' + state.autoHold.toFixed(1) + 's)'; return; }
   // passando por uma porta (ir ao tile, abrir, atravessar): o auto não mexe no destino, senão a porta nunca abre (limite de 8 s por segurança)
-  if (doorBusy()) { DB += dt; STUCK.t = 0; if (DB < 8) return; cancelDoor(); }
+  if (doorBusy()) { AD.why = 'atravessando porta'; DB += dt; STUCK.t = 0; if (DB < 8) return; cancelDoor(); }
   DB = 0;
 
   // travado (querendo andar e sem sair do lugar): tenta um ponto livre ao redor
   STUCK.t += dt;
   if (Math.hypot(P.x - STUCK.x, P.z - STUCK.z) > .6 || Math.hypot(P.tx - P.x, P.tz - P.z) < 1.2 || P.sit || P.sitT) { STUCK.x = P.x; STUCK.z = P.z; STUCK.t = 0; }
   else if (STUCK.t > 3) {
-    STUCK.t = 0; AT = 0;
+    STUCK.t = 0; AT = 0; AD.stuckN = (AD.stuckN || 0) + 1; AD.why = 'TRAVADO: tentando ponto livre';
     markStuck(STEER, P.x, P.z);   // o A* passa a evitar este ponto (senão refaz o mesmo caminho pela mesma quina)
     const a = Math.random() * 6.28;
     P.tgt = null; P.tx = P.x + Math.cos(a) * 5; P.tz = P.z + Math.sin(a) * 5;
@@ -78,9 +78,9 @@ export function autoThink(dt) {
   torchStep(dt);   // tocha no escuro (troca a arma de 2 mãos por uma de 1 mão) e guarda de dia
 
   // sem poções/bombas: vai até o NPC comprar (auto refil)
-  if (refillStep()) return;
+  if (refillStep()) { AD.why = 'compras (' + (state.trip || '?') + ')'; return; }
   // mochila cheia: vende no ferreiro e guarda no baú
-  if (townStep()) return;
+  if (townStep()) { AD.why = 'vender/guardar (' + (state.trip || '?') + ')'; return; }
 
   // esquiva (rolamento para trás): golpe pesado/especial sendo preparado perto, ou vida abaixo de 20% com inimigo colado
   if (state.autoCfg.dodge && P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) {
@@ -91,6 +91,7 @@ export function autoThink(dt) {
     if (from) {
       // rola para longe do inimigo, usando a animação certa: ele pela frente → para trás, pelas costas → para a frente, pelo lado → para o outro lado
       const rel = Math.atan2(Math.sin(Math.atan2(from.x - P.x, from.z - P.z) - P.g.rotation.y), Math.cos(Math.atan2(from.x - P.x, from.z - P.z) - P.g.rotation.y));
+      AD.why = 'esquiva';
       dodge(Math.abs(rel) < .8 ? 'b' : Math.abs(rel) > 2.34 ? 'f' : rel > 0 ? 'r' : 'l');
       return;
     }
@@ -104,6 +105,7 @@ export function autoThink(dt) {
     let fx = 0, fz = 0;
     thr.forEach(e => { fx += P.x - e.x; fz += P.z - e.z; });
     const l = Math.hypot(fx, fz) || 1;
+    AD.why = 'fugindo (vida baixa, sem poção)';
     P.tgt = null;
     P.tx = P.x + fx / l * 10;
     P.tz = P.z + fz / l * 10;
@@ -114,6 +116,7 @@ export function autoThink(dt) {
   const sl = alive.find(e => e.slam && e.st === 'wind' && dist(e) < 5.6);
   if (sl) {
     const l = dist(sl) || 1;
+    AD.why = 'desvia da pancada do boss';
     P.tgt = null;
     P.tx = P.x + (P.x - sl.x) / l * 6;
     P.tz = P.z + (P.z - sl.z) / l * 6;
@@ -127,6 +130,7 @@ export function autoThink(dt) {
   const bb = bombs.find(b => Math.hypot(b.m.position.x - P.x, b.m.position.z - P.z) < 6.5);
   if (bb) {
     const bx = P.x - bb.m.position.x, bz = P.z - bb.m.position.z, l = Math.hypot(bx, bz) || 1;
+    AD.why = 'sai da área da bomba';
     P.tgt = null;
     P.tx = P.x + bx / l * 8;
     P.tz = P.z + bz / l * 8;
@@ -150,6 +154,7 @@ export function autoThink(dt) {
     // dungeon: a chave caída e a porta trancada vêm antes de procurar mais inimigos (sem ameaça por perto)
     const goal = gimmickGoal(dungeonGimmicks());
     if (goal && !alive.some(e => e.ag && dist(e) < 7)) {
+      AD.why = goal.door ? 'indo à porta trancada' : 'indo pegar a chave';
       P.tgt = null; P.tx = goal.x; P.tz = goal.z;
       return;
     }
@@ -162,6 +167,7 @@ export function autoThink(dt) {
         const d = Math.hypot(x.m.position.x - P.x, x.m.position.z - P.z);
         if (d < bd) { bd = d; bl = x; }
       });
+      AD.why = bl ? 'chefe morto: loot antes da saída' : 'chefe morto: indo ao portal de saída';
       P.tgt = null;
       P.tx = bl ? bl.m.position.x : ex.x; P.tz = bl ? bl.m.position.z : ex.z;
       return;
@@ -175,6 +181,7 @@ export function autoThink(dt) {
     });
 
     if (best) {
+      AD.why = 'inimigo: ' + best.t.n + ' (' + dist(best).toFixed(0) + 'm)';
       P.tgt = best;
     } else {
       P.tgt = null;
@@ -185,13 +192,15 @@ export function autoThink(dt) {
         if (d < bd) { bd = d; bl = x; }
       });
       if (bl) {
+        AD.why = 'pegando loot';
         P.tx = bl.m.position.x;
         P.tz = bl.m.position.z;
       } else {
         let g = null, gd = 1e9;
         alive.forEach(e => { const d = dist(e); if (d < gd) { gd = d; g = e; } });
-        if (g) { P.tx = g.x; P.tz = g.z; }
-        else if (respawns.length) { P.tx = respawns[0].x; P.tz = respawns[0].z; }
+        if (g) { AD.why = 'indo até inimigo longe'; P.tx = g.x; P.tz = g.z; }
+        else if (respawns.length) { AD.why = 'indo ao ponto de respawn'; P.tx = respawns[0].x; P.tz = respawns[0].z; }
+        else AD.why = 'sem alvo (nada a fazer)';
       }
     }
   }
