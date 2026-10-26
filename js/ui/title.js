@@ -147,7 +147,7 @@ function scene3d(root, cv) {
     [hm, hf].forEach(g => { g.up.rotation.x = .12; g.legL.knee.rotation.x = .4; g.legR.knee.rotation.x = .3; g.legL.rotation.x = -.4; g.legR.rotation.x = .3; });
     // menino mirando o mosquete com as duas mãos
     hm.arm.rotation.set(-1.0, 1.22, .13); hm.arm.fa.rotation.x = -1.48; hm.armL.rotation.set(-1.01, -.3, -.58); hm.armL.fa.rotation.x = -1.15;   // mosquete na diagonal diante do peito, mão esquerda apoiando o cano (resolvido numericamente)
-    hm.head.rotation.z = .16; hm.head.rotation.x = -.04; hm.eyeL.scale.y = .15; if (hm.whL) hm.whL.scale.y = .2;
+    hm.head.rotation.z = .16; hm.head.rotation.x = -.04; hm.eyeL.scale.set(1, .15, 1); if (hm.whL) { hm.whL.scale.set(.72, .28, 1); hm.hlL.visible = false; } hf.head.rotation.x = 0;
     // menina: espada erguida (direita) e tocha (esquerda, em pé)
     hf.arm.rotation.set(-2.6, 0, .1); hf.arm.fa.rotation.x = -.3; hf.armL.rotation.set(-.9, 0, -.4); hf.armL.fa.rotation.x = -.6;
     tg.rotation.set(-(hf.armL.rotation.x + hf.armL.fa.rotation.x), 0, .1);

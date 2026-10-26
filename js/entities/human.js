@@ -290,7 +290,7 @@ export function buildHuman(F, d) {
     put(B(1.26, .08, 1.16, .03, 0xd8d0b0), 0, .86, -.02, head);
   }
   const LK = d.look;
-  let eyeL, eyeR, whL;
+  let eyeL, eyeR, whL, hlL;
   if (LK) {
     LK.hairBlocks.forEach(([w, h, dd, b, x, y, z, c]) => put(B(w, h, dd, b, c), x, y, z, head));
     LK.beardBlocks.forEach(([w, h, dd, b, x, y, z, c]) => put(B(w, h, dd, b, c), x, y, z, head));
@@ -298,7 +298,7 @@ export function buildHuman(F, d) {
     put(B(.24, .08, .05, .02, LK.brow), -.28, ey + .2, ez, head); put(B(.24, .08, .05, .02, LK.brow), .28, ey + .2, ez, head);
     put(B(.24, .24, .05, .02, 0xf4f4f0), -.28, ey, ez - .01, head); whL = put(B(.24, .24, .05, .02, 0xf4f4f0), .28, ey, ez - .01, head);
     eyeR = put(B(.14, .22, .06, .03, ec), -.28, ey, ez + .02, head); eyeL = put(B(.14, .22, .06, .03, ec), .28, ey, ez + .02, head);
-    put(B(.05, .07, .04, .02, 0xffffff), -.25, ey + .05, ez + .06, head); put(B(.05, .07, .04, .02, 0xffffff), .31, ey + .05, ez + .06, head);
+    put(B(.05, .07, .04, .02, 0xffffff), -.25, ey + .05, ez + .06, head); hlL = put(B(.05, .07, .04, .02, 0xffffff), .31, ey + .05, ez + .06, head);
     if (F) { put(B(.18, .07, .04, .02, 0xf08a9c), -.4, .36, .53, head); put(B(.18, .07, .04, .02, 0xf08a9c), .4, .36, .53, head); put(B(.28, .07, .06, .03, LK.lip), 0, .26, .53, head); put(B(.14, .12, .1, .04, SKIN), 0, .42, .54, head); }
     else { put(B(.34, .08, .06, .03, LK.lip), 0, .26, .55, head); put(B(.16, .14, .1, .04, SKIN), 0, .42, .56, head); put(B(.14, .3, .14, .04, SKIN), -.62, .55, 0, head); put(B(.14, .3, .14, .04, SKIN), .62, .55, 0, head); }
   } else if (F) {
@@ -324,7 +324,7 @@ export function buildHuman(F, d) {
   if (ex.includes('goggles')) { put(B(1.16, .07, 1.06, .02, 0x5a3a28), 0, .84, 0, head); [-.25, .25].forEach(x => put(B(.3, .16, .06, .03, 0xcfae5a), x, .84, .55, head)); }
   if (ex.includes('soot')) { put(B(.24, .1, .04, .02, 0x3a3a3a), .3, .42, .53, head); put(B(.2, .08, .04, .02, 0x3a3a3a), -.32, .7, .53, head); }
 
-  const r = rig(root, legL, legR, armR, armL, head, eyeL, eyeR, feather, keep, null); r.whL = whL; return r;
+  const r = rig(root, legL, legR, armR, armL, head, eyeL, eyeR, feather, keep, null); r.whL = whL; r.hlL = hlL; return r;
 }
 
 /** Esqueleto. `bone` = cor dos ossos · `eye` = cor do brilho dos olhos */

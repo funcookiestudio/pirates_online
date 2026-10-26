@@ -116,8 +116,8 @@ function mkAxe() {
 function buildChair(n) {
   const S = CTX.tavern, T = n.tr, K = 1.28;
   let c = null;
-  for (const [a, b] of [[-3.4, 6.1], [3.4, 6.1], [-3.8, 6.5], [3.8, 6.5], [-3.0, 7.2], [3.0, 7.2], [-4.4, 6.0]]) { const [x, z] = S.at(a * K, b * K); if (freeAt(x, z, 1.3)) { c = [a * K, b * K]; break; } }
-  if (!c) c = [-3.4 * K, 6.1 * K];
+  for (const [a, b] of [[3.0, 6.0], [3.2, 6.6], [2.6, 6.3], [3.4, 7.0], [-3.4, 6.1], [-3.8, 6.5]]) { const [x, z] = S.at(a * K, b * K); if (freeAt(x, z, 1.3)) { c = [a * K, b * K]; break; } }
+  if (!c) c = [3.0 * K, 6.0 * K];
   const [wx, wz] = S.at(c[0], c[1]);
   const root = new THREE.Group(); root.position.set(wx, groundY(wx, wz), wz); root.rotation.y = S.th; root.userData.dyn = 1; scene.add(root);
   // cadeira de madeira com encosto (o sentado olha para +z local, a frente da taverna)
