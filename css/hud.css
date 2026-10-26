@@ -266,3 +266,22 @@
 .qb-btn { display: block; width: 100%; min-height: 44px; margin-top: 8px; border-radius: 8px; border: 2px solid #e0b84a; background: linear-gradient(#b8903f, #8a6a28); color: #1a1005; font-weight: bold; font-size: 14px; cursor: pointer; }
 .qb-btn.off { background: #4a2a22; color: #f0d0c8; border-color: #a05040; }
 .qb-card.qb-on { border-color: #e0b84a; }
+
+/* ---- Aba MISSÕES do painel ---- */
+#qlog { max-width: 900px; margin: 0 auto; }
+.ql-sum { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ql-st { background: #1d1610; border: 1px solid #5a4424; border-radius: 8px; padding: 8px 4px; text-align: center; }
+.ql-st b { display: block; font-size: 18px; color: #f0d890; }
+.ql-st span { font-size: 11px; color: #c9b27a; }
+.ql-all { margin: 8px 0 4px; height: 9px; }
+.ql-views { padding: 6px 0; border: 0; }
+.ql-body { display: block; }
+.ql-cards { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 720px) { .ql-cards { grid-template-columns: 1fr 1fr; } }
+.ql-grp { margin: 6px 0 14px; }
+.ql-gh { display: flex; align-items: baseline; gap: 8px; padding: 6px 4px; margin-bottom: 6px; border-bottom: 2px solid #6b4a1a; position: sticky; top: 0; background: #0e0905; z-index: 1; }
+.ql-gt { font-weight: bold; color: #f0d890; font-size: 15px; }
+.ql-gh small { color: #a99870; font-size: 12px; flex: 1; }
+.qb-trk { margin-top: 6px; min-height: 38px; background: linear-gradient(#3a5a8a, #28406a); border-color: #6a9ae0; color: #e8f0ff; }
+.qb-trk.off { background: #2a2a2a; border-color: #777; color: #ccc; }
+@media (max-width: 480px) { .ql-st b { font-size: 16px; } .ql-st span { font-size: 10px; } }

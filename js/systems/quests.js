@@ -190,6 +190,8 @@ on('dungeon:clear', () => {
 
 /** Ponte com o painel do Mural (ui/questboard.js registra `open`) */
 export const BOARDUI = { open: null };
+/** Missão acompanhada (aparece primeiro no painel do HUD) */
+export function setTrack(id) { state.qtrack = id || null; }
 
 /** Dados do painel do Mural: uma linha por missão, já com estado, progresso e recompensa estimada */
 export function boardData() {
@@ -197,7 +199,7 @@ export function boardData() {
     const q = Q()[d.id], [pc, gm] = TIER[d.tier], st = q && q.s !== 'done' && q.s !== 'ready' ? stageOf(d, q) : null;
     const state = q && q.s === 'done' ? 'done' : q && q.s === 'ready' ? 'ready' : q ? 'on' : P.lv >= d.lv ? 'open' : 'lock';
     return {
-      id: d.id, title: d.title, giver: d.giver, lv: d.lv, tier: d.tier, state, mural: d.giver === 'Mural de Missões',
+      id: d.id, title: d.title, giver: d.giver, tracked: state.qtrack === d.id, lv: d.lv, tier: d.tier, state, mural: d.giver === 'Mural de Missões',
       xp: Math.round(xpToNext(d.lv) * pc), gold: Math.round(goldAt(d.lv) * gm), reward: d.rewardTxt || '',
       ask: d.say.ask, step: q && q.s === 'on' ? q.i + 1 : 0, steps: d.stages.length,
       hud: st ? st.hud(q) : '', need: st && st.k !== 'hold' && st.k !== 'stalk' && st.k !== 'chase' ? st.n || 0 : 0, n: q && q.s === 'on' ? Math.floor(q.n || 0) : 0,
@@ -219,7 +221,7 @@ export function setContract(k) { if (k && !CONTRACTS[k]) return; state.contract 
 /** Pílulas de progresso do HUD: até 2 missões ativas */
 export function questsHud() {
   const out = [];
-  QUESTS.forEach(d => {
+  [...QUESTS].sort((a, b) => (state.qtrack === b.id) - (state.qtrack === a.id)).forEach(d => {
     const q = Q()[d.id];
     if (!q || q.s === 'done') return;
     const sh = q.t > 0 ? q.a / q.t : 0, pen = sh >= .1 ? '  ⚠ auto −' + Math.round(40 * sh) + '%' : '';   // quanto da recompensa o auto já custou

@@ -1,6 +1,6 @@
 /* Painel do Mural de Missões: cartões por missão, abas com contagem, progresso e recompensa estimada, contratos de dungeon.
    Adaptativo: tela cheia no celular (rolável, com margens seguras), duas colunas em telas largas. */
-import { BOARDUI, boardData, boardAct, contractList, setContract } from '../systems/quests.js';
+import { BOARDUI, boardData, boardAct, contractList, setContract, setTrack } from '../systems/quests.js';
 
 const TIERS = { curta: ['Curta', '#6cc070'], media: ['Média', '#5aa0e0'], longa: ['Longa', '#b07ae0'], epica: ['Épica', '#e0b84a'] };
 const TABS = [['open', '📜 Disponíveis'], ['on', '▶ Em andamento'], ['lock', '🔒 Trancadas'], ['done', '✔ Concluídas'], ['ctr', '⚔ Contratos']];
@@ -19,7 +19,7 @@ function build() {
   addEventListener('keydown', e => { if (e.key === 'Escape' && root && root.style.display === 'flex') close(); });
 }
 
-function card(q) {
+export function questCard(q, rr = render) {
   const [tn, tc] = TIERS[q.tier], c = el('div', 'qb-card qb-' + q.state + (openId === q.id ? ' open' : ''));
   c.style.setProperty('--tc', tc);
   const pct = q.state === 'done' || q.state === 'ready' ? 100 : q.need > 0 ? Math.min(100, Math.round(100 * q.n / q.need)) : 0;
@@ -28,7 +28,7 @@ function card(q) {
     + '<div class="qb-sub">👤 ' + esc(q.giver) + '<span class="qb-tier">' + tn + '</span></div>'
     + '<div class="qb-chips"><span>⭐ ' + q.xp + ' XP</span><span>💰 ' + q.gold + '</span><span class="qb-st">' + stat + '</span></div>'
     + (q.state === 'on' || q.state === 'ready' ? '<div class="qb-bar"><i style="width:' + pct + '%"></i></div>' : '');
-  c.addEventListener('click', () => { openId = openId === q.id ? null : q.id; render(); });
+  c.addEventListener('click', () => { openId = openId === q.id ? null : q.id; rr(); });
   if (openId === q.id) {
     const d = el('div', 'qb-det');
     d.innerHTML = '<p class="qb-ask">“' + esc(q.ask) + '”</p>'
@@ -38,11 +38,17 @@ function card(q) {
       + '<div class="qb-note">Fazer no manual rende +25% e chance de item extra. Com o auto ligado, a recompensa cai até 40%.</div>';
     if (q.mural && (q.state === 'open' || q.state === 'ready')) {
       const b = el('button', 'qb-btn', q.state === 'ready' ? '🎁 Receber recompensa' : '📜 Aceitar missão');
-      b.addEventListener('click', e => { e.stopPropagation(); if (boardAct(q.id)) render(); });
+      b.addEventListener('click', e => { e.stopPropagation(); if (boardAct(q.id)) rr(); });
       d.appendChild(b);
     } else if (q.state === 'open') d.appendChild(el('div', 'qb-hint', 'Fale com ' + esc(q.giver) + ' para aceitar.'));
+    if (q.state === 'on') {
+      const t = el('button', 'qb-btn qb-trk' + (q.tracked ? ' off' : ''), q.tracked ? '📍 Parar de acompanhar' : '📍 Acompanhar no painel');
+      t.addEventListener('click', e => { e.stopPropagation(); setTrack(q.tracked ? null : q.id); rr(); });
+      d.appendChild(t);
+    }
     c.appendChild(d);
   }
+  if (q.tracked) c.querySelector('.qb-ttl').insertAdjacentHTML('afterbegin', '📍 ');
   return c;
 }
 
@@ -76,7 +82,7 @@ function render() {
   else {
     const rows = all.filter(q => inTab(q, tab)).sort((a, b) => a.lv - b.lv);
     if (!rows.length) list.appendChild(el('p', 'qb-empty', { open: 'Nenhuma missão nova agora. Suba de nível ou veja as trancadas.', on: 'Você não tem missões em andamento. Fale com um NPC para pegar uma!', lock: 'Nada trancado: você já tem nível para todas.', done: 'Nenhuma concluída ainda.' }[tab]));
-    rows.forEach(q => list.appendChild(card(q)));
+    rows.forEach(q => list.appendChild(questCard(q)));
   }
   pn.append(hd, tabs, list); root.appendChild(pn);
 }

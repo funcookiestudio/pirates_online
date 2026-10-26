@@ -12,6 +12,7 @@ import { PST } from '../pets/stats.js';
 import { renderPets, initPetPanel } from './pet-panel.js';
 import { fitHotbar } from './hotbar.js';
 import { showPlayer, showItem, initPreview } from './preview.js';
+import { renderQuestLog } from './questlog.js';
 import { clearSave } from '../systems/save.js';
 import { resetPlayer, armedButton } from '../systems/reset.js';
 
@@ -153,12 +154,13 @@ function renderQuick() {
 const grid = (el, n) => { el.innerHTML = ''; for (let i = 0; i < n; i++) el.append(slot(null, null, '', '🔒')); };
 
 function renderPanel() {
-  ['char', 'skills', 'tal'].forEach(t => {
+  ['char', 'skills', 'tal', 'qst'].forEach(t => {
     $('pg-' + t).hidden = tab !== t;
     $('tb-' + t).classList.toggle('on', tab === t);
   });
   if (tab === 'skills') { grid($('sgrid'), 12); return; }
   if (tab === 'tal') { grid($('tgrid'), 18); return; }
+  if (tab === 'qst') { renderQuestLog($('qlog'), () => renderPanel()); return; }
 
   const fill = (el, list) => {
     el.innerHTML = '';
@@ -276,7 +278,7 @@ export function initPanel() {
     $('rst').textContent = 'Clique de novo para apagar tudo';
     armed = setTimeout(() => { armed = null; $('rst').textContent = 'Apagar progresso salvo'; }, 3000);
   };
-  ['char', 'skills', 'tal'].forEach(t => { $('tb-' + t).onclick = () => setTab(t); });
+  ['char', 'skills', 'tal', 'qst'].forEach(t => { $('tb-' + t).onclick = () => setTab(t); });
   document.querySelectorAll('#btabs span').forEach(e => { e.onclick = () => { btab = e.dataset.b; renderPanel(); fitPanel(); }; });
   $('bsort').onclick = () => { bag.sort((a, c) => c.q - a.q || c.v - a.v); renderPanel(); };
   armedButton($('rpl'), 'Resetar personagem', resetPlayer);
