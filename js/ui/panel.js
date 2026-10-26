@@ -215,7 +215,7 @@ export function togglePanel() {
 /** Encolhe o painel (escala) quando o conteúdo não cabe na altura da tela, para nunca precisar de barra de rolagem */
 const PANEL_MIN = .55;
 /** Celular: os painéis ocupam a tela inteira (com rolagem), em vez de encolher sobre a hotbar */
-export const MOB = matchMedia('(max-width: 700px), (pointer: coarse) and (max-height: 520px)');
+export const MOB = matchMedia('(max-width: 900px), (orientation: portrait), (pointer: coarse) and (max-height: 520px)');
 export function fitPanel() {
   fitHotbar();
   ['pnl', 'pnl2'].forEach(id => {
