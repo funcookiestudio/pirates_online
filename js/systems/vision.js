@@ -40,7 +40,7 @@ export function canSee(tx, tz, near) {
     const cx = h.x - (P.x + tx) / 2, cz = h.z - (P.z + tz) / 2;
     if (cx * cx + cz * cz > (R + Math.sqrt(d2) / 2) ** 2) continue;   // casa longe do segmento
     const [pu, pv] = toU(h, P.x, P.z), [tu, tv] = toU(h, tx, tz);
-    const pIn = Math.abs(pu) <= hx && Math.abs(pv) <= hz, tIn = Math.abs(tu) <= hx && Math.abs(tv) <= hz;
+    const pIn = Math.abs(pu) <= hx && Math.abs(pv) <= hz && (!h.gBox || L === 1 || h.gBox(pu / h.K, pv / h.K)), tIn = Math.abs(tu) <= hx && Math.abs(tv) <= hz && (!h.gBox || h.gBox(tu / h.K, tv / h.K));   // taverna: o beiral da frente fica fora das paredes (gBox)
     if (!pIn && !tIn) { if (hits(pu, pv, tu, tv, -hx, -hz, hx, hz)) return false; continue; }   // atrás da casa
     if (pIn && tIn) {
       if (L === 1) return !!h.sc && Math.abs(tu) < 4.6;     // jogador no andar de cima: o térreo não aparece (castelo: o salão é aberto, vê-se pelo vão)

@@ -47,6 +47,8 @@ export function houseAt(x, z, pad = .6) {
   }
   return null;
 }
+/** Como houseAt (pad 0), mas no térreo da taverna só vale entre as paredes (o beiral da frente não é interior) */
+export function houseShell(x, z, up) { const h = houseAt(x, z, 0); if (!h || !h.gBox || up) return h; const [lx, lz] = toL(h, x, z); return h.gBox(lx, lz) ? h : null; }
 export const houseNear = (x, z, pad = .6) => !!houseAt(x, z, pad);
 
 /** Liga as colisões do andar atual e desliga as do outro (as desligadas vão para longe) */
