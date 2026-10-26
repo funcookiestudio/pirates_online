@@ -206,3 +206,24 @@ export function updateQuests(dt) {
   const jq = list.find(([d, q]) => d.id === 'javalis' && stageOf(d, q).k === 'boss');
   if (jq) ensureBoss(jq[0]); else bossOut = false;
 }
+
+/** Regiões das missões ativas para o mapa: [{ x, z, r, t }] (círculo amarelo). Os pontos exatos recebem um deslocamento fixo: marca a REGIÃO, não o ponto. */
+export function questMarks() {
+  const out = [], jit = v => ((Math.abs(Math.round(v * 7)) % 11) - 5);
+  QUESTS.forEach(d => {
+    const q = Q()[d.id];
+    if (!q || q.s !== 'on') return;
+    const st = stageOf(d, q);
+    if (st.k === 'collect') PK.filter(p => p.id === d.id && p.si === q.i).forEach(p => out.push({ x: p.x + jit(p.x), z: p.z + jit(p.z), r: 18, t: d.title }));
+    else if (st.k === 'boss') {
+      const e = enemies.find(z => z.qid === d.id && !z.dead);
+      if (e) out.push({ x: e.x, z: e.z, r: 22, t: d.title });
+      else { const n = npcByShop('farm-granja'); if (n) out.push({ x: n.g.position.x + 16, z: n.g.position.z + 6, r: 32, t: d.title }); }
+    } else if (st.k === 'kill') {
+      let b = null, bd = 1e9;
+      enemies.forEach(z => { if (!z.dead && z.t.n === 'Javali' && !z.qid) { const dd = Math.hypot(z.x - P.x, z.z - P.z); if (dd < bd) { bd = dd; b = z; } } });
+      if (b) out.push({ x: b.x, z: b.z, r: 26, t: d.title });
+    }
+  });
+  return out;
+}
