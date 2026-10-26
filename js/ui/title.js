@@ -8,19 +8,36 @@ import { WEAPONS } from '../data/weapons.js';
 import { cleanLook, resolveLook } from '../entities/look.js';
 
 const CSS = `
-#ttl{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(4vh + env(safe-area-inset-top,0px)) 0 calc(5vh + env(safe-area-inset-bottom,0px));overflow:hidden;color:#f3e6c4;font-family:Cinzel,'Trajan Pro','Palatino Linotype',Georgia,serif;user-select:none;-webkit-user-select:none;
- background:linear-gradient(#16304f 0%,#3f7a9c 30%,#e8c47a 37%,#f4dca0 38%,#2f6a8a 39%,#2f6a8a 42%,#e0c07c 42.4%,#c9a15c 62%,#8f6a34 100%)}
+#ttl{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(4vh + env(safe-area-inset-top,0px)) 0 calc(5vh + env(safe-area-inset-bottom,0px));overflow:hidden;font-family:'Cinzel','Trajan Pro','Palatino Linotype',Georgia,serif;color:#d8c9a8;
+ background:linear-gradient(#04060c 0%,#0b1220 22%,#1a2230 36%,#3a2a28 40%,#120c0b 41%,#0d0807 62%,#050303 100%)}
 #ttl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
-#ttl .sun{position:absolute;left:50%;top:24%;width:min(40vw,40vh);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(#fff3c0,#f6b84a 52%,#f6b84a00 72%);opacity:.85}
-#ttl .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,#0000 45%,#0009 100%)}
-#ttl .tt{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%)}
-#ttl h1{position:relative;margin:0;text-align:center;line-height:.92;font-size:clamp(46px,min(15vw,19vh),150px);letter-spacing:.05em;text-transform:uppercase;color:#ffe9a8;text-shadow:0 3px 0 #8a3a14,0 6px 0 #4a1c0a,0 14px 26px #000b;-webkit-text-stroke:2px #5a2410;pointer-events:none}
-#ttl h1 small{display:block;font-size:.3em;letter-spacing:.55em;color:#fff;-webkit-text-stroke:1px #1b3a5c;text-shadow:0 2px 0 #1b3a5c,0 4px 10px #000a;margin-top:.25em;padding-left:.55em}
-#ttl button{position:absolute;top:100%;left:0;right:0;margin:clamp(14px,3.5vh,34px) auto 0;width:max-content;appearance:none;font:inherit;font-size:clamp(20px,4.5vw,30px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#fff;padding:.7em 2.4em;border:2px solid #e8e0d0;border-radius:4px;cursor:pointer;background:linear-gradient(#b82020,#6a0c0c);box-shadow:0 0 0 2px #000,0 6px 0 #3a0606,0 10px 24px #000a;touch-action:manipulation;animation:ttp 1.6s ease-in-out infinite}
-#ttl button:active{transform:translateY(4px);box-shadow:0 0 0 2px #000,0 2px 0 #3a0606}
-@keyframes ttp{50%{filter:brightness(1.25)}}
-#ttl .ver{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(6px + env(safe-area-inset-bottom,0px));font-size:11px;letter-spacing:.15em;color:#fffc;text-shadow:0 1px 2px #000}
-@media (orientation:landscape) and (max-height:480px){#ttl{padding-top:2vh;padding-bottom:3vh}#ttl h1{font-size:clamp(34px,16vh,90px)}#ttl button{padding:.45em 2em;font-size:clamp(16px,6vh,26px)}}
+#ttl canvas.em{pointer-events:none;mix-blend-mode:screen}
+#ttl .moon{position:absolute;left:50%;top:21%;width:min(46vw,46vh);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(#f2e4cc 0 17%,#c8705a66 26%,#7a1c1c33 42%,#0000 68%);animation:ttm 9s ease-in-out infinite}
+@keyframes ttm{50%{opacity:.78;transform:translate(-50%,-50%) scale(1.04)}}
+#ttl .sea{position:absolute;left:0;right:0;top:36%;height:6%;background:repeating-linear-gradient(90deg,#0000 0 38px,#6a7a9a14 38px 40px),linear-gradient(#26324a,#0a0e18);opacity:.8}
+#ttl .ship{position:absolute;left:12%;top:25.5%;width:min(26vw,300px);opacity:.78;filter:drop-shadow(0 0 8px #000);animation:ttb 7s ease-in-out infinite;transform-origin:50% 90%}
+@keyframes ttb{50%{transform:rotate(1.4deg) translateY(2px)}}
+#ttl .fog{position:absolute;left:-30%;width:160%;height:30%;pointer-events:none;background:radial-gradient(ellipse at 30% 50%,#9aa6bc2e,#0000 62%),radial-gradient(ellipse at 75% 40%,#9aa6bc22,#0000 60%);animation:ttf 38s linear infinite}
+#ttl .fog.a{top:30%}#ttl .fog.b{top:58%;animation-duration:55s;animation-direction:reverse;opacity:.8}
+@keyframes ttf{to{transform:translateX(22%)}}
+#ttl .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,#0000 28%,#000d 100%),linear-gradient(#0008,#0000 25%,#0000 70%,#000b)}
+#ttl .flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 40% 20%,#c8d8ff,#7a90c0 40%,#0000 75%);opacity:0;mix-blend-mode:screen;animation:ttl 11s infinite}
+@keyframes ttl{0%,86%,100%{opacity:0}87%{opacity:.5}88%{opacity:.05}89.5%{opacity:.38}93%{opacity:0}}
+#ttl .tt{position:absolute;left:0;right:0;top:48%;transform:translateY(-50%)}
+#ttl h1{position:relative;margin:0;text-align:center;font-family:'Cinzel Decorative','Cinzel',Georgia,serif;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:.08em}
+#ttl h1 .t1{display:block;font-size:clamp(22px,min(6.5vw,8vh),64px);letter-spacing:.6em;padding-left:.6em;color:#b83a30;text-shadow:0 0 14px #b0201855,0 2px 0 #1a0505}
+#ttl h1 .t2{display:block;font-size:clamp(46px,min(15vw,19vh),150px);margin-top:.04em;background:linear-gradient(#fff6dc 8%,#e2c27a 40%,#8a6428 58%,#e8cf94 78%,#7a5a22);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #1a0d05) drop-shadow(0 0 22px #a0201855)}
+#ttl h1 small{display:flex;align-items:center;justify-content:center;gap:.9em;font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:clamp(11px,min(2.4vw,3vh),20px);letter-spacing:.7em;color:#c9b58a;margin-top:1.1em;padding-left:.7em;text-shadow:0 2px 6px #000}
+#ttl h1 small::before,#ttl h1 small::after{content:'';width:min(16vw,150px);height:1px;background:linear-gradient(90deg,#0000,#c9a45c,#0000)}
+#ttl .tag{margin:clamp(8px,2vh,18px) 0 0;text-align:center;font-family:'IM Fell English','Cinzel',Georgia,serif;font-style:italic;font-size:clamp(13px,min(2.6vw,3vh),20px);letter-spacing:.06em;color:#a89878;text-shadow:0 2px 6px #000}
+#ttl button{position:absolute;top:100%;left:0;right:0;margin:clamp(46px,9vh,90px) auto 0;width:max-content;appearance:none;font:inherit;font-size:clamp(15px,3.4vw,22px);font-weight:700;letter-spacing:.42em;text-transform:uppercase;padding:.85em 3.4em .85em 3.8em;color:#e8d4a8;cursor:pointer;
+ background:linear-gradient(#2e1714,#120808 60%,#1e0e0c);border:1px solid #8a6a3a;box-shadow:inset 0 0 0 3px #0008,inset 0 0 18px #7a1c1c66,0 0 24px #000c,0 0 30px #7a1c1c33;
+ clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px);text-shadow:0 2px 4px #000;transition:color .25s,box-shadow .25s,filter .25s;animation:ttp 3.4s ease-in-out infinite}
+#ttl button:hover{color:#fff;filter:brightness(1.25);box-shadow:inset 0 0 0 3px #0008,inset 0 0 26px #b0282866,0 0 34px #b0282855}
+#ttl button:active{transform:translateY(2px)}
+@keyframes ttp{50%{border-color:#c9a45c}}
+#ttl .ver{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(6px + env(safe-area-inset-bottom,0px));font-size:11px;letter-spacing:.2em;color:#8a7c60;text-shadow:0 1px 2px #000}
+@media (orientation:landscape) and (max-height:480px){#ttl{padding-top:2vh;padding-bottom:3vh}#ttl .tag{display:none}#ttl h1 small{margin-top:.5em}#ttl button{margin-top:clamp(18px,5vh,40px);padding:.5em 2.4em;font-size:clamp(13px,5vh,20px)}}
 `;
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -65,8 +82,9 @@ function scene3d(root, cv) {
   const ren = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
   ren.setClearColor(0, 0);
   const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 100);
-  sc.add(new THREE.HemisphereLight(0xfff0d0, 0x6a5030, .95));
-  const dl = new THREE.DirectionalLight(0xffe2b0, .8); dl.position.set(-4, 6, 8); sc.add(dl);
+  sc.add(new THREE.HemisphereLight(0x8ea4cc, 0x2a1810, .62));   // luar frio
+  const dl = new THREE.DirectionalLight(0xffa860, .95); dl.position.set(4, 3, 8); sc.add(dl);   // luz quente das tochas
+  const rim = new THREE.DirectionalLight(0x7a98d8, .7); rim.position.set(-6, 5, -4); sc.add(rim);
   // heróis com roupa de pirata (melhor que a roupa inicial) e a aparência escolhida
   const mk = (f, a) => { const L = resolveLook(f, cleanLook(f, a)), base = f ? SKF.pirata : SKM.pirata; return buildHuman(f, Object.assign({}, base, { skin: L.skin, hair: L.hair, look: L, ex: f ? ['earring'] : [] })); };
   const hm = mk(false, { hs: 2, hc: 2, sk: 2, ey: 3, bs: 3, bc: 2 }), hf = mk(true, { hs: 6, hc: 7, sk: 1, ey: 2, bs: 2 });
@@ -78,7 +96,7 @@ function scene3d(root, cv) {
   const torch = WEAPONS[WEAPONS.findIndex(w => /Tocha/.test(w.n))].build(); torch.position.y = .12;
   const tg = new THREE.Group(); tg.position.set(0, -.32, 0); tg.add(torch); hf.armL.fa.add(tg);
   const all = [hm, hf, pirate, skel];
-  const blob = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .32, depthWrite: false });
+  const blob = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .5, depthWrite: false });
   const shadows = all.map(() => { const m = new THREE.Mesh(new THREE.CircleGeometry(.6, 20).rotateX(-Math.PI / 2), blob); sc.add(m); return m; });
   const tre = mkChest(); sc.add(tre);
   all.forEach(g => sc.add(g)); sc.add(raven, parrot);
@@ -88,9 +106,9 @@ function scene3d(root, cv) {
   const DIST = 16;
   let W = 1, H = 1, hero = 1, ene = 1, hx = 1, ex = 1;
   /** posiciona `g` com os pés em (sx, sy) da tela (0..1) e altura `hs` (fração da altura da tela) */
-  function place(i, g, sx, sy, hs, z) {
+  function place(i, g, sx, sy, hs, z, ref = i) {
     const d = DIST - z, half = Math.tan(15 * Math.PI / 180) * d, aspect = W / H;
-    const sH = hs * 2 * half / h0[i];
+    const sH = hs * 2 * half / h0[ref];
     g.scale.setScalar(sH); g.position.set((sx - .5) * 2 * half * aspect, (.5 - sy) * 2 * half, z);
     if (i > 1) shadows[i].visible = false;
     shadows[i].position.set(g.position.x, g.position.y + .02, z); shadows[i].scale.setScalar(sH * 1.1);
@@ -106,9 +124,9 @@ function scene3d(root, cv) {
     const fy = .6;                                          // pés dos heróis (retrato: título no centro)
     const hxs = portrait ? .27 : .24;                                         // distância ao centro (fração da largura)
     const eh = hh * 2.1, exs = portrait ? .3 : .27;
-    bs = place(0, hm, .5 - hxs, fy, hh, -3); place(1, hf, .5 + hxs, fy, hh, -3);
+    bs = place(0, hm, .5 - hxs, fy, hh, -3, 1); place(1, hf, .5 + hxs, fy, hh, -3);   // menino e menina com a mesma escala
     place(2, pirate, .5 - exs, 1.2, eh, 5); place(3, skel, .5 + exs, 1.2, eh, 5);
-    { const z = -7, half = Math.tan(15 * Math.PI / 180) * (DIST - z), cs = Math.min(.34 * 2 * half * aspect / 1.2, hh * 2 * half * .95 / 1.0);
+    { const z = -7, half = Math.tan(15 * Math.PI / 180) * (DIST - z), cs = .86 * Math.min(.34 * 2 * half * aspect / 1.2, hh * 2 * half * .95 / 1.0);
       tre.scale.setScalar(cs); tre.position.set(0, (.5 - fy) * 2 * half, z); }
     hero = hh; birdY = hh;
     const ps = bs * .55; raven.scale.setScalar(ps); parrot.scale.setScalar(ps);
@@ -145,13 +163,31 @@ export function runTitle() {
   return new Promise(res => {
     const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
     const root = document.createElement('div'); root.id = 'ttl';
-    root.innerHTML = `<div class="sun"></div><canvas></canvas><div class="vig"></div>
-      <div class="tt"><h1>Tiny<br>Pirates<small>RPG</small></h1><button>Jogar</button></div><div class="ver">${VERSION}</div>`;
+    if (!document.getElementById('ttl-fonts')) { const l = document.createElement('link'); l.id = 'ttl-fonts'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@900&family=IM+Fell+English:ital@1&display=swap'; document.head.appendChild(l); }
+    root.innerHTML = `<div class="moon"></div><div class="sea"></div><svg class="ship" viewBox="0 0 300 200" fill="#05070c"><path d="M20 140 Q60 170 150 172 Q240 170 285 130 L262 128 L250 110 L50 112 L36 126Z"/><rect x="146" y="14" width="3" height="120"/><rect x="82" y="34" width="3" height="100"/><rect x="214" y="44" width="3" height="90"/><path d="M104 22 L146 24 L144 84 Q124 94 104 84Z M60 44 L82 46 L80 92 Q70 98 60 92Z M174 30 L212 34 L210 92 Q192 102 174 94Z M222 52 L214 54 L216 96 Q232 98 240 90Z"/><path d="M149 14 L172 20 L149 26Z" fill="#2a0a0a"/><rect x="284" y="118" width="14" height="3" transform="rotate(-18 284 118)"/></svg><div class="fog a"></div><canvas></canvas><div class="fog b"></div><canvas class="em"></canvas><div class="flash"></div><div class="vig"></div>
+      <div class="tt"><h1><span class="t1">Tiny</span><span class="t2">Pirates</span><small>RPG</small></h1><p class="tag">O mar não perdoa. O tesouro, menos ainda.</p><button>Jogar</button></div><div class="ver">${VERSION}</div>`;
     document.body.appendChild(root);
     let S = null, raf = 0, done = false;
+    const ec = root.querySelector('canvas.em'), ex = ec.getContext('2d'), E = [];
+    const eReset = (o, init) => { o.x = Math.random(); o.y = init ? Math.random() : 1.05; o.r = .6 + Math.random() * 1.8; o.v = .02 + Math.random() * .07; o.w = Math.random() * 6.28; o.a = .3 + Math.random() * .7; o.h = Math.random() < .25 ? 40 : 18 + Math.random() * 14; };
+    for (let i = 0; i < 90; i++) { const o = {}; eReset(o, true); E.push(o); }
+    let lt = performance.now();
+    const emb = now => {
+      const dt = Math.min(.05, (now - lt) / 1000); lt = now;
+      const W = ec.width = innerWidth, H = ec.height = innerHeight;
+      ex.clearRect(0, 0, W, H);
+      E.forEach(o => {
+        o.y -= o.v * dt; o.w += dt * 1.6; o.x += Math.sin(o.w) * .02 * dt + .004 * dt; if (o.y < -.05 || o.x > 1.05) eReset(o, false);
+        const fl = .6 + .4 * Math.sin(o.w * 5), al = o.a * fl * Math.min(1, Math.max(0, o.y * 1.6));
+        ex.fillStyle = 'hsla(' + o.h + ',100%,60%,' + al + ')'; ex.shadowColor = 'hsla(' + o.h + ',100%,55%,.9)'; ex.shadowBlur = 8;
+        ex.beginPath(); ex.arc(o.x * W, o.y * H, o.r, 0, 6.283); ex.fill();
+      });
+      raf = requestAnimationFrame(emb);
+    };
+    raf = requestAnimationFrame(emb);
     try { S = scene3d(root, root.querySelector('canvas')); } catch (e) { console.warn('title 3d', e); root.querySelector('canvas').remove(); }
     const go = () => {
-      if (done) return; done = true; removeEventListener('keydown', key, true);
+      if (done) return; done = true; cancelAnimationFrame(raf); removeEventListener('keydown', key, true);
       root.style.transition = 'opacity .3s'; root.style.opacity = 0;
       setTimeout(() => { if (S) S.dispose(); root.remove(); st.remove(); res(); }, 300);
     };
