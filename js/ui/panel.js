@@ -222,7 +222,20 @@ export function fitPanel() {
     const el = $(id);
     if (el.style.display !== 'block') return;
     el.classList.toggle('full', MOB.matches);
-    if (MOB.matches) { ['left', 'top', 'bottom', 'maxHeight', 'overflowY', 'transform', 'transformOrigin'].forEach(k => el.style.removeProperty(k.replace(/[A-Z]/g, c => '-' + c.toLowerCase()))); return; }
+    if (MOB.matches) {
+      ['left', 'top', 'bottom', 'maxHeight', 'overflowY', 'transform', 'transformOrigin', 'width', 'height'].forEach(k => el.style.removeProperty(k.replace(/[A-Z]/g, c => '-' + c.toLowerCase())));
+      // sem rolagem: o conteúdo inteiro é reduzido para caber na tela (só a aba Missões rola)
+      const fit = id === 'pnl' ? tab !== 'qst' : true;
+      el.classList.toggle('fit', fit);
+      if (fit) {
+        el.style.height = 'auto';
+        const H = el.scrollHeight, k = Math.max(.6, Math.min(1, innerHeight / H));
+        el.style.height = '';
+        if (k < 1) { el.style.width = (innerWidth / k) + 'px'; el.style.height = (innerHeight / k) + 'px'; el.style.transform = 'scale(' + k.toFixed(3) + ')'; el.style.transformOrigin = '0 0'; }
+        if (H * k > innerHeight + 1) el.style.overflowY = 'auto';   // telas muito baixas: último recurso
+      }
+      return;
+    }
     el.style.maxHeight = 'none';
     el.style.overflowY = 'visible';
     el.style.transform = 'translateX(-50%)';

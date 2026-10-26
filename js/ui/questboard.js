@@ -1,6 +1,6 @@
 /* Painel do Mural de Missões: cartões por missão, abas com contagem, progresso e recompensa estimada, contratos de dungeon.
    Adaptativo: tela cheia no celular (rolável, com margens seguras), duas colunas em telas largas. */
-import { BOARDUI, boardData, boardAct, contractList, setContract, setTrack } from '../systems/quests.js';
+import { BOARDUI, boardData, boardAct, contractList, setContract, setTrack, pegarCartaz, soltarCartaz } from '../systems/quests.js';
 
 const TIERS = { curta: ['Curta', '#6cc070'], media: ['Média', '#5aa0e0'], longa: ['Longa', '#b07ae0'], epica: ['Épica', '#e0b84a'] };
 const TABS = [['open', '📜 Disponíveis'], ['on', '▶ Em andamento'], ['lock', '🔒 Trancadas'], ['done', '✔ Concluídas'], ['ctr', '⚔ Contratos']];
@@ -41,6 +41,11 @@ export function questCard(q, rr = render) {
       b.addEventListener('click', e => { e.stopPropagation(); if (boardAct(q.id)) rr(); });
       d.appendChild(b);
     } else if (q.state === 'open') d.appendChild(el('div', 'qb-hint', 'Fale com ' + esc(q.giver) + ' para aceitar.'));
+    if (q.state === 'open') {
+      const pb = el('button', 'qb-btn qb-pin' + (q.cartaz ? ' off' : ''), q.cartaz ? '🗑 Soltar cartaz' : '📌 Pegar cartaz');
+      pb.addEventListener('click', e => { e.stopPropagation(); if (q.cartaz) soltarCartaz(q.id); else pegarCartaz(q.id); rr(); });
+      d.appendChild(pb);
+    }
     if (q.state === 'on') {
       const t = el('button', 'qb-btn qb-trk' + (q.tracked ? ' off' : ''), q.tracked ? '📍 Parar de acompanhar' : '📍 Acompanhar no painel');
       t.addEventListener('click', e => { e.stopPropagation(); setTrack(q.tracked ? null : q.id); rr(); });
@@ -49,6 +54,7 @@ export function questCard(q, rr = render) {
     c.appendChild(d);
   }
   if (q.tracked) c.querySelector('.qb-ttl').insertAdjacentHTML('afterbegin', '📍 ');
+  if (q.cartaz && q.state === 'open') c.querySelector('.qb-ttl').insertAdjacentHTML('afterbegin', '📌 ');
   return c;
 }
 

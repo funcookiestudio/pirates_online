@@ -22,17 +22,19 @@ export function renderQuestLog(host, rerender) {
 
   const body = el('div', 'ql-body');
   const cards = (list, box) => list.forEach(q => box.appendChild(questCard(q, rerender)));
-  const group = (head, sub, list) => {
+  const group = (head, sub, list, pin) => {
     const g = el('section', 'ql-grp'), d = list.filter(q => q.state === 'done').length;
-    g.appendChild(el('div', 'ql-gh', '<div class="ql-gt">' + head + '</div><small>' + sub + '</small><span class="qb-lv">' + d + '/' + list.length + '</span>'));
+    g.appendChild(el('div', 'ql-gh', '<div class="ql-gt">' + head + '</div><small>' + sub + '</small>' + (pin ? '' : '<span class="qb-lv">' + d + '/' + list.length + '</span>')));
     const box = el('div', 'ql-cards'); cards(list, box); g.appendChild(box); body.appendChild(g);
   };
   const empty = t => body.appendChild(el('p', 'qb-empty', t));
 
   if (view === 'act') {
+    const pins = all.filter(q => q.state === 'open' && q.cartaz).sort((a, b) => a.lv - b.lv);
+    if (pins.length) group('📌 Cartazes', 'missões que você pegou no Mural · ' + pins.length + '/6', pins, true);
     const list = all.filter(q => q.state === 'on' || q.state === 'ready').sort((a, b) => (b.tracked - a.tracked) || rank(a) - rank(b) || a.lv - b.lv);
-    if (!list.length) empty('Nenhuma missão ativa. Fale com os NPCs ou olhe o Mural de Missões no porto!');
-    else { const box = el('div', 'ql-cards'); cards(list, box); body.appendChild(box); }
+    if (!list.length && !pins.length) empty('Nenhuma missão ativa. Fale com os NPCs ou olhe o Mural de Missões no porto!');
+    else if (list.length) { if (pins.length) body.appendChild(el('div', 'ql-gh', '<div class="ql-gt">▶ Em andamento</div>')); const box = el('div', 'ql-cards'); cards(list, box); body.appendChild(box); }
   } else if (view === 'npc') {
     const by = new Map(); all.forEach(q => { if (!by.has(q.giver)) by.set(q.giver, []); by.get(q.giver).push(q); });
     [...by.entries()].sort((a, b) => Math.min(...a[1].map(q => q.lv)) - Math.min(...b[1].map(q => q.lv))).forEach(([name, list]) => {

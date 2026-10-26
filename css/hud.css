@@ -282,6 +282,8 @@
 .ql-gh { display: flex; align-items: baseline; gap: 8px; padding: 6px 4px; margin-bottom: 6px; border-bottom: 2px solid #6b4a1a; position: sticky; top: 0; background: #0e0905; z-index: 1; }
 .ql-gt { font-weight: bold; color: #f0d890; font-size: 15px; }
 .ql-gh small { color: #a99870; font-size: 12px; flex: 1; }
+.qb-pin { min-height: 38px; margin-top: 6px; background: linear-gradient(#8a6a28, #5a4418); }
+.qb-pin.off { background: #2a2a2a; border-color: #777; color: #ccc; }
 .qb-trk { margin-top: 6px; min-height: 38px; background: linear-gradient(#3a5a8a, #28406a); border-color: #6a9ae0; color: #e8f0ff; }
 .qb-trk.off { background: #2a2a2a; border-color: #777; color: #ccc; }
 @media (max-width: 480px) { .ql-st b { font-size: 16px; } .ql-st span { font-size: 10px; } }

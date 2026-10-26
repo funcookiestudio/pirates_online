@@ -6,6 +6,8 @@ export const state = {
   SHK: 0,           // intensidade do tremor de câmera
   autoOn: false,    // auto combate ligado?
   contract: null,   // contrato de dungeon ativo { c, run } (quests.js)
+  cartazes: [],     // ids de missões "pegas" no Mural (quests.js): lista de cartazes do inventário
+  qtrack: null,     // missão acompanhada (aparece primeiro no HUD)
   quests: {},       // missões de NPCs (quests.js): id → { s, i, n, t, a }
   lastKill: null,   // último inimigo morto (lido pelos eventos de missão)
   quest: { st: 0 }, // primeira missão (O Rato da Taverna): estágio

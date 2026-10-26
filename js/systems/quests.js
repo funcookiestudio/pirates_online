@@ -191,6 +191,16 @@ on('dungeon:clear', () => {
 /** Ponte com o painel do Mural (ui/questboard.js registra `open`) */
 export const BOARDUI = { open: null };
 /** Missão acompanhada (aparece primeiro no painel do HUD) */
+/** Cartazes: missões que o jogador "pegou" no Mural (ainda não aceitas) e guarda no inventário */
+export const CARTAZ_MAX = 6;
+export function pegarCartaz(id) {
+  const c = state.cartazes || (state.cartazes = []), d = QMAP[id], q = Q()[id];
+  if (!d || q || P.lv < d.lv) return 'no';
+  if (c.includes(id)) return 'has';
+  if (c.length >= CARTAZ_MAX) { log('📌 Você já guarda ' + CARTAZ_MAX + ' cartazes: solte um antes de pegar outro'); return 'full'; }
+  c.push(id); log('📌 Cartaz guardado: ' + d.title + ' — veja na aba Missões do inventário'); saveGame(); return 'ok';
+}
+export function soltarCartaz(id) { state.cartazes = (state.cartazes || []).filter(x => x !== id); saveGame(); }
 export function setTrack(id) { state.qtrack = id || null; }
 
 /** Dados do painel do Mural: uma linha por missão, já com estado, progresso e recompensa estimada */
@@ -199,7 +209,7 @@ export function boardData() {
     const q = Q()[d.id], [pc, gm] = TIER[d.tier], st = q && q.s !== 'done' && q.s !== 'ready' ? stageOf(d, q) : null;
     const state = q && q.s === 'done' ? 'done' : q && q.s === 'ready' ? 'ready' : q ? 'on' : P.lv >= d.lv ? 'open' : 'lock';
     return {
-      id: d.id, title: d.title, giver: d.giver, tracked: state.qtrack === d.id, lv: d.lv, tier: d.tier, state, mural: d.giver === 'Mural de Missões',
+      id: d.id, title: d.title, giver: d.giver, cartaz: (state.cartazes || []).includes(d.id), tracked: state.qtrack === d.id, lv: d.lv, tier: d.tier, state, mural: d.giver === 'Mural de Missões',
       xp: Math.round(xpToNext(d.lv) * pc), gold: Math.round(goldAt(d.lv) * gm), reward: d.rewardTxt || '',
       ask: d.say.ask, step: q && q.s === 'on' ? q.i + 1 : 0, steps: d.stages.length,
       hud: st ? st.hud(q) : '', need: st && st.k !== 'hold' && st.k !== 'stalk' && st.k !== 'chase' ? st.n || 0 : 0, n: q && q.s === 'on' ? Math.floor(q.n || 0) : 0,
@@ -264,6 +274,7 @@ export function questsButtons(cur) {
 
 function start(d) {
   Q()[d.id] = { s: 'on', i: 0, n: 0, t: 0, a: 0 };
+  state.cartazes = (state.cartazes || []).filter(x => x !== d.id);   // o cartaz some ao aceitar a missão
   log('📜 Missão aceita: ' + d.title);
   if (d.onStart) d.onStart();
   saveGame();
