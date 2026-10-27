@@ -12,7 +12,7 @@ const kindOfSlot = k => kindOf(WEAPONS[P.wids[k]]);
 export function switchWeapon() {
   if (P.mounted || P.swap || P.dead || P.sit || P.sitT || P.roll > 0) return;
   const to = P.act === 'wpn' ? 'gun' : 'wpn';
-  if (!P.models[to]) { log(to === 'gun' ? '🔫 Sem arma de fogo equipada' : '⚔ Sem arma corpo a corpo equipada'); return; }
+  if (!P.models[to]) { log(to === 'gun' ? 'Sem arma de fogo equipada' : 'Sem arma corpo a corpo equipada'); return; }
   P.swap = { to, phase: 0, t: 0, u: 1, kind: kindOfSlot(P.act), cur: null, last: performance.now() };
 }
 

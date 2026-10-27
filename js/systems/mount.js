@@ -146,7 +146,7 @@ export function dismount(msg) {
 }
 
 function mountUp() {
-  if (!canRide()) { log('🐴 Não dá para montar aqui'); return; }
+  if (!canRide()) { log('Não dá para montar aqui'); return; }
   MOUNT.on = true; P.mounted = true; MOUNT.t = 0; MOUNT.st = 'park'; MOUNT.want = false; MOUNT.dis = false; MOUNT.sx = P.x; MOUNT.sz = P.z;
   if (Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z) > 6) { MOUNT.x = P.x; MOUNT.z = P.z; }   // (cavalo muito longe: sobe no lugar)
   P.tgt = null; P.tx = P.x; P.tz = P.z;
@@ -162,7 +162,7 @@ export function dismissHorse() {
   if (!MOUNT.root.visible) return;
   puff(MOUNT.x, 1, MOUNT.z, 0xd8c8a0, 3, 3);
   MOUNT.root.visible = false; refreshMountButton();
-  log('🐴 Você dispensou o cavalo: ele voltou ao estábulo');
+  log('Você dispensou o cavalo: ele voltou ao estábulo');
 }
 
 /** Tecla H: desmonta · monta (se o cavalo está perto) · ou chama o cavalo */
@@ -171,13 +171,13 @@ export function toggleMount(auto) {
   if (auto !== true) MOUNT.dismissed = false;   // o jogador chamou o cavalo de novo: o auto volta a poder usá-lo
   if (!MOUNT.on && (P.sit > 0 || P.sitT)) { standUp(); MOUNT.pending = true; return; }   // levanta primeiro, depois chama/monta
   if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; P.tgt = null; startDismount(); return; }
-  if (!canRide()) { log('🐴 Chame o cavalo fora da vila, em terra firme'); return; }
+  if (!canRide()) { log('Chame o cavalo fora da vila, em terra firme'); return; }
   MOUNT.root.visible = true; refreshMountButton();
   const d = Math.hypot(MOUNT.x - P.x, MOUNT.z - P.z);
   if (d < 3.4) { mountUp(); return; }
   MOUNT.want = true; MOUNT.walkT = 25; MOUNT.stuck = 0;
-  if (d > 14) { MOUNT.st = 'come'; log('🐴 Assobiou: o cavalo está a caminho'); }   // longe: ele vem até perto; o jogador anda o resto
-  else log('🐴 Indo até o cavalo');
+  if (d > 14) { MOUNT.st = 'come'; log('Assobiou: o cavalo está a caminho'); }   // longe: ele vem até perto; o jogador anda o resto
+  else log('Indo até o cavalo');
 }
 
 /** Multiplicador de velocidade atual (cansado: só um trote um pouco mais rápido que a pé) */
@@ -189,7 +189,7 @@ function updateBreath(dt) {
   else MOUNT.en += .12 * dt;
   if (MOUNT.feed > 0) { MOUNT.feed -= dt; MOUNT.en += .15 * dt; }
   MOUNT.en = Math.max(0, Math.min(1, MOUNT.en));
-  if (MOUNT.en <= 0 && !MOUNT.tired) { MOUNT.tired = true; if (MOUNT.on) log('🐴 O cavalo está cansado: ande um pouco para ele recuperar o fôlego'); }
+  if (MOUNT.en <= 0 && !MOUNT.tired) { MOUNT.tired = true; if (MOUNT.on) log('O cavalo está cansado: ande um pouco para ele recuperar o fôlego'); }
   else if (MOUNT.tired && MOUNT.en > .35) MOUNT.tired = false;
   const b = $('sm') && $('sm').querySelector('b');
   if (b) {   // só escreve quando muda (1%): reescrever todo quadro força o navegador a repintar a barra
@@ -207,9 +207,9 @@ export function updateMount(dt) {
   if (MOUNT.pending && P.sit === 0 && !P.sitT) { MOUNT.pending = false; toggleMount(); }
   if (MOUNT.on) {
     if (P.dead) { dismount(); return; }
-    if (P.swimming) { dismount('🐴 O cavalo não nada: você desmontou'); return; }
+    if (P.swimming) { dismount('O cavalo não nada: você desmontou'); return; }
     if (dIn(P.x, P.z)) { dismount(); return; }
-    if (Math.hypot(P.x, P.z) <= VILLAGE_R + .5) { dismount('🐴 Cavalos ficam do lado de fora da vila'); return; }
+    if (Math.hypot(P.x, P.z) <= VILLAGE_R + .5) { dismount('Cavalos ficam do lado de fora da vila'); return; }
     const r = MOUNT.root;
     if (MOUNT.dis || MOUNT.t < 1) {   // animação de subir / descer: o cavalo fica parado, o jogador é conduzido
       if (MOUNT.dis) MOUNT.t = Math.max(0, MOUNT.t - dt / DIS_TIME); else MOUNT.t = Math.min(1, MOUNT.t + dt / MOUNT_TIME);

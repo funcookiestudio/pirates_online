@@ -53,100 +53,100 @@ const herbSpots = () => {   // clareiras onde os cervos pastam (uma por manada),
 const QUESTS = [
   { id: 'barris', giver: 'Zé Carrancudo', title: 'Barris do Zé', lv: 2, tier: 'media',
     say: { ask: 'Hmpf... sumiram três barris do meu melhor rum! Vi uns contrabandistas rondando o cais. Recupere os barris no posto deles e eu te pago um trago... e uns trocados.', on: 'Os barris? Ainda não, marujo. Procure perto do Posto dos Contrabandistas — procure o brilho dourado.', ready: 'Meus barris! Ahh, o cheiro do rum... Tome, você merece.' },
-    stages: [{ k: 'collect', n: 4, model: 'barrel', msg: '🛢 Barril recuperado', spot: i => POST_DATA[1] && around(POST_DATA[1], i), hud: q => '🛢 Recupere os barris do Zé (' + q.n + '/4) — perto do Posto dos Contrabandistas' }],
+    stages: [{ k: 'collect', n: 4, model: 'barrel', msg: 'Barril recuperado', spot: i => POST_DATA[1] && around(POST_DATA[1], i), hud: q => 'Recupere os barris do Zé (' + q.n + '/4) — perto do Posto dos Contrabandistas' }],
     reward: { pot: 3 }, rewardTxt: '3 poções' },
   { id: 'javalis', giver: 'Seu Zé', title: 'Javalis na Horta', lv: 3, tier: 'curta',
     say: { ask: 'Aqueles javalis estão destruindo minha horta! Mate três deles na mata. E cuidado com o Presa-Torta, um elite que anda com eles...', on: 'A horta ainda sofre! Mate os javalis da mata e depois dê um jeito no Presa-Torta, o elite.', ready: 'Acabou com o Presa-Torta! Minha horta agradece. Leve o couro dele, é seu.' },
     stages: [
-      { k: 'kill', n: 3, hud: q => '🐗 Mate javalis na mata (' + q.n + '/3)' },
-      { k: 'boss', n: 1, hud: () => '⭐ Derrote o Presa-Torta, o javali elite, perto da granja' }],
+      { k: 'kill', n: 3, hud: q => 'Mate javalis na mata (' + q.n + '/3)' },
+      { k: 'boss', n: 1, hud: () => 'Derrote o Presa-Torta, o javali elite, perto da granja' }],
     reward: { couro: 5 }, rewardTxt: '5 couros' },
   { id: 'ervas', giver: 'Ysolde Folha-Prata', title: 'Febre das Ervas', lv: 4, tier: 'media',
     say: { ask: 'A febre do mar anda forte na vila, e me faltam folhas-de-lua: só brotam à noite, nas clareiras onde os cervos pastam. Traga três e eu preparo o remédio. Cuidado para não assustar os bichos!', on: 'Folhas-de-lua só brotam à noite, nas clareiras dos cervos. Aproxime-se devagar!', ready: 'Perfeitas, ainda com orvalho! Deixe que eu preparo... Leve estas poções, e a receita fica comigo.' },
-    stages: [{ k: 'collect', n: 3, model: 'herb', night: true, msg: '🌿 Folha-de-lua colhida', spot: i => herbSpots()[i], hud: q => '🌿 Colha folhas-de-lua (' + q.n + '/3) — só à noite, nas clareiras dos cervos' + (isNight(hourNow()) ? '' : ' (espere anoitecer)') }],
+    stages: [{ k: 'collect', n: 3, model: 'herb', night: true, msg: 'Folha-de-lua colhida', spot: i => herbSpots()[i], hud: q => 'Colha folhas-de-lua (' + q.n + '/3) — só à noite, nas clareiras dos cervos' + (isNight(hourNow()) ? '' : ' (espere anoitecer)') }],
     reward: { pot: 5 }, rewardTxt: '5 poções' },
   { id: 'mapa', giver: 'Pé-de-Pau Polly', title: 'O Mapa Rasgado', lv: 4, tier: 'longa',
     say: { ask: 'Yo-ho-ho! Achei um velho mapa rasgado em três pedaços, e cada um foi parar num acampamento diferente! Recupere os fragmentos (Náufragos, Cova dos Esqueletos e Bivaque Fantasma) e o tesouro é nosso!', on: 'Os pedaços estão nos acampamentos: Náufragos, Cova dos Esqueletos e Bivaque Fantasma. Depois, siga o X do mapa e cave!', ready: 'Cavou o baú! Que tesouro! Fique com a parte do leão, marujo. Eu fico com as histórias.' },
     stages: [
-      { k: 'collect', n: 3, model: 'scroll', msg: '📜 Fragmento do mapa', spot: i => POST_DATA[[0, 2, 3][i]] && around(POST_DATA[[0, 2, 3][i]], 1, 5), hud: q => '📜 Recupere os fragmentos do mapa (' + q.n + '/3) nos acampamentos' },
-      { k: 'collect', n: 1, model: 'dig', msg: '⛏ Você cavou o tesouro!', spot: () => POST_DATA[0] && freePoint(POST_DATA[0].x - 24, POST_DATA[0].z + 16, 1), hud: () => '❌ Siga o X do mapa e cave o tesouro, perto do Acampamento dos Náufragos' }],
+      { k: 'collect', n: 3, model: 'scroll', msg: 'Fragmento do mapa', spot: i => POST_DATA[[0, 2, 3][i]] && around(POST_DATA[[0, 2, 3][i]], 1, 5), hud: q => 'Recupere os fragmentos do mapa (' + q.n + '/3) nos acampamentos' },
+      { k: 'collect', n: 1, model: 'dig', msg: 'Você cavou o tesouro!', spot: () => POST_DATA[0] && freePoint(POST_DATA[0].x - 24, POST_DATA[0].z + 16, 1), hud: () => 'Siga o X do mapa e cave o tesouro, perto do Acampamento dos Náufragos' }],
     reward: { torch: 1, magic: 1 }, rewardTxt: 'uma arma Mágica e uma tocha' },
   { id: 'estrelas', giver: 'Velho Astrolábio', title: 'Estrelas Apagadas', lv: 7, tier: 'media',
     say: { ask: 'Tracei as constelações destas águas por quarenta anos, mas as Sombras das Ondas apagam as marcas nos três círculos de pedra ao redor da vila. À noite, fique dentro de cada círculo até eu refazer o mapa do céu. Elas virão atrás de você!', on: 'Os círculos de pedra ficam ao redor da vila. Só à noite, e não saia deles enquanto as Sombras atacam!', ready: 'O céu está desenhado de novo! Veja, o norte nunca esteve tão claro. Leve estas bombas, vão lhe servir.' },
     stages: [0, 1, 2].map(i => ({ k: 'hold', n: 25, r: 4.5, night: true, model: 'ring', waves: { kind: KIND.SOMBRA, count: 2, every: 9 }, spot: () => landPoint(VILLAGE_R + 50, i * 2.1 + .4),
-      hud: q => '⭐ Círculo ' + (i + 1) + '/3: fique dentro por ' + Math.max(0, Math.ceil(25 - q.n)) + 's e defenda-se das Sombras' + (isNight(hourNow()) ? '' : ' (espere anoitecer)') })),
+      hud: q => 'Círculo ' + (i + 1) + '/3: fique dentro por ' + Math.max(0, Math.ceil(25 - q.n)) + 's e defenda-se das Sombras' + (isNight(hourNow()) ? '' : ' (espere anoitecer)') })),
     reward: { bmb: 3 }, rewardTxt: '3 bombas' },
   { id: 'mare', giver: 'Pé-de-Pau Polly', title: 'Maré Subindo', lv: 9, tier: 'media',
     say: { ask: 'O sino do meu velho navio ficou na Praia dos Naufragados! Só que a maré sobe depressa por lá. Pegue o sino e volte para a vila antes de a maré cobrir o caminho. Se não der tempo, terá de buscar de novo!', on: 'O sino está na Praia dos Naufragados. Depois de pegá-lo, volte à vila antes de a maré cobrir o caminho!', ready: 'O sino! Ouça só... soa igualzinho a quando o Kraken me levou a perna. Fique com isto, marujo.' },
     stages: [
-      { k: 'collect', n: 1, model: 'bell', msg: '🔔 Sino recuperado! A maré está subindo...', spot: i => POST_DATA[6] && around(POST_DATA[6], 2, 6), hud: () => '🔔 Pegue o sino do navio na Praia dos Naufragados' },
-      { k: 'goto', r: 7, limit: 150, back: 0, model: 'ring', spot: () => ({ x: 0, z: 10 }), hud: q => '🌊 A maré sobe! Volte à praça da vila em ' + Math.max(0, Math.ceil(q.tl || 0)) + 's' }],
+      { k: 'collect', n: 1, model: 'bell', msg: 'Sino recuperado! A maré está subindo...', spot: i => POST_DATA[6] && around(POST_DATA[6], 2, 6), hud: () => 'Pegue o sino do navio na Praia dos Naufragados' },
+      { k: 'goto', r: 7, limit: 150, back: 0, model: 'ring', spot: () => ({ x: 0, z: 10 }), hud: q => 'A maré sobe! Volte à praça da vila em ' + Math.max(0, Math.ceil(q.tl || 0)) + 's' }],
     reward: { magic: 1 }, rewardTxt: 'uma arma Mágica' },
   { id: 'calafate', giver: 'Mestre Breu', title: 'Escolta do Calafate', lv: 5, tier: 'media',
     say: { ask: 'Meu alcatrão acabou e o casco do barco do porto está vazando! Mas os mortos rondam o caminho... Me escolte até o porto, sem deixar que me matem, e ajude-me a consertar o casco enquanto os malditos atacam!', on: 'Eu sigo você até o porto. Fique perto de mim e não deixe os mortos me alcançarem!', ready: 'Casco selado, alcatrão firme! Ahoy! Aqui estão os machados que forjei com as sobras. Use bem!' },
     stages: [
       { k: 'escort', r: 5, model: 'ring', waves: { kind: KIND.GRUMETE, count: 2, every: 20 }, spot: () => pois[0] ? { x: pois[0].x, z: pois[0].z } : { x: 0, z: 30 },
-        hud: q => '🔨 Leve o Mestre Breu até o porto (' + escortInfo() + ')' },
+        hud: q => 'Leve o Mestre Breu até o porto (' + escortInfo() + ')' },
       { k: 'hold', n: 20, r: 5, model: 'ring', waves: { kind: KIND.CONTRA, count: 2, every: 8 }, spot: () => pois[0] ? { x: pois[0].x, z: pois[0].z } : { x: 0, z: 30 },
-        hud: q => '🔨 Defenda o Breu enquanto ele conserta o casco (' + Math.max(0, Math.ceil(20 - q.n)) + 's) — ' + escortInfo() }],
+        hud: q => 'Defenda o Breu enquanto ele conserta o casco (' + Math.max(0, Math.ceil(20 - q.n)) + 's) — ' + escortInfo() }],
     reward: { machado: 10 }, rewardTxt: '10 machados de arremesso' },
   { id: 'cervo', giver: 'Seu Tobias', title: 'O Cervo Branco', lv: 6, tier: 'media',
     say: { ask: 'Dizem que um cervo branco anda pela mata, o mais distante dos rebanhos. Nunca consegui chegar perto, ele foge de quem corre. Aproxime-se DEVAGAR, sem cavalo, e fique perto dele por alguns segundos. Quero saber que é real!', on: 'O cervo branco fica na manada mais distante da vila. Ande devagar e não corra, ou ele foge.', ready: 'Você o viu de perto?! Ha! Pelo menos um de nós viu... Tome, por sua paciência.' },
-    stages: [{ k: 'stalk', n: 6, r: 7, hud: q => '🦌 Aproxime-se devagar do Cervo Branco (' + Math.max(0, Math.ceil(6 - q.n)) + 's) — sem correr, sem cavalo' }],
+    stages: [{ k: 'stalk', n: 6, r: 7, hud: q => 'Aproxime-se devagar do Cervo Branco (' + Math.max(0, Math.ceil(6 - q.n)) + 's) — sem correr, sem cavalo' }],
     reward: { couro: 6, pot: 2 }, rewardTxt: '6 couros e 2 poções' },
   { id: 'divida', giver: 'Capitã Sal', title: 'Dívida de Sangue', lv: 8, tier: 'longa',
     say: { ask: 'Um velho devedor, Cão Rouco, sumiu com minha mercadoria e se escondeu entre os contrabandistas. Traga-o a mim... de um jeito ou de outro. Ele é um elite, não o subestime.', on: 'Cão Rouco anda com os contrabandistas, perto do posto deles. Derrote-o e volte aqui.', ready: 'Então o Cão Rouco caiu. Ele tinha esta bolsa. Pode me entregar para eu cobrar a dívida, ou guardar o segredo dele e dizer que fugiu. A escolha é sua, marujo.' },
-    stages: [{ k: 'boss', n: 1, kind: KIND.CONTRA, elite: true, name: 'Cão Rouco', at: () => POST_DATA[1] ? freePoint(POST_DATA[1].x + 4, POST_DATA[1].z + 4, 1) : null, hud: () => '🗡 Derrote o Cão Rouco, o devedor elite, no Posto dos Contrabandistas' }],
-    choice: [['💰 Entregar a bolsa (mais ouro)', { g: 1.5 }], ['🤐 Dizer que ele fugiu (uma arma Mágica, menos ouro)', { g: .5, magic: 1 }]],
+    stages: [{ k: 'boss', n: 1, kind: KIND.CONTRA, elite: true, name: 'Cão Rouco', at: () => POST_DATA[1] ? freePoint(POST_DATA[1].x + 4, POST_DATA[1].z + 4, 1) : null, hud: () => 'Derrote o Cão Rouco, o devedor elite, no Posto dos Contrabandistas' }],
+    choice: [['Entregar a bolsa (mais ouro)', { g: 1.5 }], ['Dizer que ele fugiu (uma arma Mágica, menos ouro)', { g: .5, magic: 1 }]],
     reward: {}, rewardTxt: 'conforme a sua escolha' },
   { id: 'procurado', giver: 'Mural de Missões', title: 'Procurado: Capitão Maldito', lv: 12, tier: 'epica',
     say: { ask: 'PROCURADO: Capitão Maldito, vivo ou morto! A recompensa é generosa. Ele é um chefe de verdade: leve poções, bombas e um bom equipamento. Ele ressurge depois de um tempo, mas só o primeiro abate vale a recompensa.', on: 'O Capitão Maldito vaga pela costa leste, no Fortim. Derrube-o e volte ao Mural.', ready: 'O cartaz está riscado: O Capitão Maldito caiu! Cobre sua recompensa.' },
-    stages: [{ k: 'wanted', n: 1, hud: () => '☠ Derrote o Capitão Maldito (chefe da costa leste, no Fortim)' }],
+    stages: [{ k: 'wanted', n: 1, hud: () => 'Derrote o Capitão Maldito (chefe da costa leste, no Fortim)' }],
     reward: { magic: 1, pot: 5, bmb: 3 }, rewardTxt: 'uma arma Mágica, 5 poções e 3 bombas' },
   { id: 'cofre', giver: 'Mestre Breu', title: 'O Cofre do Mestre', lv: 10, tier: 'longa',
     say: { ask: 'Meu antigo mestre guardou o cofre de ferramentas no fundo de uma dungeon, com um guardião para vigiá-lo. Entre numa dungeon de nível 8 ou mais e derrote o chefe. O cofre abre sozinho quando o guardião cai!', on: 'Entre numa dungeon (nível 8 ou mais) e derrote o chefe. Depois, volte aqui.', ready: 'Ahoy! As ferramentas do velho mestre! Tome estes machados, eu fico com o resto.' },
-    stages: [{ k: 'dclear', n: 1, min: 8, hud: q => '🕳 Derrote o chefe de uma dungeon de nível 8+ (' + q.n + '/1)' }],
+    stages: [{ k: 'dclear', n: 1, min: 8, hud: q => 'Derrote o chefe de uma dungeon de nível 8+ (' + q.n + '/1)' }],
     reward: { machado: 10, pot: 3 }, rewardTxt: '10 machados de arremesso e 3 poções' },
   { id: 'paginas', giver: 'Ysolde Folha-Prata', title: 'Páginas da Tripulação', lv: 8, tier: 'media',
     say: { ask: 'Os mortos das dungeons carregam páginas do diário da antiga tripulação, e eu quero lê-las. Derrote vinte inimigos DENTRO de dungeons e eu junto o que sobrou deles.', on: 'Os inimigos dentro das dungeons guardam as páginas. Derrote vinte deles.', ready: 'Vinte páginas... que história! Tome, foi um bom trabalho.' },
-    stages: [{ k: 'dkill', n: 20, hud: q => '📖 Derrote inimigos dentro de dungeons (' + q.n + '/20)' }],
+    stages: [{ k: 'dkill', n: 20, hud: q => 'Derrote inimigos dentro de dungeons (' + q.n + '/20)' }],
     reward: { pot: 6 }, rewardTxt: '6 poções' },
   { id: 'cristais', giver: 'Velho Astrolábio', title: 'Cristais que Cantam', lv: 14, tier: 'longa',
     say: { ask: 'Dizem que o fundo das dungeons canta quando o chefe cai, e o canto dá norte às estrelas. Limpe duas dungeons de nível 12 ou mais, derrotando os chefes, para eu ouvir esse canto.', on: 'Limpe duas dungeons de nível 12+ derrotando os chefes.', ready: 'Ouvi o canto a léguas! O céu está mais claro. Fique com isto, marujo.' },
-    stages: [{ k: 'dclear', n: 2, min: 12, hud: q => '💎 Derrote o chefe de dungeons nível 12+ (' + q.n + '/2)' }],
+    stages: [{ k: 'dclear', n: 2, min: 12, hud: q => 'Derrote o chefe de dungeons nível 12+ (' + q.n + '/2)' }],
     reward: { magic: 1, bmb: 4 }, rewardTxt: 'uma arma Mágica e 4 bombas' },
   { id: 'rato', giver: 'Zé Carrancudo', title: 'Treinando o Rato', lv: 5, tier: 'curta',
     say: { ask: 'Meu rato de estimação, o Biscoito, fugiu da gaiola de novo! É esperto e corre aos trancos, mas para para respirar. Pegue-o três vezes: toda vez que você o alcança, ele escapa e se esconde noutro lugar. É treino de pernas, marujo!', on: 'O Biscoito corre aos trancos pela vila e pelos arredores. Aproxime-se dele para pegá-lo.', ready: 'Meu Biscoito! Ele nunca esteve tão ágil. Tome, por ajudar a treinar o bicho.' },
-    stages: [{ k: 'chase', n: 3, hud: q => '🐀 Alcance o Biscoito, o rato fujão (' + q.n + '/3) — ele corre aos trancos' }],
+    stages: [{ k: 'chase', n: 3, hud: q => 'Alcance o Biscoito, o rato fujão (' + q.n + '/3) — ele corre aos trancos' }],
     reward: { pot: 2, faca: 5 }, rewardTxt: '2 poções e 5 facas de arremesso' },
   { id: 'atlas', giver: 'Velho Astrolábio', title: 'O Atlas do Cartógrafo', lv: 10, tier: 'longa',
     say: { ask: 'Falta completar meu atlas: preciso das bordas de três acampamentos distantes, medidas com os próprios pés. Vá até as proximidades do Bivaque Fantasma e dos dois acampamentos seguintes, e eu desenho o resto. Fique fora do alcance dos guardas, se puder!', on: 'Percorra as bordas dos acampamentos mais distantes para eu medir. Os marcos dourados mostram os pontos.', ready: 'Está tudo no atlas! Veja só: cada enseada, cada pico. Você tem olhos de gaivota. Leve esta recompensa.' },
-    stages: [3, 4, 5].map((pi, n) => ({ k: 'goto', r: 6, model: 'ring', spot: () => POST_DATA[pi] && around(POST_DATA[pi], 3, 16), hud: () => '🧭 Marco ' + (n + 1) + '/3: vá até a borda do ' + (POST_DATA[pi] ? POST_DATA[pi].name : 'acampamento') })),
+    stages: [3, 4, 5].map((pi, n) => ({ k: 'goto', r: 6, model: 'ring', spot: () => POST_DATA[pi] && around(POST_DATA[pi], 3, 16), hud: () => 'Marco ' + (n + 1) + '/3: vá até a borda do ' + (POST_DATA[pi] ? POST_DATA[pi].name : 'acampamento') })),
     reward: { magic: 1, bmb: 3, pot: 3 }, rewardTxt: 'uma arma Mágica, 3 bombas e 3 poções' },
   { id: 'lebre', giver: 'Dona Marta', title: 'A Lebre Dourada', lv: 9, tier: 'media',
     say: { ask: 'Uma lebre de pelo dourado anda pelos campos distantes, e dizem que traz sorte a quem a pega. Ela é rápida e esperta, mas se cansa depois de correr um pouco. Alcance-a quando ela parar para respirar!', on: 'A lebre dourada fica nos campos mais distantes da vila. Persiga-a até ela cansar e chegue perto.', ready: 'Você a pegou?! Que sorte linda! Tome, a sorte dela agora também é sua.' },
-    stages: [{ k: 'catch', n: 1, hud: () => '🐇 Alcance a Lebre Dourada quando ela parar cansada' }],
+    stages: [{ k: 'catch', n: 1, hud: () => 'Alcance a Lebre Dourada quando ela parar cansada' }],
     reward: { magic: 1, pot: 3 }, rewardTxt: 'uma arma Mágica e 3 poções' },
   { id: 'corvo', giver: 'Pé-de-Pau Polly', title: 'O Corvo Não Esquece', lv: 8, tier: 'longa',
     say: { ask: 'Meu velho corvo mensageiro foi levado para a Ilha do Corvo e eu nunca soube o destino dele. Vá até lá (o Capitão Remo leva você no porto), recolha três penas negras e defenda o ninho dele dos fantasmas por um tempo. Ele me reconhece pelas penas!', on: 'Na Ilha do Corvo: recolha as três penas negras e defenda o ninho. Para viajar, fale com o Capitão Remo no porto.', ready: 'Estas penas... é ele mesmo! O velho corvo não esquece nada. Tome, marujo, e obrigado.' },
     stages: [
-      { k: 'collect', n: 3, isl: 'corvo', model: 'feather', msg: '🪶 Pena negra recolhida', spot: i => landPoint(55 + i * 22, i * 2.3 + .5), hud: q => '🪶 Recolha as penas negras na Ilha do Corvo (' + q.n + '/3)' },
-      { k: 'hold', n: 15, r: 5, isl: 'corvo', model: 'ring', waves: { kind: KIND.GHOST, count: 2, every: 7 }, spot: () => landPoint(100, 3.7), hud: q => '🪶 Defenda o ninho do corvo por ' + Math.max(0, Math.ceil(15 - q.n)) + 's' }],
+      { k: 'collect', n: 3, isl: 'corvo', model: 'feather', msg: 'Pena negra recolhida', spot: i => landPoint(55 + i * 22, i * 2.3 + .5), hud: q => 'Recolha as penas negras na Ilha do Corvo (' + q.n + '/3)' },
+      { k: 'hold', n: 15, r: 5, isl: 'corvo', model: 'ring', waves: { kind: KIND.GHOST, count: 2, every: 7 }, spot: () => landPoint(100, 3.7), hud: q => 'Defenda o ninho do corvo por ' + Math.max(0, Math.ceil(15 - q.n)) + 's' }],
     reward: { magic: 1, pot: 4, bmb: 2 }, rewardTxt: 'uma arma Mágica, 4 poções e 2 bombas' },
   { id: 'viagem', giver: 'Velho Astrolábio', title: 'Faróis da Tormenta', lv: 15, tier: 'longa',
     say: { ask: 'Na Ilha da Tormenta há três faróis apagados que guiavam os navios antigos. Viaje até lá (Capitão Remo, no porto), acenda cada um ficando junto dele por alguns segundos e defenda-o das Sombras que brotam da tempestade.', on: 'Na Ilha da Tormenta: acenda os três faróis, ficando dentro de cada círculo e se defendendo das Sombras.', ready: 'Vi os três faróis acesos daqui, no horizonte! Os navios voltarão a ter norte. Tome, foi uma proeza.' },
     stages: [0, 1, 2].map(i => ({ k: 'hold', n: 14, r: 4.5, isl: 'tormenta', model: 'ring', waves: { kind: KIND.SOMBRA, count: 3, every: 8, add: 2 }, spot: () => landPoint(60 + i * 25, i * 2.1 + 1.1),
-      hud: q => '🗼 Farol ' + (i + 1) + '/3: fique dentro do círculo por ' + Math.max(0, Math.ceil(14 - q.n)) + 's e defenda-se das Sombras' })),
+      hud: q => 'Farol ' + (i + 1) + '/3: fique dentro do círculo por ' + Math.max(0, Math.ceil(14 - q.n)) + 's e defenda-se das Sombras' })),
     reward: { magic: 1, bmb: 5, pot: 5 }, rewardTxt: 'uma arma Mágica, 5 bombas e 5 poções' },
   { id: 'caveira', giver: 'Capitã Sal', title: 'A Caveira de Ouro', lv: 22, tier: 'epica',
     say: { ask: 'A lenda da Caveira de Ouro é verdadeira: três pedaços dela estão espalhados pela Ilha da Caveira, e o chefe da ilha guarda a testa. Viaje até lá (Capitão Remo, no porto), junte os fragmentos e derrote o chefe. Isto vale uma fortuna... e vai exigir tudo de você.', on: 'Na Ilha da Caveira: recolha os três fragmentos de ouro e derrote o chefe da ilha.', ready: 'A Caveira de Ouro... inteira! Eu juro que nunca vi nada tão bonito. A sua parte, como combinamos, marujo.' },
     stages: [
-      { k: 'collect', n: 3, isl: 'caveira', model: 'bell', msg: '💀 Fragmento de ouro recolhido', spot: i => landPoint(50 + i * 25, i * 2.1 + .9), hud: q => '💀 Recolha os fragmentos da Caveira de Ouro (' + q.n + '/3) na Ilha da Caveira' },
-      { k: 'wanted', n: 1, isl: 'caveira', hud: () => '☠ Derrote o chefe da Ilha da Caveira' }],
+      { k: 'collect', n: 3, isl: 'caveira', model: 'bell', msg: 'Fragmento de ouro recolhido', spot: i => landPoint(50 + i * 25, i * 2.1 + .9), hud: q => 'Recolha os fragmentos da Caveira de Ouro (' + q.n + '/3) na Ilha da Caveira' },
+      { k: 'wanted', n: 1, isl: 'caveira', hud: () => 'Derrote o chefe da Ilha da Caveira' }],
     reward: { magic: 2, pot: 8, bmb: 5 }, rewardTxt: 'duas armas Mágicas, 8 poções e 5 bombas' },
   { id: 'arsenal', giver: 'Capitã Sal', title: 'Mão Firme', lv: 5, tier: 'curta',
     say: { ask: 'Arremesso é arte de quem não perde a calma, marujo. Pegue estas facas e acerte dez inimigos com elas. Equipe-as no espaço de arma de longa distância e use o botão de ataque. Elas acabam, mas as que não quebram ficam no chão.', on: 'Ainda faltam acertos! Equipe a faca de arremesso no espaço de longa distância e atire nos inimigos.', ready: 'Mão firme, olho vivo! Aqui, mais facas e uns trocados pelo treino.' },
-    stages: [{ k: 'throw', n: 10, hud: q => '🎯 Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
+    stages: [{ k: 'throw', n: 10, hud: q => 'Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
     onStart: () => give('Faca de arremesso', 15), reward: { faca: 10 }, rewardTxt: '10 facas de arremesso' },
 ];
 /** Etapas de outra ilha (`isl`): só rodam na ilha certa; nas outras o painel manda viajar */
@@ -169,22 +169,22 @@ export function contractHud() {
   const d = CONTRACTS[c.c], r = c.run;
   if (!d) return '';
   if (!r) return d.ic + ' Contrato ' + d.n + ': entre numa dungeon';
-  return d.ic + ' Contrato ' + d.n + (r.fail ? ': ✖ ' + r.fail : ': ✔' + (d.limit ? ' ' + fmt(Math.max(0, d.limit - r.t)) : ''));
+  return d.ic + ' Contrato ' + d.n + (r.fail ? ': ' + r.fail : ': ' + (d.limit ? ' ' + fmt(Math.max(0, d.limit - r.t)) : ''));
 }
-const failC = why => { const r = state.contract && state.contract.run; if (r && !r.fail) { r.fail = why; log('✖ Contrato falhou: ' + why); } };
-on('dungeon:enter', () => { const c = state.contract; if (c && !c.run) { c.run = { lv: state.dunNow.lv, t: 0, a: 0, fail: '' }; log('📜 Contrato valendo: ' + CONTRACTS[c.c].hint); } });
+const failC = why => { const r = state.contract && state.contract.run; if (r && !r.fail) { r.fail = why; log('Contrato falhou: ' + why); } };
+on('dungeon:enter', () => { const c = state.contract; if (c && !c.run) { c.run = { lv: state.dunNow.lv, t: 0, a: 0, fail: '' }; log('Contrato valendo: ' + CONTRACTS[c.c].hint); } });
 on('potion:used', () => { if (state.contract && state.contract.c === 'nopot') failC('você usou uma poção'); });
 on('trap:hit', () => { if (state.contract && state.contract.c === 'trap') failC('você pisou numa armadilha'); });
-on('dungeon:leave', () => { const c = state.contract; if (c && c.run) { state.contract = null; log('📜 Contrato cancelado: você saiu da dungeon sem concluí-la'); saveGame(); } });
+on('dungeon:leave', () => { const c = state.contract; if (c && c.run) { state.contract = null; log('Contrato cancelado: você saiu da dungeon sem concluí-la'); saveGame(); } });
 on('dungeon:clear', () => {
   const c = state.contract; if (!c || !c.run) return;
   const r = c.run, share = r.t > 0 ? Math.min(1, r.a / r.t) : 0, lv = r.lv;
   state.contract = null;
-  if (r.fail) { log('📜 Contrato não pago: ' + r.fail); saveGame(); return; }
+  if (r.fail) { log('Contrato não pago: ' + r.fail); saveGame(); return; }
   const mult = Math.max(.6, 1 - .4 * share) * (share < .1 ? 1.25 : 1), xp = Math.round(xpToNext(lv) * .3 * mult), gold = Math.round(goldAt(lv) * 12 * mult);
   P.xp += xp; P.gold += gold; levelUp();
   if (share < .1 && Math.random() < .35) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(lv + 2, 2), il: lv + 2 });
-  log('🏆 Contrato cumprido (' + CONTRACTS[c.c].n + '): +' + xp + ' XP · +' + gold + ' ouro' + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
+  log('Contrato cumprido (' + CONTRACTS[c.c].n + '): +' + xp + ' XP · +' + gold + ' ouro' + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
   saveGame();
 });
 
@@ -197,8 +197,8 @@ export function pegarCartaz(id) {
   const c = state.cartazes || (state.cartazes = []), d = QMAP[id], q = Q()[id];
   if (!d || q || P.lv < d.lv) return 'no';
   if (c.includes(id)) return 'has';
-  if (c.length >= CARTAZ_MAX) { log('📌 Você já guarda ' + CARTAZ_MAX + ' cartazes: solte um antes de pegar outro'); return 'full'; }
-  c.push(id); log('📌 Cartaz guardado: ' + d.title + ' — veja na aba Missões do inventário'); saveGame(); return 'ok';
+  if (c.length >= CARTAZ_MAX) { log('Você já guarda ' + CARTAZ_MAX + ' cartazes: solte um antes de pegar outro'); return 'full'; }
+  c.push(id); log('Cartaz guardado: ' + d.title + ' — veja na aba Missões do inventário'); saveGame(); return 'ok';
 }
 export function soltarCartaz(id) { state.cartazes = (state.cartazes || []).filter(x => x !== id); saveGame(); }
 /** Para onde ir numa missão ativa: o item/área mais perto (exato) ou a região; {remo:true} se a etapa é de outra ilha; null se não há local (ex.: dentro de dungeon) */
@@ -245,9 +245,9 @@ export function questsHud() {
   [...QUESTS].sort((a, b) => (state.qtrack === b.id) - (state.qtrack === a.id)).forEach(d => {
     const q = Q()[d.id];
     if (!q || q.s === 'done') return;
-    const sh = q.t > 0 ? q.a / q.t : 0, pen = sh >= .1 ? '  ⚠ auto −' + Math.round(40 * sh) + '%' : '';   // quanto da recompensa o auto já custou
+    const sh = q.t > 0 ? q.a / q.t : 0, pen = sh >= .1 ? '  auto −' + Math.round(40 * sh) + '%' : '';   // quanto da recompensa o auto já custou
     const st = q.s === 'ready' ? null : stageOf(d, q);
-    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + (here(st) ? st.hud(q) : '⛵ viaje para a ' + ISLN[st.isl] + ' (Capitão Remo, no porto)') + pen);
+    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + (here(st) ? st.hud(q) : 'viaje para a ' + ISLN[st.isl] + ' (Capitão Remo, no porto)') + pen);
   });
   if (state.contract && !state.contract.run) out.push(contractHud());
   const nc = (state.cartazes || []).length;
@@ -271,16 +271,16 @@ export function questsSay(cur) {
 export function questsButtons(cur) {
   const out = [];
   if (cur.board) {
-    out.push(['📋 Abrir o quadro de missões', (say, rebuild) => { if (BOARDUI.open) BOARDUI.open(rebuild); }]);
+    out.push(['Abrir o quadro de missões', (say, rebuild) => { if (BOARDUI.open) BOARDUI.open(rebuild); }]);
   }
   QUESTS.forEach(d => {
     if (d.giver !== cur.name) return;
     const q = Q()[d.id];
     if (q && q.s === 'done') return;
-    if (!q && P.lv >= d.lv) out.push(['📜 Aceitar missão: ' + d.title + ' (Nv ' + d.lv + ')', (say, rebuild) => { start(d); say(d.say.on); rebuild(); }]);
+    if (!q && P.lv >= d.lv) out.push(['Aceitar missão: ' + d.title + ' (Nv ' + d.lv + ')', (say, rebuild) => { start(d); say(d.say.on); rebuild(); }]);
     else if (!q) out.push(['🔒 ' + d.title + ' — requer Nv ' + d.lv, () => {}]);
     else if (q.s === 'ready' && d.choice) d.choice.forEach(([lb, o]) => out.push([lb, (say, rebuild) => { finish(d, o); say('Negócio fechado, marujo.'); rebuild(); }]));
-    else if (q.s === 'ready') out.push(['🎁 Receber recompensa: ' + d.title, (say, rebuild) => { finish(d); say('Foi um prazer fazer negócio, marujo!'); rebuild(); }]);
+    else if (q.s === 'ready') out.push(['Receber recompensa: ' + d.title, (say, rebuild) => { finish(d); say('Foi um prazer fazer negócio, marujo!'); rebuild(); }]);
   });
   return out;
 }
@@ -288,7 +288,7 @@ export function questsButtons(cur) {
 function start(d) {
   Q()[d.id] = { s: 'on', i: 0, n: 0, t: 0, a: 0 };
   state.cartazes = (state.cartazes || []).filter(x => x !== d.id);   // o cartaz some ao aceitar a missão
-  log('📜 Missão aceita: ' + d.title);
+  log('Missão aceita: ' + d.title);
   if (d.onStart) d.onStart();
   saveGame();
 }
@@ -315,7 +315,7 @@ function finish(d, opt = {}) {
   for (let k = 0; k < (r.magic || 0) + (opt.magic || 0); k++) addItem({ ty: 'wpn', q: 2, wi: pickWeapon(d.lv + 2, 2), il: d.lv + 2 });
   if (share < .1 && Math.random() < .35) addItem({ ty: 'wpn', q: 2, wi: Math.max(0, wi('Faca de arremesso')), il: d.lv, ct: 5 });   // mestria: chance de extra
   q.s = 'done';
-  log('🏆 Missão concluída: ' + d.title + ' · +' + xp + ' XP · +' + gold + ' ouro' + (d.rewardTxt ? ' · ' + d.rewardTxt : '') + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
+  log('Missão concluída: ' + d.title + ' · +' + xp + ' XP · +' + gold + ' ouro' + (d.rewardTxt ? ' · ' + d.rewardTxt : '') + (share >= .1 ? ' (auto ' + Math.round(share * 100) + '% do tempo: −' + Math.round((1 - mult) * 100) + '%)' : ' (modo manual: +25%)'));
   lootText('🏆 ' + d.title);
   saveGame();
 }
@@ -407,7 +407,7 @@ function updateEscort(dt, list) {
   enemies.forEach(e => { if (!e.dead && Math.hypot(e.x - x, e.z - z) < 2.4) ESC.hp -= e.dmg * .25 * dt; });
   ESC.bar.scale.x = Math.max(.02, 1.2 * ESC.hp / ESC.max);
   if (ESC.hp <= 0) {   // Breu caiu: recomeça a escolta
-    log('💀 O Mestre Breu caiu! Fale com ele de novo para recomeçar a escolta.');
+    log('O Mestre Breu caiu! Fale com ele de novo para recomeçar a escolta.');
     q.i = 0; q.n = 0; q.wv = 0; clearEscort(); clearPk(); saveGame(); return;
   }
   if (st.k === 'escort' && pk) {   // chegou ao porto?
@@ -418,7 +418,7 @@ function updateEscort(dt, list) {
         const a = Math.random() * 6.28, p = freePoint(x + Math.cos(a) * 14, z + Math.sin(a) * 14, .8);
         spawn(st.waves.kind, p.x, p.z, undefined, { lv: d.lv }); enemies[enemies.length - 1].ag = true;
       }
-      log('⚔ Inimigos atacam a escolta!');
+      log('Inimigos atacam a escolta!');
     }
   }
 }
@@ -438,7 +438,7 @@ function ensureBoss(d) {
   const p = freePoint(bx + 16, bz + 6, 1);
   spawn(KIND.JAVALI, p.x, p.z, undefined, { lv: Math.max(3, P.lv), elite: true });
   enemies[enemies.length - 1].qid = d.id; bossOut = true;
-  log('⭐ O Presa-Torta apareceu perto da granja!');
+  log('O Presa-Torta apareceu perto da granja!');
 }
 
 /** Etapas de área: 'goto' (chegar ao ponto) e 'hold' (ficar dentro do círculo por n segundos, com ondas de inimigos) */
@@ -461,7 +461,7 @@ function updateAreas(dt, list) {
           spawn(st.waves.kind, p.x, p.z, undefined, { lv: d.lv + (st.waves.add || 0) });
           enemies[enemies.length - 1].ag = true;
         }
-        log('⚔ Uma onda de inimigos se aproxima!');
+        log('Uma onda de inimigos se aproxima!');
       }
       if (q.n >= st.n) advance(d, q);
     } else q.n = Math.max(0, q.n - dt * .5);   // saiu do círculo: o progresso vai se perdendo devagar
@@ -474,7 +474,7 @@ function updateStalk(dt, list) {
     if (stageOf(d, q).k !== 'stalk') return;
     const w = whiteDeer(); if (!w) return;
     const st = stageOf(d, q), dist = Math.hypot(P.x - w.x, P.z - w.z);
-    if (dist < st.r && w.calm) { q.n += dt; if (q.n >= st.n) { lootText('🦌 Você viu o Cervo Branco!'); advance(d, q); } }
+    if (dist < st.r && w.calm) { q.n += dt; if (q.n >= st.n) { lootText('Você viu o Cervo Branco!'); advance(d, q); } }
     else q.n = Math.max(0, q.n - dt * .5);
   });
 }
@@ -484,7 +484,7 @@ function updateCatch(dt, list) {
   list.forEach(([d, q]) => {
     if (stageOf(d, q).k !== 'catch') return;
     const g = goldenHare(); if (!g) return;
-    if (Math.hypot(P.x - g.x, P.z - g.z) < 2.2 && !P.dead) { lootText('🐇 Você alcançou a Lebre Dourada!'); advance(d, q); }
+    if (Math.hypot(P.x - g.x, P.z - g.z) < 2.2 && !P.dead) { lootText('Você alcançou a Lebre Dourada!'); advance(d, q); }
   });
 }
 
@@ -521,7 +521,7 @@ function updateRat(dt, list) {
   }
   RAT.g.position.set(RAT.x, groundY(RAT.x, RAT.z), RAT.z); RAT.g.rotation.y = RAT.hd;
   RAT.g.position.y += sp > 0 ? Math.abs(Math.sin(performance.now() * .02)) * .05 : 0;
-  if (dist < 1.6 && !P.dead) { lootText('🐀 Pegou o Biscoito! Ele escapou...'); ratRespawn(); RAT.go = false; RAT.tm = 1.5; bump(d, q); }
+  if (dist < 1.6 && !P.dead) { lootText('Pegou o Biscoito! Ele escapou...'); ratRespawn(); RAT.go = false; RAT.tm = 1.5; bump(d, q); }
 }
 
 /** Todo quadro: contagem de tempo (para a penalidade do auto) e objetos das missões */
@@ -539,7 +539,7 @@ export function updateQuests(dt) {
   updateCatch(dt, list);
   list.forEach(([d, q]) => {   // limite de tempo da etapa (ex.: voltar antes da maré cobrir)
     const st = stageOf(d, q);
-    if (st.limit && q.tl != null && (q.tl -= dt) <= 0) { q.i = st.back || 0; q.n = 0; q.tl = null; clearPk(); log('🌊 Tempo esgotado! ' + d.title + ': recomece pela etapa anterior'); saveGame(); }
+    if (st.limit && q.tl != null && (q.tl -= dt) <= 0) { q.i = st.back || 0; q.n = 0; q.tl = null; clearPk(); log('Tempo esgotado! ' + d.title + ': recomece pela etapa anterior'); saveGame(); }
   });
   if ((T -= dt) > 0) return;
   T = 1.5;

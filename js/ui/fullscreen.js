@@ -3,7 +3,7 @@
 const el = document.documentElement;
 /** Tela cheia: no celular/tablet (toque) liga sozinha; no computador é opcional (ajustes) */
 const saved = () => { try { return JSON.parse(localStorage.getItem('pirata-ajustes') || '{}').full; } catch (e) { return undefined; } };   // lê direto do armazenamento: assim funciona já na tela inicial, antes do jogo (e dos ajustes) carregar
-export const wantFull = () => { const f = saved(); return f !== undefined ? !!f : matchMedia('(pointer:coarse)').matches; };
+export const wantFull = () => { const f = saved(); return f !== undefined ? !!f : false; };
 const req = el.requestFullscreen || el.webkitRequestFullscreen;
 
 function enter() {

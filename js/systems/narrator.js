@@ -27,7 +27,7 @@ function pickVoice(g) {
   return sameG.find(x => /BR/i.test(x.lang)) || sameG[0] || vs.find(x => /BR/i.test(x.lang)) || vs[0];
 }
 
-/** Fala `text`. `who` (nome do NPC) escolhe voz feminina ou masculina e varia o tom. `force` fala mesmo com o narrador desligado (botão 🔊). */
+/** Fala `text`. `who` (nome do NPC) escolhe voz feminina ou masculina e varia o tom. `force` fala mesmo com o narrador desligado (botão ). */
 export function speak(text, who = '', force = false) {
   if (!ok() || (!CFG.on && !force)) return;
   const t = clean(text); if (!t) return;
@@ -42,12 +42,12 @@ export function speak(text, who = '', force = false) {
   speechSynthesis.speak(u);
 }
 
-/** Cria a seção "🔊 Narração" dentro dos Ajustes ▸ Jogo */
+/** Cria a seção "Narração" dentro dos Ajustes ▸ Jogo */
 export function initNarrator() {
   const host = document.getElementById('at-jg');
   if (!host || document.getElementById('nr-on')) return;
   const box = document.createElement('div'); box.className = 'acs';
-  box.innerHTML = '<h4>🔊 Narração <small>(lê as falas dos NPCs e das missões)</small></h4>'
+  box.innerHTML = '<h4>Narração <small>(lê as falas dos NPCs e das missões)</small></h4>'
     + (ok() ? '' : '<small>Este navegador não tem síntese de voz.</small>')
     + '<label><input type="checkbox" id="nr-on"> Ligar o narrador</label>'
     + '<div class="acr"><span>Voz feminina <small>(Capitã Sal, Madame Rum, Ysolde, Dona Marta)</small></span><select id="nr-voiceF"></select></div>'

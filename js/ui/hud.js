@@ -28,7 +28,7 @@ export function updateStatusBars() {
   sty('c2', 'height', P.cds[0] / 3 * 100 + '%');
   sty('c3', 'height', P.cds[1] / 5 * 100 + '%');
   sty('c6', 'height', P.rcd / ROLL_CD * 100 + '%');
-  txt('st', 'Nv ' + P.lv + ' · 💰' + P.gold + ' · 🧪' + P.pot + ' · Dano ' + P.dmg);
+  txt('st', 'Nv ' + P.lv + ' · ' + P.gold + ' · ' + P.pot + ' · Dano ' + P.dmg);
   txt('lvp', 'Nv ' + P.lv);
   txt('lva', 'Nv ' + pet.lv);
   sty('xpb', 'width', P.xp / P.nxt * 100 + '%');
@@ -54,7 +54,7 @@ export function updateOverlays(now) {
     eh.classList.toggle('boss', !!e.t.boss);
     eh.style.display = 'block';
     const df = e.lv - P.lv, col = df >= 5 ? '#ff4040' : df >= 3 ? '#ff9030' : df >= -2 ? '#f0e050' : df >= -4 ? '#60d060' : '#a0a0a0';
-    htm('en', (df >= 5 ? '☠ ' : '') + (e.elite ? '⭐ Elite ' : '') + e.t.n + ' <b style="color:' + col + '">Nv ' + e.lv + '</b>');
+    htm('en', (df >= 5 ? '☠ ' : '') + (e.elite ? 'Elite ' : '') + e.t.n + ' <b style="color:' + col + '">Nv ' + e.lv + '</b>');
     sty('ebi', 'width', Math.max(0, e.hp / e.max * 100) + '%');
   } else eh.style.display = 'none';
 
@@ -62,7 +62,7 @@ export function updateOverlays(now) {
   txt('bc', P.bmb + (P.bmbR ? '+' + P.bmbR : ''));
   const bossAlive = enemies.some(z => z.t.boss && !z.dead);
   const np = nearestPost(P.x, P.z, 26);
-  txt('qt', P.dead ? '' : dungeonQuest() ? dungeonQuest() + (contractHud() ? '  ·  ' + contractHud() : '') : questHud() ? questHud() : questsHud() ? questsHud() : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : '⚔ Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · ☠ Capitão Maldito à solta' : ''));
+  txt('qt', P.dead ? '' : dungeonQuest() ? dungeonQuest() + (contractHud() ? '  ·  ' + contractHud() : '') : questHud() ? questHud() : questsHud() ? questsHud() : np ? '⚔ ' + np.name + ' · inimigos Nv ' + np.lo + '–' + np.hi : 'Explore a ilha · Seu Nv ' + P.lv + (bossAlive ? ' · Capitão Maldito à solta' : ''));
 
   // XP do companheiro (botão R e árvore de habilidades)
   const s = PST[state.pet.id], w = (s.xp / pxn(s.lv) * 100) + '%';

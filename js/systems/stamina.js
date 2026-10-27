@@ -31,19 +31,19 @@ export function danger() {
 /** Liga/desliga o auto combate (botão e tecla T) */
 export function setAuto(on) {
   const c = autoCost(P.lv);
-  if (on && c && P.gold < c) { log('💰 Sem ouro para o auto combate — custa ' + c + ' por minuto (grátis até o nível ' + FREE_LV + ')'); return; }
+  if (on && c && P.gold < c) { log('Sem ouro para o auto combate — custa ' + c + ' por minuto (grátis até o nível ' + FREE_LV + ')'); return; }
   state.autoOn = on;
   state.autoHold = 0; state.fleeing = false; state.autoDebt = 0; state.autoWarn = false;
   if (on && P.sitT) standUp();   // estava sentado: levanta para lutar
   $('sa').classList.toggle('on', on);
-  log(on ? '🤖 Auto combate ligado' + (c ? ' · -' + c + ' ouro por minuto fora da vila' : ' (grátis até o nível ' + FREE_LV + ')') + ' · clique para assumir por 2,5s' : '🤖 Auto combate desligado');
+  log(on ? 'Auto combate ligado' + (c ? ' · -' + c + ' ouro por minuto fora da vila' : ' (grátis até o nível ' + FREE_LV + ')') + ' · clique para assumir por 2,5s' : 'Auto combate desligado');
 }
 
 /** Cobra o auto combate (fora da vila) e, sem ouro, manda o jogador fugir para a vila */
 export function updateStamina(dt) {
   if (P.dead || !state.autoOn) { state.fleeing = false; return; }
   if (state.fleeing) {
-    if (Math.hypot(P.x, P.z) < VILLAGE_R - 4) { state.fleeing = false; setAuto(false); log('🏠 Cheguei na vila: ganhe ouro e volte quando quiser'); }
+    if (Math.hypot(P.x, P.z) < VILLAGE_R - 4) { state.fleeing = false; setAuto(false); log('Cheguei na vila: ganhe ouro e volte quando quiser'); }
     return;
   }
   const c = autoCost(P.lv);
@@ -53,9 +53,9 @@ export function updateStamina(dt) {
     const pay = Math.floor(state.autoDebt);
     state.autoDebt -= pay;
     if (P.gold >= pay) P.gold -= pay;
-    else { P.gold = 0; log('💰 Acabou o ouro do auto combate: fugindo para a vila!'); state.fleeing = true; P.tgt = null; return; }
+    else { P.gold = 0; log('Acabou o ouro do auto combate: fugindo para a vila!'); state.fleeing = true; P.tgt = null; return; }
   }
-  if (!state.autoWarn && autoMinutes() < 1) { state.autoWarn = true; log('⚠ Ouro para menos de 1 minuto de auto combate'); }
+  if (!state.autoWarn && autoMinutes() < 1) { state.autoWarn = true; log('Ouro para menos de 1 minuto de auto combate'); }
   else if (state.autoWarn && autoMinutes() > 1.5) state.autoWarn = false;
 }
 

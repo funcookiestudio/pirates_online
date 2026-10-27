@@ -55,7 +55,7 @@ function renderSheet(id, s, pp) {
   $('pstt').innerHTML =
     tile('Ataque', '+' + (s.lv - 1) * 4 + '%', 'Pontos: ' + s.pts) +
     tile('Defesa', 0, 'Equipamento em breve') +
-    tile('Vida', pmax(id), Math.ceil(s.hp) + ' atual' + (s.dn > 0 ? ' · 💤 ' + Math.ceil(s.dn) + 's' : ''));
+    tile('Vida', pmax(id), Math.ceil(s.hp) + ' atual' + (s.dn > 0 ? ' · ' + Math.ceil(s.dn) + 's' : ''));
   const bag = $('pbag');
   bag.innerHTML = '';
   for (let i = 0; i < 24; i++) bag.append(slot('', ''));

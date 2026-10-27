@@ -2,7 +2,7 @@
 
 export const PETLIST = [
   { id: 'parrot', n: 'Polly',    ic: '🦜',   d: 'Voa · coleta · ataca' },
-  { id: 'raven',  n: 'Corvo',    ic: '🐦‍⬛', d: 'Voa · coleta · ataca' },
+  { id: 'raven',  n: 'Corvo',    ic: '⬛', d: 'Voa · coleta · ataca' },
   { id: 'monkey', n: 'Macaco',   ic: '🐒',   d: 'Pula · coleta · ataca' },
   { id: 'dog',    n: 'Cachorro', ic: '🐕',   d: 'Segue · senta · ataca' },
   { id: 'rat',    n: 'Rato',     ic: '🐀',   d: 'Veloz · fica em pé · ataca' },

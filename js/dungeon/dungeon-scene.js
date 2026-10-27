@@ -234,7 +234,7 @@ function firstClear(D) {
   addItem({ ty: 'wpn', q: 2, wi: 7, il: D.lv });
   const r = rewardOf(D);
   if (r) addItem({ ty: 'wpn', q: r.q, wi: r.wi, il: D.lv });
-  log('🏆 Dungeon concluída! +' + gold + ' ouro · +' + xp + ' XP · Tocha mágica' + (r ? ' · ' + WEAPONS[r.wi].n : ''));
+  log('Dungeon concluída! +' + gold + ' ouro · +' + xp + ' XP · Tocha mágica' + (r ? ' · ' + WEAPONS[r.wi].n : ''));
 }
 
 /** Por frame: abre baús, acende o portal do chefe, sai pelos portais */
@@ -243,12 +243,12 @@ export function updateDungeon(dt, now) {
   const t = now / 1000;
   dSee(P.x, P.z, 7);
   cur.portals.forEach(p => { if (p.g.visible) { p.g.children[0].rotation.z = t; p.g.children[0].scale.setScalar(1 + Math.sin(t * 3) * .04); } });
-  if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('✨ Chefe derrotado! O portal de saída se abriu'); state.dunNow = cur.D; emit('dungeon:clear'); firstClear(cur.D); }
+  if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('Chefe derrotado! O portal de saída se abriu'); state.dunNow = cur.D; emit('dungeon:clear'); firstClear(cur.D); }
   cur.portals.forEach(p => {
     if (!p.on) return;
     const d = Math.hypot(P.x - p.x, P.z - p.z);
     if (d > 3.2) p.armed = true;
-    else if (d < 1.2 && p.armed) leaveDungeon(cur.boss.dead ? '🏴 Você saiu da dungeon com o saque' : 'Você saiu da dungeon');
+    else if (d < 1.2 && p.armed) leaveDungeon(cur.boss.dead ? 'Você saiu da dungeon com o saque' : 'Você saiu da dungeon');
   });
   if (!cur) return;
   updateGimmicks(cur.gm, dt, t, cur.D);
@@ -260,7 +260,7 @@ export function updateDungeon(dt, now) {
       const D = cur.D, f = { x: c.x, z: c.z + 1.2, lv: D.lv + (c.boss ? 2 : 0), t: { boss: c.boss ? 1 : 0 }, elite: true };
       dropLoot(f);
       if (c.boss) dropLoot(f);
-      log(c.boss ? '👑 Baú do chefe aberto!' : '💰 Baú aberto!');
+      log(c.boss ? 'Baú do chefe aberto!' : 'Baú aberto!');
     }
   });
 }
@@ -294,10 +294,10 @@ export function dungeonQuest() {
   if (!cur) return null;
   const { D, boss, gm, list } = cur, left = list.filter(e => !e.dead).length;
   const head = '🕳 ' + D.name + ' — ';
-  if (boss.dead) return head + '🌀 Missão cumprida! Use o portal de saída para voltar à vila';
-  if (gm && gm.keyObj) return head + '🗝 Pegue a chave que o guardião deixou';
-  if (gm && gm.door && !gm.door.open) return head + (gm.hasKey ? '🚪 Abra a porta trancada' : '🗝 Derrote o guardião e pegue a chave') + ' · ☠ depois, o chefe';
-  return head + '☠ Derrote o chefe (' + left + ' inimigos restantes)';
+  if (boss.dead) return head + 'Missão cumprida! Use o portal de saída para voltar à vila';
+  if (gm && gm.keyObj) return head + 'Pegue a chave que o guardião deixou';
+  if (gm && gm.door && !gm.door.open) return head + (gm.hasKey ? 'Abra a porta trancada' : 'Derrote o guardião e pegue a chave') + ' · depois, o chefe';
+  return head + 'Derrote o chefe (' + left + ' inimigos restantes)';
 }
 
 /** Chefe morto: ponto do portal de saída (o auto vai até ele) */

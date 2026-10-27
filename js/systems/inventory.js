@@ -58,7 +58,7 @@ export function beltTick(dt) {
     const { slot, res, max } = KINDS[k];
     if (P[slot] > 0 || P[res] <= 0) continue;
     const n = Math.min(max, P[res]); P[slot] = n; P[res] -= n;
-    lootText('🎒 Cinto: ' + (k === 'pot' ? '🧪 +' : '💣 +') + n);
+    lootText('Cinto: ' + (k === 'pot' ? '+' : '+') + n);
   }
   emit('inventory:changed');
 }
@@ -154,7 +154,7 @@ export function equip(i, forced) {
 export function unequip(slot) {
   const it = eq[slot];
   if (!it) return false;
-  if (bagFull()) { log('🎒 Mochila cheia: libere espaço para desequipar ' + it.n); return false; }
+  if (bagFull()) { log('Mochila cheia: libere espaço para desequipar ' + it.n); return false; }
   if (slot === 'arm') { P.max -= it.v; P.hp = Math.min(P.hp, P.max); eq.arm = null; }
   else {
     eq[slot] = null;
@@ -210,7 +210,7 @@ export function spendAmmo() {
   setCt(it, c);
   if (c <= 0) {
     eq.gun = null;
-    log('🎯 Acabaram: ' + WEAPONS[it.w].n);
+    log('Acabaram: ' + WEAPONS[it.w].n);
     const j = bag.findIndex(b => isThrown(b) && b.w === it.w), j2 = j >= 0 ? j : bag.findIndex(isThrown);
     P.swap = null;
     if (j2 >= 0) equip(j2, 'gun'); else setWeapon('wpn');

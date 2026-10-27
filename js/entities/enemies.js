@@ -315,7 +315,7 @@ export function updateRespawns(dt) {
       if (Math.hypot(q.x - P.x, q.z - P.z) < 9) { q.t = 3; continue; }
       respawns.splice(i, 1);
       spawn(q.k, q.x, q.z, q.pat, { lv: q.lv, elite: q.ep ? Math.random() < .5 : Math.random() < .06 && !ENEMY_KINDS[q.k].boss });   // elite pode voltar comum e vice-versa
-      if (q.k === KIND.BOSS) log('⚠ O Capitão Maldito ressurgiu!');
+      if (q.k === KIND.BOSS) log('O Capitão Maldito ressurgiu!');
     }
   }
 }

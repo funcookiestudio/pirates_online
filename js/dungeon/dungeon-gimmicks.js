@@ -149,14 +149,14 @@ export function updateGimmicks(gm, dt, t, D) {
     k.position.set(gm.guard.x, 1, gm.guard.z);
     gm.door.g.parent.add(k);
     gm.keyObj = k;
-    log('🗝 O guardião caiu e deixou uma chave!');
+    log('O guardião caiu e deixou uma chave!');
   }
   if (gm.keyObj) {
     gm.keyObj.rotation.y = t * 2; gm.keyObj.position.y = 1 + Math.sin(t * 3) * .12;
     if (Math.hypot(P.x - gm.keyObj.position.x, P.z - gm.keyObj.position.z) < 1.6) {
       gm.hasKey = true;
       gm.keyObj.parent.remove(gm.keyObj); gm.keyObj = null;
-      log('🗝 Chave pega! Leve-a até a porta trancada');
+      log('Chave pega! Leve-a até a porta trancada');
     }
   }
 
@@ -170,10 +170,10 @@ export function updateGimmicks(gm, dt, t, D) {
         d.open = .01;
         d.cells.forEach(c => { DG.grid[c.k] = 1; });
         puff(d.mid.x, 1.4, d.mid.z, 0xffd040, 3, 8);
-        log('🔓 A porta se abriu! O chefe está além');
+        log('A porta se abriu! O chefe está além');
       } else if (gm.warn <= 0) {
         gm.warn = 4;
-        log(gm.guard && !gm.guard.dead ? '🔒 Porta trancada — derrote o guardião elite para pegar a chave' : '🔒 Porta trancada — pegue a chave');
+        log(gm.guard && !gm.guard.dead ? 'Porta trancada — derrote o guardião elite para pegar a chave' : 'Porta trancada — pegue a chave');
       }
     }
   } else if (d.open < 1) {

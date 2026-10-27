@@ -60,7 +60,7 @@ const itemName = it => plain(it) ? it.n : it.ty === 'wpn' ? WEAPONS[it.wi].n : A
 const stat = it => plain(it) ? it.desc : '+' + val(it.ty, it.q, it.wi) + (it.ty === 'wpn' ? ' dano' : ' vida');
 
 function renderChest() {
-  $('shgd').textContent = '🎒 ' + bagUsed() + '/' + BAG_MAX + ' · 📦 ' + chest.length + '/' + CHEST_MAX;
+  $('shgd').textContent = '🎒 ' + bagUsed() + '/' + BAG_MAX + ' · ' + chest.length + '/' + CHEST_MAX;
   $('shb').textContent = 'RETIRAR DO BAÚ';
   $('shs').textContent = 'GUARDAR NO BAÚ';
   $('shb').classList.toggle('on', tab === 'buy');
@@ -87,7 +87,7 @@ function renderShop() {
   if (cur.chest) { renderChest(); return; }
   $('shb').textContent = 'COMPRAR';
   $('shs').textContent = 'VENDER';
-  $('shgd').textContent = '💰 ' + P.gold + (FARM_GOODS[cur.shop] ? ' · 🪶 ' + P.penas + ' · 🐂 ' + P.couro : '');
+  $('shgd').textContent = '💰 ' + P.gold + (FARM_GOODS[cur.shop] ? ' · ' + P.penas + ' · ' + P.couro : '');
   $('shb').classList.toggle('on', tab === 'buy');
   $('shs').classList.toggle('on', tab === 'sell');
   const box = $('shl');
@@ -124,7 +124,7 @@ function renderShop() {
     r.className = 'shr';
     r.innerHTML = '<i>' + g.ic + '</i><span>' + g.n + '<small>Você tem ' + P[g.mat] + '</small></span>';
     const bt = document.createElement('button');
-    bt.textContent = '+ 💰 ' + Math.floor(g.price / 2);
+    bt.textContent = '+ ' + Math.floor(g.price / 2);
     bt.disabled = P[g.mat] <= 0;
     bt.onclick = () => { if (P[g.mat] <= 0) return; P[g.mat]--; P.gold += Math.floor(g.price / 2); renderShop(); };
     r.append(bt);
@@ -134,9 +134,9 @@ function renderShop() {
     const price = k === 'tavern' ? 12 : k === 'herbs' ? 14 : 16;
     const r = document.createElement('div');
     r.className = 'shr r1';
-    r.innerHTML = '<i>🧪</i><span>Poção de vida<small>Você tem ' + (P.pot + P.potR) + ' · só compro poções</small></span>';
+    r.innerHTML = '<i></i><span>Poção de vida<small>Você tem ' + (P.pot + P.potR) + ' · só compro poções</small></span>';
     const b = document.createElement('button');
-    b.textContent = '+ 💰 ' + price;
+    b.textContent = '+ ' + price;
     b.disabled = P.pot + P.potR <= 0;
     b.onclick = () => { if (P.pot + P.potR <= 0) return; if (P.potR > 0) P.potR--; else P.pot--; P.gold += price; renderShop(); };
     r.append(b);
@@ -149,7 +149,7 @@ function renderShop() {
       r.className = 'shr r' + it.q;
       r.innerHTML = '<i>' + icon(it) + '</i><span>' + it.n + '<small>' + RN[it.q] + ' · +' + it.v + '</small></span>';
       const b = document.createElement('button');
-      b.textContent = '+ 💰 ' + price;
+      b.textContent = '+ ' + price;
       b.onclick = () => { bag.splice(i, 1); P.gold += price; emit('inventory:changed'); renderShop(); };
       r.append(b);
       box.append(r);
@@ -170,7 +170,7 @@ function buttons() {
   b.innerHTML = '';
   const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); };
   if (cur.petCat) {
-    add('🤚 Acariciar', () => { const c = cur.petCat; closeDialog(); startPet(c); });
+    add('Acariciar', () => { const c = cur.petCat; closeDialog(); startPet(c); });
     add('Sair', closeDialog);
     return;
   }
@@ -185,21 +185,21 @@ function buttons() {
         say('Negócio fechado! Ele é seu (' + k.n + ': mais rápido e com mais fôlego). Assobie com a tecla H.'); buttons();
       });
     });
-    if (MOUNT.owned) add('🥕 Dar ração ao cavalo · 15 ouro', () => {
+    if (MOUNT.owned) add('Dar ração ao cavalo · 15 ouro', () => {
       if (P.gold < 15) { say('Ração custa 15 de ouro, marujo.'); return; }
       P.gold -= 15; feedHorse(); say('Bem alimentado! Fôlego cheio e recupera rápido por um tempo.');
     });
   }
-  if (cur.chest) add('📦 Abrir baú', openShop);
-  if (cur.shop) add(cur.shop === 'smith' ? '⚒ Ver mercadoria' : FARM_GOODS[cur.shop] ? '🧺 Produtos da fazenda' : '🛒 Ver mercadoria', openShop);
-  if (cur.shop === 'tavern' && !roomRented()) add('🛏 Alugar quarto (' + ROOM_PRICE + ' ouro por dia)', () => {
+  if (cur.chest) add('Abrir baú', openShop);
+  if (cur.shop) add(cur.shop === 'smith' ? 'Ver mercadoria' : FARM_GOODS[cur.shop] ? 'Produtos da fazenda' : 'Ver mercadoria', openShop);
+  if (cur.shop === 'tavern' && !roomRented()) add('Alugar quarto (' + ROOM_PRICE + ' ouro por dia)', () => {
     if (P.gold < ROOM_PRICE) { say('Faltam moedas, marujo! A diária do quarto é ' + ROOM_PRICE + ' de ouro.'); return; }
-    P.gold -= ROOM_PRICE; rentRoom(); log('🛏 Quarto alugado: diária de ' + ROOM_PRICE + ' ouro, cobrada a cada dia'); say('Aqui está a chave! Dois quartos do andar de cima são seus (os outros são do Mestre Breu e da Polly). Cobro ' + ROOM_PRICE + ' de ouro por dia, e se quiser sair é só devolver a chave.'); buttons();
+    P.gold -= ROOM_PRICE; rentRoom(); log('Quarto alugado: diária de ' + ROOM_PRICE + ' ouro, cobrada a cada dia'); say('Aqui está a chave! Dois quartos do andar de cima são seus (os outros são do Mestre Breu e da Polly). Cobro ' + ROOM_PRICE + ' de ouro por dia, e se quiser sair é só devolver a chave.'); buttons();
   });
-  if (cur.shop === 'tavern' && roomRented()) add('🔑 Devolver a chave (cancelar aluguel)', () => {
-    cancelRent(); log('🔑 Chave devolvida: aluguel cancelado'); say('Certo, marujo! Quarto liberado, sem mais cobranças. Volte quando precisar!'); buttons();
+  if (cur.shop === 'tavern' && roomRented()) add('Devolver a chave (cancelar aluguel)', () => {
+    cancelRent(); log('Chave devolvida: aluguel cancelado'); say('Certo, marujo! Quarto liberado, sem mais cobranças. Volte quando precisar!'); buttons();
   });
-  if (cur.shop === 'tavern') add('🍺 Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('🍺 Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });
+  if (cur.shop === 'tavern') add('Descansar (grátis)', () => { P.hp = P.max; P.mp = P.mmax; log('Você descansa na taverna: vida e mana restauradas'); say('Pronto, marujo! Novinho em folha. Volte sempre!'); });
   if (cur.ferry) ISLANDS.forEach(i => {
     if (i.seed === SEED) return;
     add('⛵ ' + i.name + ' · Nv ' + (1 + tierBonus(i.tier)) + '+' + (i.cost ? ' · ' + i.cost + ' ouro' : ''), () => {
@@ -211,7 +211,7 @@ function buttons() {
       setTimeout(() => { const u = new URL(location.href); u.searchParams.delete('seed'); location.assign(u.toString()); }, 900);   // (tira o ?seed= da aba Mapa, senão ele venceria a ilha escolhida)
     });
   });
-  add(cur.board ? '📜 Próximo cartaz' : '💬 Conversar', () => { li = (li + 1) % cur.lines.length; say(cur.lines[li]); });
+  add(cur.board ? 'Próximo cartaz' : 'Conversar', () => { li = (li + 1) % cur.lines.length; say(cur.lines[li]); });
   add('Até logo', closeDialog);
 }
 

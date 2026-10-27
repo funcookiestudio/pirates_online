@@ -15,7 +15,7 @@ export const GO = { close: null };   // quem abre o painel do Mural registra aqu
 function toNpc(name) {
   const n = npcNamed(name);
   if (!n) { log('🧭 ' + name + ' não está por perto agora'); return false; }
-  return go(() => talkTo(n), '🧭 Indo até ' + name + '...');
+  return go(() => talkTo(n), 'Indo até ' + name + '...');
 }
 function go(fn, msg) {
   if (P.dead) return false;
@@ -31,11 +31,11 @@ export function goQuest(q) {
     if (sp && sp.remo) return toNpc('Capitão Remo');
     if (sp) {
       const f = sp.region ? freePoint(sp.x, sp.z, .7) : { x: sp.x, z: sp.z };
-      return go(() => { P.tx = f.x; P.tz = f.z; }, '🧭 Indo até o objetivo de ' + q.title + '...');
+      return go(() => { P.tx = f.x; P.tz = f.z; }, 'Indo até o objetivo de ' + q.title + '...');
     }
-    log('🧭 O objetivo de ' + q.title + ' fica dentro de dungeons');
+    log('O objetivo de ' + q.title + ' fica dentro de dungeons');
     return false;
   }
   return toNpc(questGiver(q.id) || q.giver);
 }
-export const goLabel = q => q.state === 'on' ? (questSpot(q.id) && questSpot(q.id).remo ? '⛵ Ir até o Capitão Remo' : '🧭 Ir até o objetivo') : q.state === 'ready' ? '🧭 Ir entregar a ' + q.giver : '🧭 Ir até ' + q.giver;
+export const goLabel = q => q.state === 'on' ? (questSpot(q.id) && questSpot(q.id).remo ? 'Ir até o Capitão Remo' : 'Ir até o objetivo') : q.state === 'ready' ? 'Ir entregar a ' + q.giver : 'Ir até ' + q.giver;

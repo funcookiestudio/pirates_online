@@ -67,8 +67,8 @@ function onKill(e) {
   dropLoot(e);
   levelUp();
   state.lastKill = e; emit('enemy:killed');
-  if (e.t.boss) log(e.dun ? '👑 Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
-  else if (e.elite) log('⭐ Elite derrotado! +' + xp + ' XP');
+  if (e.t.boss) log(e.dun ? 'Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
+  else if (e.elite) log('Elite derrotado! +' + xp + ' XP');
 }
 
 /* ---------- Habilidades ---------- */

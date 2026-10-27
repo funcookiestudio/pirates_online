@@ -4,7 +4,7 @@ import { goQuest, goLabel, GO } from './questgo.js';
 import { BOARDUI, boardData, boardAct, contractList, setContract, setTrack, pegarCartaz, soltarCartaz } from '../systems/quests.js';
 
 const TIERS = { curta: ['Curta', '#6cc070'], media: ['Média', '#5aa0e0'], longa: ['Longa', '#b07ae0'], epica: ['Épica', '#e0b84a'] };
-const TABS = [['open', '📜 Disponíveis'], ['on', '▶ Em andamento'], ['lock', '🔒 Trancadas'], ['done', '✔ Concluídas'], ['ctr', '⚔ Contratos']];
+const TABS = [['open', 'Disponíveis'], ['on', '▶ Em andamento'], ['lock', 'Trancadas'], ['done', 'Concluídas'], ['ctr', 'Contratos']];
 let root = null, tab = 'open', openId = null, after = null;
 
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -26,19 +26,19 @@ export function questCard(q, rr = render) {
   const pct = q.state === 'done' || q.state === 'ready' ? 100 : q.need > 0 ? Math.min(100, Math.round(100 * q.n / q.need)) : 0;
   const stat = { open: 'Disponível', on: 'Em andamento', ready: 'Pronta para entregar', done: 'Concluída', lock: 'Requer Nv ' + q.lv }[q.state];
   c.innerHTML = '<div class="qb-top"><div class="qb-ttl">' + esc(q.title) + '</div><span class="qb-lv' + (q.state === 'lock' ? ' bad' : '') + '">Nv ' + q.lv + '</span></div>'
-    + '<div class="qb-sub">👤 ' + esc(q.giver) + '<span class="qb-tier">' + tn + '</span></div>'
-    + '<div class="qb-chips"><span>⭐ ' + q.xp + ' XP</span><span>💰 ' + q.gold + '</span><span class="qb-st">' + stat + '</span></div>'
+    + '<div class="qb-sub">' + esc(q.giver) + '<span class="qb-tier">' + tn + '</span></div>'
+    + '<div class="qb-chips"><span>' + q.xp + ' XP</span><span>' + q.gold + '</span><span class="qb-st">' + stat + '</span></div>'
     + (q.state === 'on' || q.state === 'ready' ? '<div class="qb-bar"><i style="width:' + pct + '%"></i></div>' : '');
   c.addEventListener('click', () => { openId = openId === q.id ? null : q.id; rr(); });
   if (openId === q.id) {
     const d = el('div', 'qb-det');
     d.innerHTML = '<p class="qb-ask">“' + esc(q.ask) + '”</p>'
-      + (q.state === 'on' ? '<div class="qb-now"><b>Objetivo' + (q.steps > 1 ? ' (etapa ' + q.step + '/' + q.steps + ')' : '') + ':</b> ' + esc(q.hud) + (q.away ? '<br>⛵ Fica na ' + esc(q.isl) + ': fale com o Capitão Remo, no porto.' : '') + '</div>' : '')
+      + (q.state === 'on' ? '<div class="qb-now"><b>Objetivo' + (q.steps > 1 ? ' (etapa ' + q.step + '/' + q.steps + ')' : '') + ':</b> ' + esc(q.hud) + (q.away ? '<br>Fica na ' + esc(q.isl) + ': fale com o Capitão Remo, no porto.' : '') + '</div>' : '')
       + (q.state === 'ready' ? '<div class="qb-now"><b>Concluída!</b> ' + (q.mural ? 'Receba a recompensa abaixo.' : 'Volte a ' + esc(q.giver) + ' para receber a recompensa.') + '</div>' : '')
-      + (q.reward ? '<div class="qb-rw">🎁 ' + esc(q.reward) + '</div>' : '')
+      + (q.reward ? '<div class="qb-rw">' + esc(q.reward) + '</div>' : '')
       + '<div class="qb-note">Fazer no manual rende +25% e chance de item extra. Com o auto ligado, a recompensa cai até 40%.</div>';
     if (q.mural && (q.state === 'open' || q.state === 'ready')) {
-      const b = el('button', 'qb-btn', q.state === 'ready' ? '🎁 Receber recompensa' : '📜 Aceitar missão');
+      const b = el('button', 'qb-btn', q.state === 'ready' ? 'Receber recompensa' : 'Aceitar missão');
       b.addEventListener('click', e => { e.stopPropagation(); if (boardAct(q.id)) rr(); });
       d.appendChild(b);
     } else if (q.state === 'open') d.appendChild(el('div', 'qb-hint', 'Fale com ' + esc(q.giver) + ' para aceitar.'));
@@ -48,12 +48,12 @@ export function questCard(q, rr = render) {
       d.appendChild(gb);
     }
     if (q.state === 'open') {
-      const pb = el('button', 'qb-btn qb-pin' + (q.cartaz ? ' off' : ''), q.cartaz ? '🗑 Soltar cartaz' : '📌 Pegar cartaz');
+      const pb = el('button', 'qb-btn qb-pin' + (q.cartaz ? ' off' : ''), q.cartaz ? 'Soltar cartaz' : 'Pegar cartaz');
       pb.addEventListener('click', e => { e.stopPropagation(); if (q.cartaz) soltarCartaz(q.id); else pegarCartaz(q.id); rr(); });
       d.appendChild(pb);
     }
     if (q.state === 'on') {
-      const t = el('button', 'qb-btn qb-trk' + (q.tracked ? ' off' : ''), q.tracked ? '📍 Parar de acompanhar' : '📍 Acompanhar no painel');
+      const t = el('button', 'qb-btn qb-trk' + (q.tracked ? ' off' : ''), q.tracked ? 'Parar de acompanhar' : 'Acompanhar no painel');
       t.addEventListener('click', e => { e.stopPropagation(); setTrack(q.tracked ? null : q.id); rr(); });
       d.appendChild(t);
     }
@@ -71,7 +71,7 @@ function contracts(list) {
     const e = el('div', 'qb-card qb-open' + (c.on ? ' qb-on' : ''));
     e.style.setProperty('--tc', '#e0b84a');
     e.innerHTML = '<div class="qb-top"><div class="qb-ttl">' + c.ic + ' ' + esc(c.n) + '</div>' + (c.on ? '<span class="qb-lv">Ativo</span>' : '') + '</div><div class="qb-sub">' + esc(c.hint) + '</div>';
-    const b = el('button', 'qb-btn' + (c.on ? ' off' : ''), c.on ? '❌ Cancelar contrato' : '✔ Aceitar contrato');
+    const b = el('button', 'qb-btn' + (c.on ? ' off' : ''), c.on ? 'Cancelar contrato' : 'Aceitar contrato');
     b.addEventListener('click', ev => { ev.stopPropagation(); setContract(c.on ? null : c.k); render(); });
     e.appendChild(b); list.appendChild(e);
   });
@@ -82,7 +82,7 @@ function render() {
   const all = boardData(), n = t => all.filter(q => inTab(q, t)).length;
   root.innerHTML = '';
   const pn = el('div', 'qb-panel');
-  const hd = el('div', 'qb-hd', '<div><b>📜 Mural de Missões</b><small>' + all.filter(q => q.state === 'done').length + ' de ' + all.length + ' concluídas</small></div>');
+  const hd = el('div', 'qb-hd', '<div><b>Mural de Missões</b><small>' + all.filter(q => q.state === 'done').length + ' de ' + all.length + ' concluídas</small></div>');
   const x = el('button', 'qb-x', '✕'); x.addEventListener('click', close); hd.appendChild(x);
   const tabs = el('div', 'qb-tabs');
   TABS.forEach(([k, lb]) => {

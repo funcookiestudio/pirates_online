@@ -254,7 +254,7 @@ export function initInput() {
   $('pcl2x').onclick = closePanel;
 }
 
-/** Botões de câmera na tela (toque/mouse): girar, inclinar, aproximar/afastar e restaurar. O ícone 📷 mostra/oculta o painel. */
+/** Botões de câmera na tela (toque/mouse): girar, inclinar, aproximar/afastar e restaurar. O ícone mostra/oculta o painel. */
 function camButtons() {
   const wrap = document.createElement('div');
   wrap.id = 'camc';

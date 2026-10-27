@@ -31,7 +31,7 @@ function banner(v) {
   go.style.background = '#e0a458'; go.textContent = 'Atualizar agora'; later.textContent = 'Depois';
   el.append(txt, go, later); document.body.appendChild(el);
   let left = COUNT;
-  const tick = () => { txt.textContent = '🔄 Nova versão ' + v + ' — atualizando em ' + left + 's'; };
+  const tick = () => { txt.textContent = 'Nova versão ' + v + ' — atualizando em ' + left + 's'; };
   tick();
   const t = setInterval(() => { if (--left <= 0) { clearInterval(t); hardRefresh(); } else tick(); }, 1000);
   go.onclick = () => { clearInterval(t); txt.textContent = 'Atualizando…'; hardRefresh(); };

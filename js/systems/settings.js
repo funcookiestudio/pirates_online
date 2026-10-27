@@ -1,4 +1,4 @@
-/* Ajustes gerais (painel ⚙, junto com os do auto): qualidade gráfica, contador de FPS e marcador do tile clicado.
+/* Ajustes gerais (painel , junto com os do auto): qualidade gráfica, contador de FPS e marcador do tile clicado.
    Guardados no navegador (localStorage), separados do save do jogo. */
 import { VERSION } from '../core/version.js';
 import { P, mark } from '../entities/player.js';
@@ -184,7 +184,7 @@ export function initSettings() {
   const pt = $('gx-path'); pt.checked = !!CFG.path; pt.onchange = () => { CFG.path = pt.checked; save(); };
   hh.onchange = () => { CFG.hlhide = hh.checked; save(); };
   $('gx-switch').onclick = () => { saveGame(); location.reload(); };   // a tela de seleção abre a cada início
-  const fu = $('gx-full'); fu.checked = CFG.full !== undefined ? !!CFG.full : matchMedia('(pointer:coarse)').matches; fu.onchange = () => { CFG.full = fu.checked; save(); applyFull(fu.checked); };
+  const fu = $('gx-full'); fu.checked = CFG.full !== undefined ? !!CFG.full : false; fu.onchange = () => { CFG.full = fu.checked; save(); applyFull(fu.checked); };
   const nm = $('gx-names'); nm.checked = CFG.names !== false; nm.onchange = () => { CFG.names = nm.checked; save(); };
   const dg2 = $('gx-diag'); dg2.onchange = () => { CFG.diag = dg2.value; };   /* não é salvo: volta ao normal ao recarregar */
   { const ctl = $('gx-ctl'), hd = $('gx-hand'); ctl.value = CFG.ctl; hd.value = CFG.hand;
@@ -201,11 +201,11 @@ export function initSettings() {
       seed = String(seed || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24);
       if (!seed) { msg.textContent = 'Digite uma seed (letras, números, - ou _).'; return; }
       if (seed === SEED) { msg.textContent = 'Você já está nesta ilha.'; return; }
-      if (DG.on) { msg.textContent = '🕳 Saia da dungeon antes de trocar de ilha.'; return; }
-      if (armed !== seed) { armed = seed; msg.textContent = '⚠ Trocar para "' + seed + '"? Clique de novo para confirmar.'; setTimeout(() => { if (armed === seed) { armed = null; msg.textContent = base; } }, 5000); return; }
+      if (DG.on) { msg.textContent = 'Saia da dungeon antes de trocar de ilha.'; return; }
+      if (armed !== seed) { armed = seed; msg.textContent = 'Trocar para "' + seed + '"? Clique de novo para confirmar.'; setTimeout(() => { if (armed === seed) { armed = null; msg.textContent = base; } }, 5000); return; }
       try { localStorage.setItem('pirata-ilha', seed); localStorage.setItem('pirata-chegada', '1'); } catch (e) { /* sem armazenamento: vale o ?seed= abaixo */ }
       saveGame();
-      msg.textContent = '⛵ Rumo à ilha "' + seed + '"...';
+      msg.textContent = 'Rumo à ilha "' + seed + '"...';
       const u = new URL(location.href); u.searchParams.set('seed', seed);   // o ?seed= vale mesmo se o navegador bloquear o armazenamento (e substitui um ?seed= antigo)
       setTimeout(() => location.assign(u.toString()), 600);
     };

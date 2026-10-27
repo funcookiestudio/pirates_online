@@ -26,14 +26,14 @@ const closeCard = () => { if (card) card.style.display = 'none'; };
 function askSleep(b) {
   if (!card) {
     card = document.createElement('div'); card.id = 'bedcard';
-    card.innerHTML = '<div class="dh"><div><b>🛏️ Cama</b></div><button id="bcx">✕</button></div><p id="bct"></p><div id="bcb"></div>';
+    card.innerHTML = '<div class="dh"><div><b>Cama</b></div><button id="bcx"></button></div><p id="bct"></p><div id="bcb"></div>';
     (document.getElementById('dlg')?.parentNode || document.body).appendChild(card);
     card.querySelector('#bcx').onclick = closeCard;
   }
   card.querySelector('#bct').textContent = 'Quer deitar e dormir um pouco?';
   const bb = card.querySelector('#bcb'); bb.innerHTML = '';
   const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = () => { closeCard(); f(); }; bb.appendChild(x); };
-  add('😴 Dormir', () => { const [ax, az] = accessFor(b); P.tgt = null; P.tx = ax; P.tz = az; b.cx = ax; b.cz = az; BED.pend = b; });
+  add('Dormir', () => { const [ax, az] = accessFor(b); P.tgt = null; P.tx = ax; P.tz = az; b.cx = ax; b.cz = az; BED.pend = b; });
   add('Agora não', () => {});
   card.style.display = 'block';
 }

@@ -25,7 +25,7 @@ export function resetPlayer() {
   setWeapon('wpn');
   emit('inventory:changed');
   saveGame();
-  log('♻ Personagem resetado');
+  log('Personagem resetado');
 }
 
 /** Companheiro `id` volta ao nível 1, sem pontos nem habilidades */
@@ -35,7 +35,7 @@ export function resetPet(id) {
   emit('pets:changed');
   emit('inventory:changed');
   saveGame();
-  log('♻ Companheiro resetado');
+  log('Companheiro resetado');
 }
 
 /** Botão de dois cliques (sem confirm(), que alguns ambientes bloqueiam): 1º arma, 2º executa */

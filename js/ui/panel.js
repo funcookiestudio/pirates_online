@@ -171,7 +171,7 @@ const SKILLS = [
   { id: 'sp', n: 'Esquiva', ic: 'dash', k: 'ESP', t: 'Recarga 3,5 s', d: 'Rola para o lado e foge do perigo. Na água vira um mergulho; montado não rola.' },
   { id: 'x', n: 'Trocar arma', ic: 'swap', k: 'X', t: 'Sem recarga', d: 'Alterna entre a arma de corpo a corpo e a de fogo.' },
   { id: 'r', n: 'Companheiro', ic: 'paw', k: 'R', t: 'Alterna o modo', d: 'Alterna o companheiro entre só coletar e atacar e coletar.' },
-  { id: 't', n: 'Auto combate', ic: 'target', k: 'T', t: 'Liga e desliga', d: 'O personagem luta, coleta e vende sozinho. Ajuste as regras no ⚙ de Ajustes.' },
+  { id: 't', n: 'Auto combate', ic: 'target', k: 'T', t: 'Liga e desliga', d: 'O personagem luta, coleta e vende sozinho. Ajuste as regras no de Ajustes.' },
   { id: 'h', n: 'Montaria', ic: 'boots', k: 'H', t: 'Liga e desliga', d: 'Monta e desmonta. Montado você corre mais, mas não consegue rolar.' },
 ];
 const PASSIVES = [
@@ -371,7 +371,7 @@ export function initPanel() {
   initSheets();
   document.querySelectorAll('#btabs span').forEach(e => { e.onclick = () => { btab = e.dataset.b; renderPanel(); fitPanel(); }; });
   $('bsort').onclick = () => { bag.sort((a, c) => c.q - a.q || c.v - a.v); renderPanel(); };
-  // ajustes do auto (botão ⚙)
+  // ajustes do auto (botão )
   Object.keys(state.autoCfg).forEach(k => {
     const c = $('ac-' + k);
     c.onchange = () => { state.autoCfg[k] = c.type === 'checkbox' ? c.checked : +c.value; sync(); };

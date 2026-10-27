@@ -3,7 +3,7 @@ import { boardData } from '../systems/quests.js';
 import { questCard } from './questboard.js';
 import * as NP from '../data/npcs.js';
 
-const VIEWS = [['act', '▶ Ativas'], ['npc', '👤 Por NPC'], ['lv', '📊 Por nível'], ['done', '✔ Concluídas']];
+const VIEWS = [['act', '▶ Ativas'], ['npc', 'Por NPC'], ['lv', 'Por nível'], ['done', 'Concluídas']];
 const BANDS = [[1, 5, 'Nível 1 a 5 · Iniciante'], [6, 10, 'Nível 6 a 10 · Aventureiro'], [11, 15, 'Nível 11 a 15 · Veterano'], [16, 99, 'Nível 16+ · Lenda']];
 let view = 'act';
 const ICONS = (() => { const m = {}, add = o => { if (o && o.name && o.ic) m[o.name] = { ic: o.ic, title: o.title || '' }; }; Object.values(NP).forEach(v => Array.isArray(v) ? v.forEach(add) : add(v)); return m; })();
@@ -31,7 +31,7 @@ export function renderQuestLog(host, rerender) {
 
   if (view === 'act') {
     const pins = all.filter(q => q.state === 'open' && q.cartaz).sort((a, b) => a.lv - b.lv);
-    if (pins.length) group('📌 Cartazes', 'missões que você pegou no Mural · ' + pins.length + '/6', pins, true);
+    if (pins.length) group('Cartazes', 'missões que você pegou no Mural · ' + pins.length + '/6', pins, true);
     const list = all.filter(q => q.state === 'on' || q.state === 'ready').sort((a, b) => (b.tracked - a.tracked) || rank(a) - rank(b) || a.lv - b.lv);
     if (!list.length && !pins.length) empty('Nenhuma missão ativa. Fale com os NPCs ou olhe o Mural de Missões no porto!');
     else if (list.length) { if (pins.length) body.appendChild(el('div', 'ql-gh', '<div class="ql-gt">▶ Em andamento</div>')); const box = el('div', 'ql-cards'); cards(list, box); body.appendChild(box); }

@@ -76,7 +76,7 @@ export function levelUp() {
     P.dmg += 3;
     P.hp = P.max;
     P.mp = P.mmax;
-    log('★ Nível ' + P.lv + '!');
+    log('Nível ' + P.lv + '!');
     banner('NÍVEL ' + P.lv);
     puff(P.x, 1, P.z, 0xffe060, 6, 16);
   }

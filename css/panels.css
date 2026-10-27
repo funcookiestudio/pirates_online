@@ -54,10 +54,10 @@
 /* Poção, bomba e arma de fogo: mesmo tamanho dos outros espaços (lado --s), centralizados */
 /* ---------- Aba PERSONAGEM: personagem + equipamento à esquerda, mochila à direita, atributos embaixo ---------- */
 /* Quadro do personagem e quadro da mochila com a mesma altura (bases alinhadas) */
-/* Linha da mochila: [⇅ ordenar] [💰 ouro] [nº de itens] */
+/* Linha da mochila: [⇅ ordenar] [ouro] [nº de itens] */
 /* Ordenar, ouro e contador: mesma altura na linha */
 /* Coluna da direita: mochila, habilidades, talentos ou missões (o resto do painel não muda de aba) */
-/* Ajustes: cabeçalho fixo com botão Fechar (no celular o painel cobre a tela toda e o ⚙ fica escondido) */
+/* Ajustes: cabeçalho fixo com botão Fechar (no celular o painel cobre a tela toda e o fica escondido) */
 #acfg .ahd { position: sticky; top: -10px; z-index: 3; display: flex; align-items: center; justify-content: space-between; margin: -10px -12px 8px; padding: 8px 12px; background: #3a2814; border-bottom: 2px solid #a07a3a; }
 #acfg .ahd b { color: #f0d890; font-size: 15px; }
 #acfg .ahd button { min-height: 40px; padding: 0 14px; border-radius: 8px; border: 2px solid #a07a3a; background: #1d1610; color: #e8d9b0; font-size: 14px; cursor: pointer; }

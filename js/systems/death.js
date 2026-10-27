@@ -17,7 +17,7 @@ on('player:died', () => {
   if (state.safeAt) {
     const loss0 = Math.floor(P.gold * .1); P.gold -= loss0; setAuto(false);
     const m0 = $('msg'); m0.style.display = 'flex';
-    m0.innerHTML = '☠ Você morreu…<br><small>Você volta ao último ponto seguro' + (loss0 ? ' · −' + loss0 + ' ouro' : '') + '</small>';
+    m0.innerHTML = 'Você morreu…<br><small>Você volta ao último ponto seguro' + (loss0 ? ' · −' + loss0 + ' ouro' : '') + '</small>';
     setTimeout(reviveSafe, 3500); return;
   }
   const near = nearestPost(P.x, P.z, 24), id = near ? near.id : state.cp;
@@ -38,7 +38,7 @@ on('player:died', () => {
   setAuto(false);
   const m = $('msg');
   m.style.display = 'flex';
-  m.innerHTML = '☠ Você morreu…<br><small>' + note + (loss ? ' · −' + loss + ' ouro' : '') + '</small>';
+  m.innerHTML = 'Você morreu…<br><small>' + note + (loss ? ' · −' + loss + ' ouro' : '') + '</small>';
   setTimeout(revive, 3500);
 });
 

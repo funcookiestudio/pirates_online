@@ -45,7 +45,7 @@ export function refillStep() {
   const n = npcByShop(pl.kind);
   if (!n) return false;
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
-  if (!state.trip) { state.trip = pl.kind; log('🛒 Sem ' + (pl.pot ? 'poções' : pl.bomb ? 'bombas' : 'projéteis') + ': indo até ' + n.info.name); }
+  if (!state.trip) { state.trip = pl.kind; log('Sem ' + (pl.pot ? 'poções' : pl.bomb ? 'bombas' : 'projéteis') + ': indo até ' + n.info.name); }
   if (d < NEAR && !behindWall(P.x, P.z, nx, nz)) {   // (NPC dentro de casa e o jogador fora: não negocia pela parede, entra pela porta)
     P.tgt = null; P.tx = P.x; P.tz = P.z; P.g.rotation.y = Math.atan2(nx - P.x, nz - P.z);
     if (!dwell('buy-' + pl.kind, 2.5)) return true;           // negocia alguns segundos

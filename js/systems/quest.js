@@ -18,7 +18,7 @@ const set = n => { state.quest.st = n; saveGame(); };
 
 /** Texto do objetivo atual (painel superior) ou null se não há missão ativa */
 export function questHud() {
-  return ['📜 Vá até o Mural de Missões, na vila', '🐀 Fale com a Madame Rum, na taverna', '🐀 Pegue o rato dentro da taverna', '🐀 Volte e fale com a Madame Rum'][st()] || null;
+  return ['Vá até o Mural de Missões, na vila', 'Fale com a Madame Rum, na taverna', 'Pegue o rato dentro da taverna', 'Volte e fale com a Madame Rum'][st()] || null;
 }
 
 /** Fala inicial do NPC/cartaz (substitui a fala aleatória) ou null */
@@ -36,12 +36,12 @@ export function questSay(cur) {
 /** Botões extras do diálogo: [[texto, ação(say, rebuild)]] */
 export function questButtons(cur) {
   const out = [];
-  if (cur.board && st() === 0) out.push(['✅ Aceitar missão: O Rato da Taverna', (say, rebuild) => { set(1); log('📜 Missão aceita: O Rato da Taverna'); say('Missão aceita! Vá até a taverna e fale com a Madame Rum.'); rebuild(); }]);
-  if (cur.shop === 'tavern' && st() === 1) out.push(['🐀 Aceito pegar o rato', (say, rebuild) => { set(2); spawnRat(); log('🐀 Pegue o rato dentro da taverna!'); say('Isso! Ele se esconde atrás dos barris e das mesas. Seja rápido e não deixe escapar!'); rebuild(); }]);
-  if (cur.shop === 'tavern' && st() === 3) out.push(['🎁 Receber recompensa e o rato', (say, rebuild) => {
+  if (cur.board && st() === 0) out.push(['Aceitar missão: O Rato da Taverna', (say, rebuild) => { set(1); log('Missão aceita: O Rato da Taverna'); say('Missão aceita! Vá até a taverna e fale com a Madame Rum.'); rebuild(); }]);
+  if (cur.shop === 'tavern' && st() === 1) out.push(['Aceito pegar o rato', (say, rebuild) => { set(2); spawnRat(); log('Pegue o rato dentro da taverna!'); say('Isso! Ele se esconde atrás dos barris e das mesas. Seja rápido e não deixe escapar!'); rebuild(); }]);
+  if (cur.shop === 'tavern' && st() === 3) out.push(['Receber recompensa e o rato', (say, rebuild) => {
     P.gold += RAT_GOLD; lootText('+' + RAT_GOLD + ' ouro');
     state.owned.rat = true; set(4); setPet('rat'); saveGame();
-    log('🐀 Missão concluída! O Rato agora é seu companheiro'); say('Cuide bem dele, marujo! Agora a despensa está salva.'); rebuild();
+    log('Missão concluída! O Rato agora é seu companheiro'); say('Cuide bem dele, marujo! Agora a despensa está salva.'); rebuild();
   }]);
   return out;
 }
@@ -79,7 +79,7 @@ function capture() {
   const p = RAT.g.position;
   puff(p.x, .5, p.z, 0xd8c8b8, 3, 8);
   RAT.g.visible = false;
-  set(3); log('🐀 Você pegou o rato! Volte e fale com a Madame Rum'); lootText('🐀 Rato capturado!');
+  set(3); log('Você pegou o rato! Volte e fale com a Madame Rum'); lootText('Rato capturado!');
 }
 
 /** Atualiza o rato (a cada quadro): foge do jogador pelos vãos livres da taverna; encostar nele o captura */

@@ -42,7 +42,7 @@ export function hurtPet(d) {
 
 /** Tecla R: alterna entre "só acompanha/coleta" e "ataca também" */
 export function togglePet() {
-  if (state.petOff) { log('🚫 Nenhum companheiro equipado (Pets: escolha um para usar)'); return; }
+  if (state.petOff) { log('Nenhum companheiro equipado (Pets: escolha um para usar)'); return; }
   state.petAttack = !state.petAttack;
   refreshPetButton();
   const pet = state.pet, dog = isDog(pet.id);
@@ -77,7 +77,7 @@ export function unequipPet(silent) {
   state.petOff = true; state.petHappy = 0;
   P.dr = 0;
   refreshPetButton();
-  if (!silent) log('🚫 Sem companheiro: ' + state.pet.n + ' foi dispensado');
+  if (!silent) log('Sem companheiro: ' + state.pet.n + ' foi dispensado');
   emit('pets:changed');
 }
 

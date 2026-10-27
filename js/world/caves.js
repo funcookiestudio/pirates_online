@@ -57,7 +57,7 @@ export function buildCaves() {
 }
 
 const colorFor = df => df >= 5 ? '#ff4040' : df >= 3 ? '#ff9030' : df >= -2 ? '#f0e050' : df >= -4 ? '#60d060' : '#a0a0a0';
-const perigo = df => df >= 5 ? '☠ Mortal para o seu nível' : df >= 3 ? 'Muito perigosa' : df >= -2 ? 'Desafio equilibrado' : df >= -4 ? 'Fácil' : 'Trivial';
+const perigo = df => df >= 5 ? 'Mortal para o seu nível' : df >= 3 ? 'Muito perigosa' : df >= -2 ? 'Desafio equilibrado' : df >= -4 ? 'Fácil' : 'Trivial';
 
 function info(D) {
   if (D.info) return D.info;
@@ -74,9 +74,9 @@ function show(D) {
   $('cvi').innerHTML = [
     '🏛 ' + TYPE[D.theme],
     '📐 ' + size,
-    '🧭 Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
-    g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : '💰 Tesouro espalhado pelo caminho',
-    '👑 Chefe no fim do caminho · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 🏆 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
+    'Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
+    g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : 'Tesouro espalhado pelo caminho',
+    'Chefe no fim do caminho · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
     '⚠ ' + perigo(df) + ' (você: Nv ' + P.lv + ')',
   ].map(t => '<div>' + t + '</div>').join('');
   $('cvp').style.display = 'block';

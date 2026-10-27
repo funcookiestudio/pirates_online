@@ -24,7 +24,7 @@ function goTo(n, kind) {
   if (d < NEAR && !behindWall(P.x, P.z, nx, nz)) return true;   // (NPC dentro de casa e o jogador fora: entra pela porta)
   const f = npcStand(n, P.x, P.z);
   const now = performance.now();
-  if (!state.trip && now - (goTo.last || -1e9) > 45000) { goTo.last = now; log(kind === 'sell' ? '💰 Mochila cheia: indo vender ao ferreiro' : '📦 Indo guardar itens no baú'); }
+  if (!state.trip && now - (goTo.last || -1e9) > 45000) { goTo.last = now; log(kind === 'sell' ? 'Mochila cheia: indo vender ao ferreiro' : 'Indo guardar itens no baú'); }
   state.trip = kind; P.tgt = null; P.tx = f.x; P.tz = f.z;
   return false;
 }
@@ -48,7 +48,7 @@ export function townStep() {
     let gold = 0;
     sell.forEach(it => { gold += Math.max(1, Math.round(it.v * SELL_MUL)); bag.splice(bag.indexOf(it), 1); });
     P.gold += gold; emit('inventory:changed');
-    lootText('+' + gold + ' ouro (' + sell.length + ' itens vendidos)'); log('💰 Vendeu ' + sell.length + ' item(ns) por ' + gold + ' ouro');
+    lootText('+' + gold + ' ouro (' + sell.length + ' itens vendidos)'); log('Vendeu ' + sell.length + ' item(ns) por ' + gold + ' ouro');
     state.trip = null; P.tx = P.x; P.tz = P.z;
     return false;
   }
@@ -62,7 +62,7 @@ export function townStep() {
   setTimeout(() => { n.forceOpen = false; }, 900);  // fecha logo depois de guardar
   store.forEach(it => { bag.splice(bag.indexOf(it), 1); chest.push(it); });
   emit('inventory:changed');
-  lootText(store.length + ' itens no baú'); log('📦 Guardou ' + store.length + ' item(ns) no baú');
+  lootText(store.length + ' itens no baú'); log('Guardou ' + store.length + ' item(ns) no baú');
   state.trip = null; P.tx = P.x; P.tz = P.z; active = false;
   return false;
 }

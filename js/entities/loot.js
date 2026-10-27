@@ -121,7 +121,7 @@ function notifyFull(pot) {
   const n = performance.now();
   if (n - fullT < 3000) return;
   fullT = n;
-  lootText(pot ? '🧪 Cinto cheio (sem vagas na mochila)' : '🎒 Mochila cheia!');
+  lootText(pot ? 'Cinto cheio (sem vagas na mochila)' : 'Mochila cheia!');
   if (pot) return;
 }
 

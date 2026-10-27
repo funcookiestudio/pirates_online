@@ -32,8 +32,8 @@ export function cancelRent() {
 /** A cada quadro: passada cada diária, cobra de novo; sem ouro, a chave volta para a Madame Rum */
 export function tickRent() {
   if (!RENT.on || CLOCK.total < RENT.next) return;
-  if (P.gold >= ROOM_PRICE) { P.gold -= ROOM_PRICE; RENT.next += 24; log('🛏 Diária do quarto cobrada: -' + ROOM_PRICE + ' ouro'); }
-  else { cancelRent(); log('🔑 Sem ouro para a diária: a Madame Rum retomou a chave do quarto'); }
+  if (P.gold >= ROOM_PRICE) { P.gold -= ROOM_PRICE; RENT.next += 24; log('Diária do quarto cobrada: -' + ROOM_PRICE + ' ouro'); }
+  else { cancelRent(); log('Sem ouro para a diária: a Madame Rum retomou a chave do quarto'); }
 }
 
 const toW = (h, lx, lz) => [h.x + lx * h.K * Math.cos(h.th) + lz * h.K * Math.sin(h.th), h.z - lx * h.K * Math.sin(h.th) + lz * h.K * Math.cos(h.th)];
@@ -99,8 +99,8 @@ let lockRule = null;
 export const setDoorLock = fn => { lockRule = fn; };
 function toggleDoor(d) {
   if (!d.open && !d.room && lockRule) { const who = lockRule(d); if (who) { log('🔒 ' + who + ' está dormindo — a porta está trancada até de manhã'); return; } }
-  if (d.room && ROOM_OWNERS[d.id]) { log('🔒 Quarto de ' + ROOM_OWNERS[d.id] + ': trancado'); return; }
-  if (d.room && !roomRented() && sideOf(d) !== (d.f < 0 ? -1 : 1)) { log('🔒 Trancada. Alugue um quarto com a Madame Rum'); return; }
+  if (d.room && ROOM_OWNERS[d.id]) { log('Quarto de ' + ROOM_OWNERS[d.id] + ': trancado'); return; }
+  if (d.room && !roomRented() && sideOf(d) !== (d.f < 0 ? -1 : 1)) { log('Trancada. Alugue um quarto com a Madame Rum'); return; }
   d.open = !d.open; d.t = 0; if (d.pair) { d.pair.open = d.open; d.pair.t = 0; }
   refreshProps();
 }

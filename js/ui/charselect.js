@@ -106,9 +106,9 @@ export function runCharSelect() {
       <div class="bar"><button class="btn" data-k="go">Iniciar jogo</button></div>
       <div class="modal" data-k="modal"><div class="dlg pn" style="position:relative">
         <h2>Novo personagem</h2>
-        <div class="gen"><button data-g="m" class="on"><i>♂</i>Masculino</button><button data-g="f"><i>♀</i>Feminino</button></div>
+        <div class="gen"><button data-g="m" class="on"><i></i>Masculino</button><button data-g="f"><i></i>Feminino</button></div>
         <div class="ap" data-k="ap"></div>
-        <div><label>Nome</label><div class="nrow"><input data-k="name" maxlength="14" autocomplete="off" spellcheck="false"><button class="btn dim dice" data-k="dice" title="Nome aleatório">🎲</button></div></div>
+        <div><label>Nome</label><div class="nrow"><input data-k="name" maxlength="14" autocomplete="off" spellcheck="false"><button class="btn dim dice" data-k="dice" title="Nome aleatório"></button></div></div>
         <div class="err" data-k="err"></div>
         <button class="btn" data-k="ok">Criar personagem</button><button class="btn dim" data-k="cancel">Cancelar</button>
       </div></div>
@@ -224,7 +224,7 @@ export function runCharSelect() {
       $('ap').innerHTML = arrow('hs', 'Cabelo') + '<div class="ar"><label>Cor</label>' + swatch('hc', HAIRC, HAIRC_NAMES) + '</div>'
         + (f ? arrow('bs', 'Batom') : arrow('bs', 'Barba') + '<div class="ar"><label>Cor barba</label>' + swatch('bc', HAIRC, HAIRC_NAMES) + '</div>')
         + '<div class="ar"><label>Pele</label>' + swatch('sk', SKINS, SKIN_NAMES) + '</div><div class="ar"><label>Olhos</label>' + swatch('ey', EYES, EYE_NAMES) + '</div>'
-        + '<div class="ar"><label></label><button class="btn dim" data-k="rnd" style="padding:8px">🎲 Aparência aleatória</button></div>';
+        + '<div class="ar"><label></label><button class="btn dim" data-k="rnd" style="padding:8px">Aparência aleatória</button></div>';
       $('rnd').onclick = () => { look = randomLook(gender === 'f'); refreshAp(); };
       $('ap').querySelectorAll('[data-st]').forEach(b => { b.onclick = () => { const k = b.dataset.st, n = k === 'hs' ? 10 : (f ? LIPS.length : 10); look[k] = (look[k] + +b.dataset.d + n) % n; refreshAp(); }; });
       $('ap').querySelectorAll('[data-sw]').forEach(b => { b.onclick = () => { look[b.dataset.sw] = +b.dataset.i; refreshAp(); }; });
