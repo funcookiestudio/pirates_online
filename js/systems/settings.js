@@ -139,8 +139,9 @@ function updatePath() {
   pathLine.visible = !!pts;
   if (pts) drawRoute(pathLine, pts);
 }
+import { updateTrail } from './trail.js';
 export function updateSettings(dt) {
-  updateTiles(); updateDbg(); updatePath();
+  updateTiles(); updateDbg(); updatePath(); updateTrail();
   if (!flashTile) {
     flashTile = new THREE.Group();
     flashTile.add(new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: .55, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false })));

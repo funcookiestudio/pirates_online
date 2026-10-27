@@ -123,6 +123,15 @@ function draw() {
     [['#000', 7 * d], ['#c0392b', 4.5 * d], ['#e8604f', 1.6 * d]].forEach(([c, w]) => { g.strokeStyle = c; g.lineWidth = w; g.beginPath(); g.moveTo(-u, -u); g.lineTo(u, u); g.moveTo(u, -u); g.lineTo(-u, u); g.stroke(); });
     g.restore();
   };
+  // tracejado vermelho do jogador até o X (destino em andamento ou marcação)
+  const walking = !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2, dest = walking ? { x: P.tx, z: P.tz } : sel && sel.fl ? sel : null;
+  if (dest) {
+    const [ax, ay] = toMap(P.x, P.z), [bx, by] = toMap(dest.x, dest.z);
+    g.save(); g.lineCap = 'round'; g.setLineDash([7 * d, 6 * d]);
+    g.strokeStyle = '#000'; g.lineWidth = 5 * d; g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+    g.strokeStyle = '#e0493a'; g.lineWidth = 2.5 * d; g.stroke();
+    g.restore();
+  }
   if (sel && sel.fl) { const [fx, fy] = toMap(sel.x, sel.z); tx(fx, fy, true); }
   if (!P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2) { const [dx, dy] = toMap(P.tx, P.tz); tx(dx, dy, false); }
   raf = requestAnimationFrame(draw);
