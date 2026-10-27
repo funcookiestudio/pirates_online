@@ -9,7 +9,8 @@ import { VX, VZ, groundY } from '../world/terrain.js';
 import { N, V } from '../world/islandgen.js';
 import { pois } from '../world/pois.js';
 import { POST_DATA } from '../data/posts.js';
-import { freePoint } from '../systems/steer.js';
+import { freePoint, pathTo } from '../systems/steer.js';
+import { routePts } from '../systems/settings.js';
 import { standUp } from '../systems/rest.js';
 import { ISLANDS } from '../data/npcs.js';
 import { SEED } from '../world/terrain.js';
@@ -124,11 +125,14 @@ function draw() {
     g.restore();
   };
   // tracejado vermelho do jogador até o X (destino em andamento ou marcação)
-  const walking = !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2, dest = walking ? { x: P.tx, z: P.tz } : sel && sel.fl ? sel : null;
+  const walking = !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2;
+  const rp = walking ? routePts() : sel && sel.fl ? sel.route : null;   // caminho real (estradas); sem rota calculada, reta
+  const dest = walking ? { x: P.tx, z: P.tz } : sel && sel.fl ? sel : null;
   if (dest) {
-    const [ax, ay] = toMap(P.x, P.z), [bx, by] = toMap(dest.x, dest.z);
-    g.save(); g.lineCap = 'round'; g.setLineDash([7 * d, 6 * d]);
-    g.strokeStyle = '#000'; g.lineWidth = 5 * d; g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+    const pts = rp && rp.length > 1 ? [[P.x, P.z], ...rp.slice(1)] : [[P.x, P.z], [dest.x, dest.z]];
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round'; g.setLineDash([7 * d, 6 * d]);
+    g.beginPath(); pts.forEach((q, i) => { const [qx, qy] = toMap(q[0], q[1]); if (i) g.lineTo(qx, qy); else g.moveTo(qx, qy); });
+    g.strokeStyle = '#000'; g.lineWidth = 5 * d; g.stroke();
     g.strokeStyle = '#e0493a'; g.lineWidth = 2.5 * d; g.stroke();
     g.restore();
   }
@@ -141,6 +145,12 @@ function draw() {
 const orient = () => !MOB.matches ? 'd' : innerHeight > innerWidth ? 'p' : 'l';
 const setO = () => { if (wrap) wrap.dataset.o = orient(); };
 const title = () => (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name;
+/** Caminho (pelas estradas) do jogador até a marcação, calculado ao marcar */
+function markRoute() {
+  if (!sel) return;
+  let r = null; try { r = pathTo(P.x, P.z, sel.x, sel.z); } catch (e) { /* sem caminho */ }
+  sel.route = r && r.length ? [[P.x, P.z], ...r] : null;
+}
 function renderDet() {
   const m = sel, el = $('wmdet');
   const walking = !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2;
@@ -230,9 +240,9 @@ export function initWorldMap() {
   cv.addEventListener('click', e => {
     if (moved > 8 * (devicePixelRatio || 1)) { moved = 0; return; }   // foi arrasto/pinça, não clique
     const [px, py] = pos(e), m = markerAt(px, py);
-    if (m) { sel = m; renderDet(); return; }      // tocou num ícone: seleciona; só "Ir até" leva o personagem
+    if (m) { sel = m; sel.route = null; markRoute(); renderDet(); return; }      // tocou num ícone: seleciona; só "Ir até" leva o personagem
     const [cx, cz] = toWorld(px, py);               // tocou no terreno: só marca o ponto (X vermelho); o personagem só anda ao tocar em "Ir até"
     if (Math.abs(cx + VX) > E || Math.abs(cz + VZ) > E) return;
-    sel = { x: cx, z: cz, fl: true, n: 'Marcação', t: 'Ponto no mapa', ic: 'pin', k: 'loc' }; renderDet();
+    sel = { x: cx, z: cz, fl: true, n: 'Marcação', t: 'Ponto no mapa', ic: 'pin', k: 'loc' }; markRoute(); renderDet();
   });
 }

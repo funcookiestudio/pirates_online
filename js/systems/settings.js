@@ -112,7 +112,7 @@ function placeTile(o, x, y, z) {
 /** A cada quadro: posiciona o tile no destino clicado e atualiza o contador de FPS */
 let pathLine = null;
 /** Caminho que o personagem vai fazer agora: escada em curso, plano da casa ou caminho ao ar livre, até o destino; muda junto com ele */
-function routePts() {
+export function routePts() {
   const pts = [[P.x, P.z]];
   if (STAIR.on) { if (!STAIR.run) pts.push(STAIR.A); STAIR.pts.slice(STAIR.run ? STAIR.i : 0).forEach(q => pts.push(q)); return pts; }
   const tg = P.tgt ? [P.tgt.x, P.tgt.z] : [P.tx, P.tz];
@@ -140,8 +140,13 @@ function updatePath() {
   if (pts) drawRoute(pathLine, pts);
 }
 import { updateTrail } from './trail.js';
+/** Tracinhos vermelhos no chão seguindo o caminho real (estradas) até o destino em terra */
+function trailTick() {
+  const walking = !P.tgt && !STAIR.on && Math.hypot(P.tx - P.x, P.tz - P.z) > 2;
+  updateTrail(walking ? routePts() : null, P.up ? floorLevelH() : (houseAt(P.x, P.z, 0) ? FLOOR_LIFT : 0));
+}
 export function updateSettings(dt) {
-  updateTiles(); updateDbg(); updatePath(); updateTrail();
+  updateTiles(); updateDbg(); updatePath(); trailTick();
   if (!flashTile) {
     flashTile = new THREE.Group();
     flashTile.add(new THREE.Mesh(new THREE.PlaneGeometry(.94, .94).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff3030, transparent: true, opacity: .55, depthTest: true, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4, depthWrite: false })));
