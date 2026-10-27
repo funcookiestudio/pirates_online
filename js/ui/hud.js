@@ -16,7 +16,13 @@ function placeQuest() {
   const q = $('quest'), m = $('mini'), c = $('clk');
   if (!q || !m) return;
   const a = m.getBoundingClientRect(), b = c ? c.getBoundingClientRect() : a;
-  q.style.top = Math.ceil(Math.max(a.bottom, b.bottom) + 6) + 'px';
+  let bot = Math.max(a.bottom, b.bottom);
+  const z = $('mzn');   // plaqueta com o nome da região, logo abaixo do relógio
+  if (z && z.textContent) {
+    z.style.top = Math.ceil(bot + 2) + 'px'; z.style.left = Math.round(a.left + a.width / 2) + 'px';
+    bot += z.offsetHeight + 4;
+  }
+  q.style.top = Math.ceil(bot + 6) + 'px';
 }
 addEventListener('resize', placeQuest);
 addEventListener('orientationchange', () => setTimeout(placeQuest, 250));

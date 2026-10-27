@@ -217,3 +217,50 @@
 [data-o=l] .btabs span { font-size: 8px; letter-spacing: 0; padding: 4px 1px; min-width: 0; overflow: hidden; min-height: 30px; }
 [data-o=l] .btabs em { width: 30px; min-height: 30px; } [data-o=l] .btabs small { min-width: 0; font-size: 9px; }
 [data-o=l] .btabs { gap: 3px; }
+
+/* ===== Minimapa: plaqueta da região ===== */
+#mzn { position: absolute; z-index: 3; transform: translateX(-50%); font: 700 10px Cinzel, serif; letter-spacing: .1em; text-transform: uppercase; color: #f0d28a; background: rgba(13,11,8,.85); border: 1px solid #6f5629; padding: 1px 7px; white-space: nowrap; pointer-events: auto; cursor: pointer; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+@media (orientation: landscape) and (max-height: 500px) { #mzn { font-size: 9px; padding: 0 5px; } }
+
+/* ===== Mapa do mundo: folha (retrato), lateral (paisagem), janela (desktop) ===== */
+#wmap { position: fixed; inset: 0; z-index: 20; display: none; font-family: Spectral, Georgia, serif; color: #e4d8bd; }
+#wmbk { position: absolute; inset: 0; background: rgba(0,0,0,.62); }
+#wmsheet { position: absolute; display: flex; flex-direction: column; background: linear-gradient(#1b1610,#120f0a); border: 1px solid #c9a45a; box-shadow: 0 0 0 1px #000, 0 10px 40px #000; min-height: 0; }
+#wmap[data-o="p"] #wmsheet { left: 0; right: 0; bottom: 0; height: 84dvh; border-bottom: 0; border-radius: 14px 14px 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+#wmap[data-o="l"] #wmsheet { top: 0; bottom: 0; right: 0; width: 72%; border: 0; border-left: 1px solid #c9a45a; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) 0; }
+#wmap[data-o="d"] #wmsheet { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(900px, 92vw); height: min(620px, 90vh); }
+#wmsheet .grab { height: 16px; display: flex; align-items: center; justify-content: center; flex: none; }
+#wmsheet .grab::before { content: ""; width: 44px; height: 4px; border-radius: 3px; background: #6f5629; }
+#wmap:not([data-o="p"]) .grab { display: none; }
+#wmhead { display: flex; align-items: center; gap: 10px; padding: 6px 12px 8px; flex: none; border-bottom: 1px solid #6f5629; }
+#wmap:not([data-o="p"]) #wmhead { padding-top: 10px; }
+#wmhead .wt { flex: 1; min-width: 0; }
+#wmt { display: block; font: 700 16px Cinzel, serif; color: #f0d28a; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#wmlv { font-size: 12px; color: #9a8d70; }
+#wmlv em { color: #c9a45a; font-style: normal; }
+#wmap .btn { font: 12px Cinzel, serif; letter-spacing: .08em; color: #e4d8bd; background: linear-gradient(#2a2216,#17120a); border: 1px solid #6f5629; padding: 8px 14px; min-height: 40px; cursor: pointer; white-space: nowrap; }
+#wmap .btn:hover { border-color: #c9a45a; }
+#wmap .btn.pri { color: #1a1206; background: linear-gradient(#f0d28a,#c9a45a); border-color: #f0d28a; }
+#wmap .btn[disabled] { opacity: .4; cursor: default; }
+#wmap .btn.x { width: 40px; padding: 0; display: grid; place-items: center; }
+#wmap .btn.x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+#wmbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#wmap[data-o="l"] #wmbody { flex-direction: row; }
+#wmcv { position: relative; flex: 1; min-height: 0; min-width: 0; background: #10232b; overflow: hidden; }
+#wmc { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+#wmzb { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 6px; }
+#wmzb .btn { width: 40px; padding: 0; font-size: 18px; background: rgba(23,19,13,.92); display: grid; place-items: center; }
+#wmzb svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+#wmchips { position: absolute; left: 8px; top: 8px; right: 60px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+#wmap[data-o="l"] #wmchips { flex-direction: column; flex-wrap: nowrap; align-items: flex-start; }
+.chip { pointer-events: auto; display: flex; align-items: center; gap: 6px; font: 10px Cinzel, serif; letter-spacing: .08em; color: #e4d8bd; background: rgba(23,19,13,.92); border: 1px solid #6f5629; padding: 6px 9px; min-height: 32px; cursor: pointer; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.chip.off { opacity: .45; } .chip.off i { background: transparent; border: 1px solid var(--c); }
+#wmdet { flex: none; padding: 10px 12px; border-top: 1px solid #6f5629; background: #17130d; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#wmap[data-o="l"] #wmdet { width: 200px; border-top: 0; border-left: 1px solid #6f5629; flex-direction: column; align-items: stretch; justify-content: center; }
+.dic { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--c); display: grid; place-items: center; flex: none; background: rgba(0,0,0,.35); color: var(--c); }
+.dic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.dtx { flex: 1; min-width: 120px; }
+.dtx b { display: block; font: 700 14px Cinzel, serif; color: #f0d28a; letter-spacing: .06em; }
+.dtx span { font-size: 12px; color: #9a8d70; }
+.dbs { display: flex; gap: 8px; } .dbs .btn { flex: 1; }

@@ -1,2 +1,2 @@
 /** Versão do build (aparece junto do contador de FPS); atualizar a cada publicação */
-export const VERSION = 'V532';
+export const VERSION = 'V533';

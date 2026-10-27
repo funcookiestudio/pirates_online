@@ -16,6 +16,8 @@ import { SEED } from '../world/terrain.js';
 import { ISLAND_LV } from '../world/outposts.js';
 import { questMarks } from '../systems/quests.js';
 import { iconKey, iconImg } from './deemoji.js';
+import { MOB } from '../core/device.js';
+import { svg } from './icons.js';
 
 let wrap, cv, IMG, open = false, raf = 0, S = 1, OX = 0, OY = 0, Z = 1, PX = 0, PY = 0;
 const E = N / 2, ZMAX = 10;
@@ -45,34 +47,24 @@ function zoomAt(f, cx = cv.width / 2, cy = cv.height / 2) {
   clampView();
 }
 
-let MK = [], LG = null, hov = null;
+let MK = [], hov = null, sel = null, off = {};
+/** Categorias dos filtros: cor do aro e rótulo */
+const CAT = { loc: ['Locais', '#e4d8bd'], ene: ['Inimigos', '#c0392b'], qst: ['Missões', '#f0d28a'], dun: ['Dungeon', '#9b6bd1'], faz: ['Fazendas', '#5f9a4a'] };
+const catOf = (n, ic) => /dungeon|caverna|cripta/i.test(n) || ['skull', 'cave'].includes(iconKey(ic)) ? 'dun' : /s[ií]tio|granja|fazenda|herbalista/i.test(n) ? 'faz' : 'loc';
 /** Lista dos marcadores (vila, acampamentos, pontos de interesse) em coordenadas do mundo */
 function buildMarkers() {
-  MK = [{ x: 0, z: 0, c: '#c8962e', n: 'Vila', ic: '🏘' }];
-  POST_DATA.forEach(p => MK.push({ x: p.x, z: p.z, c: '#b02828', n: p.name, ic: '⛺' }));
-  pois.forEach(p => MK.push({ x: p.x, z: p.z, c: p.c, n: p.n, ic: p.ic || '📍' }));
+  MK = [{ x: 0, z: 0, k: 'loc', n: 'Vila', ic: 'home', t: 'Local' }];
+  POST_DATA.forEach(p => MK.push({ x: p.x, z: p.z, k: 'ene', n: p.name, ic: 'tent', t: 'Inimigos · Nv ' + p.lo + '–' + p.hi }));
+  pois.forEach(p => { const k = catOf(p.n, p.ic || ''); MK.push({ x: p.x, z: p.z, k, n: p.n, ic: iconKey(p.ic || '') || (k === 'faz' ? 'leaf' : k === 'dun' ? 'skull' : 'pin'), t: CAT[k][0] }); });
+  sel = MK[0];
 }
-/** Legenda (tela): desenhada uma vez por tamanho */
-function bakeLegend() {
-  const d = devicePixelRatio || 1;
-  LG = document.createElement('canvas'); LG.width = 170 * d; LG.height = (16 + 11 * 20 + 6) * d;
-  const g = LG.getContext('2d');
-  const leg = [['🏘', 'Vila'], ['⚓', 'Porto'], ['🏰', 'Castelo'], ['⛺', 'Acampamento inimigo'], ['🕳', 'Dungeon'], ['🐔', 'Sítio das Aves'], ['🐖', 'Granja'], ['🐄', 'Fazenda do Gado'], ['🌿', 'Casa da Herbalista'], ['🔵', 'Você'], ['🟡', 'Região da missão']];
-  g.font = `${13 * d}px sans-serif`; g.textAlign = 'left'; g.textBaseline = 'middle';
-  leg.forEach(([ic, t], i) => {
-    const y = 8 * d + i * 20 * d; g.fillStyle = '#000a'; g.fillRect(0, y - 10 * d, 160 * d, 19 * d);
-    const k = iconKey(ic), dot = ic === '🔵' ? '#4aa0ff' : ic === '🟡' ? '#ffd040' : null;
-    if (dot) { g.fillStyle = dot; g.beginPath(); g.arc(14 * d, y, 4.5 * d, 0, 6.28); g.fill(); }
-    else if (k) { const im = iconImg(k); const dr = () => g.drawImage(im, 6 * d, y - 8 * d, 16 * d, 16 * d); if (im.complete) dr(); else im.onload = () => { dr(); }; }
-    g.fillStyle = '#fff'; g.fillText(t, 26 * d, y);
-  });
-}
+const distOf = m => Math.round(Math.hypot(m.x - P.x, m.z - P.z));
 
 /** Marcador sob o ponto (px,py) da tela (raio de toque generoso), o mais próximo */
 function markerAt(px, py) {
   const d = devicePixelRatio || 1;
   let best = null, bd = 16 * d;
-  MK.forEach(m => { const [mx, my] = toMap(m.x, m.z), q = Math.hypot(mx - px, my - py); if (q < bd) { bd = q; best = m; } });
+  MK.forEach(m => { if (off[m.k]) return; const [mx, my] = toMap(m.x, m.z), q = Math.hypot(mx - px, my - py); if (q < bd) { bd = q; best = m; } });
   return best;
 }
 
@@ -84,7 +76,7 @@ function draw() {
   g.imageSmoothingEnabled = false;
   g.setTransform(Z, 0, 0, Z, PX, PY);   // relevo e moldura: um único drawImage com zoom
   g.drawImage(IMG, OX, OY, N * S, N * S);
-  g.strokeStyle = '#a07a3a'; g.lineWidth = 3 * d / Z; g.strokeRect(OX, OY, N * S, N * S);
+  g.strokeStyle = '#6f5629'; g.lineWidth = 3 * d / Z; g.strokeRect(OX, OY, N * S, N * S);
   g.setTransform(1, 0, 0, 1, 0, 0);     // o resto em pixels de tela (ícones sempre do mesmo tamanho)
   g.textAlign = 'center';
   // regiões das missões ativas: círculo amarelo pulsante
@@ -95,56 +87,98 @@ function draw() {
     g.strokeStyle = `rgba(255,208,64,${.65 + .35 * pul})`; g.lineWidth = (3 + pul) * d; g.beginPath(); g.arc(qx, qy, r, 0, 6.28); g.stroke();
     g.font = `bold ${fs}px sans-serif`; g.textBaseline = 'alphabetic'; g.lineWidth = 3 * d; g.strokeStyle = '#000'; g.strokeText(m.t, qx, qy - r - 5 * d); g.fillStyle = '#ffd040'; g.fillText(m.t, qx, qy - r - 5 * d);
   });
-  // marcadores com ícone
-  const R = 11 * d;
+  // marcadores: disco escuro, aro na cor da categoria, ícone da mesma cor
+  const R = 12 * d;
   MK.forEach(m => {
+    if (off[m.k]) return;
     const [px, py] = toMap(m.x, m.z);
     if (px < -R || py < -R || px > cv.width + R || py > cv.height + R) return;
-    g.fillStyle = m.c; g.strokeStyle = '#000'; g.lineWidth = 2 * d;
-    g.beginPath(); g.arc(px, py, R, 0, 6.28); g.fill(); g.stroke();
-    const im = iconImg(iconKey(m.ic) || 'pin'); if (im.complete) g.drawImage(im, px - 8 * d, py - 8 * d, 16 * d, 16 * d);
+    const col = CAT[m.k][1], r = m === sel ? R * 1.3 : R;
+    g.fillStyle = '#14100a'; g.strokeStyle = col; g.lineWidth = 2 * d;
+    g.beginPath(); g.arc(px, py, r, 0, 6.28); g.fill(); g.stroke();
+    const im = iconImg(m.ic, col), q = r * 1.15; if (im.complete) g.drawImage(im, px - q / 2, py - q / 2, q, q);
+    if (m === sel) { g.strokeStyle = '#f0d28a'; g.lineWidth = 2 * d; g.beginPath(); g.arc(px, py, r + 5 * d, 0, 6.28); g.stroke(); }
   });
-  g.drawImage(LG, 8 * d, 6 * d);
-  if (hov) {   // marcador sob o mouse: anel + nome
+  if (hov) {   // marcador sob o mouse: nome
     const [hx, hy] = toMap(hov.x, hov.z);
-    g.strokeStyle = '#ffd040'; g.lineWidth = 3 * d; g.beginPath(); g.arc(hx, hy, 14 * d, 0, 6.28); g.stroke();
-    g.font = `bold ${fs + d}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-    const w = g.measureText(hov.n).width + 12 * d, ty = hy - 20 * d;
-    g.fillStyle = '#000c'; g.fillRect(hx - w / 2, ty - 13 * d, w, 18 * d);
-    g.fillStyle = '#fff'; g.fillText(hov.n, hx, ty);
+    g.font = `bold ${fs + d}px Spectral, serif`; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const w = g.measureText(hov.n).width + 14 * d, ty = hy - 24 * d;
+    g.fillStyle = '#0d0b08ee'; g.fillRect(hx - w / 2, ty - 13 * d, w, 19 * d);
+    g.strokeStyle = '#c9a45a'; g.lineWidth = d; g.strokeRect(hx - w / 2, ty - 13 * d, w, 19 * d);
+    g.fillStyle = '#e4d8bd'; g.fillText(hov.n, hx, ty);
   }
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
   // jogador (seta pulsante)
   const [qx, qy] = toMap(P.x, P.z), pulse = 1 + .25 * Math.sin(performance.now() / 250);
-  g.fillStyle = '#fff'; g.strokeStyle = '#1a6bff'; g.lineWidth = 3 * d;
+  g.fillStyle = '#f0d28a'; g.strokeStyle = '#000'; g.lineWidth = 2.5 * d;
   g.beginPath(); g.arc(qx, qy, 6 * d * pulse, 0, 6.28); g.fill(); g.stroke();
   // destino atual
   if (!P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2) {
     const [dx, dy] = toMap(P.tx, P.tz);
-    g.strokeStyle = '#ffd040'; g.lineWidth = 2 * d; g.beginPath(); g.moveTo(dx - 6 * d, dy - 6 * d); g.lineTo(dx + 6 * d, dy + 6 * d); g.moveTo(dx + 6 * d, dy - 6 * d); g.lineTo(dx - 6 * d, dy + 6 * d); g.stroke();
+    g.strokeStyle = '#e0493a'; g.lineWidth = 3 * d; g.beginPath(); g.moveTo(dx - 6 * d, dy - 6 * d); g.lineTo(dx + 6 * d, dy + 6 * d); g.moveTo(dx + 6 * d, dy - 6 * d); g.lineTo(dx - 6 * d, dy + 6 * d); g.stroke();
   }
   raf = requestAnimationFrame(draw);
+}
+
+/** Orientação da folha: p retrato (inferior), l paisagem (lateral), d desktop (janela central) */
+const orient = () => !MOB.matches ? 'd' : innerHeight > innerWidth ? 'p' : 'l';
+const setO = () => { if (wrap) wrap.dataset.o = orient(); };
+const title = () => (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name;
+function renderDet() {
+  const m = sel, el = $('wmdet');
+  if (!m) { el.innerHTML = ''; return; }
+  const go = P.tx !== undefined && !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2;
+  el.innerHTML = '<div class="dic" style="--c:' + CAT[m.k][1] + '">' + svg(m.ic) + '</div><div class="dtx"><b>' + m.n + '</b><span>' + m.t + ' · ' + distOf(m) + ' m</span></div><div class="dbs"><button class="btn pri" id="wmgo">Ir até</button><button class="btn" id="wmclr"' + (go ? '' : ' disabled') + '>Limpar</button></div>';
+  $('wmgo').onclick = () => walkTo(m.x, m.z, true);
+  $('wmclr').onclick = () => { P.tx = P.x; P.tz = P.z; state.autoHold = 0; renderDet(); };
+}
+function walkTo(wx, wz, exact) {
+  if (Math.abs(wx + VX) > E || Math.abs(wz + VZ) > E) return;
+  if (P.sit > 0 || P.sitT) standUp();
+  state.autoHold = 6; P.tgt = null;
+  const f = exact ? { x: wx, z: wz } : freePoint(wx, wz, .7);
+  P.tx = f.x; P.tz = f.z;
+  mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z);
+  renderDet();
 }
 
 export function toggleWorldMap(on = !open) {
   if (on === open || (on && inDungeon())) return;
   open = on;
   wrap.style.display = on ? 'flex' : 'none';
-  if (on) wrap.querySelector('#wmhead b').textContent = (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name + ' · Nv ' + ISLAND_LV().join('–');
-  if (on) { if (!IMG) IMG = terrainImage(); layout(); Z = 1; PX = PY = 0; buildMarkers(); bakeLegend(); hov = null; draw(); } else cancelAnimationFrame(raf);
+  document.body.classList.toggle('wm-open', on);
+  if (on) {
+    setO();
+    wrap.querySelector('#wmt').textContent = title();
+    wrap.querySelector('#wmlv').innerHTML = 'Nível <em>' + ISLAND_LV().join('–') + '</em>';
+    if (!IMG) IMG = terrainImage();
+    buildMarkers(); renderDet();
+    requestAnimationFrame(() => { layout(); Z = 1; PX = PY = 0; hov = null; draw(); });
+  } else cancelAnimationFrame(raf);
 }
 export const worldMapOpen = () => open;
 
 export function initWorldMap() {
   wrap = document.createElement('div');
   wrap.id = 'wmap';
-  wrap.innerHTML = '<div id="wmhead"><b>' + ((ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name) + ' · Nv ' + ISLAND_LV().join('–') + '</b><span>Toque num ponto para ir até lá · roda/pinça: zoom · arraste: mover · M ou ✕ fecha</span><button id="wmz1" title="Aproximar">＋</button><button id="wmz0" title="Afastar">－</button><button id="wmz2" title="Ver tudo">⤢</button><button id="wmx">✕</button></div><canvas id="wmc"></canvas>';
+  wrap.innerHTML = '<div id="wmbk"></div><div id="wmsheet"><div class="grab"></div><div id="wmhead"><div class="wt"><b id="wmt"></b><span id="wmlv"></span></div><button id="wmx" class="btn x" aria-label="Fechar">' + svg('close') + '</button></div>' +
+    '<div id="wmbody"><div id="wmcv"><canvas id="wmc"></canvas><div id="wmchips"></div><div id="wmzb"><button id="wmz1" class="btn" aria-label="Aproximar">＋</button><button id="wmz0" class="btn" aria-label="Afastar">－</button><button id="wmz2" class="btn" aria-label="Ver tudo">' + svg('target') + '</button></div></div><div id="wmdet"></div></div></div>';
   document.body.appendChild(wrap);
   cv = wrap.querySelector('#wmc');
+  const ch = $('wmchips');
+  Object.keys(CAT).forEach(k => {
+    const b = document.createElement('button'); b.className = 'chip'; b.style.setProperty('--c', CAT[k][1]);
+    b.innerHTML = '<i></i>' + CAT[k][0];
+    b.onclick = () => { off[k] = !off[k]; b.classList.toggle('off', !!off[k]); if (sel && off[sel.k]) { sel = MK.find(m => !off[m.k]) || null; renderDet(); } };
+    ch.appendChild(b);
+  });
+  $('wmbk').onclick = () => toggleWorldMap(false);
   $('wmx').onclick = () => toggleWorldMap(false);
   $('wmz1').onclick = () => zoomAt(1.6);
   $('wmz0').onclick = () => zoomAt(1 / 1.6);
   $('wmz2').onclick = () => { Z = 1; PX = PY = 0; };
+  MOB.addEventListener('change', setO);
+  const zn = $('mzn'); if (zn) { zn.textContent = title(); zn.onclick = () => toggleWorldMap(true); dispatchEvent(new Event('hudcfg')); }
   const mini = $('mini');
   mini.style.pointerEvents = 'auto'; mini.style.cursor = 'pointer';
   mini.addEventListener('click', () => toggleWorldMap(true));
@@ -154,7 +188,7 @@ export function initWorldMap() {
     else if (open && (e.key === '+' || e.key === '=')) zoomAt(1.4);
     else if (open && (e.key === '-' || e.key === '_')) zoomAt(1 / 1.4);
   });
-  addEventListener('resize', () => { if (open) { layout(); bakeLegend(); clampView(); } });
+  addEventListener('resize', () => { if (open) { setO(); requestAnimationFrame(() => { layout(); clampView(); }); } });
   const pos = e => { const r = cv.getBoundingClientRect(), d = cv.width / r.width; return [(e.clientX - r.left) * d, (e.clientY - r.top) * d]; };
   cv.addEventListener('wheel', e => { e.preventDefault(); const [x, y] = pos(e); zoomAt(e.deltaY < 0 ? 1.25 : 1 / 1.25, x, y); }, { passive: false });
   // arrastar (mover) e pinça (zoom): ponteiros; um toque curto sem arrastar continua sendo "ir até lá"
@@ -180,12 +214,8 @@ export function initWorldMap() {
   cv.addEventListener('click', e => {
     if (moved > 8 * (devicePixelRatio || 1)) { moved = 0; return; }   // foi arrasto/pinça, não clique
     const [px, py] = pos(e), m = markerAt(px, py);
-    const [cx, cz] = toWorld(px, py), wx = m ? m.x : cx, wz = m ? m.z : cz;   // clicou num ícone: vai EXATAMENTE para a coordenada dele
-    if (Math.abs(wx + VX) > E || Math.abs(wz + VZ) > E) return;
-    if (P.sit > 0 || P.sitT) standUp();
-    state.autoHold = 6; P.tgt = null;
-    const f = m ? { x: m.x, z: m.z } : freePoint(wx, wz, .7);   // ponto livre só para cliques no terreno
-    P.tx = f.x; P.tz = f.z;
-    mark.position.set(f.x, groundY(f.x, f.z) + .12, f.z);
+    if (m) { sel = m; renderDet(); return; }      // tocou num ícone: seleciona; "Ir até" leva exatamente a ele
+    const [cx, cz] = toWorld(px, py);
+    walkTo(cx, cz, false);                         // tocou no terreno: caminha até lá
   });
 }
