@@ -30,3 +30,7 @@ body.pre > :not(#ttl):not(#cs):not(script):not(style):not(canvas):not(link){visi
 /* ícones em traço no lugar de emojis (js/ui/deemoji.js) */
 .emj { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -.2em; line-height: 0; flex: none; }
 .emj svg { width: 100%; height: 100%; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* antes do jogo carregar, a hotbar (larga, de desktop) não pode alargar a página: no celular isso ampliava a tela inicial e cortava tudo */
+body.pre #hb, body.pre #deck { display: none !important; }
+html, body { max-width: 100%; overflow-x: hidden; }
