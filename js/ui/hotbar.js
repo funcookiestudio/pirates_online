@@ -18,7 +18,8 @@ export function fitHotbar() {
     document.documentElement.style.setProperty('--hbh', Math.ceil(innerHeight - top) + 'px');
     return;
   }
-  if (cl.contains('mob')) {   // celular em retrato: barra do desktop em tamanho real (sem escalar), botões em duas fileiras
+  if (cl.contains('arc')) { hb.style.transform = ''; document.documentElement.style.setProperty('--hbh', '112px'); return; }   // retrato: só diamantes e arco
+  if (cl.contains('mob')) {   // (não usado): barra do desktop em tamanho real (sem escalar), botões em duas fileiras
     hb.style.transform = '';
     const top = Math.min($('sk').getBoundingClientRect().top, $('gwl').getBoundingClientRect().top);
     document.documentElement.style.setProperty('--hbh', Math.ceil(innerHeight - top) + 'px');

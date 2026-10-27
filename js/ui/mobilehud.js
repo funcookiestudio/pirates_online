@@ -30,7 +30,7 @@ const setMenu = on => body.classList.toggle('menu-open', on);
 
 function apply() {
   body.classList.toggle('mob', MOB.matches);
-  body.classList.remove('arc');   // o arco do celular deitado acabou: deitado usa a mesma barra do computador (diamantes nas laterais, botões no meio)
+  body.classList.toggle('arc', MOB.matches && innerWidth <= innerHeight);   // retrato: arco em volta do polegar (posições do editor); deitado usa a barra do computador
   body.classList.toggle('land', innerWidth > innerHeight); body.classList.toggle('port', innerWidth <= innerHeight);
   body.classList.toggle('hand-l', CFG.hand === 'l');
   placeFan();
@@ -70,4 +70,5 @@ export function initMobileHud() {
   addEventListener('orientationchange', () => setTimeout(apply, 250));
   if (MOB.addEventListener) MOB.addEventListener('change', apply);
   apply();
+  [60, 300, 900, 2000].forEach(ms => setTimeout(apply, ms));   // a janela ainda está assentando quando o jogo abre (app instalado, giro): refaz a disposição
 }

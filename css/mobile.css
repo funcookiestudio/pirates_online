@@ -113,9 +113,10 @@ body.arc #lnch svg { width: 56%; height: 56%; }
 /* ============ Computador: a barra do navio ganha o menu no centro e o auto combate: 4 botões | menu | 4 botões ============ */
 body:not(.arc) #sk { min-width: 650px; align-items: center; }
 body:not(.arc) #sk > * { margin: 0 !important; }
-body:not(.arc) #s2 { order: 1; } body:not(.arc) #s3 { order: 2; } body:not(.arc) #s4 { order: 3; } body:not(.arc) #s1 { order: 4; }
+/* paisagem e computador: [trocar arma · auto combate · companheiro · montaria] | menu | [poção · bomba · esquiva · giro] */
+body:not(.arc) #s1 { order: 1; } body:not(.arc) #sawrap { order: 2; } body:not(.arc) #s5 { order: 3; } body:not(.arc) #sm { order: 4; }
 body:not(.arc) #lnch { order: 5; }
-body:not(.arc) #sr { order: 6; } body:not(.arc) #sawrap { order: 7; } body:not(.arc) #s5 { order: 8; } body:not(.arc) #sm { order: 9; }
+body:not(.arc) #s4 { order: 6; } body:not(.arc) #s3 { order: 7; } body:not(.arc) #sr { order: 8; } body:not(.arc) #s2 { order: 9; }
 body:not(.arc) #sawrap { position: relative; left: auto; top: auto; transform: none; gap: 0; flex: none; z-index: 1; }
 body:not(.arc) #at { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
 body:not(.arc) #lnch {
@@ -184,23 +185,3 @@ body:not(.arc) #xpa { right: 126px; left: calc(50% + 1px); bottom: 0; }
 body.arc #xpp { left: calc(var(--eo, 0px) + 10px); }
 body.arc #xpa { right: calc(var(--eo, 0px) + 10px); }
 
-/* ============ Celular em retrato: mesma disposição do desktop (diamantes inclinados nas laterais, botões no meio, em duas fileiras) ============ */
-body.mob.port #hb { --gw: 62px; --sb: 40px; left: 0; width: 100%; transform: none !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px); }
-body.mob.port #deck { width: 100%; box-sizing: border-box; gap: 0; padding: 0 calc(env(safe-area-inset-right, 0px) + 12px) 24px calc(env(safe-area-inset-left, 0px) + 12px); justify-content: space-between; align-items: flex-end; }
-body.mob.port #hb .gw { width: var(--gw); height: calc(var(--gw) * 1.1); --g: var(--gw); }
-body.mob.port #hb .gem .orb { inset: 4px; }
-body.mob.port #sk { min-width: 0; flex: 1 1 0; flex-wrap: wrap; justify-content: center; align-content: flex-end; gap: 8px 6px; margin: 0 4px 0; padding-bottom: 4px; }
-body.mob.port #sk > div:not(#sawrap), body.mob.port #s5, body.mob.port #sawrap { width: var(--sb); height: var(--sb); flex: none; }
-body.mob.port #sa { width: var(--sb); height: var(--sb); border-radius: 50%; }
-body.mob.port #sk > div:not(#sawrap), body.mob.port #s5 { border-radius: 50%; }
-body.mob.port #lnch { width: var(--sb); height: var(--sb); }
-body.mob.port #sk small, body.mob.port #s5 small { display: none; }
-body.mob.port #s2 { order: 1; } body.mob.port #s3 { order: 2; } body.mob.port #s4 { order: 3; } body.mob.port #s1 { order: 4; }
-body.mob.port #sk::before { content: ""; order: 5; flex: 0 0 100%; height: 0; }   /* quebra de fileira: 4 em cima, 5 embaixo com o menu no meio */
-body.mob.port #s5 { order: 6; } body.mob.port #sm { order: 7; } body.mob.port #lnch { order: 8; } body.mob.port #sr { order: 9; } body.mob.port #sawrap { order: 10; }   /* esquiva e ataque (auto) à direita do menu */
-body.mob.port #xpp { left: calc(env(safe-area-inset-left, 0px) + 12px); right: calc(50% + 1px); }
-body.mob.port #xpa { right: calc(env(safe-area-inset-right, 0px) + 12px); left: calc(50% + 1px); }
-body.mob.port #deck .xp { height: 6px; bottom: 6px; }
-body.mob.port #deck .lv { bottom: 14px; font-size: 11px; }
-body.mob.port #lvp { left: calc(env(safe-area-inset-left, 0px) + 14px); }
-body.mob.port #lva { right: calc(env(safe-area-inset-right, 0px) + 14px); }
