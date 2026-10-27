@@ -187,7 +187,12 @@ function scene3d(root, cv) {
   addEventListener('pointermove', mv);
   const redraw = () => { layout(); frame(); };
   redraw(); addEventListener('resize', redraw);
-  return { frame, tick(dt) { T += dt; frame(); }, dispose() { removeEventListener('resize', redraw); removeEventListener('pointermove', mv); sc.traverse(c => { if (c.geometry) c.geometry.dispose(); }); ren.dispose(); } };
+  // app instalado (PWA): a janela ainda está se ajustando à tela cheia/giro quando a cena nasce; refaz o quadro quando assentar
+  const vv = window.visualViewport, later = () => { setTimeout(redraw, 150); setTimeout(redraw, 600); };
+  if (vv) vv.addEventListener('resize', redraw);
+  addEventListener('orientationchange', later);
+  const tm = [100, 350, 800, 1600].map(ms => setTimeout(redraw, ms));
+  return { frame, tick(dt) { T += dt; frame(); }, dispose() { removeEventListener('resize', redraw); if (vv) vv.removeEventListener('resize', redraw); removeEventListener('orientationchange', later); tm.forEach(clearTimeout); removeEventListener('pointermove', mv); sc.traverse(c => { if (c.geometry) c.geometry.dispose(); }); ren.dispose(); } };
 }
 
 /** Mostra a tela inicial; resolve quando o jogador toca em Jogar */

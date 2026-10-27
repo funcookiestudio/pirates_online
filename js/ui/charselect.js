@@ -167,6 +167,8 @@ export function runCharSelect() {
       cam.updateProjectionMatrix();
     }
     addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(resize, 200));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+    [100, 350, 800, 1600].forEach(ms => setTimeout(resize, ms));   // app instalado: espera a janela assentar
     resize();
     let t0 = performance.now();
     (function frame(now) {
