@@ -7,6 +7,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
+<script>
+/* desktop x celular: marca <html> antes da primeira pintura (regra única: js/core/device.js) */
+(function(){var q=matchMedia('(max-width: 900px), (pointer: coarse) and (orientation: portrait), (pointer: coarse) and (max-height: 520px)'),d=document.documentElement;
+function set(){var m=q.matches,l=innerWidth>innerHeight;d.classList.toggle('mob',m);d.classList.toggle('desk',!m);d.classList.toggle('land',l);d.classList.toggle('port',!l);if(document.body){document.body.classList.toggle('mob',m);document.body.classList.toggle('desk',!m)}}
+set();addEventListener('resize',set);addEventListener('orientationchange',set);document.addEventListener('DOMContentLoaded',set)})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">

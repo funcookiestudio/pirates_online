@@ -1,4 +1,5 @@
 /* Painéis do personagem (tecla I): Personagem · Habilidades · Talentos · Missões, no formato de folha do protótipo. */
+import { MOB } from '../core/device.js';
 import { state } from '../core/state.js';
 import { on } from '../core/events.js';
 import { $, isPanelOpen } from '../core/utils.js';
@@ -286,7 +287,7 @@ export function togglePanel() {
 }
 
 /** Celular: folha que sobe da base (retrato) ou entra pela lateral (paisagem); computador: janela central */
-export const MOB = matchMedia('(max-width: 900px), (orientation: portrait), (pointer: coarse) and (max-height: 520px)');
+export { MOB };
 export function fitPanel() {
   fitHotbar();
   const o = !MOB.matches ? 'd' : innerWidth > innerHeight ? 'l' : 'p', h = CFG.hand === 'l' ? 'l' : 'r';

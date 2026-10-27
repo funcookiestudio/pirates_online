@@ -1,5 +1,6 @@
 /* HUD de uma mão (celular): diamantes encostados no canto oposto à mão, habilidades em arco em volta do polegar
    e um botão de menu no centro da base, que abre um leque com mochila, poderes, missões, pet, mapa e ajustes. */
+import { MOB } from '../core/device.js';
 import { $ } from '../core/utils.js';
 import { CFG } from '../systems/settings.js';
 import { fitHotbar } from './hotbar.js';
@@ -7,7 +8,6 @@ import { openTab } from './panel.js';
 import { toggleWorldMap } from './worldmap.js';
 import { applyLayout, initLayout } from './layout.js';
 
-const MOB = matchMedia('(max-width: 900px), (orientation: portrait), (pointer: coarse) and (max-height: 520px)');
 /** abre o painel do personagem já na aba pedida (o toque do botão nunca fecha o painel que já está aberto) */
 function chr(t) { if ($('pnl').style.display !== 'block') openTab('char'); const b = $('tb-' + t); if (b) b.click(); }
 const ITEMS = [
