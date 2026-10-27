@@ -56,7 +56,8 @@
   font-size: 12px;
   text-align: right;
   text-shadow: 0 1px 3px #000;
-  pointer-events: none;
+  pointer-events: auto;   /* toque abre o inventário na aba Missões */
+  cursor: pointer;
   color: #e0c890;
 }
 #quest b {

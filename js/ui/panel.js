@@ -321,6 +321,12 @@ function setTab(t) {
   fitPanel();
 }
 
+/** Abre o inventário já na aba Missões (toque no texto da missão, no canto superior direito) */
+export function openQuests() {
+  if ($('pnl').style.display !== 'block') openTab('char');
+  setTab('qst');
+}
+
 export function closePanel() {
   $('pnl').style.display = 'none';
   $('pnl2').style.display = 'none';
@@ -396,6 +402,8 @@ export function initPanel() {
   };
   $('acx').onclick = () => { $('acfg').style.display = 'none'; };
   initDrag();
+  const qh = $('quest');
+  if (qh) { qh.addEventListener('pointerdown', e => e.stopPropagation()); qh.onclick = openQuests; }
   on('inventory:changed', () => { if ($('pnl').style.display === 'block') renderPanel(); });
   on('pets:changed', () => { if ($('pnl2').style.display === 'block') renderPets(); });
 }

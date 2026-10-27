@@ -10,6 +10,18 @@ import { updateLootTexts } from './notify.js';
 import { ROLL_CD } from '../systems/dodge.js';
 import { questHud } from '../systems/quest.js';
 import { questsHud, contractHud } from '../systems/quests.js';
+
+/** O texto da missão fica sempre logo abaixo do minimapa e do relógio (retrato, paisagem, celular e desktop), nunca por cima */
+function placeQuest() {
+  const q = $('quest'), m = $('mini'), c = $('clk');
+  if (!q || !m) return;
+  const a = m.getBoundingClientRect(), b = c ? c.getBoundingClientRect() : a;
+  q.style.top = Math.ceil(Math.max(a.bottom, b.bottom) + 6) + 'px';
+}
+addEventListener('resize', placeQuest);
+addEventListener('orientationchange', () => setTimeout(placeQuest, 250));
+addEventListener('hudcfg', placeQuest);
+[100, 500, 1500, 3500].forEach(ms => setTimeout(placeQuest, ms));
 import { dungeonQuest } from '../dungeon/dungeon-scene.js';
 import { autoCost, autoMinutes } from '../systems/stamina.js';
 import { PST, pmax, PDN } from '../pets/stats.js';

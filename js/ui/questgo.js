@@ -39,3 +39,7 @@ export function goQuest(q) {
   return toNpc(questGiver(q.id) || q.giver);
 }
 export const goLabel = q => q.state === 'on' ? (questSpot(q.id) && questSpot(q.id).remo ? 'Ir até o Capitão Remo' : 'Ir até o objetivo') : q.state === 'ready' ? 'Ir entregar a ' + q.giver : 'Ir até ' + q.giver;
+
+/** Missão inicial (O Rato da Taverna): Mural → Madame Rum → rato na taverna → Madame Rum */
+export function goFirst() { return toNpc(state.quest.st === 0 ? 'Mural de Missões' : 'Madame Rum'); }
+export const firstLabel = () => state.quest.st === 0 ? 'Ir até o Mural de Missões' : state.quest.st === 2 ? 'Ir até a taverna' : 'Ir até a Madame Rum';
