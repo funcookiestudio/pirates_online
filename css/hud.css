@@ -30,12 +30,14 @@
 #ebi { display: block; height: 100%; width: 100%; background: linear-gradient(#e04a3a, #7a1008); }
 
 /* Minimapa */
+#mini, #clk { --mm: 120px; --gap: 14px; }   /* diâmetro do minimapa e distância segura da borda da tela até o anel do relógio; tudo deriva daqui para ficarem concêntricos */
 #mini {
+  box-sizing: border-box;
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 8px);
-  right: 10px;
-  width: 120px;
-  height: 120px;
+  top: calc(env(safe-area-inset-top, 0px) + var(--gap) + var(--mm) * .125);
+  right: calc(env(safe-area-inset-right, 0px) + var(--gap) + var(--mm) * .125);
+  width: var(--mm);
+  height: var(--mm);
   border-radius: 50%;
   border: 2px solid #c9a45a;
   box-shadow: 0 0 0 2px #1a1208, 0 0 0 3px #6f5629, 0 0 14px #000;
@@ -45,7 +47,8 @@
 }
 #mm { width: 100%; height: 100%; }
 /* relógio sol/lua em volta do minimapa */
-#clk { position: absolute; top: calc(env(safe-area-inset-top, 0px) - 7px); right: -5px; width: 150px; height: 150px; pointer-events: none; }
+#clk { position: absolute; width: calc(var(--mm) * 1.25); height: calc(var(--mm) * 1.25); pointer-events: none;
+  top: calc(env(safe-area-inset-top, 0px) + var(--gap)); right: calc(env(safe-area-inset-right, 0px) + var(--gap)); }
 
 /* Missão */
 #quest {
@@ -142,8 +145,7 @@
 @keyframes fl { to { transform: translate(-50%, -50px); opacity: 0; } }
 
 @media (max-width: 520px) {
-  #mini { width: 90px; height: 90px; }
-  #clk { width: 120px; height: 120px; top: calc(env(safe-area-inset-top, 0px) - 7px); right: -5px; }
+  #mini, #clk { --mm: 90px; }
   #quest { top: 108px; width: 130px; }
 }
 #menu button + button { margin-left: 6px; }
@@ -197,8 +199,7 @@
 
 /* Celular deitado: minimapa e botão auto menores */
 @media (orientation: landscape) and (max-height: 500px) {
-  #mini { width: 78px; height: 78px; right: calc(env(safe-area-inset-right, 0px) + 8px); }
-  #clk { width: 104px; height: 104px; top: calc(env(safe-area-inset-top, 0px) - 5px); right: calc(env(safe-area-inset-right, 0px) - 5px); }
+  #mini, #clk { --mm: 78px; --gap: 12px; }
   #quest { top: 98px; width: 120px; font-size: 11px; }
   #sawrap { transform: translateY(-50%) scale(.72); transform-origin: left center; }
 }

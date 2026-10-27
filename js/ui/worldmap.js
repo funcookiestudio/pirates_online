@@ -4,9 +4,9 @@ import { inDungeon } from '../dungeon/dungeon-scene.js';
 import { $ } from '../core/utils.js';
 import { state } from '../core/state.js';
 import { P, mark } from '../entities/player.js';
-import { terrainImage } from '../world/terrain-mesh.js';
+import { drawIslandVec } from '../world/islandvec.js';
 import { VX, VZ, groundY } from '../world/terrain.js';
-import { N } from '../world/islandgen.js';
+import { N, V } from '../world/islandgen.js';
 import { pois } from '../world/pois.js';
 import { POST_DATA } from '../data/posts.js';
 import { freePoint } from '../systems/steer.js';
@@ -56,7 +56,7 @@ function buildMarkers() {
   MK = [{ x: 0, z: 0, k: 'loc', n: 'Vila', ic: 'home', t: 'Local' }];
   POST_DATA.forEach(p => MK.push({ x: p.x, z: p.z, k: 'ene', n: p.name, ic: 'tent', t: 'Inimigos · Nv ' + p.lo + '–' + p.hi }));
   pois.forEach(p => { const k = catOf(p.n, p.ic || ''); MK.push({ x: p.x, z: p.z, k, n: p.n, ic: iconKey(p.ic || '') || (k === 'faz' ? 'leaf' : k === 'dun' ? 'skull' : 'pin'), t: CAT[k][0] }); });
-  sel = MK[0];
+  sel = null;   // nada marcado: "Ir até" fica desativado
 }
 const distOf = m => Math.round(Math.hypot(m.x - P.x, m.z - P.z));
 
@@ -74,8 +74,12 @@ function draw() {
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, cv.width, cv.height);
   g.imageSmoothingEnabled = false;
-  g.setTransform(Z, 0, 0, Z, PX, PY);   // relevo e moldura: um único drawImage com zoom
-  g.drawImage(IMG, OX, OY, N * S, N * S);
+  g.fillStyle = '#10232b'; g.fillRect(0, 0, cv.width, cv.height);
+  g.setTransform(Z, 0, 0, Z, PX, PY);   // moldura (com zoom)
+  const sc = N * S / V;
+  g.setTransform(Z * sc, 0, 0, Z * sc, PX + OX * Z, PY + OY * Z);   // ilha em vetor: nítida em qualquer zoom
+  drawIslandVec(g, 2 * d / (Z * sc));
+  g.setTransform(Z, 0, 0, Z, PX, PY);
   g.strokeStyle = '#6f5629'; g.lineWidth = 3 * d / Z; g.strokeRect(OX, OY, N * S, N * S);
   g.setTransform(1, 0, 0, 1, 0, 0);     // o resto em pixels de tela (ícones sempre do mesmo tamanho)
   g.textAlign = 'center';
@@ -112,11 +116,15 @@ function draw() {
   const [qx, qy] = toMap(P.x, P.z), pulse = 1 + .25 * Math.sin(performance.now() / 250);
   g.fillStyle = '#f0d28a'; g.strokeStyle = '#000'; g.lineWidth = 2.5 * d;
   g.beginPath(); g.arc(qx, qy, 6 * d * pulse, 0, 6.28); g.fill(); g.stroke();
-  // destino atual
-  if (!P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2) {
-    const [dx, dy] = toMap(P.tx, P.tz);
-    g.strokeStyle = '#e0493a'; g.lineWidth = 3 * d; g.beginPath(); g.moveTo(dx - 6 * d, dy - 6 * d); g.lineTo(dx + 6 * d, dy + 6 * d); g.moveTo(dx + 6 * d, dy - 6 * d); g.lineTo(dx - 6 * d, dy + 6 * d); g.stroke();
-  }
+  // marcação do jogador e destino em andamento: X de mapa do tesouro, vermelho
+  const tx = (x, y, big) => {
+    const u = (big ? 10 : 8) * d;
+    g.save(); g.translate(x, y); g.lineCap = 'round';
+    [['#000', 7 * d], ['#c0392b', 4.5 * d], ['#e8604f', 1.6 * d]].forEach(([c, w]) => { g.strokeStyle = c; g.lineWidth = w; g.beginPath(); g.moveTo(-u, -u); g.lineTo(u, u); g.moveTo(u, -u); g.lineTo(-u, u); g.stroke(); });
+    g.restore();
+  };
+  if (sel && sel.fl) { const [fx, fy] = toMap(sel.x, sel.z); tx(fx, fy, true); }
+  if (!P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2) { const [dx, dy] = toMap(P.tx, P.tz); tx(dx, dy, false); }
   raf = requestAnimationFrame(draw);
 }
 
@@ -126,11 +134,11 @@ const setO = () => { if (wrap) wrap.dataset.o = orient(); };
 const title = () => (ISLANDS.find(i => i.seed === SEED) || { name: 'Ilha ' + SEED }).name;
 function renderDet() {
   const m = sel, el = $('wmdet');
-  if (!m) { el.innerHTML = ''; return; }
-  const go = P.tx !== undefined && !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2;
-  el.innerHTML = '<div class="dic" style="--c:' + CAT[m.k][1] + '">' + svg(m.ic) + '</div><div class="dtx"><b>' + m.n + '</b><span>' + m.t + ' · ' + distOf(m) + ' m</span></div><div class="dbs"><button class="btn pri" id="wmgo">Ir até</button><button class="btn" id="wmclr"' + (go ? '' : ' disabled') + '>Limpar</button></div>';
-  $('wmgo').onclick = () => walkTo(m.x, m.z, true);
-  $('wmclr').onclick = () => { P.tx = P.x; P.tz = P.z; state.autoHold = 0; renderDet(); };
+  const walking = !P.tgt && Math.hypot(P.tx - P.x, P.tz - P.z) > 2;
+  if (!m) el.innerHTML = '<div class="dic" style="--c:#c0392b">' + svg('pin') + '</div><div class="dtx"><b>Nada marcado</b><span>Toque num ponto do mapa para marcar o destino</span></div><div class="dbs"><button class="btn pri" id="wmgo" disabled>Ir até</button><button class="btn" id="wmclr"' + (walking ? '' : ' disabled') + '>Parar</button></div>';
+  else el.innerHTML = '<div class="dic" style="--c:' + (m.fl ? '#c0392b' : CAT[m.k][1]) + '">' + svg(m.ic) + '</div><div class="dtx"><b>' + m.n + '</b><span>' + m.t + ' · ' + distOf(m) + ' m</span></div><div class="dbs"><button class="btn pri" id="wmgo">Ir até</button><button class="btn" id="wmclr">' + (walking ? 'Parar' : 'Limpar') + '</button></div>';
+  $('wmgo').onclick = () => { if (sel) walkTo(sel.x, sel.z, !sel.fl); };
+  $('wmclr').onclick = () => { if (walking) { P.tx = P.x; P.tz = P.z; state.autoHold = 0; } else sel = null; renderDet(); };
 }
 function walkTo(wx, wz, exact) {
   if (Math.abs(wx + VX) > E || Math.abs(wz + VZ) > E) return;
@@ -151,7 +159,6 @@ export function toggleWorldMap(on = !open) {
     setO();
     wrap.querySelector('#wmt').textContent = title();
     wrap.querySelector('#wmlv').innerHTML = 'Nível <em>' + ISLAND_LV().join('–') + '</em>';
-    if (!IMG) IMG = terrainImage();
     buildMarkers(); renderDet();
     requestAnimationFrame(() => { layout(); Z = 1; PX = PY = 0; hov = null; draw(); });
   } else cancelAnimationFrame(raf);
@@ -214,8 +221,9 @@ export function initWorldMap() {
   cv.addEventListener('click', e => {
     if (moved > 8 * (devicePixelRatio || 1)) { moved = 0; return; }   // foi arrasto/pinça, não clique
     const [px, py] = pos(e), m = markerAt(px, py);
-    if (m) { sel = m; renderDet(); return; }      // tocou num ícone: seleciona; "Ir até" leva exatamente a ele
-    const [cx, cz] = toWorld(px, py);
-    walkTo(cx, cz, false);                         // tocou no terreno: caminha até lá
+    if (m) { sel = m; renderDet(); return; }      // tocou num ícone: seleciona; só "Ir até" leva o personagem
+    const [cx, cz] = toWorld(px, py);               // tocou no terreno: só marca o ponto (X vermelho); o personagem só anda ao tocar em "Ir até"
+    if (Math.abs(cx + VX) > E || Math.abs(cz + VZ) > E) return;
+    sel = { x: cx, z: cz, fl: true, n: 'Marcação', t: 'Ponto no mapa', ic: 'pin', k: 'loc' }; renderDet();
   });
 }

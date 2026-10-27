@@ -2,7 +2,7 @@
 import { enemies, loot, props } from '../core/registry.js';
 import { $ } from '../core/utils.js';
 import { P } from '../entities/player.js';
-import { terrainImage } from '../world/terrain-mesh.js';
+import { islandBitmap } from '../world/islandvec.js';
 import { VX, VZ } from '../world/terrain.js';
 import { N } from '../world/islandgen.js';
 import { pois } from '../world/pois.js';
@@ -25,7 +25,7 @@ export function drawMinimap() {
   g.beginPath();
   g.arc(C, C, C, 0, 6.28);
   g.clip();
-  g.fillStyle = '#0a1014';
+  g.fillStyle = '#10232b';
   g.fillRect(0, 0, SIZE, SIZE);
 
   const inD = dIn(P.x, P.z);
@@ -43,10 +43,11 @@ export function drawMinimap() {
     dungeonMarks().forEach(m => { const q = pt(m.x, m.z); g.fillStyle = m.c; g.fillRect(q[0] - 3, q[1] - 3, 6, 6); });
   } else {
     // ilha: relevo do gerador (1 px = 1 m) girado para a visão isométrica do minimapa
-    if (!IMG) IMG = terrainImage();
+    IMG = islandBitmap();   // ilha desenhada em vetor (contornos do relevo da seed), pronta a 2 px por metro
     const E = N / 2, ox = -E - VX - P.x, oz = -E - VZ - P.z;
     g.save();
     g.transform(k, k, -k, k, C + (ox - oz) * k, C + (ox + oz) * k);
+    g.scale(.5, .5);
     g.drawImage(IMG, 0, 0);
     g.restore();
   }
