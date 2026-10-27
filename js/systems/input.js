@@ -162,6 +162,7 @@ export function initInput() {
       return;
     }
     if (e.button === 1 || e.button === 2) { orbit = { x: e.clientX, y: e.clientY }; return; }
+    if (stick && e.pointerType === 'touch' && e.pointerId !== stick.id) return;   // joystick em uso: outro dedo no mundo não vira gesto
     pts.set(e.pointerId, e);
     if (pts.size === 2) { endStick(); clearTimeout(wait); down = false; P.tgt = null; P.tx = P.x; P.tz = P.z; cancelStair(); cancelDoor(); gest = { ...pair(), sd: pair().d, ca: 0, mode: null }; return; } // segundo dedo: vira gesto, cancela o toque
     if (e.pointerType === 'touch' && joyOn()) { stick = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: false }; return; }
@@ -235,20 +236,20 @@ export function initInput() {
     if (e.code === 'Minus' || e.code === 'NumpadSubtract') zoomBy(1.25);
   });
 
-  // botões
-  $('s1').onclick = switchWeapon;
-  $('s2').onclick = spin;
-  $('s3').onclick = bomb;
-  $('s4').onclick = potion;
-  $('sr').onclick = dodge;
-  $('s5').onclick = togglePet;
+  // botões de ação: agem no instante do toque (pointerdown), sem esperar o "click", que o navegador pode perder quando outro dedo já está
+  // na tela (multitoque: andar com um polegar e usar habilidades com o outro). O click só vale para teclado/leitor de tela.
+  const tap = (id, fn) => {
+    const el = $(id); let last = 0;
+    el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); last = performance.now(); fn(); });
+    el.onclick = () => { if (performance.now() - last > 700) fn(); };
+  };
+  tap('s1', switchWeapon); tap('s2', spin); tap('s3', bomb); tap('s4', potion); tap('sr', dodge); tap('s5', togglePet); tap('sa', togAuto);
   { /* toque curto: monta/desmonta/chama · segurar ~0,6 s: dispensa o cavalo */
-    const b = $('sm'); let tm = 0, held = false;
-    b.onpointerdown = () => { held = false; clearTimeout(tm); tm = setTimeout(() => { held = true; dismissHorse(); }, 600); };
-    ['onpointerup', 'onpointerleave', 'onpointercancel'].forEach(k => { b[k] = () => clearTimeout(tm); });
-    b.onclick = () => { if (held) { held = false; return; } toggleMount(); };
+    const b = $('sm'); let tm = 0, held = false, on = false;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); held = false; on = true; clearTimeout(tm); tm = setTimeout(() => { held = true; dismissHorse(); }, 600); });
+    b.addEventListener('pointerup', () => { clearTimeout(tm); if (on && !held) toggleMount(); on = false; });
+    ['pointerleave', 'pointercancel'].forEach(k => b.addEventListener(k, () => { clearTimeout(tm); on = false; }));
   }
-  $('sa').onclick = togAuto;
   $('pcl').onclick = closePanel;
   camButtons();
   $('pcl2x').onclick = closePanel;

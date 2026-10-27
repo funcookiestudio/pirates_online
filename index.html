@@ -10,7 +10,7 @@
 <script>
 /* desktop x celular: marca <html> antes da primeira pintura (regra única: js/core/device.js) */
 (function(){var q=matchMedia('(max-width: 900px), (pointer: coarse) and (orientation: portrait), (pointer: coarse) and (max-height: 520px)'),d=document.documentElement;
-function set(){var m=q.matches,l=innerWidth>innerHeight;d.classList.toggle('mob',m);d.classList.toggle('desk',!m);d.classList.toggle('land',l);d.classList.toggle('port',!l);if(document.body){document.body.classList.toggle('mob',m);document.body.classList.toggle('desk',!m)}}
+function set(){var m=q.matches,l=innerWidth>innerHeight;d.classList.toggle('mob',m);d.classList.toggle('desk',!m);d.classList.toggle('land',l);d.classList.toggle('port',!l);if(document.body){document.body.classList.toggle('mob',m);document.body.classList.toggle('desk',!m);document.body.classList.toggle('arc',m&&l)}}
 set();addEventListener('resize',set);addEventListener('orientationchange',set);document.addEventListener('DOMContentLoaded',set)})();
 </script>
 <link rel="manifest" href="manifest.webmanifest">

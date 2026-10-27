@@ -28,11 +28,12 @@ const DEFX = { p: { lnch: { x: 200, y: 34, sz: 44 }, gwl: { x: 327, y: 53, sz: 8
 const DEF_ROT = -37;   // inclinação padrão dos diamantes (para a mão direita; na esquerda espelha)
 
 let L = { p: {}, l: {} };
-try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && o.p && o.l) L = o; } catch (e) { /* sem armazenamento: usa o padrão */ }
-const store = () => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch (e) { /* ignora */ } };
+const VER = 2;   // sobe quando o padrão do retrato muda: o retrato salvo volta ao padrão uma vez (o editor continua valendo depois)
+try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && o.p && o.l) { L = { p: o.v === VER ? o.p : {}, l: o.l }; } } catch (e) { /* sem armazenamento: usa o padrão */ }
+const store = () => { try { localStorage.setItem(KEY, JSON.stringify({ v: VER, p: L.p, l: L.l })); } catch (e) { /* ignora */ } };
 
 const ok = () => (innerWidth > innerHeight ? 'l' : 'p');
-const isMob = () => body.classList.contains('mob');
+const isMob = () => body.classList.contains('arc');   // o editor vale só no celular deitado (arco); em retrato vale a barra do desktop
 const handR = () => CFG.hand !== 'l';
 const rm = (el, ks) => ks.forEach(k => el.style.removeProperty(k));
 
@@ -128,7 +129,7 @@ function end(e) { if (drag === e.pointerId) { drag = null; store(); } }
 function swallow(e) { if (editing && !e.target.closest('#ledit')) { e.stopImmediatePropagation(); e.preventDefault(); } }
 
 export function startEdit() {
-  if (!isMob()) { log('A barra do computador é fixa. Use o celular (ou uma janela estreita) para editar.'); return; }
+  if (!isMob()) { log('A disposição só pode ser editada no celular deitado.'); return; }
   closePanel();
   body.classList.remove('menu-open');
   editing = true; selId = null;
@@ -154,5 +155,5 @@ export function initLayout() {
   addEventListener('keydown', e => { if (editing && e.code === 'Escape') stopEdit(); });
   const b = $('gx-lay');
   if (b) b.onclick = startEdit;
-  addEventListener('resize', () => { if (isMob()) applyLayout(); });
+  addEventListener('resize', applyLayout);
 }

@@ -8,7 +8,7 @@ const G = {
   hand: '✋🤚', search: '🔍', eye: '👁', plank: '🧱', burst: '🎲✨⚠💥', coin: '💰🪙', gun: '🔫', shield: '🛡', fire: '🔥',
   bag: '🛒🎒📦🧺', ship: '⛵', person: '👤', check: '✔✅', pin: '📌📍', lock: '🔒', unlock: '🔓', home: '🏘🏠🛏', tent: '⛺', anchor: '⚓',
   castle: '🏰🏛🗼', scroll: '📜📋📖', skull: '☠💀', gift: '🎁', trash: '🗑', key: '🔑🗝', trophy: '🏆', crown: '👑', gem: '💎🔮',
-  flag: '🏴', door: '🚪', leaf: '🌿🌻', heart: '❤🩸', chest: '🗄',
+  flag: '🏴', camera: '📷', door: '🚪', leaf: '🌿🌻', heart: '❤🩸', chest: '🗄',
 };
 const KEY = {};
 for (const k in G) for (const ch of G[k]) KEY[ch] = k;

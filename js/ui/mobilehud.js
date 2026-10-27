@@ -30,6 +30,8 @@ const setMenu = on => body.classList.toggle('menu-open', on);
 
 function apply() {
   body.classList.toggle('mob', MOB.matches);
+  body.classList.remove('arc');   // o arco do celular deitado acabou: deitado usa a mesma barra do computador (diamantes nas laterais, botões no meio)
+  body.classList.toggle('land', innerWidth > innerHeight); body.classList.toggle('port', innerWidth <= innerHeight);
   body.classList.toggle('hand-l', CFG.hand === 'l');
   placeFan();
   fitHotbar();

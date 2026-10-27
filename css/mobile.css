@@ -1,11 +1,11 @@
-/* HUD de uma mão (celular, retrato e paisagem). Tudo vive sob body.mob; no computador nada muda.
+/* HUD de uma mão (celular, retrato e paisagem). Tudo vive sob body.arc; no computador nada muda.
    Os controles que se tocam o tempo todo ficam num arco em volta do polegar; o topo só informa. */
 
 /* o líquido dos diamantes só se separa da moldura no celular */
 .lq { display: contents; }
 #lnch, #fan, #fanbk, #joyb, #joyk { display: none; }
 
-body.mob {
+body.arc {
   --g1: 88px; --g2: 54px;                                   /* largura dos diamantes: herói e companheiro */
   --gwid: calc(var(--g1) * .799 + 3px + var(--g2) * .835);  /* largura do conjunto de diamantes */
   --cx: 62px; --cy: 96px;                                   /* centro do botão grande (auto combate) a partir do canto do polegar */
@@ -14,57 +14,57 @@ body.mob {
   --eo: env(safe-area-inset-left, 0px);                     /* lado dos diamantes */
   --ei: env(safe-area-inset-right, 0px);                    /* lado do arco */
 }
-body.mob.hand-l { --tilt: 37deg; --eo: env(safe-area-inset-right, 0px); --ei: env(safe-area-inset-left, 0px); }
-@media (orientation: landscape) { body.mob { --g1: 80px; --g2: 50px; --cx: 58px; --cy: 66px; } }
+body.arc.hand-l { --tilt: 37deg; --eo: env(safe-area-inset-right, 0px); --ei: env(safe-area-inset-left, 0px); }
+@media (orientation: landscape) { body.arc { --g1: 80px; --g2: 50px; --cx: 58px; --cy: 66px; } }
 
 /* ---- o barco some: ficam só os diamantes, as habilidades e as barras de XP ---- */
-body.mob #hb { position: fixed; inset: 0; left: 0; transform: none !important; width: auto; display: block; filter: none; pointer-events: none; z-index: 5; }
-body.mob #hb .end { display: none; }
-body.mob #deck { position: absolute; inset: 0; height: auto; padding: 0; background: none; border: 0; box-shadow: none; display: block; pointer-events: none; }
-body.mob #deck .xp { bottom: calc(var(--eb) + 2px); height: 5px; }
+body.arc #hb { position: fixed; inset: 0; left: 0; transform: none !important; width: auto; display: block; filter: none; pointer-events: none; z-index: 5; }
+body.arc #hb .end { display: none; }
+body.arc #deck { position: absolute; inset: 0; height: auto; padding: 0; background: none; border: 0; box-shadow: none; display: block; pointer-events: none; }
+body.arc #deck .xp { bottom: calc(var(--eb) + 2px); height: 5px; }
 
 /* ---- diamantes ---- */
-body.mob #hb .gw { position: absolute; margin: 0; transform-origin: 50% 50%; transform: rotate(var(--tilt)); pointer-events: auto; }
-body.mob #gwl { --g: var(--g1); width: var(--g1); height: calc(var(--g1) * 1.1); left: calc(var(--eo) + var(--g1) * .032); bottom: calc(var(--eb) + 10px - var(--g1) * .191); }
-body.mob #gwr { --g: var(--g2); width: var(--g2); height: calc(var(--g2) * 1.1); left: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .032); bottom: calc(var(--eb) + 10px - var(--g2) * .191); }
-body.mob.hand-l #gwl { left: auto; right: calc(var(--eo) + var(--g1) * .032); }
-body.mob.hand-l #gwr { left: auto; right: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .032); }
-body.mob #gwr::before { content: ""; position: absolute; inset: -6px; }
-body.mob #hb .gem .orb { inset: 5px; }
+body.arc #hb .gw { position: absolute; margin: 0; transform-origin: 50% 50%; transform: rotate(var(--tilt)); pointer-events: auto; }
+body.arc #gwl { --g: var(--g1); width: var(--g1); height: calc(var(--g1) * 1.1); left: calc(var(--eo) + var(--g1) * .032); bottom: calc(var(--eb) + 10px - var(--g1) * .191); }
+body.arc #gwr { --g: var(--g2); width: var(--g2); height: calc(var(--g2) * 1.1); left: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .032); bottom: calc(var(--eb) + 10px - var(--g2) * .191); }
+body.arc.hand-l #gwl { left: auto; right: calc(var(--eo) + var(--g1) * .032); }
+body.arc.hand-l #gwr { left: auto; right: calc(var(--eo) + var(--g1) * .799 + 3px + var(--g2) * .032); }
+body.arc #gwr::before { content: ""; position: absolute; inset: -6px; }
+body.arc #hb .gem .orb { inset: 5px; }
 /* o líquido continua na horizontal, mesmo com o diamante inclinado */
-body.mob .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
-body.mob .lq i { bottom: calc(var(--g) * .45); transform: scaleY(.55); transform-origin: 50% 100%; }
+body.arc .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
+body.arc .lq i { bottom: calc(var(--g) * .45); transform: scaleY(.55); transform-origin: 50% 100%; }
 /* nível no início da barra de XP de cada um (jogador à esquerda, companheiro à direita) */
-body.mob #deck .lv { transform: none; font-size: 11px; bottom: calc(var(--eb) + 9px); }
-body.mob #lvp { left: calc(var(--eo) + 6px); right: auto; }
-body.mob #lva { right: calc(var(--eo) + 6px); left: auto; font-size: 11px; }
+body.arc #deck .lv { transform: none; font-size: 11px; bottom: calc(var(--eb) + 9px); }
+body.arc #lvp { left: calc(var(--eo) + 16px); right: auto; }
+body.arc #lva { right: calc(var(--eo) + 16px); left: auto; font-size: 11px; }
 
 /* ---- habilidades em arco ---- */
-body.mob #sk { display: contents; }
-body.mob #sk > div:not(#sawrap), body.mob #s5 {
+body.arc #sk { display: contents; }
+body.arc #sk > div:not(#sawrap), body.arc #s5 {
   --sz: 44px; position: absolute; width: var(--sz); height: var(--sz); border-radius: 12px; font-size: 20px; pointer-events: auto;
   right: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); left: auto;
   bottom: calc(var(--eb) + var(--cy) + var(--dy) - var(--sz) / 2);
 }
-body.mob.hand-l #sk > div:not(#sawrap), body.mob.hand-l #s5 { left: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); right: auto; }
-body.mob #sk small, body.mob #s5 small { display: none; }
-body.mob #s5 { margin: 0; }
-body.mob #sm.none { display: none; }
-body.mob #sr { --dx: 94px;    --dy: 0px; }
-body.mob #s2 { --dx: 79.7px;  --dy: 49.8px; }
-body.mob #s3 { --dx: 44.1px;  --dy: 83px; }
-body.mob #s4 { --dx: 0px;     --dy: 94px; }
-body.mob #s1 { --sz: 42px; --dx: 155.8px; --dy: 62.9px; font-size: 18px; }
-body.mob #s5 { --sz: 42px; --dx: 103.4px; --dy: 132.4px; font-size: 18px; }
-body.mob #sm { --sz: 42px; --dx: 23.4px;  --dy: 166.4px; font-size: 18px; }
+body.arc.hand-l #sk > div:not(#sawrap), body.arc.hand-l #s5 { left: calc(var(--ei) + var(--cx) + var(--dx) - var(--sz) / 2); right: auto; }
+body.arc #sk small, body.arc #s5 small { display: none; }
+body.arc #s5 { margin: 0; }
+body.arc #sm.none { display: none; }
+body.arc #sr { --dx: 94px;    --dy: 0px; }
+body.arc #s2 { --dx: 79.7px;  --dy: 49.8px; }
+body.arc #s3 { --dx: 44.1px;  --dy: 83px; }
+body.arc #s4 { --dx: 0px;     --dy: 94px; }
+body.arc #s1 { --sz: 42px; --dx: 155.8px; --dy: 62.9px; font-size: 18px; }
+body.arc #s5 { --sz: 42px; --dx: 103.4px; --dy: 132.4px; font-size: 18px; }
+body.arc #sm { --sz: 42px; --dx: 23.4px;  --dy: 166.4px; font-size: 18px; }
 /* auto combate: botão grande no centro do arco */
-body.mob #sawrap { top: auto; left: auto; transform: none; gap: 0; right: calc(var(--ei) + var(--cx) - 34px); bottom: calc(var(--eb) + var(--cy) - 34px); z-index: 6; }
-body.mob.hand-l #sawrap { right: auto; left: calc(var(--ei) + var(--cx) - 34px); }
-body.mob #sa { width: 68px; height: 68px; border-radius: 16px; font-size: 30px; }
-body.mob #at { display: none; }
+body.arc #sawrap { top: auto; left: auto; transform: none; gap: 0; right: calc(var(--ei) + var(--cx) - 34px); bottom: calc(var(--eb) + var(--cy) - 34px); z-index: 6; }
+body.arc.hand-l #sawrap { right: auto; left: calc(var(--ei) + var(--cx) - 34px); }
+body.arc #sa { width: 68px; height: 68px; border-radius: 16px; font-size: 30px; }
+body.arc #at { display: none; }
 
 /* ---- botão de menu: centro da base ---- */
-body.mob #lnch {
+body.arc #lnch {
   display: grid; place-items: center; position: fixed; z-index: 7; left: 50%; margin-left: -23px; width: 46px; height: 46px;
   bottom: calc(var(--eb) + 18px); border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: #e0c27a;
   background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604);
@@ -80,10 +80,10 @@ body.menu-open #lnch { transform: rotate(45deg); }
 body.menu-open #fan button { opacity: 1; pointer-events: auto; transform: translate(var(--fx), var(--fy)) scale(1); }
 body.menu-open #fanbk { display: block; position: fixed; inset: 0; z-index: 29; background: #0006; }
 /* com o menu aberto, o arco e os diamantes apagam (um grupo por vez, sem poluir) */
-body.mob.menu-open #sk > div:not(#sawrap), body.mob.menu-open #s5, body.mob.menu-open #sawrap, body.mob.menu-open #hb .gw { opacity: .15; pointer-events: none; }
+body.arc.menu-open #sk > div:not(#sawrap), body.arc.menu-open #s5, body.arc.menu-open #sawrap, body.arc.menu-open #hb .gw { opacity: .15; pointer-events: none; }
 /* painel ou diálogo aberto: nada do HUD de baixo fica por cima */
-body.mob.ui-open #hb, body.mob.ui-open #fan { visibility: hidden; }
-body.mob #sawrap, body.mob #lnch { pointer-events: auto; }
+body.arc.ui-open #hb, body.arc.ui-open #fan { visibility: hidden; }
+body.arc #sawrap, body.arc #lnch { pointer-events: auto; }
 
 /* ---- joystick flutuante (modo Joystick) ---- */
 #joyb, #joyk { position: fixed; z-index: 4; pointer-events: none; border-radius: 50%; }
@@ -107,25 +107,25 @@ body.joy-on #joyb, body.joy-on #joyk { display: block; }
 #s5 { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%227%22 cy=%2210%22 r=%222%22/%3E%3Ccircle cx=%2212%22 cy=%227%22 r=%222%22/%3E%3Ccircle cx=%2217%22 cy=%2210%22 r=%222%22/%3E%3Cpath d=%22M7 17c0-3 2.5-5 5-5s5 2 5 5c0 2-2 3-5 3s-5-1-5-3z%22/%3E%3C/svg%3E"); }
 #sm { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 21V10a6 6 0 0112 0v11M6 16h3M15 16h3%22/%3E%3C/svg%3E"); }
 #sa { --ic: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23000%22 stroke-width=%221.8%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%227%22/%3E%3Cpath d=%22M12 2v5M12 17v5M2 12h5M17 12h5%22/%3E%3C/svg%3E"); }
-body.mob #lnch svg { width: 56%; height: 56%; }
+body.arc #lnch svg { width: 56%; height: 56%; }
 #fan button svg { width: 54%; height: 54%; }
 
 /* ============ Computador: a barra do navio ganha o menu no centro e o auto combate: 4 botões | menu | 4 botões ============ */
-body:not(.mob) #sk { min-width: 650px; align-items: center; }
-body:not(.mob) #sk > * { margin: 0 !important; }
-body:not(.mob) #s2 { order: 1; } body:not(.mob) #s3 { order: 2; } body:not(.mob) #s4 { order: 3; } body:not(.mob) #s1 { order: 4; }
-body:not(.mob) #lnch { order: 5; }
-body:not(.mob) #sr { order: 6; } body:not(.mob) #sawrap { order: 7; } body:not(.mob) #s5 { order: 8; } body:not(.mob) #sm { order: 9; }
-body:not(.mob) #sawrap { position: relative; left: auto; top: auto; transform: none; gap: 0; flex: none; z-index: 1; }
-body:not(.mob) #at { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
-body:not(.mob) #lnch {
+body:not(.arc) #sk { min-width: 650px; align-items: center; }
+body:not(.arc) #sk > * { margin: 0 !important; }
+body:not(.arc) #s2 { order: 1; } body:not(.arc) #s3 { order: 2; } body:not(.arc) #s4 { order: 3; } body:not(.arc) #s1 { order: 4; }
+body:not(.arc) #lnch { order: 5; }
+body:not(.arc) #sr { order: 6; } body:not(.arc) #sawrap { order: 7; } body:not(.arc) #s5 { order: 8; } body:not(.arc) #sm { order: 9; }
+body:not(.arc) #sawrap { position: relative; left: auto; top: auto; transform: none; gap: 0; flex: none; z-index: 1; }
+body:not(.arc) #at { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+body:not(.arc) #lnch {
   display: grid; place-items: center; position: relative; flex: none; width: 54px; height: 54px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; color: #e0c27a;
   background: radial-gradient(circle at 50% 30%, #3a2a1a, #0a0604);
   box-shadow: 0 0 0 2px #a07a3a, 0 0 0 4px #0c0807, 0 0 0 5px #a07a3a, 0 6px 14px #000b; transition: transform .2s;
 }
-body:not(.mob) #lnch svg { width: 56%; height: 56%; }
+body:not(.arc) #lnch svg { width: 56%; height: 56%; }
 /* com o menu aberto os diamantes e os botões apagam, como no celular */
-body.menu-open:not(.mob) #sk > :not(#lnch), body.menu-open:not(.mob) #hb .gw { opacity: .15; pointer-events: none; }
+body.menu-open:not(.arc) #sk > :not(#lnch), body.menu-open:not(.arc) #hb .gw { opacity: .15; pointer-events: none; }
 
 /* ============ Editor de disposição (Ajustes ▸ Jogo) ============ */
 #ledit {
@@ -155,24 +155,52 @@ body.lay-edit #hb, body.lay-edit #deck { visibility: visible; }
 }
 #sa { background: radial-gradient(circle at 50% 30%, #8a2a22, #2c0a08); }
 #sk > div:not(#sawrap).on, #s5.on, #sa.on { box-shadow: 0 0 0 2px #ff7a3a, 0 0 0 4px #0c0807, 0 0 0 5px #ff7a3a, 0 0 12px #ff7a3a, 0 6px 14px #000b; }
-body.mob #sk > div:not(#sawrap), body.mob #s5, body.mob #sa { border-radius: 50%; }
+body.arc #sk > div:not(#sawrap), body.arc #s5, body.arc #sa { border-radius: 50%; }
 #sk > div:not(#sawrap):active, #s5:active, #sa:active { transform: scale(.92); }
 
 /* ============ Computador: mesma disposição do protótipo — sem o barco; diamantes inclinados para fora nas pontas, botões entre eles ============ */
-body:not(.mob) #hb { --gw: 100px; filter: none; }
-body:not(.mob) #hb .end { display: none; }
-body:not(.mob) #deck { height: auto; gap: 26px; padding: 0 0 26px; background: none; border: 0; box-shadow: none; align-items: flex-end; }
-body:not(.mob) #hb .gw { width: 100px; height: 110px; --g: 100px; }
-body:not(.mob) #gwl { --tilt: 20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
-body:not(.mob) #gwr { --tilt: -20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
-body:not(.mob) #hb .gem .orb { inset: 5px; }
+body:not(.arc) #hb { --gw: 100px; filter: none; }
+body:not(.arc) #hb .end { display: none; }
+body:not(.arc) #deck { height: auto; gap: 26px; padding: 0 0 26px; background: none; border: 0; box-shadow: none; align-items: flex-end; }
+body:not(.arc) #hb .gw { width: 100px; height: 110px; --g: 100px; }
+body:not(.arc) #gwl { --tilt: 20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
+body:not(.arc) #gwr { --tilt: -20deg; margin: 0; transform: rotate(var(--tilt)); transform-origin: 50% 50%; }
+body:not(.arc) #hb .gem .orb { inset: 5px; }
 /* o líquido fica na horizontal mesmo com o diamante inclinado */
-body:not(.mob) .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
-body:not(.mob) .lq i { bottom: calc(var(--g) * .45); transform: scaleY(.55); transform-origin: 50% 100%; }
+body:not(.arc) .lq { display: block; position: absolute; left: calc(var(--g) * -.5 - 5px); top: calc(var(--g) * -.45 - 5px); width: calc(var(--g) * 2); height: calc(var(--g) * 2); transform: rotate(calc(var(--tilt) * -1)); pointer-events: none; }
+body:not(.arc) .lq i { bottom: calc(var(--g) * .45); transform: scaleY(.55); transform-origin: 50% 100%; }
 /* nível no centro de cada diamante */
-body:not(.mob) #deck .lv { bottom: 9px; font-size: 13px; transform: none; }
-body:not(.mob) #lvp { left: 126px; right: auto; }
-body:not(.mob) #lva { left: auto; right: 126px; }
+body:not(.arc) #deck .lv { bottom: 9px; font-size: 13px; transform: none; }
+body:not(.arc) #lvp { left: 126px; right: auto; }
+body:not(.arc) #lva { left: auto; right: 126px; }
 /* barras de XP: só embaixo da fileira de botões */
-body:not(.mob) #xpp { left: 126px; right: calc(50% + 1px); bottom: 0; }
-body:not(.mob) #xpa { right: 126px; left: calc(50% + 1px); bottom: 0; }
+body:not(.arc) #xpp { left: 126px; right: calc(50% + 1px); bottom: 0; }
+body:not(.arc) #xpa { right: 126px; left: calc(50% + 1px); bottom: 0; }
+
+/* os botões de ação já desenham o ícone pela máscara (::before): o ícone embutido (emoji convertido) não pode aparecer junto, em nenhuma plataforma */
+#sk .emj, #s5 .emj, #sa .emj, #sawrap .emj { display: none !important; }
+
+/* ============ Barras de XP: um espaço entre elas e a lateral da tela (celular) ============ */
+body.arc #xpp { left: calc(var(--eo, 0px) + 10px); }
+body.arc #xpa { right: calc(var(--eo, 0px) + 10px); }
+
+/* ============ Celular em retrato: mesma disposição do desktop (diamantes inclinados nas laterais, botões no meio, em duas fileiras) ============ */
+body.mob.port #hb { --gw: 62px; --sb: 40px; left: 0; width: 100%; transform: none !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px); }
+body.mob.port #deck { width: 100%; box-sizing: border-box; gap: 0; padding: 0 calc(env(safe-area-inset-right, 0px) + 12px) 24px calc(env(safe-area-inset-left, 0px) + 12px); justify-content: space-between; align-items: flex-end; }
+body.mob.port #hb .gw { width: var(--gw); height: calc(var(--gw) * 1.1); --g: var(--gw); }
+body.mob.port #hb .gem .orb { inset: 4px; }
+body.mob.port #sk { min-width: 0; flex: 1 1 0; flex-wrap: wrap; justify-content: center; align-content: flex-end; gap: 8px 6px; margin: 0 4px 0; padding-bottom: 4px; }
+body.mob.port #sk > div:not(#sawrap), body.mob.port #s5, body.mob.port #sawrap { width: var(--sb); height: var(--sb); flex: none; }
+body.mob.port #sa { width: var(--sb); height: var(--sb); border-radius: 50%; }
+body.mob.port #sk > div:not(#sawrap), body.mob.port #s5 { border-radius: 50%; }
+body.mob.port #lnch { width: var(--sb); height: var(--sb); }
+body.mob.port #sk small, body.mob.port #s5 small { display: none; }
+body.mob.port #s2 { order: 1; } body.mob.port #s3 { order: 2; } body.mob.port #s4 { order: 3; } body.mob.port #s1 { order: 4; }
+body.mob.port #sk::before { content: ""; order: 5; flex: 0 0 100%; height: 0; }   /* quebra de fileira: 4 em cima, 5 embaixo com o menu no meio */
+body.mob.port #s5 { order: 6; } body.mob.port #sm { order: 7; } body.mob.port #lnch { order: 8; } body.mob.port #sr { order: 9; } body.mob.port #sawrap { order: 10; }   /* esquiva e ataque (auto) à direita do menu */
+body.mob.port #xpp { left: calc(env(safe-area-inset-left, 0px) + 12px); right: calc(50% + 1px); }
+body.mob.port #xpa { right: calc(env(safe-area-inset-right, 0px) + 12px); left: calc(50% + 1px); }
+body.mob.port #deck .xp { height: 6px; bottom: 6px; }
+body.mob.port #deck .lv { bottom: 14px; font-size: 11px; }
+body.mob.port #lvp { left: calc(env(safe-area-inset-left, 0px) + 14px); }
+body.mob.port #lva { right: calc(env(safe-area-inset-right, 0px) + 14px); }
