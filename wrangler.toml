@@ -1,0 +1,27 @@
+name = "chicken-fight-tv"
+main = "worker.mjs"
+compatibility_date = "2025-01-01"
+
+# O jogo (pasta public/) é servido pelo próprio Cloudflare, no mesmo endereço do servidor da TV.
+# /api/* e /ws passam primeiro pelo Worker; o resto é arquivo estático.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*", "/ws"]
+
+# opcional: só aceita conexões vindas do seu site (separe por vírgula)
+# [vars]
+# ORIGINS = "https://chicken-fight-live.SEU-USUARIO.workers.dev"
+
+[[durable_objects.bindings]]
+name = "CANAL"
+class_name = "Canal"
+
+[[durable_objects.bindings]]
+name = "WALLET"
+class_name = "Wallet"
+
+# Primeiro deploy (conta nova): uma migração só, com as classes que existem no worker.mjs.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Canal", "Wallet"]
