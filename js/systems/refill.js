@@ -40,12 +40,15 @@ function plan() {
 export function refillStep() {
   if (!state.autoCfg.refill) { state.trip = null; TIDY.rb = true; return false; }
   const pl = plan();
-  if (!pl || (pl.pot <= 0 && pl.bomb <= 0 && !pl.ammo)) { state.trip = null; TIDY.rb = true; return false; }
-  if (danger()) return false;                              // inimigo perto: luta primeiro
+  if (!pl || (pl.pot <= 0 && pl.bomb <= 0 && !pl.ammo)) { state.trip = null; state.tripUrgent = false; TIDY.rb = true; return false; }
+  // vida baixa e sem nenhuma poção: voltar para comprar é PRIORIDADE, mesmo com inimigo perto (não fica indeciso entre atacar e voltar)
+  const urgent = !!pl.pot && P.pot + P.potR <= 0 && (P.hp < P.max * .6 || state.tripUrgent);
+  state.tripUrgent = urgent;
+  if (!urgent && danger()) return false;                   // inimigo perto: luta primeiro
   const n = npcByShop(pl.kind);
   if (!n) return false;
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);
-  if (!state.trip) { state.trip = pl.kind; log('Sem ' + (pl.pot ? 'poções' : pl.bomb ? 'bombas' : 'projéteis') + ': indo até ' + n.info.name); }
+  if (!state.trip) { state.trip = pl.kind; log((urgent ? 'Vida baixa! ' : '') + 'Sem ' + (pl.pot ? 'poções' : pl.bomb ? 'bombas' : 'projéteis') + ': indo até ' + n.info.name); }
   if (d < NEAR && !behindWall(P.x, P.z, nx, nz)) {   // (NPC dentro de casa e o jogador fora: não negocia pela parede, entra pela porta)
     P.tgt = null; P.tx = P.x; P.tz = P.z; P.g.rotation.y = Math.atan2(nx - P.x, nz - P.z);
     if (!dwell('buy-' + pl.kind, 2.5)) return true;           // negocia alguns segundos
@@ -53,7 +56,7 @@ export function refillStep() {
     if (pl.pot) { const n = beltAdd('pot', pl.pot); P.gold -= n * PRICE.potTavern; lootText('+' + n + ' poção(ões)'); }
     if (pl.bomb) { const n = beltAdd('bmb', pl.bomb); P.gold -= n * PRICE.bomb; lootText('+' + n + ' bomba(s)'); }
     if (pl.ammo) { const a = ammoInfo(pl.aw); addItem({ ty: 'wpn', q: 1, wi: pl.aw, ct: pl.ammo, il: P.lv }); P.gold -= pl.ammo * a.price; }
-    state.trip = null;
+    state.trip = null; state.tripUrgent = false;
     P.tx = P.x; P.tz = P.z;
     return false;
   }
