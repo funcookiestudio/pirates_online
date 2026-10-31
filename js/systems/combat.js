@@ -14,6 +14,7 @@ import { PV, petXp } from '../pets/stats.js';
 import { puff } from './effects.js';
 import { log, dmgNum } from '../ui/notify.js';
 import { medusaFloor } from '../entities/medusa.js';
+import { HEAD, headReady, useHead, headOnKill } from './medusa-head.js';
 
 /* ---------- Dano ---------- */
 
@@ -28,6 +29,7 @@ export function hit(e, d, o) {
   if (e.inv) { if (!o.dot) puff(e.x, 2, e.z, 0x9a9890, 2, 3); return; }   // invulnerável (Medusa se transformando)
   e.ag = true;
   if (e.mk > 0) d *= 1 + e.mkv;
+  if (e.stone > 0) d *= 1.5;   // estátua (cabeça da Medusa): leva +50%
   if (o.pet && e.hp < e.max * .35) d *= 1 + PV('exec');
   d *= dealtMult(e.lv - P.lv);                      // inimigo muito acima do seu nível: seus golpes quase não fazem cócegas
 
@@ -68,6 +70,7 @@ function onKill(e) {
   P.xp += xp;
   if (e.pa) petXp(e.pa, xp * .6);
   dropLoot(e);
+  headOnKill();   // recarrega a cabeça da Medusa
   levelUp();
   state.lastKill = e; emit('enemy:killed');
   if (e.MD) log('🗿 A Medusa foi derrotada!');
@@ -79,6 +82,7 @@ function onKill(e) {
 
 /** Giro: acerta todos em volta (tecla Q) */
 export function spin() {
+  if (headReady()) { useHead(); return; }   // com a cabeça da Medusa e cargas, o Q petrifica em vez de girar
   if (P.cds[0] > 0 || P.dead) return;
   P.cds[0] = 3;
   P.sw = 1;

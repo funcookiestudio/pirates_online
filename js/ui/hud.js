@@ -8,6 +8,7 @@ import { dialogOpen } from './dialog.js';
 import { nearestPost } from '../data/posts.js';
 import { updateLootTexts } from './notify.js';
 import { ROLL_CD } from '../systems/dodge.js';
+import { HEAD, HEAD_CD, headReady } from '../systems/medusa-head.js';
 import { questHud } from '../systems/quest.js';
 import { questsHud, contractHud } from '../systems/quests.js';
 
@@ -43,7 +44,9 @@ export function updateStatusBars() {
   sty('mp', 'height', state.petOff ? '0%' : Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%');
   txt('hpt', Math.ceil(P.hp) + '/' + P.max);
   txt('mpt', state.petOff ? '—' : PDN() ? '💤' : Math.ceil(pet.hp));
-  sty('c2', 'height', P.cds[0] / 3 * 100 + '%');
+  sty('c2', 'height', (HEAD.has && HEAD.ch >= 1 ? HEAD.cd / HEAD_CD : P.cds[0] / 3) * 100 + '%');
+  const hd = headReady() ? Math.floor(HEAD.ch) : 0;   // cabeça da Medusa: o botão do giro vira o olhar petrificante, com as cargas
+  put('s2.head', hd, () => { $('s2').classList.toggle('head', hd > 0); $('s2').querySelector('small').textContent = hd > 0 ? 'Q ×' + hd : 'Q'; });
   sty('c3', 'height', P.cds[1] / 5 * 100 + '%');
   sty('c6', 'height', P.rcd / ROLL_CD * 100 + '%');
   txt('st', 'Nv ' + P.lv + ' · ' + P.gold + ' · ' + P.pot + ' · Dano ' + P.dmg);

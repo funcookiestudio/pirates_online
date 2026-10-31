@@ -10,6 +10,7 @@ import { addItem, bagFull, lootBlocked, beltAdd } from '../systems/inventory.js'
 import { lootText, log } from '../ui/notify.js';
 import { state } from '../core/state.js';
 import { lootFilter } from '../systems/lootrule.js';
+import { headModel, giveHead, HEAD } from '../systems/medusa-head.js';
 
 /** Modelo de uma arma caída: arma deitada + anel e feixe de luz da raridade */
 function dropModel(wi, q) {
@@ -41,6 +42,7 @@ function dropModel(wi, q) {
 /** Cria o modelo de um item: ouro, poção, arma ou armadura */
 function lootModel(ty, q, wi) {
   if (ty === 'wpn') return dropModel(wi, q);
+  if (ty === 'head') return headModel();   // Cabeça da Medusa
   const geo = ty === 'gold' ? new THREE.CylinderGeometry(.25, .25, .08, 6)
     : ty === 'pot' ? new THREE.SphereGeometry(.22, 5, 4)
     : new THREE.BoxGeometry(.2, .7, .2);
@@ -52,6 +54,11 @@ function lootModel(ty, q, wi) {
     elite e boss soltam mais e melhor. */
 export function dropLoot(e) {
   const il = e.lv, boss = e.t.boss, elite = e.elite;
+  if (e.MD && !HEAD.has && Math.random() < .08) {   // Medusa: 8% de chance de soltar a própria cabeça (habilidade Q, medusa-head.js)
+    const m = headModel(); m.position.set(e.x, .3 + groundY(e.x, e.z), e.z); scene.add(m);
+    loot.push({ m, ty: 'head', q: 3, il, life: 0 });
+    log('🗿 A Medusa deixou a própria cabeça!');
+  }
   // a maioria dos inimigos comuns não deixa nada; elite sempre solta 2+; o boss sempre solta vários itens
   const n = boss ? 4 : elite ? 2 + (Math.random() < .35 ? 1 : 0) : Math.random() < .5 ? 1 + (Math.random() < .12 ? 1 : 0) : 0;
   for (let i = 0; i < n; i++) {
@@ -106,6 +113,8 @@ export function applyLoot(l, tag) {
     lootText(p + '+' + g + ' ouro');
   } else if (l.ty === 'pot') {
     if (beltAdd('pot', 1)) lootText(p + '+ poção');
+  } else if (l.ty === 'head') {
+    giveHead();
   } else if (bagFull()) {
     // chegou com a mochila cheia (ex.: o companheiro trazia na boca): solta no chão, sem ninguém pegar sozinho
     dropItem(l.it || { ty: l.ty, q: l.q, w: l.wi, v: 0, n: '' }, l);

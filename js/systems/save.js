@@ -15,6 +15,7 @@ import { safeSpot } from './safe.js';
 import { getRent, setRent } from '../world/doors.js';
 import { inDungeon } from '../dungeon/dungeon-scene.js';
 import { saveBond, loadBond } from './bond.js';
+import { saveHead, loadHead } from './medusa-head.js';
 import { applyAdoptions } from '../pets/manager.js';
 
 import { activeChar, saveKey } from '../core/chars.js';
@@ -51,6 +52,7 @@ export function saveGame() {
       autoCfg: state.autoCfg,
       dunDone: state.dunDone,
       horse: MOUNT.owned ? 1 + MOUNT.coat : 0,
+      head: saveHead(),   // cabeça da Medusa (medusa-head.js)
       veh: saveVeh(),   // carroça/carruagem compradas, montaria da tecla H e pintura
       bond: saveBond(),
     }));
@@ -96,6 +98,7 @@ export function loadGame() {
 
     MOUNT.owned = !!s.horse; MOUNT.coat = Math.max(0, Math.min(2, (s.horse | 0) - 1));
     loadVeh(s.veh);
+    loadHead(s.head);
     state.dunDone = s.dunDone && typeof s.dunDone === 'object' ? s.dunDone : {};
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });

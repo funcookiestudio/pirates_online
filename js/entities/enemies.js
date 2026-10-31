@@ -16,6 +16,7 @@ import { groundY, slideTo } from '../world/terrain.js';
 import { enemyStats, ELITE, takenMult } from '../data/scaling.js';
 import { animateEnemyBoar } from './wildlife-anim.js';
 import { animateSerpent } from './serpent.js';
+import { stoneTick, updateHead } from '../systems/medusa-head.js';
 import { initMedusa, medusaThink, animateMedusa, updateMedusaFx } from './medusa.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
@@ -281,6 +282,7 @@ function updateEnemy(e, dt) {
     }
   }
 
+  if (stoneTick(e, dt)) { e.vx = e.vz = 0; e.g.position.set(e.x, groundY(e.x, e.z), e.z); return; }   // estátua: não age nem anima
   const dx = P.x - e.x, dz = P.z - e.z;
   const c = {
     dx, dz, bo,
@@ -308,6 +310,7 @@ function updateEnemy(e, dt) {
 /** Atualiza todos os inimigos e remove os mortos (agendando o reaparecimento) */
 export function updateEnemies(dt) {
   updateMedusaFx(dt);   // veneno da Medusa e fim da petrificação
+  updateHead(dt);       // cabeça da Medusa: recarga e efeito do cone
   enemies.forEach(e => updateEnemy(e, dt));
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].dead > 1.2) {
