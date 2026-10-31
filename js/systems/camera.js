@@ -44,5 +44,6 @@ export function updateCamera(dt) {
   cam.lookAt(rig.x + sx, rig.y + 1.2 * (1 - zoom), rig.z + sz);
 
   torch.position.set(P.x, rig.y + 4, P.z);
-  torch.visible = !!(P.torchM && P.torchM.visible);   // o personagem não tem luz própria: só ilumina o caminho com a tocha na mão
+  torch.visible = !!(P.torchM && P.torchM.visible);
+  if (state.vehLamp) { torch.position.copy(state.vehLamp); torch.visible = true; torch.distance = 34; torch.intensity = 1.7; }   // lanternas da carroça/carruagem (vehicle.js)   // o personagem não tem luz própria: só ilumina o caminho com a tocha na mão
 }

@@ -9,7 +9,7 @@ import { groundY, slideTo } from '../world/terrain.js';
 import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
 import { updateDoors, applyDoorReach, exitClick, enterClick, doorBusy } from '../world/doors.js';
-import { VILLAGE_R } from '../core/village-const.js';
+import { VILLAGE_R, rideOk } from '../core/village-const.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
 import { props } from '../core/registry.js';
@@ -50,9 +50,9 @@ export function updatePlayer(dt) {
     else if (petting()) updatePet(dt);           // ajoelhado acariciando um gato
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
     else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
-    else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
+    else if (MOUNT.on) { const sp0 = P.sp, px = P.x, pz = P.z; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; streetClamp(px, pz); }   // montado: ~2× mais rápido
     else if (VEH.on && (VEH.dis || VEH.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo da boleia (vehicle.js)
-    else if (VEH.on) { const sp0 = P.sp, px = P.x, pz = P.z; P.sp *= vehMult(); moveAndAct(dt); P.sp = sp0; vehTurn(dt, px, pz); }   // conduzindo carroça/carruagem: curva aberta
+    else if (VEH.on) { const sp0 = P.sp, px = P.x, pz = P.z; P.sp *= vehMult(); moveAndAct(dt); P.sp = sp0; vehTurn(dt, px, pz); streetClamp(px, pz); }   // conduzindo carroça/carruagem: curva aberta
     else { moveAndAct(dt); stuckWatch(dt); }
   }
 
@@ -104,6 +104,12 @@ function applyAim() {
   P.g.eyeL.scale.y = 1 - .88 * e;
 }
 
+/** Montado dentro da vila: só pelas ruas de pedra (desliza pela beira da rua em vez de entrar no gramado ou nas casas) */
+function streetClamp(px, pz) {
+  if (rideOk(P.x, P.z)) return;
+  if (rideOk(P.x, pz)) P.z = pz; else if (rideOk(px, P.z)) P.x = px; else { P.x = px; P.z = pz; P.vx = P.vz = 0; }
+}
+
 /** Preso? Quer andar mas não sai do lugar: refaz o caminho pela porta/escada; se não der, para em vez de forçar a parede */
 const SW = { x: 0, z: 0, t: 0, n: 0 };
 function stuckWatch(dt) {
@@ -129,7 +135,7 @@ function moveAndAct(dt) {
 
   if (!P.tgt && (P.tx !== STEER.gx || P.tz !== STEER.gz)) {
     // destino novo: tira de dentro de obstáculos e zera o controle de progresso
-    if (!STAIR.on && !P.up && !doorBusy() && !exitClick(P.tx, P.tz)) enterClick(P.tx, P.tz);   // dentro de casa e destino fora (clique, conversa, auto): vai antes à porta, nunca atravessa a parede; fora e destino dentro: vai ao tile da porta, abre e entra
+    if (!MOUNT.on && !VEH.on && !STAIR.on && !P.up && !doorBusy() && !exitClick(P.tx, P.tz)) enterClick(P.tx, P.tz);   // dentro de casa e destino fora (clique, conversa, auto): vai antes à porta, nunca atravessa a parede; fora e destino dentro: vai ao tile da porta, abre e entra
     if (!STAIR.on && !doorBusy()) { const sn = snapInterior(P.x, P.z, P.tx, P.tz); if (sn === null) { P.tx = P.x; P.tz = P.z; } else if (sn) { P.tx = sn[0]; P.tz = sn[1]; } else { const f = freePoint(P.tx, P.tz, .7); P.tx = f.x; P.tz = f.z; } }   // (o ponto da escada não é movido)
     STEER.gx = P.tx; STEER.gz = P.tz; STEER.bd = 1e9; STEER.bt = 0; STEER.path = null;   // destino novo: refaz o caminho (senão seguia o caminho antigo)
   }
@@ -143,7 +149,7 @@ function moveAndAct(dt) {
   if (!(d > rng)) VIZ.wp = null;
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
-    setSwim(true);
+    setSwim(!VEH.on); STEER.veh = VEH.on ? 2 : MOUNT.on ? 1 : 0;   // conduzindo: nada de atravessar rio a nado — vai pelas estradas e pontes
     setMapped(!!mapAt(P.x, P.z));
     const br = bodyR(P.x, P.z);   // mesmo raio da colisão (clampToWorld)
     const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, br);
@@ -217,7 +223,7 @@ function clampToWorld() {
   });
   if (mh) [P.x, P.z] = pushOut(mh, P.up ? 1 : 0, P.x, P.z, BODY_IN);
   // mar e paredões: desliza pela margem ou volta ao último ponto firme
-  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z, true);
+  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z, !VEH.on);   // veículo não entra na água
   lastX = P.x; lastZ = P.z;
 }
 
@@ -287,7 +293,7 @@ function animate(dt) {
   const busy = gn || P.sw > 0 || P.swap;
   gait(P.g, dt, gaitSpeed(P.walk * P.sp), { twist: busy ? 0 : 1, armL: !gn && !P.swap && !(P.torchM && P.torchM.visible), head: !W.big, gun: gn, sword: !busy });
   if (P.torchM) {   // com arma de 2 mãos na mão a tocha some (o braço livre ajuda a mirar)
-    const on = torchLit();   // tocha guardada de dia em locais iluminados (vila e casas); à noite fica acesa
+    const on = torchLit();   // (na boleia a tocha fica guardada: as lanternas do veículo iluminam) · tocha guardada de dia em locais iluminados (vila e casas); à noite fica acesa
     if (P.torchM.visible !== on) { P.torchM.visible = on; refreshTorch(); }
   }
   if (P.torchM && P.torchM.visible && !P.swap) {   // braço da tocha: erguido, balança pouco

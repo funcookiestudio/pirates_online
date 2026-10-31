@@ -10,9 +10,10 @@ import { buildCart, buildCoach, PAINTS } from '../entities/vehicles.js';
 import { animHorse } from '../entities/horse.js';
 import { K } from '../entities/human.js';
 import { groundY, slideTo, walkable } from '../world/terrain.js';
+import { isDark, refreshTorch } from './inventory.js';
 import { freePoint } from './steer.js';
 import { dIn } from '../dungeon/dgrid.js';
-import { VILLAGE_R } from '../core/village-const.js';
+import { VILLAGE_R, rideOk } from '../core/village-const.js';
 import { puff } from './effects.js';
 import { log } from '../ui/notify.js';
 import { state } from '../core/state.js';
@@ -141,8 +142,8 @@ export function loadVeh(s) {
   VEH.paint = Math.max(0, Math.min(PAINTS.length - 1, s.p | 0));
 }
 
-const canDrive = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && Math.hypot(P.x, P.z) > VILLAGE_R + 1 && !P.sit && !P.sitT && P.roll <= 0 && !MOUNT.on;
-const inVillage = () => Math.hypot(P.x, P.z) <= VILLAGE_R + 1;
+const canDrive = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && rideOk(P.x, P.z) && !P.sit && !P.sitT && P.roll <= 0 && !MOUNT.on;   // na vila: só nas ruas
+const inVillage = (x = P.x, z = P.z) => Math.hypot(x, z) <= VILLAGE_R + 1;
 
 /** Ponto do chão, ao lado da boleia, de onde se sobe/desce (o outro lado, se este estiver bloqueado) */
 function sidePoint(k) {
@@ -156,7 +157,7 @@ function sidePoint(k) {
 
 function board(k) {
   const o = M[k];
-  VEH.on = k; VEH.t = 0; VEH.dis = false; VEH.want = false; P.mounted = true;
+  VEH.on = k; VEH.t = 0; VEH.dis = false; VEH.want = false; P.mounted = true; state.inVeh = true; refreshTorch();   // a tocha vai para a cintura
   VEH.sx = P.g.position.x; VEH.sy = P.g.position.y; VEH.sz = P.g.position.z; VEH.syaw = P.g.rotation.y;
   P.x = P.tx = o.x; P.z = P.tz = o.z; P.tgt = null; P.vx = P.vz = 0;
   VEH.hd = Math.atan2(o.x - o.ax, o.z - o.az);
@@ -174,7 +175,7 @@ export function startLeave() {
 const outYaw = k => M[k].yaw + (M[k].m.exit.x > 0 ? 1 : -1) * Math.PI / 2;
 function finishLeave() {
   const k = VEH.on;
-  VEH.on = false; VEH.dis = false; VEH.t = 0; P.mounted = false; P.mountK = 0;
+  VEH.on = false; VEH.dis = false; VEH.t = 0; P.mounted = false; P.mountK = 0; state.inVeh = false; state.vehLamp = null; refreshTorch();
   P.x = P.tx = VEH.sx; P.z = P.tz = VEH.sz;
   P.g.rotation.x = 0; P.g.rotation.y = outYaw(k);
   resetPose();
@@ -203,9 +204,11 @@ export function vehToggle(auto) {
   if (auto === true || !k || P.dead) return;   // o auto play e o fôlego só chamam o cavalo
   const N = VKIND[k].n;
   if (!VEH.on && (P.sit > 0 || P.sitT)) { standUp(); VEH.pending = true; return; }
-  if (VEH.on) { if (VEH.dis || VEH.t < 1 || inVillage()) return; P.tgt = null; startLeave(); return; }
-  if (!canDrive()) { log('Chame a ' + N + ' fora da vila, em terra firme'); return; }
+  if (VEH.on) { if (VEH.dis || VEH.t < 1) return; P.tgt = null; startLeave(); return; }
+  if (!canDrive()) { log('Aqui não dá: suba em terra firme (na vila, só pelas ruas)'); return; }
   const o = ensure(k);
+  if (inVillage() && (!o.m.root.visible || Math.hypot(o.x - P.x, o.z - P.z) > 16)) { log('Para chamar a ' + N + ', saia da vila (dentro dela ela só anda pelas ruas com você na boleia)'); return; }
+  if (o.m.root.visible && inVillage(o.x, o.z) && !inVillage() && Math.hypot(o.x - P.x, o.z - P.z) > 16) o.m.root.visible = false;   // ficou parada na vila: aparece perto do jogador (não atravessa as casas)
   if (!o.m.root.visible) {   // estava no estábulo: chega perto do jogador
     const a = P.g.rotation.y + Math.PI;
     park(k, P.x + Math.sin(a) * 9, P.z + Math.cos(a) * 9, P.g.rotation.y);
@@ -222,7 +225,7 @@ export function vehToggle(auto) {
 export function vehDismiss() {
   const k = activeVeh();
   if (!k || !M[k]) return;
-  if (VEH.on) { if (inVillage()) return; leaveNow(); }
+  if (VEH.on) leaveNow();
   VEH.want = false; M[k].st = 'park';
   if (!M[k].m.root.visible) return;
   puff(M[k].x, 1, M[k].z, 0xd8c8a0, 4, 3);
@@ -238,7 +241,6 @@ export function updateVehicle(dt) {
     if (P.dead) { leaveNow(); return; }
     if (P.swimming) { leaveNow('A ' + N + ' não anda na água: você desceu'); return; }
     if (dIn(P.x, P.z)) { leaveNow(); return; }
-    if (Math.hypot(P.x, P.z) <= VILLAGE_R + .5) { leaveNow('Veículos ficam do lado de fora da vila'); return; }
     if (VEH.dis) { VEH.t = Math.max(0, VEH.t - dt / LEAVE_T); if (VEH.t === 0) finishLeave(); }
     else if (VEH.t < 1) VEH.t = Math.min(1, VEH.t + dt / BOARD_T);
   }
@@ -287,9 +289,11 @@ export function vehTurn(dt, px, pz) {
   const diff = wrap(a - VEH.hd), mx = VKIND[VEH.on].turn * dt * (1 + 1.5 / (1 + d / Math.max(dt, 1e-3)));
   if (Math.abs(diff) > mx) {
     a = VEH.hd + Math.sign(diff) * mx;
-    const [nx, nz] = slideTo(px, pz, px + Math.sin(a) * d, pz + Math.cos(a) * d, true);
-    P.x = nx; P.z = nz;
-    const sp = Math.hypot(P.vx, P.vz); P.vx = Math.sin(a) * sp; P.vz = Math.cos(a) * sp;
+    const nx = px + Math.sin(a) * d, nz = pz + Math.cos(a) * d;
+    if (walkable(nx, nz) && rideOk(nx, nz)) {   // curva aberta só se couber (beira de rio, cabeceira de ponte: segue o caminho mesmo fechando mais)
+      P.x = nx; P.z = nz;
+      const sp = Math.hypot(P.vx, P.vz); P.vx = Math.sin(a) * sp; P.vz = Math.cos(a) * sp;
+    } else a = Math.atan2(dx, dz);
   }
   VEH.hd = a;
 }
@@ -326,6 +330,9 @@ export function vehiclePose(dt) {
   };
   ar(g.arm, 1, pull);
   if (!torch) ar(g.armL, -1, -pull);
+  // lanternas acesas no escuro: a luz do jogador vai para elas
+  if (isDark() && k2 > .5) { m.lamps[0].updateWorldMatrix(true, false); const q = m.lamps.length > 1 ? m.lamps[0].position.clone().add(m.lamps[1].position).multiplyScalar(.5) : m.lamps[0].position.clone(); state.vehLamp = (state.vehLamp || new V3()).copy(m.lamps[0].parent.localToWorld(q)); state.vehLamp.y += 1.2; }
+  else state.vehLamp = null;
   // passageiros da carruagem
   m.pass.forEach((p, i) => {
     p.visible = u > .5;

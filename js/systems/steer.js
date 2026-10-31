@@ -1,6 +1,6 @@
 /* Navegação simples: desvia de árvores, pedras, casas e muralha, e não fica preso em cantos.
    steer() gira a direção desejada para o ângulo livre mais próximo; collide() empurra para fora dos obstáculos. */
-import { VILLAGE_R } from '../core/village-const.js';
+import { VILLAGE_R, rideOk } from '../core/village-const.js';
 import { props } from '../core/registry.js';
 import { dIn, dPath } from '../dungeon/dgrid.js';
 import { houseNear, houseAt } from '../world/floors.js';
@@ -19,7 +19,7 @@ export const BODY_IN = .3;
     (navTarget/steer) usam o mesmo valor, senão o plano passa por vãos em que o corpo real não cabe e o personagem trava nas quinas */
 export const bodyR = (x, z) => houseNear(x, z, .3) ? BODY_IN : .5;
 /** Memória de navegação do jogador (lado escolhido, caminho, pontos onde travou) */
-export const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas)
+export const STEER = { side: 0, road: true };   // road: viagens longas seguem o caminho de menor custo (estradas) · veh: 1 montado, 2 carroça/carruagem
 
 /** Depuração do auto (mostrada junto do FPS): o que ele está tentando fazer agora */
 export const AUTODBG = { why: '-', stuck: 0 };
@@ -82,7 +82,7 @@ export function collide(q, r) {
 
 // ---------- caminho (A*) em grade, para contornar construções, muralha e aglomerados ----------
 const N = 340, ORG = -170;   // cobre a ilha inteira (±150 m) com folga
-let grid = null, gridN = -1, cost = null, hgt = null;
+let grid = null, gridN = -1, cost = null, hgt = null, road = null, vblk = null;
 const cell = v => Math.floor(v - ORG);
 /** Obriga a recalcular a grade (colisões de andar mudaram) */
 export function invalidateGrid() { gridN = -1; }
@@ -91,12 +91,15 @@ function buildGrid() {
   grid = new Uint8Array(N * N);
   cost = new Uint8Array(N * N).fill(10);          // custo por célula (décimos): estrada barata, perto de obstáculo caro
   hgt = new Float32Array(N * N);
+  road = new Uint8Array(N * N);                  // estrada ou ponte (veículos quase só andam por elas)
+  vblk = new Uint8Array(N * N);                  // dentro da vila, fora das ruas: montado não passa
   gridN = props.length;
   for (let cz = 0; cz < N; cz++) for (let cx = 0; cx < N; cx++) {
     const x = cx + ORG + .5, z = cz + ORG + .5, k = cz * N + cx;
     hgt[k] = heightAt(x, z);
+    if (!rideOk(x, z, -.3)) vblk[k] = 1;
     if (!walkable(x, z) || nearObstacle(x, z, .5)) grid[k] = 1;      // vegetação com folga para o corpo
-    else if (roadAt(x, z)) cost[k] = 4;
+    else if (roadAt(x, z)) { cost[k] = 4; road[k] = 1; }
     else if (nearObstacle(x, z, 1.6)) cost[k] = 16;
   }
   // folga em volta de paredes, encostas, água e árvores: caminho prefere ficar longe da borda (custo extra perto dela)
@@ -197,9 +200,10 @@ function localPath(sx, sz, gx, gz, r, strict) {
 }
 
 /** A* de (sx,sz) até (gx,gz); devolve lista de pontos [x,z] suavizada, ou null */
-function findPath(sx, sz, gx, gz, r, bad) {
+/** veh: 0 a pé · 1 a cavalo (na vila só pelas ruas) · 2 carroça/carruagem (também prefere estradas e pontes) */
+function findPath(sx, sz, gx, gz, r, bad, veh) {
   if (dIn(sx, sz)) return dPath(sx, sz, gx, gz, bad);      // dentro da dungeon: caminho pela grade (destino em parede/inalcançável vai ao piso mais perto)
-  if (houseNear(sx, sz) || houseNear(gx, gz)) {   // casas: grade fina de 25 cm
+  if (!veh && (houseNear(sx, sz) || houseNear(gx, gz))) {   // casas: grade fina de 25 cm
     // 1º com o raio real do corpo (o mesmo da colisão): vãos estreitos nas quinas ficam fechados; 2º, se não houver caminho completo, com folga menor
     const lp = localPath(sx, sz, gx, gz, r, true) || localPath(sx, sz, gx, gz, Math.min(r, .42));
     if (lp) return lp;
@@ -227,9 +231,10 @@ function findPath(sx, sz, gx, gz, r, bad) {
     for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
       if (!dx && !dz) continue;
       const x = cx + dx, z = cz + dz;
-      if (x < 0 || z < 0 || x >= N || z >= N || grid[z * N + x]) continue;
+      if (x < 0 || z < 0 || x >= N || z >= N || grid[z * N + x] || (veh && vblk[z * N + x] && !vblk[c])) continue;   // montado: não sai da rua para dentro da vila
       // diagonais livres: o corpo cabe em quinas de 1 célula
-      const n = z * N + x, ng = gS[c] + (dx && dz ? 1.414 : 1) * cost[n] / 10 + Math.abs(hgt[n] - hgt[c]) * 3 + (pen.get(n) || 0) / 10;
+      const n = z * N + x, cn = veh === 2 ? (road[n] ? 3 : cost[n] * 3) : cost[n];   // veículo: estrada/ponte bem mais barata que o campo
+      const ng = gS[c] + (dx && dz ? 1.414 : 1) * cn / 10 + Math.abs(hgt[n] - hgt[c]) * 3 + (pen.get(n) || 0) / 10;
       if (ng < gS[n]) { gS[n] = ng; from[n] = c; const h = Math.max(Math.abs(x - gxc), Math.abs(z - gzc)) + .414 * Math.min(Math.abs(x - gxc), Math.abs(z - gzc)); push([ng + h * .45, n]); }
     }
   }
@@ -248,13 +253,20 @@ function findPath(sx, sz, gx, gz, r, bad) {
     for (; j > i; j--) {
       const dx = pts[j][0] - cur[0], dz = pts[j][1] - cur[1];
       if (Math.hypot(dx, dz) > 7 && j > i + 1) continue;    // atalhos curtos: não corta o traçado das estradas
-      if (clear(cur[0], cur[1], Math.atan2(dx, dz), Math.hypot(dx, dz), r + .3)) break;
+      if (clear(cur[0], cur[1], Math.atan2(dx, dz), Math.hypot(dx, dz), r + .3) && (!veh || streetSeg(cur[0], cur[1], pts[j][0], pts[j][1]))) break;
     }
     out.push(pts[j]);
     cur = pts[j];
     i = j + 1;
   }
   return out;
+}
+
+/** Segmento inteiro dentro das ruas (ou fora da vila)? */
+function streetSeg(ax, az, bx, bz) {
+  const L = Math.hypot(bx - ax, bz - az), n = Math.ceil(L / .5);
+  for (let i = 0; i <= n; i++) { const u = i / n; if (!rideOk(ax + (bx - ax) * u, az + (bz - az) * u, -.2)) return false; }
+  return true;
 }
 
 /**
@@ -265,11 +277,12 @@ function findPath(sx, sz, gx, gz, r, bad) {
 export const VIZ = { wp: null };   // próximo ponto de passagem (para a linha de rota dos ajustes)
 export function navTarget(mem, x, z, gx, gz, r, now) {
   const d = Math.hypot(gx - x, gz - z);
-  if (d < .5 || (!(mem.road && d > 14) && clear(x, z, Math.atan2(gx - x, gz - z), d, r))) { mem.path = null; return [gx, gz]; }
+  if (d < .5 || (!(mem.road && d > 14) && clear(x, z, Math.atan2(gx - x, gz - z), d, r) && (!mem.veh || streetSeg(x, z, gx, gz)))) { mem.path = null; return [gx, gz]; }
   const t = now || performance.now();
-  if (!mem.path || Math.hypot(mem.gx - gx, mem.gz - gz) > 2.5 || (!mem.road && t - mem.pt > 1200)) {
+  if (!mem.path || mem.pv !== !!mem.veh || Math.hypot(mem.gx - gx, mem.gz - gz) > 2.5 || (!mem.road && t - mem.pt > 1200)) {
+    mem.pv = !!mem.veh;
     if (mem.bad) mem.bad = mem.bad.filter(b => t - b[2] < 25000);   // pontos de travamento expiram com o tempo (a quina continua ruim mesmo se o destino mudar)
-    mem.path = findPath(x, z, gx, gz, r, mem.bad);
+    mem.path = findPath(x, z, gx, gz, r, mem.bad, mem.veh);
     mem.gx = gx; mem.gz = gz; mem.pt = t;
   }
   if (!mem.path) return [gx, gz];

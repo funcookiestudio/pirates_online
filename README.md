@@ -26,7 +26,7 @@ python3 -m http.server 8000     # depois abra http://localhost:8000
 | Sentar / levantar (teste da animação) | `G` |
 | Companheiro ataca / só coleta | `R` |
 | Auto combate | `T` |
-| Montaria: chamar / subir / descer (cavalo, carroça ou carruagem, escolhida no estábulo) | `H` · `Shift+H` dispensa |
+| Montaria: chamar / subir / descer (cavalo, carroça ou carruagem, escolhida no estábulo; na vila, só pelas ruas) | `H` · `Shift+H` dispensa |
 | Personagem, mochila e companheiros | `I` (ou `C`) · `Esc` fecha |
 | Acariciar / dar petisco / adotar | Clique no gato ou cachorro (ou no seu companheiro adotado) |
 
@@ -71,7 +71,7 @@ js/
     input.js          Mouse/toque, teclado e botões
     camera.js         Câmera que segue o jogador
     mount.js          Montaria (cavalo): chamar, montar, fôlego
-    vehicle.js        Carroça e carruagem: compra no estábulo, chamar, subir na boleia e conduzir (reboque com curva aberta)
+    vehicle.js        Carroça e carruagem: compra no estábulo, chamar, subir na boleia e conduzir (reboque com curva aberta; prefere estradas e pontes, não entra na água; lanternas acendem no escuro)
     effects.js        Partículas
     bond.js           Vínculo com cães e gatos da ilha: carinho, petisco, adoção e humor
     pet.js            Acariciar e dar petisco (animação do jogador)

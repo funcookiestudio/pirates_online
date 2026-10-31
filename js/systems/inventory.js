@@ -181,7 +181,7 @@ let DARK = false;
 export function isDark() { if (DG.on) return true; const d = (.85 - hemi.intensity) / .55; DARK = DARK ? d > .25 : d > .5; return DARK; }
 /** Tocha acesa na mão: não com arma de 2 mãos; só no escuro (noite, dungeon, tempestade) — de dia fica guardada.
     Ajuste do auto: Automática (1) · Sempre acesa (2) · Nunca (0) */
-export const torchLit = () => { const m = state.autoCfg.torch; return m !== 0 && !WEAPONS[P.wid].big && (m === 2 || isDark()); };
+export const torchLit = () => { const m = state.autoCfg.torch; return m !== 0 && !state.inVeh && !WEAPONS[P.wid].big && (m === 2 || isDark()); };   // na boleia: as lanternas do veículo iluminam
 export function refreshTorch() {
   const has = isTorch(eq.off);
   mountTorch(has ? eq.off.w : null);
