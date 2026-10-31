@@ -4,12 +4,13 @@ import { updateBedPending, animateBed, sleeping } from './bed.js';
 import { refreshTorch, torchLit, beltTick } from './inventory.js';
 import { snapInterior, interiorWaypoint } from '../world/interior-nav.js';
 import { houseNear, houseAt, descendThen, upperContains } from '../world/floors.js';
-import { VIZ, STEER, BODY_IN, bodyR, steer, navTarget, markStuck, freePoint, setSwim } from './steer.js';
+import { VIZ, STEER, BODY_IN, bodyR, steer, navTarget, markStuck, freePoint, setSwim, setMounted } from './steer.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { STAIR, floorOffset, stairTick, stairMove, updateCutaway } from '../world/floors.js';
 import { dIn } from '../dungeon/dgrid.js';
 import { updateDoors, applyDoorReach, exitClick, enterClick, doorBusy } from '../world/doors.js';
 import { VILLAGE_R, rideOk } from '../core/village-const.js';
+import { riverWet } from '../world/terrain.js';
 import { updateSwimState, swimPose } from './swim.js';
 import { state } from '../core/state.js';
 import { props } from '../core/registry.js';
@@ -106,8 +107,9 @@ function applyAim() {
 
 /** Montado dentro da vila: só pelas ruas de pedra (desliza pela beira da rua em vez de entrar no gramado ou nas casas) */
 function streetClamp(px, pz) {
-  if (rideOk(P.x, P.z)) return;
-  if (rideOk(P.x, pz)) P.z = pz; else if (rideOk(px, P.z)) P.x = px; else { P.x = px; P.z = pz; P.vx = P.vz = 0; }
+  const ok = (x, z) => rideOk(x, z) && !riverWet(x, z);   // rio, mesmo raso, só pelas pontes
+  if (ok(P.x, P.z)) return;
+  if (ok(P.x, pz)) P.z = pz; else if (ok(px, P.z)) P.x = px; else { P.x = px; P.z = pz; P.vx = P.vz = 0; }
 }
 
 /** Preso? Quer andar mas não sai do lugar: refaz o caminho pela porta/escada; se não der, para em vez de forçar a parede */
@@ -149,14 +151,14 @@ function moveAndAct(dt) {
   if (!(d > rng)) VIZ.wp = null;
   let wx = d > 1e-4 ? dx / d * want : 0, wz = d > 1e-4 ? dz / d * want : 0;
   if (want > 0) {
-    setSwim(!VEH.on); STEER.veh = VEH.on ? 2 : MOUNT.on ? 1 : 0;   // conduzindo: nada de atravessar rio a nado — vai pelas estradas e pontes
+    setSwim(!VEH.on && !MOUNT.on); STEER.veh = VEH.on ? 2 : MOUNT.on ? 1 : 0; setMounted(!!STEER.veh);   // conduzindo: nada de atravessar rio a nado — vai pelas estradas e pontes
     setMapped(!!mapAt(P.x, P.z));
     const br = bodyR(P.x, P.z);   // mesmo raio da colisão (clampToWorld)
     const [nx, nz] = (!STAIR.on && interiorWaypoint(P.x, P.z, tx, tz)) || navTarget(STEER, P.x, P.z, tx, tz, br);
     VIZ.wp = [nx, nz]; VIZ.path = STEER.path;
     const nd = Math.hypot(nx - P.x, nz - P.z) || 1;
     [wx, wz] = steer(P.x, P.z, (nx - P.x) / nd * want, (nz - P.z) / nd * want, br, STEER, Math.min(nd, d - rng));
-    setSwim(false); setMapped(false);
+    setSwim(false); setMapped(false); setMounted(false);
   }
   const k = 1 - Math.exp(-dt * (want > Math.hypot(P.vx, P.vz) ? 6 : 9));
   P.vx += (wx - P.vx) * k;
@@ -223,7 +225,7 @@ function clampToWorld() {
   });
   if (mh) [P.x, P.z] = pushOut(mh, P.up ? 1 : 0, P.x, P.z, BODY_IN);
   // mar e paredões: desliza pela margem ou volta ao último ponto firme
-  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z, !VEH.on);   // veículo não entra na água
+  [P.x, P.z] = slideTo(lastX, lastZ, P.x, P.z, !VEH.on && !MOUNT.on);   // montado não entra na água
   lastX = P.x; lastZ = P.z;
 }
 

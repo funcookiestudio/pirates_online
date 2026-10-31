@@ -4,11 +4,14 @@ import { VILLAGE_R, rideOk } from '../core/village-const.js';
 import { props } from '../core/registry.js';
 import { dIn, dPath } from '../dungeon/dgrid.js';
 import { houseNear, houseAt } from '../world/floors.js';
-import { walkable, swimmable, nearObstacle, roadAt, heightAt } from '../world/terrain.js';
+import { walkable, swimmable, nearObstacle, roadAt, heightAt, riverWet } from '../world/terrain.js';
 
 /** O jogador pode passar por água (nadar); inimigos e pets não */
 let SW = false;
 export const setSwim = v => { SW = v; };
+/** Montado/conduzindo: o desvio local também evita rio (vau) */
+let MOUNTED = false;
+export const setMounted = v => { MOUNTED = v; };
 /** Jogador dentro de casa com mapa de retângulos: o desvio ignora os círculos antigos da casa */
 let MAPPED = false;
 export const setMapped = v => { MAPPED = v; };
@@ -33,7 +36,7 @@ function clear(x, z, a, len, r) {
   const ds = dIn(x, z) ? .2 : .5;   // na dungeon amostra mais fino: com 0,5 m a reta raspava nas quinas das paredes sem ser vista
   for (let t = ds; t < len + ds; t += ds) {
     const px = x + dx * Math.min(t, len), pz = z + dz * Math.min(t, len);
-    if (!(SW ? swimmable : walkable)(px, pz) || nearObstacle(px, pz, r)) return false;
+    if (!(SW ? swimmable : walkable)(px, pz) || nearObstacle(px, pz, r) || (MOUNTED && riverWet(px, pz))) return false;
   }
   const mg = houseNear(x, z) ? .03 : .15;   // dentro de casa a folga é menor (corredores e portas estreitos)
   for (let i = 0; i < props.length; i++) {
@@ -97,7 +100,7 @@ function buildGrid() {
   for (let cz = 0; cz < N; cz++) for (let cx = 0; cx < N; cx++) {
     const x = cx + ORG + .5, z = cz + ORG + .5, k = cz * N + cx;
     hgt[k] = heightAt(x, z);
-    if (!rideOk(x, z, -.3)) vblk[k] = 1;
+    if (!rideOk(x, z, -.3) || riverWet(x, z)) vblk[k] = 1;   // montado: fora das ruas da vila e dentro de rio/vau não passa
     if (!walkable(x, z) || nearObstacle(x, z, .5)) grid[k] = 1;      // vegetação com folga para o corpo
     else if (roadAt(x, z)) { cost[k] = 4; road[k] = 1; }
     else if (nearObstacle(x, z, 1.6)) cost[k] = 16;
@@ -141,7 +144,7 @@ function nearestFree(cx, cz) {
 }
 
 /** (teste) caminho calculado */
-export const pathTo = (sx, sz, gx, gz, r = .5) => findPath(sx, sz, gx, gz, r);
+export const pathTo = (sx, sz, gx, gz, r = .5, veh = 0) => findPath(sx, sz, gx, gz, r, null, veh);
 
 /** Caminho fino (células de 25 cm) para dentro e em volta de casas: enxerga paredes, móveis e portas de verdade */
 function localPath(sx, sz, gx, gz, r, strict) {

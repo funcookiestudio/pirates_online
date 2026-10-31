@@ -174,6 +174,12 @@ export function waterLevel(x, z) {
   return SEA;
 }
 
+/** Água doce (rio/lago) cobrindo o chão em (x,z), mesmo rasa (vau)? Cavalo e veículos não atravessam: vão pelas pontes. Convés de ponte conta como seco. */
+export function riverWet(x, z) {
+  if (!H || dIn(x, z)) return false;
+  return waterLevel(x, z) > SEA + .01 && waterDepth(x, z) > .05;
+}
+
 /** Profundidade da água sobre o chão em (x,z) (≤ 0 = seco). Em cima de ponte conta como seco. */
 export function waterDepth(x, z) {
   if (dIn(x, z)) return -99;
