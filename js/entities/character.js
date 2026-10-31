@@ -3,6 +3,7 @@ import { makeAnimal } from './wildlife-anim.js';
 import { buildHuman, buildSkeleton, SKM, SKF, PJM, PJF, hideSword } from './human.js';
 import { resolveLook } from './look.js';
 import { makeMedusa } from './medusa-model.js';
+import { makeSerpent } from './serpent.js';
 export { hideSword };
 
 /**
@@ -34,6 +35,7 @@ export function playerModel(female, look) {
 /** Inimigo do tipo `t` (ENEMY_KINDS): esqueletos usam o esqueleto; os demais, humanos pintados com as cores do tipo */
 export function enemyModel(t) {
   if (t.medusa) { const M = makeMedusa(); M.g.userData.MD = M; return M.g; }   // Medusa: modelo próprio de 2 fases (medusa-model.js)
+  if (t.snake) return makeSerpent();   // serpente: as cobras do cabelo da Medusa, em tamanho grande (serpent.js)
   if (t.animal) { const A = makeAnimal(t.animal); A.g.userData.A = A; return A.g; }   // javali: corpo de quadrúpede (wildlife-anim.js)
   const [sk, sh, pa, ht] = t.c;
   if (/Esqueleto/.test(t.n)) return buildSkeleton({ bone: sk, armor: /Guerreiro/.test(t.n) });

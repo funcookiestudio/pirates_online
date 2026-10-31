@@ -15,6 +15,7 @@ import { log } from '../ui/notify.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { enemyStats, ELITE, takenMult } from '../data/scaling.js';
 import { animateEnemyBoar } from './wildlife-anim.js';
+import { animateSerpent } from './serpent.js';
 import { initMedusa, medusaThink, animateMedusa, updateMedusaFx } from './medusa.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
@@ -54,6 +55,7 @@ export function spawn(k, x, z, pat, o = {}) {
     hs: 1, ar: -.4, af: -.3, ln: 0,           // barra suavizada e pose
     ph: Math.random() * 6, id: Math.floor(Math.random() * 2), // fase do passo e lado de flanco
     MD: g.userData.MD,            // Medusa: controle do modelo de 2 fases
+    SN: g.userData.SN,            // serpente: animação do corpo
   });
   if (t.medusa) initMedusa(enemies[enemies.length - 1]);
 }
@@ -69,6 +71,7 @@ function animateDeath(e, dt) {
   e.z += e.kz * dt;
   e.kx *= f;
   e.kz *= f;
+  if (e.SN) { e.g.rotation.z = 2.9 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) + .3 * Math.sin(u * Math.PI), e.z); return; }   // serpente: vira de barriga para cima
   if (e.A) { e.g.rotation.z = 1.45 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) - .05 * u, e.z); return; }   // quadrúpede tomba de lado
   e.g.rotation.x = 1.55 * (1 - Math.pow(1 - u, 3));
   e.g.position.set(e.x, groundY(e.x, e.z) - .12 * u, e.z);
@@ -206,8 +209,8 @@ function animate(e, c, dt) {
   else if (e.st === 'chase' && Math.hypot(e.vx, e.vz) > .3) turnTo(e.g, Math.atan2(e.vx, e.vz), 6, dt);
 
   const mv = Math.min(1, Math.hypot(e.vx, e.vz) / T.s);
-  if (e.MD) {   // Medusa: modelo e animação próprios (medusa.js)
-    animateMedusa(e, c, dt);
+  if (e.MD || e.SN) {   // Medusa e serpente: modelo e animação próprios (medusa.js, serpent.js)
+    if (e.MD) animateMedusa(e, c, dt); else animateSerpent(e, c, dt, groundY, turnTo, P);
     e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
     e.hb.scale.x = Math.max(.01, e.hs); e.hb.quaternion.copy(cam.quaternion); e.hb.parent.updateMatrixWorld();
     return;

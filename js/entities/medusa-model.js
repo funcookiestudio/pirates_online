@@ -212,7 +212,7 @@ function buildBody(hum) {
     [-1, 1].forEach(sx => { sk(.06, 1.0, .06, GOWN2, sx * .3, .55, -.47); sk(.06, .9, .06, GOWN2, sx * .58, .45, .1, 0, sx * .05); });   // pregas
     fuse(skirt, new Set());
     /* braceletes dourados e delineado */
-    [P.arm, P.armL].forEach(a => { const m = Bk(.46, .08, .5, .03, GOLD); m.position.set(0, -.12 * K, 0); a.add(m); const c = Bk(.38, .07, .42, .03, GOLD); c.position.set(0, -.32 * K, 0); a.fa.add(c); });
+    [P.arm, P.armL].forEach(a => { const m = Bk(.46, .08, .5, .03, GOLD); m.position.set(0, -.12 * K, 0); a.add(m); });
     [-1, 1].forEach(sx => { hbk(.16, .04, .04, DARK, sx * .44, .66, .54, 0, 0, sx * .45); hbk(.24, .03, .04, DARK, sx * .28, .69, .55); });
     /* capuz de pano: folgado em volta da cabeça, copa arredondada com a ponta caindo para trás, borda verde emoldurando o rosto */
     const FD = 0x2a2236, TR = 0x4f7a45;
@@ -243,7 +243,7 @@ function buildBody(hum) {
   }
   fuse(upDeco, new Set()); fuse(headDeco, new Set());
 
-  if (!hum) {
+  {   // cobras: as dos braços (garras) nas duas fases; cabelo e cauda só na serpente
     /* ── cobras (cabelo e braços) ── */
     const makeSnake = (parent, N, w0, w1, pal, fn, axis) => {
       const segs = [];
@@ -314,11 +314,13 @@ function buildBody(hum) {
     const holdFn = (y0, y1, T, ph0, dx) => {
       const fn = (s, t, o) => {
         const ang = T * 6.283 * s + ph0, r = lp(.33, .15, s), w = sm(.78, 1, s);
-        o.set(lp(r * Math.cos(ang), 0, w), lp(y0, y1, s) + .02 * Math.sin(t * 1.5 + s * 6) * (1 - w), lp(r * Math.sin(ang), .06, w)).multiplyScalar(K);
+        const k = (B.strike || 0) * sm(.6, 1, s);   // bote: a ponta sai do punho para a frente
+        o.set(lp(r * Math.cos(ang), 0, w), lp(y0, y1, s) + .02 * Math.sin(t * 1.5 + s * 6) * (1 - w) - .75 * k, lp(r * Math.sin(ang), .06, w) + .35 * k).multiplyScalar(K);
       };
       fn.st = { c: 0, w: 1, dir: new THREE.Vector3(dx, .25, 1).normalize() };
       return fn;
     };
+    if (!hum) {
     for (let i = 0; i < 13; i++) {
       const a = i / 13 * 6.283 + (rnd() - .5) * .3;
       const front = Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < .9, big = i % 3 === 0;
@@ -330,9 +332,12 @@ function buildBody(hum) {
     }
     for (let i = 0; i < 3; i++) hairSnake(P.head, 15, .26, .1, PAL[(i + 1) % PAL.length], crownFn(i * 2.1 + .7, .08, 1.0, .8 + rnd() * .3, 4.0 + rnd() * .8, rnd() < .5 ? 1 : -1, .1, rnd() * 6), i * 2.1 + .7, .62, .2, 3.0, i * .08, false);
     for (let i = 0; i < 6; i++) hairSnake(P.head, 17, .26, .1, PAL[i % PAL.length], drapeFn(3.14 + (i - 2.5) * .36, .5, .55 + rnd() * .15, .55 + rnd() * .35, 1.4 + rnd() * .9, .14 + rnd() * .08, rnd() * 6), 3.14 + (i - 2.5) * .36, 1.45, 1.15, 2.2, .12 + i * .04, false);
+    }
+    /* garras: cobras enroladas nos braços com a cabeça saindo do punho; no ataque dão o bote para a frente */
     makeSnake(P.armL, 12, .28, .14, PAL[0], holdFn(-.04, -.88, 1.5, .5, -.2), true);
     makeSnake(P.arm, 10, .24, .12, PAL[2], holdFn(-.3, -.88, 1.1, 0, .2), true);
 
+    if (!hum) {
     /* ── cauda: blocos alternando as 2 cores, seguindo a spline ── */
     const tg = new THREE.Group(), tm = [];
     for (let i = 0; i < TSEG; i++) { const w = tw((i + .5) / TSEG), m = bb(w, w * .88, 1, mn(.05, w * .18), PAL[0][i % 2]); tg.add(m); tm.push(m); }
@@ -367,6 +372,7 @@ function buildBody(hum) {
       }
     };
     B.tail(0, 0, 0);
+    }
   }
   return B;
 }
@@ -398,6 +404,7 @@ export function makeMedusa() {
     st.rage += ((I.rage || 0) - st.rage) * k;
     const walk_v = st.walk, rage_v = st.rage;
     B.AG = rage_v;
+    B.strike = lp(B.strike || 0, I.strike || 0, 1 - Math.exp(-dt * (I.strike ? 22 : 8)));
     st.gT += dt;
     st.slide += I.dist || 0; B.WPH = st.slide;
     st.animT += dt * (1.0 + rage_v * 1.8 + walk_v * .5);

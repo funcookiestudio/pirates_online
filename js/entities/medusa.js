@@ -143,7 +143,7 @@ export function animateMedusa(e, c, dt) {
     const u = 1 - Math.max(0, e.tm) / dur;
     if (e.slam) { I.rage = 1; I.lean = -.12 * u; }            // golpe de cauda: se ergue e agita as cobras
     else { I.arm = -.4 - u * 2.2; I.lean = -.15 * u; }         // garras erguidas
-  } else if (st === 'rec') { I.arm = e.slam ? null : .2; I.lean = e.slam ? .1 : .25; I.fast = true; }
+  } else if (st === 'rec') { I.arm = e.slam ? null : .2; I.lean = e.slam ? .1 : .25; I.fast = true; if (!e.slam) I.strike = 1; }   // cobras dos punhos dão o bote
   else if (st === 'stag') { I.arm = .5; I.lean = -.2; }
   else if (st === 'gaze') { I.glow = Math.min(1, (1 - e.tm / GAZE_T) * 1.3); I.rage = 1; I.lean = -.1; }
   else if (st === 'spit') { I.rage = 1; I.lean = -.18 * (1 - e.tm / SPIT_T); }

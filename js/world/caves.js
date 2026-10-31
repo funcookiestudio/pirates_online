@@ -79,7 +79,7 @@ function show(D) {
     '📐 ' + size,
     'Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
     g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : 'Tesouro espalhado pelo caminho',
-    (D.boss === 'medusa' ? '🐍 Chefe: Medusa (2 fases: humana e serpente)' : '☠ Chefe: Capitão Maldito') + ' · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
+    (D.boss === 'medusa' ? '🐍 Chefe: Medusa (2 fases: humana e serpente) · esqueletos e serpentes' : '☠ Chefe: Capitão Maldito') + ' · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
     '⚠ ' + perigo(df) + ' (você: Nv ' + P.lv + ')',
   ].map(t => '<div>' + t + '</div>').join('');
   $('cvp').style.display = 'block';

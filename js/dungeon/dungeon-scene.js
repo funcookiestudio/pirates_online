@@ -148,7 +148,7 @@ export function enterDungeon(D, gen) {
   const spots = [];
   if (gen.rooms.length) gen.rooms.forEach(r => { if (!r.start && !r.end && grid[r.cy * W + r.cx]) spots.push({ x: wx(r.cx), z: wz(r.cy), big: r.big, w: r.w, h: r.h }); });
   else for (let k = 0; k < W * H; k += 37) if (grid[k]) { const [x, z] = cellXZ(k); if (Math.hypot(x - sx, z - sz) > 16 && Math.hypot(x - ex, z - ez) > 12) spots.push({ x, z, w: 5, h: 5 }); }
-  const kinds = MOBS[D.theme], list = [];
+  const kinds = D.boss === 'medusa' ? [KIND.SKELETON, KIND.GUERREIRO, KIND.SERPENTE, KIND.SERPENTE] : MOBS[D.theme], list = [];   // covil da Medusa: esqueletos e serpentes
   spots.forEach(s => {
     const n = (s.big ? 4 : 2) + (R() < .5 ? 1 : 0) + (D.lv >= 20 ? 1 : 0) + (D.lv >= 40 ? 1 : 0);   // mais inimigos em dungeons de nível alto
     for (let q = 0; q < n; q++) {
