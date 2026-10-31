@@ -259,7 +259,8 @@ export function initInput() {
 function camButtons() {
   const wrap = document.createElement('div');
   wrap.id = 'camc';
-  wrap.style.cssText = 'position:fixed;left:10px;top:calc(env(safe-area-inset-top, 0px) + 58px);display:flex;flex-direction:column;align-items:flex-start;gap:6px;z-index:6;user-select:none;touch-action:manipulation';
+  // embaixo, no centro, logo acima da hotbar; os comandos abrem para cima
+  wrap.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom, 0px) + 132px);display:flex;flex-direction:column-reverse;align-items:center;gap:6px;z-index:6;user-select:none;touch-action:manipulation';
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,34px);gap:4px';
   const style = 'width:34px;height:34px;font-size:16px;line-height:1;color:#f0d890;background:#2a1a10cc;border:1px solid #a07838;border-radius:6px;cursor:pointer;padding:0';
@@ -283,3 +284,6 @@ function camButtons() {
   wrap.append(grid);
   document.body.append(wrap);
 }
+  // a hotbar muda de escala (fitHotbar) sem disparar resize, então a posição é conferida de tempos em tempos
+  const hb = $('hb'), place = () => { const r = hb.getBoundingClientRect(); if (r.height) { const v = Math.round(innerHeight - r.top + 6) + 'px'; if (wrap.style.bottom !== v) wrap.style.bottom = v; } };
+  addEventListener('resize', place); setInterval(place, 500); place();

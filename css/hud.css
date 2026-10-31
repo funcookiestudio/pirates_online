@@ -72,6 +72,8 @@
 }
 
 /* Botão da mochila */
+/* o botão de ajustes fica oculto; o painel continua acessível pelo menu do HUD */
+#menu { display: none; }
 #menu {
   position: absolute;
   top: calc(env(safe-area-inset-top, 0px) + 10px);
