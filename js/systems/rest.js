@@ -2,6 +2,7 @@
    Descer: dobra os joelhos → agacha e apoia a arma no chão, ao lado → apoia as mãos atrás e desliza até sentar.
    Subir: faz o caminho inverso (empurra com as mãos, pega a arma do chão, levanta). A arma fica sempre visível.
    P.sit vai de 0 (em pé) a 1 (sentado) em direção a P.sitT; trocar P.sitT no meio inverte suavemente. */
+import { VEH, startLeave } from './vehicle.js';
 import { P } from '../entities/player.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { gaitReset } from '../entities/gait.js';
@@ -37,6 +38,11 @@ export function sitDown() {
   if (MOUNT.on) {   // montado: desce do cavalo primeiro e senta ao terminar
     if (!MOUNT.dis && MOUNT.t >= 1) { P.tgt = null; startDismount(); }
     MOUNT.sitAfter = true;
+    return;
+  }
+  if (VEH.on) {     // na boleia: desce primeiro e senta ao terminar
+    if (!VEH.dis && VEH.t >= 1) { P.tgt = null; startLeave(); }
+    VEH.sitAfter = true;
     return;
   }
   P.sitT = 1; P.sitF = false;

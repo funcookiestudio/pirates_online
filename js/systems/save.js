@@ -9,6 +9,7 @@ import { PST } from '../pets/stats.js';
 import { setPet, unequipPet } from '../pets/manager.js';
 import { refreshPetButton } from '../ui/hotbar.js';
 import { MOUNT } from './mount.js';
+import { saveVeh, loadVeh } from './vehicle.js';
 import { SEED } from '../world/terrain.js';
 import { safeSpot } from './safe.js';
 import { getRent, setRent } from '../world/doors.js';
@@ -50,6 +51,7 @@ export function saveGame() {
       autoCfg: state.autoCfg,
       dunDone: state.dunDone,
       horse: MOUNT.owned ? 1 + MOUNT.coat : 0,
+      veh: saveVeh(),   // carroça/carruagem compradas, montaria da tecla H e pintura
       bond: saveBond(),
     }));
   } catch (e) { /* armazenamento indisponível: o jogo segue sem salvar */ }
@@ -93,6 +95,7 @@ export function loadGame() {
     });
 
     MOUNT.owned = !!s.horse; MOUNT.coat = Math.max(0, Math.min(2, (s.horse | 0) - 1));
+    loadVeh(s.veh);
     state.dunDone = s.dunDone && typeof s.dunDone === 'object' ? s.dunDone : {};
     state.petAttack = s.petAttack !== false;
     Object.keys(state.autoCfg).forEach(k => { if (s.autoCfg && typeof s.autoCfg[k] === typeof state.autoCfg[k]) state.autoCfg[k] = s.autoCfg[k]; });

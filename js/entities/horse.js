@@ -1,8 +1,8 @@
-/* Cavalo (modelo novo, blocos arredondados fundidos por parte). Usado na montaria (mount.js) e nos currais (farm.js).
+/* Cavalo (modelo novo, blocos arredondados fundidos por parte). Usado na montaria (mount.js), nos veículos (vehicles.js) e nos currais (farm.js).
    Expõe: g.HB (corpo), g.legs[4] (quadril, com .knee e .foot), g.neck, g.head, g.tail, g.tail2, g.earL, g.earR.
    Pelagens: 0 Castanho · 1 Preto · 2 Branco · 3 Palomino · 4 Pampa. Crinas: 0 da pelagem · 1 preta · 2 clara · 3 ruiva. */
 
-function bb(w, h, d, b, col) {
+export function bb(w, h, d, b, col) {
   const s = new THREE.Shape(), x = w / 2 - b, y = h / 2 - b;
   s.moveTo(-x, -y); s.lineTo(x, -y); s.lineTo(x, y); s.lineTo(-x, y); s.closePath();
   const g = new THREE.ExtrudeGeometry(s, { depth: Math.max(d - 2 * b, .001), bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 1, steps: 1 });
@@ -10,7 +10,7 @@ function bb(w, h, d, b, col) {
   return new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: col }));
 }
 /** Funde os blocos de um grupo numa malha só (cores por vértice): poucas draw calls */
-function fuse(grp) {
+export function fuse(grp) {
   const ms = grp.children.filter(c => c.isMesh); if (ms.length < 2) return;
   const pos = [], nor = [], col = [];
   ms.forEach(m => {
@@ -63,4 +63,49 @@ export function mkHorse(ci = Math.floor(Math.random() * 3), mi = 0) {
   g.traverse(n => { if (n.isGroup) fuse(n); });
   Object.assign(g, { HB, legs, neck, head, tail, tail2, earL: ears[0], earR: ears[1] });
   return g;
+}
+
+/* ---- animação (montaria e veículos) ---- */
+const OFF = { w: [.25, .75, 0, .5], t: [0, .5, .5, 0], g: [.5, .38, .12, 0] };   // fase de [AE, AD, PE, PD] em passo, trote e galope
+const sat = x => Math.min(1, Math.max(0, x));
+const lp = (a, b, u) => a + (b - a) * u;
+function gait(u, duty, A, lift) {
+  u = ((u % 1) + 1) % 1;
+  if (u < duty) { const s = u / duty; return [-A + 2 * A * s, .04 + .22 * Math.max(0, (s - .7) / .3)]; }
+  const s = (u - duty) / (1 - duty), e = s * s * (3 - 2 * s);
+  return [A - 2 * A * e, .04 + lift * Math.sin(Math.PI * s)];
+}
+/** Pernas, pescoço e cauda do cavalo `g` conforme a velocidade (v em m/s): parado → passo → trote → galope de quatro tempos.
+    `s` guarda o estado entre quadros ({ sp, ph, idle, bob }); `look` = quanto a cabeça olha para os lados quando parado (0‥1). */
+export function animHorse(g, s, dt, v, look = 1) {
+  s.sp = s.sp || 0; s.ph = s.ph || 0; s.idle = s.idle || 0;
+  s.sp += (Math.min(v, 12) - s.sp) * (1 - Math.exp(-dt * 10));
+  const sp = s.sp, t = s.idle += dt;
+  const gl = sat((sp - 4.5) / 2.5), tr = sat((sp - 1.6) / 1.2) * (1 - gl), wk = sat((sp - .1) / .3) * (1 - sat((sp - 1.6) / 1.2));
+  const sum = wk + tr + gl, mv = Math.min(1, sum), nn = sum || 1, br = Math.sin(t * 1.5);
+  const W = (a, b, c) => (wk * a + tr * b + gl * c) / nn;
+  s.ph += dt * (sum > .01 ? W(5, 8, 12.5) : 5);
+  const ph = s.ph, duty = W(.62, .45, .3), A = W(.45, .58, .85), lift = W(.9, 1.15, 1.45);
+  const toss = Math.max(0, Math.sin(t * .23) - .9) / .1, paw = Math.max(0, Math.sin(t * .37) - .88) / .12;
+  g.legs.forEach((l, i) => {
+    const o = W(OFF.w[i], OFF.t[i], OFF.g[i]), [hip, kn] = gait(ph / 6.283 - o, duty, A, lift);
+    let hx = hip * mv, kx = lp(.03, kn, mv);
+    if (i === 0) { const p = paw * (1 - mv); hx += -p * .7 + Math.sin(t * 14) * .12 * p; kx += p * 1.1; }   // bate a pata parado
+    l.rotation.x = hx; l.knee.rotation.x = kx; l.foot.rotation.x = hx * .25 + kx * .3;
+  });
+  const HB = g.HB;
+  s.bob = W(Math.cos(ph * 2) * .012, Math.cos(ph * 2) * .028, Math.sin(ph * 2 + .5) * .07) * mv + br * .004;   // a sela sobe e desce; o cavaleiro acompanha
+  s.mv = mv; s.gl = gl;
+  HB.position.y = 1.4 + s.bob;
+  HB.rotation.x = W(Math.sin(ph) * .015, Math.sin(ph * 2) * .02, Math.sin(ph + 1) * .06) * mv;
+  HB.rotation.z = W(Math.sin(ph) * .02, Math.sin(ph) * .012, Math.sin(ph) * .015) * mv + Math.sin(t * .5) * .008 * (1 - mv);
+  g.neck.rotation.x = lp(.75 + Math.sin(t * .6) * .04 - toss * .12, W(.75 + Math.sin(ph) * .08, .82 + Math.sin(ph * 2) * .03, .98 + Math.sin(ph) * .08), mv);
+  g.head.rotation.x = .1 + Math.sin(t * .5) * .05 * (1 - mv) - gl * .15 - toss * .3;
+  g.head.rotation.y = Math.sin(t * .3) * .18 * (1 - mv) * look;
+  g.tail.rotation.x = lp(.12 + Math.sin(t * 1.1) * .08, W(.2 + Math.sin(ph * .5) * .12, .35 + Math.sin(ph) * .1, .9 + Math.sin(ph * 2) * .12), mv);
+  g.tail.rotation.z = Math.sin(t * .9) * .1 * (1 - mv) + Math.sin(ph) * .08 * mv;
+  g.tail2.rotation.x = Math.sin(t * 1.7 + 1) * .15 + gl * .4 + Math.sin(ph * 1.5) * .1 * mv;
+  const fk = Math.sin(t * .9) > .96 ? Math.sin(t * 40) * .25 : 0;
+  g.earL.rotation.z = fk + Math.sin(t * .7) * .04; g.earR.rotation.z = -Math.sin(t * .8) * .04;
+  g.earL.rotation.x = g.earR.rotation.x = -gl * .5;
 }

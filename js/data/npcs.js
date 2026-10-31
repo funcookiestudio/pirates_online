@@ -33,7 +33,7 @@ export const FERRYMAN = { name: 'Capitão Remo', title: 'Barqueiro do Porto', ic
   lines: ['Ahoy! Meu barco leva marujo a qualquer ilha do arquipélago... por uma moedinha.', 'O mar está calmo. Diga o destino e eu iço a vela!', 'Cada ilha tem seus perigos e seus tesouros. Boa viagem, marujo!'] };
 
 export const HORSEMAN = { name: 'Seu Tobias', title: 'Criador de cavalos', ic: '🐴', stable: true, skin: ['cavalarico', 0], shop: 'farm-gado',
-  lines: ['Cavalo bom não se acha em qualquer curral, marujo. O meu corre mais que vento de tempestade!', 'Com ele você cruza a ilha na metade do tempo — mas cavalo não nada, hein.', 'Trate bem do bicho e ele nunca te deixa a pé. Assobie (tecla H) e ele vem.'] };
+  lines: ['Cavalo bom não se acha em qualquer curral, marujo. O meu corre mais que vento de tempestade!', 'Com ele você cruza a ilha na metade do tempo — mas cavalo não nada, hein.', 'Trate bem do bicho e ele nunca te deixa a pé. Assobie (tecla H) e ele vem.', 'Também vendo carroça e carruagem, já com os cavalos atrelados. Só não passam do portão da vila!'] };
 
 export const FARMER_AVES = { name: 'Dona Marta', title: 'Criadora de aves', ic: '🐔', skin: ['avicultora', 1], shop: 'farm-aves',
   lines: ['Bom dia, marujo! As galinhas botaram bem hoje — ovo fresquinho não falta aqui.', 'Cuidado com o galo, ele é brigão! Já bicou até capitão.', 'Aqui a gente vive em paz. Só peço que não assustem as aves.'] };

@@ -1,5 +1,6 @@
 /* Esquiva (Espaço): rolamento com invulnerabilidade durante a rolada, em 4 direções (frente, trás, esquerda, direita).
    Manual: andando → para a frente; parado com inimigo por perto → de lado (alternando); senão → para trás. O auto sempre rola para trás. */
+import { VEH } from './vehicle.js';
 import { P } from '../entities/player.js';
 import { puff } from './effects.js';
 import { gaitReset } from '../entities/gait.js';
@@ -28,7 +29,7 @@ function pickDir() {
 }
 
 export function dodge(dir) {
-  if (P.swap || MOUNT.on) return;   // montado não rola
+  if (P.swap || MOUNT.on || VEH.on) return;   // montado (ou na boleia) não rola
   if (P.swimming) { startDive(); return; }   // na água a esquiva é um mergulho
   if (P.dead || P.roll > 0 || P.rcd > 0 || P.sit > 0 || P.sitT) return;
   const a = P.g.rotation.y, d = typeof dir === 'string' ? dir : pickDir();

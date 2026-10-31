@@ -3,7 +3,7 @@
    as pernas dele acompanham a velocidade (trote → galope). Desmonta sozinho na água, na vila, em dungeons e ao morrer. */
 import { scene } from '../core/engine.js';
 import { P } from '../entities/player.js';
-import { mkHorse } from '../entities/horse.js';
+import { mkHorse, animHorse } from '../entities/horse.js';
 import { groundY, slideTo, walkable } from '../world/terrain.js';
 import { freePoint } from './steer.js';
 import { dIn } from '../dungeon/dgrid.js';
@@ -15,6 +15,7 @@ import { log } from '../ui/notify.js';
 import { $ } from '../core/utils.js';
 import { state } from '../core/state.js';
 import { enemies } from '../core/registry.js';
+import { VEH, activeVeh, vehOwned, vehVisible, vehToggle, vehDismiss, VKIND } from './vehicle.js';
 
 export const COATS = [
   { n: 'Castanho', cost: 120, mult: 2.05, br: 1, c: 0x8a4a22, mz: 0xb87a4a },
@@ -87,17 +88,20 @@ export function refreshMountButton() {
   if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
   if (!b.querySelector('i')) b.insertAdjacentHTML('beforeend', '<i style="position:absolute;left:3px;right:3px;bottom:3px;height:4px;border-radius:2px;background:rgba(0,0,0,.5);overflow:hidden"><b style="display:block;height:100%;width:100%;background:#7ad84a"></b></i>');
   b.style.display = '';   // o espaço do cavalo é fixo: sem cavalo o botão fica apagado
-  b.classList.toggle('none', !MOUNT.owned);
-  b.classList.toggle('on', MOUNT.on);
+  const vk = activeVeh(), own = MOUNT.owned || vehOwned();   // com carroça/carruagem escolhida no estábulo, o botão comanda o veículo
+  b.classList.toggle('none', !own);
+  b.classList.toggle('on', vk ? !!VEH.on : MOUNT.on);
+  const bar = b.querySelector('i'); if (bar) bar.style.visibility = vk ? 'hidden' : '';   // veículo: sem barra de fôlego
   // ícone de estado (como no companheiro): ● verde = cavalo ativo (montado, chamado ou parado fora da vila) · botão apagado = no estábulo
   if (!b.querySelector('u')) b.insertAdjacentHTML('beforeend', '<u style="position:absolute;right:3px;top:3px;width:9px;height:9px;border-radius:50%;border:1px solid #1c1208;text-decoration:none"></u>');
-  const act = MOUNT.on || !!(MOUNT.root && MOUNT.root.visible);
-  b.querySelector('u').style.background = MOUNT.on ? '#7ad84a' : act ? '#e0c050' : '#666';
-  b.title = 'Montaria (H; segurar o botão ou Shift+H dispensa o cavalo): ' + (MOUNT.on ? 'montado — desmontar' : act ? 'cavalo ativo — ir montar' : 'chamar o cavalo');
-  b.style.opacity = !MOUNT.owned ? '.3' : act ? '1' : '.6';
-  b.style.filter = MOUNT.owned ? '' : 'grayscale(1)';
-  b.style.pointerEvents = MOUNT.owned ? '' : 'none';
-  if (!MOUNT.owned) b.title = 'Montaria: ainda sem cavalo';
+  const on = vk ? !!VEH.on : MOUNT.on, act = vk ? on || vehVisible() : MOUNT.on || !!(MOUNT.root && MOUNT.root.visible);
+  b.querySelector('u').style.background = on ? '#7ad84a' : act ? '#e0c050' : '#666';
+  const N = vk ? VKIND[vk].n : 'cavalo';
+  b.title = 'Montaria (H; segurar o botão ou Shift+H dispensa ' + (vk ? 'a ' : 'o ') + N + '): ' + (on ? (vk ? 'na boleia — descer' : 'montado — desmontar') : act ? N + ' por perto — ' + (vk ? 'ir subir' : 'ir montar') : 'chamar ' + (vk ? 'a ' : 'o ') + N);
+  b.style.opacity = !own ? '.3' : act ? '1' : '.6';
+  b.style.filter = own ? '' : 'grayscale(1)';
+  b.style.pointerEvents = own ? '' : 'none';
+  if (!own) b.title = 'Montaria: ainda sem cavalo';
 }
 
 /** Montado em terra firme, fora da vila e das dungeons */
@@ -156,6 +160,7 @@ function mountUp() {
 
 /** Dispensa o cavalo: desmonta (se montado) e ele volta ao estábulo; para chamá-lo de novo, é só usar o botão/H */
 export function dismissHorse() {
+  if (activeVeh()) { vehDismiss(); return; }
   if (!MOUNT.owned || !MOUNT.root) return;
   if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1) return; dismount(); }
   MOUNT.want = false; MOUNT.pending = false; MOUNT.st = 'park'; MOUNT.dismissed = true;   // o auto play não chama o cavalo até o jogador chamar
@@ -167,7 +172,8 @@ export function dismissHorse() {
 
 /** Tecla H: desmonta · monta (se o cavalo está perto) · ou chama o cavalo */
 export function toggleMount(auto) {
-  if (!MOUNT.owned || P.dead) return;
+  if (activeVeh()) { vehToggle(auto); return; }   // carroça/carruagem escolhida no estábulo (vehicle.js)
+  if (!MOUNT.owned || P.dead || VEH.on) return;
   if (auto !== true) MOUNT.dismissed = false;   // o jogador chamou o cavalo de novo: o auto volta a poder usá-lo
   if (!MOUNT.on && (P.sit > 0 || P.sitT)) { standUp(); MOUNT.pending = true; return; }   // levanta primeiro, depois chama/monta
   if (MOUNT.on) { if (Math.hypot(P.x, P.z) <= VILLAGE_R + 1 || MOUNT.dis || MOUNT.t < 1) return; P.tgt = null; startDismount(); return; }
@@ -290,48 +296,9 @@ function walkToHorse(dt) {
   P.tgt = null; P.tx = f.x; P.tz = f.z; state.autoHold = Math.max(state.autoHold, .35);
 }
 
-/** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): passo → trote → galope de quatro tempos
-    (posteriores esquerdo e direito, depois anteriores esquerdo e direito, com um instante no ar). */
-const OFF = { w: [.25, .75, 0, .5], t: [0, .5, .5, 0], g: [.5, .38, .12, 0] };   // fase de [AE, AD, PE, PD] em passo, trote e galope
-const lp = (a, b, u) => a + (b - a) * u;
-function gait(u, duty, A, lift) {
-  u = ((u % 1) + 1) % 1;
-  if (u < duty) { const s = u / duty; return [-A + 2 * A * s, .04 + .22 * Math.max(0, (s - .7) / .3)]; }
-  const s = (u - duty) / (1 - duty), e = s * s * (3 - 2 * s);
-  return [A - 2 * A * e, .04 + lift * Math.sin(Math.PI * s)];
-}
-/** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): parado → passo → trote → galope */
+/** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): animação compartilhada em horse.js */
 function animateHorseLegs(dt, v) {
-  const g = MOUNT.g;
-  if (!g) return;
-  MOUNT.sp += (Math.min(v, 12) - MOUNT.sp) * (1 - Math.exp(-dt * 10));
-  const s = MOUNT.sp, t = MOUNT.idle += dt;
-  const gl = sat((s - 4.5) / 2.5), tr = sat((s - 1.6) / 1.2) * (1 - gl), wk = sat((s - .1) / .3) * (1 - sat((s - 1.6) / 1.2));
-  const sum = wk + tr + gl, mv = Math.min(1, sum), nn = sum || 1, br = Math.sin(t * 1.5);
-  const W = (a, b, c) => (wk * a + tr * b + gl * c) / nn;
-  MOUNT.ph += dt * (sum > .01 ? W(5, 8, 12.5) : 5);
-  const ph = MOUNT.ph, duty = W(.62, .45, .3), A = W(.45, .58, .85), lift = W(.9, 1.15, 1.45);
-  const toss = Math.max(0, Math.sin(t * .23) - .9) / .1, paw = Math.max(0, Math.sin(t * .37) - .88) / .12;
-  g.legs.forEach((l, i) => {
-    const o = W(OFF.w[i], OFF.t[i], OFF.g[i]), [hip, kn] = gait(ph / 6.283 - o, duty, A, lift);
-    let hx = hip * mv, kx = lp(.03, kn, mv);
-    if (i === 0) { const p = paw * (1 - mv); hx += -p * .7 + Math.sin(t * 14) * .12 * p; kx += p * 1.1; }   // bate a pata parado
-    l.rotation.x = hx; l.knee.rotation.x = kx; l.foot.rotation.x = hx * .25 + kx * .3;
-  });
-  const HB = g.HB;
-  MOUNT.bob = W(Math.cos(ph * 2) * .012, Math.cos(ph * 2) * .028, Math.sin(ph * 2 + .5) * .07) * mv + br * .004;   // a sela sobe e desce; o cavaleiro acompanha
-  HB.position.y = 1.4 + MOUNT.bob;
-  HB.rotation.x = W(Math.sin(ph) * .015, Math.sin(ph * 2) * .02, Math.sin(ph + 1) * .06) * mv;
-  HB.rotation.z = W(Math.sin(ph) * .02, Math.sin(ph) * .012, Math.sin(ph) * .015) * mv + Math.sin(t * .5) * .008 * (1 - mv);
-  g.neck.rotation.x = lp(.75 + Math.sin(t * .6) * .04 - toss * .12, W(.75 + Math.sin(ph) * .08, .82 + Math.sin(ph * 2) * .03, .98 + Math.sin(ph) * .08), mv);
-  g.head.rotation.x = .1 + Math.sin(t * .5) * .05 * (1 - mv) - gl * .15 - toss * .3;
-  g.head.rotation.y = Math.sin(t * .3) * .18 * (1 - mv) * (MOUNT.on ? .3 : 1);
-  g.tail.rotation.x = lp(.12 + Math.sin(t * 1.1) * .08, W(.2 + Math.sin(ph * .5) * .12, .35 + Math.sin(ph) * .1, .9 + Math.sin(ph * 2) * .12), mv);
-  g.tail.rotation.z = Math.sin(t * .9) * .1 * (1 - mv) + Math.sin(ph) * .08 * mv;
-  g.tail2.rotation.x = Math.sin(t * 1.7 + 1) * .15 + gl * .4 + Math.sin(ph * 1.5) * .1 * mv;
-  const fk = Math.sin(t * .9) > .96 ? Math.sin(t * 40) * .25 : 0;
-  g.earL.rotation.z = fk + Math.sin(t * .7) * .04; g.earR.rotation.z = -Math.sin(t * .8) * .04;
-  g.earL.rotation.x = g.earR.rotation.x = -gl * .5;
+  if (MOUNT.g) animHorse(MOUNT.g, MOUNT, dt, v, MOUNT.on ? .3 : 1);
 }
 
 const V3 = THREE.Vector3, OFFY = new V3(0, .72, 0);

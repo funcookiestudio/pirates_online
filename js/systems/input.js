@@ -26,6 +26,7 @@ import { petWalk, cancelPetWalk, endPet, petting } from './pet.js';
 import { npcAt, talkTo, cancelTalk } from '../entities/npc.js';
 import { closePanel, openTab } from '../ui/panel.js';
 import { toggleMount, dismissHorse, MOUNT } from './mount.js';
+import { VEH } from './vehicle.js';
 
 const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -39,7 +40,7 @@ function endStick() { stick = null; document.body.classList.remove('joy-on'); }
 function stickGo(jx, jy) {
   if (P.sit > 0 || P.sitT) standUp();
   if (P.bed) wakeUp();
-  MOUNT.want = false; state.autoHold = 2.5; P.tgt = null;
+  MOUNT.want = VEH.want = false; state.autoHold = 2.5; P.tgt = null;
   cancelStair(); cancelDoor(); cancelTalk(); cancelPetWalk();
   cam.getWorldDirection(_v);
   let fx = _v.x, fz = _v.z; const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l;
@@ -66,7 +67,7 @@ function stickMove(e) {
 function pick(cx, cy) {
   if (P.sit > 0 || P.sitT) standUp(); // clicar no mundo levanta o personagem
   if (P.bed) wakeUp();                // …e acorda quem dorme
-  MOUNT.want = false;   // clicar em outro lugar cancela a ida até o cavalo
+  MOUNT.want = VEH.want = false;   // clicar em outro lugar cancela a ida até o cavalo (ou veículo)
   state.autoHold = 2.5; // assume o controle do auto combate por 2,5 s
   pointer.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
   ray.setFromCamera(pointer, cam);

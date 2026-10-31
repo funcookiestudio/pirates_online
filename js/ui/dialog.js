@@ -15,6 +15,7 @@ import { questSay, questButtons } from '../systems/quest.js';
 import { questsSay, questsButtons } from '../systems/quests.js';
 import './questboard.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
+import { VEH, VKIND, PAINTS, PAINT_COST, giveVehicle, setUse, activeVeh, repaintCoach } from '../systems/vehicle.js';
 
 import { startPet } from '../systems/pet.js';
 import { BOND, info, animalName, hearts, heartStr, STAGES, adopted, adopt, rec, petsLeft, canFeed, TREATS, PET_MAX } from '../systems/bond.js';
@@ -215,7 +216,7 @@ function buttons() {
       const price = MOUNT.owned ? k.cost - COATS[MOUNT.coat].cost / 2 : k.cost;
       add('🐴 ' + (MOUNT.owned ? 'Trocar por cavalo ' : 'Comprar cavalo ') + k.n + ' · ' + price + ' ouro', () => {
         if (P.gold < price) { say('Faltam moedas, marujo! O ' + k.n + ' custa ' + price + ' de ouro.'); return; }
-        P.gold -= price; giveHorse(i); saveGame();
+        P.gold -= price; giveHorse(i); setUse(null); saveGame();
         say('Negócio fechado! Ele é seu (' + k.n + ': mais rápido e com mais fôlego). Assobie com a tecla H.'); buttons();
       });
     });
@@ -223,6 +224,29 @@ function buttons() {
       if (P.gold < 15) { say('Ração custa 15 de ouro, marujo.'); return; }
       P.gold -= 15; feedHorse(); say('Bem alimentado! Fôlego cheio e recupera rápido por um tempo.');
     });
+    // carroça e carruagem (vehicle.js): já vêm com os cavalos; a tecla H passa a chamar o veículo comprado
+    Object.keys(VKIND).forEach(k => {
+      const v = VKIND[k];
+      if (VEH.own[k]) return;
+      add('🛞 Comprar ' + v.n + ' · ' + v.cost + ' ouro', () => {
+        if (P.gold < v.cost) { say('Faltam moedas, marujo! A ' + v.n + ' custa ' + v.cost + ' de ouro.'); return; }
+        P.gold -= v.cost; giveVehicle(k); saveGame();
+        say(k === 'cart' ? 'Negócio fechado! A carroça é sua, com um cavalo manso nos varais. Chame com a tecla H; sobe na boleia e conduz clicando no chão.'
+          : 'Negócio fechado! A carruagem é sua, com a parelha de cavalos e lugar para passageiros. Chame com a tecla H; faz curvas mais abertas, cuidado!'); buttons();
+      });
+    });
+    const rides = [MOUNT.owned && [null, 'o cavalo'], VEH.own.cart && ['cart', 'a carroça'], VEH.own.coach && ['coach', 'a carruagem']].filter(Boolean);
+    if (rides.length > 1) rides.forEach(([k, n]) => {
+      if (k === activeVeh() || (!k && !activeVeh())) return;
+      add('Usar ' + n + ' (tecla H)', () => { setUse(k); saveGame(); say('Certo! A tecla H agora chama ' + n + '.'); buttons(); });
+    });
+    if (VEH.own.coach) {
+      const nx = PAINTS[(VEH.paint + 1) % PAINTS.length][0];
+      add('🎨 Pintar a carruagem de ' + nx + ' · ' + PAINT_COST + ' ouro', () => {
+        if (P.gold < PAINT_COST) { say('A pintura custa ' + PAINT_COST + ' de ouro, marujo.'); return; }
+        P.gold -= PAINT_COST; repaintCoach(); saveGame(); say('Pintura nova, cor de ' + nx + '! Ficou um brinco.'); buttons();
+      });
+    }
   }
   if (cur.chest) add('Abrir baú', openShop);
   if (cur.shop) add(cur.shop === 'smith' ? 'Ver mercadoria' : FARM_GOODS[cur.shop] ? 'Produtos da fazenda' : 'Ver mercadoria', openShop);

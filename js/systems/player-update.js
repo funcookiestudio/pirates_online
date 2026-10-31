@@ -30,12 +30,14 @@ import { applySwap, placeWeapons } from '../entities/holster.js';
 import { updateSwap } from './swap.js';
 import { rollMove, updateDodgeTimers, animateRoll } from './dodge.js';
 import { MOUNT, updateMount, mountPose, mountMult, startDismount } from './mount.js';
+import { VEH, updateVehicle, vehiclePose, vehMult, vehTurn, startLeave } from './vehicle.js';
 
 const AXIS_X = new THREE.Vector3(1, 0, 0);
 
 export function updatePlayer(dt) {
   updateSwimState(dt);
   updateMount(dt);
+  updateVehicle(dt);
   if (!P.dead) {
     updateStamina(dt);
     updateSwap(dt);
@@ -48,6 +50,8 @@ export function updatePlayer(dt) {
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
     else if (MOUNT.on && (MOUNT.dis || MOUNT.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo: o jogador é conduzido pela animação (mount.js)
     else if (MOUNT.on) { const sp0 = P.sp; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; }   // montado: ~2× mais rápido
+    else if (VEH.on && (VEH.dis || VEH.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo da boleia (vehicle.js)
+    else if (VEH.on) { const sp0 = P.sp, px = P.x, pz = P.z; P.sp *= vehMult(); moveAndAct(dt); P.sp = sp0; vehTurn(dt, px, pz); }   // conduzindo carroça/carruagem: curva aberta
     else { moveAndAct(dt); stuckWatch(dt); }
   }
 
@@ -103,7 +107,7 @@ function applyAim() {
 const SW = { x: 0, z: 0, t: 0, n: 0 };
 function stuckWatch(dt) {
   const far = Math.hypot(P.tx - P.x, P.tz - P.z) > 1.3;
-  if (!far || STAIR.on || P.tgt || P.roll > 0 || MOUNT.on) { SW.t = 0; SW.n = 0; SW.x = P.x; SW.z = P.z; return; }
+  if (!far || STAIR.on || P.tgt || P.roll > 0 || MOUNT.on || VEH.on) { SW.t = 0; SW.n = 0; SW.x = P.x; SW.z = P.z; return; }
   if (Math.hypot(P.x - SW.x, P.z - SW.z) > .3) { SW.x = P.x; SW.z = P.z; SW.t = 0; SW.n = 0; return; }
   SW.t += dt;
   if (SW.t < 2) return;
@@ -178,7 +182,8 @@ function moveAndAct(dt) {
 
   // arma de fogo só dispara depois de mirar
   if (MOUNT.on && !MOUNT.dis && MOUNT.t >= 1 && P.tgt && d <= rng + 4.5) startDismount();   // montado não ataca: desmonta um pouco antes do alvo
-  if (d <= rng && P.tgt && P.cd <= 0 && !P.safe && !P.swap && !MOUNT.on && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
+  if (VEH.on && !VEH.dis && VEH.t >= 1 && P.tgt && d <= rng + 5) startLeave();   // conduzindo não ataca: desce antes do alvo
+  if (d <= rng && P.tgt && P.cd <= 0 && !P.safe && !P.swap && !MOUNT.on && !VEH.on && !P.swimming && (!WEAPONS[P.wid].gun || P.aimv > .85)) attack(dx, dz);
 
   clampToWorld();
   stairMove(dt);
@@ -199,7 +204,7 @@ function moveAndAct(dt) {
 /** Colisão com árvores e pedras e limite da ilha (BODY_IN e bodyR vêm de steer.js: o planejamento usa o mesmo corpo) */
 let lastX = 0, lastZ = 3.4;
 function clampToWorld() {
-  const body = MOUNT.on ? .9 : bodyR(P.x, P.z), mh = !MOUNT.on && mapAt(P.x, P.z);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
+  const body = MOUNT.on ? .9 : VEH.on ? 1.1 : bodyR(P.x, P.z), mh = !MOUNT.on && !VEH.on && mapAt(P.x, P.z);   // montado ocupa mais espaço; dentro de casa o corpo é mais fino
   props.forEach(p => {
     if (mh && p.map) return;   // dentro de casa com mapa: colisão por retângulos (abaixo)
     const ex = P.x - p.position.x, ez = P.z - p.position.z, dd = Math.hypot(ex, ez) || .01;
@@ -290,6 +295,7 @@ function animate(dt) {
     P.g.armL.fa.rotation.x = TORCH_ARM.fa;
   }
   mountPose(dt);   // montado: sobe na sela e abre as pernas
+  vehiclePose(dt); // na boleia da carroça/carruagem
 }
 
 /** Vasculhar o baú: encara o baú, inclina o tronco e revira com os dois braços, alternando */
