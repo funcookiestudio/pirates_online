@@ -1,10 +1,15 @@
 /* Acariciar o gato: clique no gato → anda até ele → caixa "Acariciar / Sair" → o jogador se ajoelha diante do gato
-   e afaga a cabeça dele com a mão esquerda (a direita segura a arma apoiada na coxa). O gato fica sentado, de olhos fechados. */
+   e afaga a cabeça dele com a mão esquerda (a direita segura a arma apoiada na coxa). O gato fica sentado, de olhos fechados.
+   Vale para os gatos e cachorros da ilha e para o cachorro/gato adotado (bond.js): afagar 3 s ou mais conta para o vínculo.
+   Dar petisco: o jogador se ajoelha (sem estender a mão), deixa o peixe/osso no chão e o bicho come por uns segundos. */
 import { P } from '../entities/player.js';
 import { groundY } from '../world/terrain.js';
 import { gaitReset } from '../entities/gait.js';
+import { scene } from '../core/engine.js';
+import { petDone, fedDone, hearts } from './bond.js';
 
-export const PET = { want: null, cat: null, k: 0, kT: 0, t: 0, hold: 0, hp: 0 };
+export const PET = { want: null, cat: null, k: 0, kT: 0, t: 0, hold: 0, hp: 0, feed: null, held: 0, ft: 0, food: null };
+const FEED_K = .72, EAT = 2.6;   // ajoelhado sem estender a mão (KEY[2]) · tempo comendo (s)
 const DOWN = 2.4, UP = 1.9, HOLD = 16;   // descer (s) · levantar (s) · tempo máximo acariciando (s)
 const NEAR = .6;   // distância final ao centro do gato
 const S = [0, .38, .72, 1];
@@ -41,17 +46,44 @@ export function updatePetWalk(openBox) {
   if (d < 1.25) { PET.want = null; P.tx = P.x; P.tz = P.z; openBox(c); return; }
   P.tx = c.x + dx / d * 1.0; P.tz = c.z + dz / d * 1.0;
 }
-export function startPet(cat) {
-  PET.cat = cat; PET.kT = 1; PET.t = 0; PET.hold = 0; PET.hp = P.hp;
-  cat.pet = true; cat.want = false;
+/** Começa o carinho (ou, com `feed` = 'peixe' | 'osso', a entrega do petisco) */
+export function startPet(cat, feed) {
+  PET.cat = cat; PET.feed = feed || null; PET.kT = feed ? FEED_K : 1; PET.t = 0; PET.hold = 0; PET.hp = P.hp; PET.held = 0; PET.ft = 0;
+  cat.pet = !feed; cat.roll = !feed && hearts(cat.bid) >= 4; cat.want = false; cat.eat = false;
   P.tgt = null; P.tx = P.x; P.tz = P.z;
 }
-export function endPet() { if (PET.kT) { PET.kT = 0; if (PET.cat) PET.cat.pet = false; } }
+export function endPet() {
+  if (!PET.kT) return;
+  PET.kT = 0;
+  const c = PET.cat;
+  if (!c) return;
+  const at = { x: c.x, z: c.z };
+  if (PET.feed) { if (PET.food) { dropFood(); fedDone(c.bid, PET.feed, at); } }   // o petisco já estava no chão: conta mesmo se interromper
+  else petDone(c.bid, PET.held, at);
+  c.pet = false; c.eat = false; c.roll = false;
+}
+
+/* petisco no chão, entre o jogador e o bicho */
+function placeFood(c) {
+  const t = PET.feed, g = new THREE.Group(), m = (w, h, d, col, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: col })); o.position.set(x, y, z); g.add(o); };
+  if (t === 'peixe') { m(.26, .06, .09, 0x9aa8b4, 0, .03, 0); m(.07, .05, .12, 0x7a8894, -.16, .03, 0); m(.03, .02, .02, 0x111111, .1, .05, .03); }
+  else { m(.26, .05, .05, 0xf0ead8, 0, .03, 0); [-1, 1].forEach(k => { m(.06, .07, .06, 0xf0ead8, k * .14, .035, .03); m(.06, .07, .06, 0xf0ead8, k * .14, .035, -.03); }); m(.1, .06, .07, 0xb04a3a, .02, .04, 0); }
+  const dx = P.x - c.x, dz = P.z - c.z, d = Math.hypot(dx, dz) || 1, x = c.x + dx / d * .38, z = c.z + dz / d * .38;
+  g.position.set(x, groundY(x, z) + (P.fy || 0) + .01, z); g.rotation.y = Math.atan2(dx, dz) + Math.PI / 2;
+  scene.add(g); PET.food = g;
+  P[t] = Math.max(0, (P[t] || 0) - 1);
+  c.eat = true;
+}
+function dropFood() { if (PET.food) { scene.remove(PET.food); PET.food = null; } }
 
 export function updatePet(dt) {
   P.vx = P.vz = 0;
   const c = PET.cat;
   if (PET.kT && (P.hp < PET.hp - .5 || P.dead || !c || Math.hypot(P.x - c.x, P.z - c.z) > 2.4 || (PET.hold += dt) > HOLD)) endPet();
+  if (PET.kT && PET.feed && c) {   // petisco: ajoelhado, deixa no chão e espera o bicho comer
+    if (!PET.food && PET.k >= FEED_K - .01) placeFood(c);
+    if (PET.food && (PET.ft += dt) > EAT) endPet();
+  } else if (PET.kT && PET.k > .95) PET.held += dt;   // mão na cabeça: tempo de carinho que conta para o vínculo
   PET.hp = P.hp;
   if (c && PET.kT && PET.k > .25) {   // chega mais perto, de joelhos, até a mão alcançar a cabeça
     const dx = P.x - c.x, dz = P.z - c.z, d = Math.hypot(dx, dz) || 1, m = Math.min(dt * .45, d - NEAR);

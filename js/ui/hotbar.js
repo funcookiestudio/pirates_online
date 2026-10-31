@@ -47,6 +47,6 @@ export function initHotbarFit() {
 export function refreshPetButton() {
   const pet = state.pet;
   $('pi').textContent = state.petOff ? '🚫' : pet.ic;
-  $('pm').textContent = state.petOff ? '' : state.petAttack ? '⚔' : ((pet.id === 'dog' || pet.id === 'rat') ? '🐾' : '📦');
+  $('pm').textContent = state.petOff ? '' : state.petAttack ? '⚔' : ((pet.id === 'dog' || pet.id === 'rat' || pet.id === 'cat') ? '🐾' : '📦');
   $('s5').classList.toggle('on', state.petAttack);
 }

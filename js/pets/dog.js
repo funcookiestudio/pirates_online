@@ -10,7 +10,7 @@ import { puff } from '../systems/effects.js';
 import { mkDog, mkRat } from './models.js';
 import { PV, PCD } from './stats.js';
 import { petStrike } from './strike.js';
-import { petFighting } from './common.js';
+import { petFighting, compHeld, COMP } from './common.js';
 
 export const DOG = {
   g: mkDog(), dg: null, rg: null, sit: 0, idle: 0, v: 0, ph: 0, s: 'none', at: null, ac: 0, tm: 0, ow: 0, ap: 'wind',
@@ -22,6 +22,19 @@ export const DOG = {
   DOG.dg.scale.setScalar(.75);
   DOG.rg.scale.setScalar(.95);
   [DOG.dg, DOG.rg].forEach(g => { g.rotation.order = 'YXZ'; g.visible = false; scene.add(g); });
+}
+
+/** Pelagem do cachorro adotado (bond.js): recria o modelo com as cores dele */
+export function setDogCoat(coat) {
+  if (DOG.coat === coat) return;
+  DOG.coat = coat;
+  const old = DOG.dg, was = DOG.g === old, vis = old.visible;
+  const g = mkDog(coat);
+  g.scale.setScalar(.75); g.rotation.order = 'YXZ';
+  g.position.copy(old.position); g.rotation.copy(old.rotation);
+  scene.remove(old); scene.add(g);
+  DOG.dg = g; g.visible = was && vis;
+  if (was) DOG.g = g;
 }
 
 /** Defasagens das patas no trote (DTO) e no galope (DGO) */
@@ -45,6 +58,14 @@ export function dogUpd(dt, now) {
   const g = DOG.g, pos = g.position, t = now / 1000, spd = Math.hypot(P.vx, P.vz);
   const cb = petFighting(), yaw0 = g.rotation.y;
 
+  if (compHeld()) {   // o jogador vem fazer carinho / dar petisco: fica sentado esperando, virado para ele
+    DOG.s = 'none'; DOG.at = null; DOG.v = 0;
+    turnTo(g, Math.atan2(P.x - pos.x, P.z - pos.z), 5, dt);
+    animateDog(dt, t, g, pos, { yaw0, wait: true, near: true, ju: 0 });
+    if (COMP.eat) { g.head.rotation.x += .7 + Math.sin(t * 12) * .12; g.head.rotation.y = 0; }   // comendo o petisco no chão
+    if (COMP.pet) { g.tail.rotation.y = Math.sin(t * 14) * .7; g.head.rotation.x -= .25; }       // abana o rabo e ergue a cabeça contra a mão
+    return;
+  }
   DOG.idle = (spd < .25 && !cb) ? DOG.idle + dt : 0;
   DOG.ac -= dt;
   const dxp = P.x - pos.x, dzp = P.z - pos.z, dp = Math.hypot(dxp, dzp);

@@ -101,9 +101,16 @@ export function mkRaven() {
   return g;
 }
 
-/** Cachorro. Expõe: g.head, g.legs[4] (com .knee), g.tail, g.earL, g.earR */
-export function mkDog() {
-  const g = new THREE.Group(), fur = 0xb8803c, dk = 0x7a4a1e, wh = 0xf0e0c0;
+/** Pelagens do cachorro adotado (as mesmas dos cães das fazendas) */
+export const DOG_COATS = {
+  caramelo: { fur: 0xc89a5a, dk: 0x9a6a30, wh: 0xe8d4a8 },
+  pastor: { fur: 0x1c1c22, dk: 0x2a2a30, wh: 0xf4f0e8 },
+};
+
+/** Cachorro (`coat` = pelagem do cão adotado). Expõe: g.head, g.legs[4] (com .knee), g.tail, g.earL, g.earR */
+export function mkDog(coat) {
+  const C = DOG_COATS[coat] || {};
+  const g = new THREE.Group(), fur = C.fur ?? 0xb8803c, dk = C.dk ?? 0x7a4a1e, wh = C.wh ?? 0xf0e0c0;
   g.add(
     wb(.46, .42, .9, fur, 0, .64, 0),
     wb(.4, .2, .4, wh, 0, .52, .28),

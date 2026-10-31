@@ -10,7 +10,7 @@ import { togAuto } from './auto.js';
 import { dodge } from './dodge.js';
 import { CAMUI, zoomBy, rotateBy, tiltBy, resetCamera } from './camera.js';
 import { toggleSit, standUp } from './rest.js';
-import { togglePet } from '../pets/manager.js';
+import { togglePet, companionAt } from '../pets/manager.js';
 import { freePoint } from './steer.js';
 import { clickCave } from '../world/caves.js';
 import { groundY } from '../world/terrain.js';
@@ -112,6 +112,8 @@ function pick(cx, cy) {
   if (clickCave(aim.x, aim.z)) { mark.position.set(aim.x, markY(aim.x, aim.z), aim.z); return; }
   const n = npcAt(aim.x, aim.z);
   if (n) { P.tgt = null; talkTo(n); mark.position.set(n.g.position.x, markY(n.g.position.x, n.g.position.z), n.g.position.z); return; }
+  const cp = P.up ? null : companionAt(aim.x, aim.z);   // o próprio cachorro/gato adotado: carinho e petisco (bond.js)
+  if (cp) { P.tgt = null; petWalk(cp); mark.position.set(cp.x, markY(cp.x, cp.z), cp.z); return; }
   const ct = P.up ? null : catAt(aim.x, aim.z);
   if (ct) { P.tgt = null; petWalk(ct); mark.position.set(ct.x, markY(ct.x, ct.z), ct.z); return; }
   cancelTalk(); cancelPetWalk();
@@ -283,7 +285,7 @@ function camButtons() {
   grid.style.display = open ? 'grid' : 'none'; tog.style.opacity = open ? '1' : '.65';
   wrap.append(grid);
   document.body.append(wrap);
-}
   // a hotbar muda de escala (fitHotbar) sem disparar resize, então a posição é conferida de tempos em tempos
   const hb = $('hb'), place = () => { const r = hb.getBoundingClientRect(); if (r.height) { const v = Math.round(innerHeight - r.top + 6) + 'px'; if (wrap.style.bottom !== v) wrap.style.bottom = v; } };
   addEventListener('resize', place); setInterval(place, 500); place();
+}

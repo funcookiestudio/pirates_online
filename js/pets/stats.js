@@ -15,6 +15,8 @@ export const PV = k => {
   const s = PST[state.pet.id];
   let v = k === 'dmg' ? (s.lv - 1) * .04 : 0;
   PSK[state.pet.id].forEach(n => { v += (n.fx[k] || 0) * (s.rk[n.id] || 0); });
+  const mood = state.petMood && state.petMood[state.pet.id];   // bicho adotado de bom humor (bond.js): +8% dano e +10% velocidade
+  if (mood >= 60) v += k === 'dmg' ? .08 : k === 'spd' ? .1 : 0;
   return v;
 };
 

@@ -18,7 +18,7 @@ import { emit } from '../core/events.js';
 export const P = {
   g: playerModel(!!(activeChar() && activeChar().f), activeChar() && activeChar().a),
   x: 0, z: 5, hp: 100, max: 100, mp: 60, mmax: 60, lv: 1, xp: 0, nxt: 60, dmg: 12,
-  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: 3.2, gold: 0, couro: 0, penas: 0, pot: 3, bmb: 3, potR: 0, bmbR: 0, dead: false,   // potR/bmbR: reserva no cinto
+  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: 3.2, gold: 0, couro: 0, penas: 0, peixe: 0, osso: 0, pot: 3, bmb: 3, potR: 0, bmbR: 0, dead: false,   // potR/bmbR: reserva no cinto
   
   walk: 0, wid: 0, cds: [0, 0], vx: 0, vz: 0, ph: 0,
   // animação e combo

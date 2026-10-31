@@ -27,6 +27,7 @@ python3 -m http.server 8000     # depois abra http://localhost:8000
 | Companheiro ataca / só coleta | `R` |
 | Auto combate | `T` |
 | Personagem, mochila e companheiros | `I` (ou `C`) · `Esc` fecha |
+| Acariciar / dar petisco / adotar | Clique no gato ou cachorro (ou no seu companheiro adotado) |
 
 ## Estrutura
 
@@ -65,6 +66,8 @@ js/
     input.js          Mouse/toque, teclado e botões
     camera.js         Câmera que segue o jogador
     effects.js        Partículas
+    bond.js           Vínculo com cães e gatos da ilha: carinho, petisco, adoção e humor
+    pet.js            Acariciar e dar petisco (animação do jogador)
   pets/             Companheiros
     manager.js        Troca de pet, ataque ligado/desligado, vida do pet
     stats.js          Nível, XP e bônus das habilidades
@@ -74,6 +77,7 @@ js/
     flyer.js          Comportamento do papagaio e do corvo
     monkey.js         Comportamento do macaco
     dog.js            Comportamento do cachorro
+    cat.js            Comportamento do gato adotado
   ui/               Interface
     notify.js         Log, banner de nível, números de dano, fim de jogo
     hud.js            Barras, status, missão e atualização do HUD

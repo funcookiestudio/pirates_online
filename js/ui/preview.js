@@ -5,6 +5,8 @@ import { activeChar } from '../core/chars.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { mkParrot, mkRaven, mkDog, mkMonkey, mkRat } from '../pets/models.js';
+import { mkCat } from '../entities/wildlife-models.js';
+import { BOND, coatOf } from '../systems/bond.js';
 import { isPanelOpen } from '../core/utils.js';
 import { state } from '../core/state.js';
 import { HAPPY_TIME } from '../pets/manager.js';
@@ -172,11 +174,18 @@ const PETS = {
     g.tail.forEach((s, i) => { s.rotation.y = Math.sin(t * 2 - i * .7) * .22; });
     g.position.y = base(g) + Math.sin(t * 1.9) * .01;
   }],
-  dog: [mkDog, (g, t) => {
+  dog: [() => mkDog(coat('dog')), (g, t) => {
     g.tail.rotation.y = Math.sin(t * 9) * .5;                               // abana o rabo
     g.head.rotation.y = Math.sin(t * .8) * .3;
     g.head.rotation.x = Math.sin(t * 1.7) * .05;
     g.position.y = base(g) + Math.abs(Math.sin(t * 1.9)) * .008;
+  }],
+  cat: [() => mkCat(coat('cat') || 'laranja'), (g, t) => {
+    g.head.rotation.y = Math.sin(t * .7) * .4;
+    g.head.rotation.x = Math.sin(t * 1.3) * .05;
+    g.tail.forEach((q, i) => { q.rotation.y = Math.sin(t * 2 - i * .5) * .25; });
+    const bl = (t % 4.3) < .13; g.eyes.visible = !bl; g.lids.visible = bl;
+    g.position.y = base(g) + Math.sin(t * 1.8) * .004;
   }],
   rat: [mkRat, (g, t) => {
     g.tailSegs.forEach((q, i) => { q.rotation.y = Math.sin(t * 3 - i * .6) * .2; });
@@ -187,6 +196,8 @@ const PETS = {
 };
 
 let vp = null, va = null;
+/** Pelagem do cachorro/gato adotado (bond.js) para o retrato */
+const coat = id => (id === 'dog' || id === 'cat') && BOND.adopt[id] ? coatOf(BOND.adopt[id]) : '';
 
 /** Mostra o personagem (com a arma que está na mão) no canvas `cvP` */
 export function showPlayer() {
@@ -198,7 +209,7 @@ export function showPlayer() {
 export function showPet(id) {
   if (!va) va = makeView('cvA');
   const [mk, idle] = PETS[id];
-  setModel(va, id, mk, idle, id === 'rat' ? 3 : 2.1);
+  setModel(va, id + (coat(id) || ''), mk, idle, id === 'rat' ? 3 : 2.1);
 }
 
 const t0 = performance.now();
@@ -218,11 +229,11 @@ function draw(v) {
   v.pivot.rotation.y += (v.yaw - v.pivot.rotation.y) * .3;
   const t = (performance.now() - t0) / 1000;
   if (v.idle) v.idle(v.inner, t);
-  if (v === va && state.petHappy > 0 && v.key === state.pet.id) { // equipado agora: pula de alegria
+  if (v === va && state.petHappy > 0 && v.key.startsWith(state.pet.id)) { // equipado agora: pula de alegria
     const k = state.petHappy / HAPPY_TIME, env = Math.min(1, k * 2.5), tt = (1 - k) * HAPPY_TIME;
     v.inner.position.y += Math.abs(Math.sin(tt * 7)) * .5 * env;
     v.inner.rotation.z = Math.sin(tt * 16) * .22 * env;
-  } else if (v === va && (v.key === 'dog' || v.key === 'rat' || v.key === 'monkey')) v.inner.rotation.z = 0;
+  } else if (v === va && (v.key.startsWith('dog') || v.key.startsWith('cat') || v.key === 'rat' || v.key === 'monkey')) v.inner.rotation.z = 0;
   r.render(v.scene, v.cam);
   const ctx = c.getContext('2d');
   ctx.clearRect(0, 0, c.width, c.height);

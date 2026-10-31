@@ -17,18 +17,20 @@ import './questboard.js';
 import { MOUNT, giveHorse, feedHorse, COATS } from '../systems/mount.js';
 
 import { startPet } from '../systems/pet.js';
+import { BOND, info, animalName, hearts, heartStr, STAGES, adopted, adopt, rec, petsLeft, canFeed, TREATS, PET_MAX } from '../systems/bond.js';
+import { applyAdoptions, setPet, petPos } from '../pets/manager.js';
 import { speak, stopSpeech, initNarrator } from '../systems/narrator.js';
 let cur = null, li = 0, tab = 'buy', stock = [];
 
-const plain = it => it.pot || it.food || it.mat || it.ammo;
+const plain = it => it.pot || it.food || it.mat || it.treat || it.ammo;
 const icon = it => it.ic ? it.ic : it.bomb ? '💣' : it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
 const val = (ty, q, wi) => Math.round((ty === 'wpn' ? WEAPONS[wi].b : 8) * q * (1 + (P.lv - 1) * .25));
 const BUY = 9, SELL = { smith: 4, tavern: 3, trader: 6 };
 /* Produtos de cada fazenda: comida que o fazendeiro vende e que se come na hora (recupera vida/mana: frações do máximo) */
 const FARM_GOODS = {
   'farm-aves': [{ n: 'Ovos cozidos', ic: '🥚', price: 12, hp: .25 }, { n: 'Caldo de galinha', ic: '🍲', price: 22, hp: .3, mp: .35 }, { n: 'Frango assado', ic: '🍗', price: 34, hp: .6 }, { n: 'Espiga de milho', ic: '🌽', price: 9, hp: .18 }, { n: 'Alface fresca', ic: '🥬', price: 7, hp: .12 }, { n: 'Pão de trigo', ic: '🍞', price: 13, hp: .3 }, { n: 'Couve refogada', ic: '🥗', price: 11, hp: .2, mp: .15 }, { n: 'Sementes de girassol', ic: '🌻', price: 8, hp: .08, mp: .25 }, { mat: 'penas', n: 'Penas (material)', ic: '🪶', price: 8 }],
-  'farm-granja': [{ n: 'Batata cozida', ic: '🥔', price: 8, hp: .2 }, { n: 'Cenoura crocante', ic: '🥕', price: 7, hp: .15, mp: .1 }, { n: 'Repolho', ic: '🥬', price: 8, hp: .15 }, { n: 'Tomate maduro', ic: '🍅', price: 9, hp: .18, mp: .1 }, { n: 'Leite fresco', ic: '🥛', price: 14, hp: .2, mp: .3 }, { n: 'Bacon defumado', ic: '🥓', price: 28, hp: .5 }, { n: 'Carne de ovelha assada', ic: '🍖', price: 32, hp: .6 }, { n: 'Manta de lã (aquece e relaxa)', ic: '🧶', price: 26, hp: .15, mp: .6 }],
-  'farm-gado': [{ n: 'Leite fresco', ic: '🥛', price: 15, hp: .2, mp: .3 }, { n: 'Queijo curado', ic: '🧀', price: 20, hp: .4 }, { n: 'Bife na brasa', ic: '🥩', price: 36, hp: .7 }, { n: 'Mingau de aveia', ic: '🥣', price: 12, hp: .25, mp: .15 }, { n: 'Pão de cevada', ic: '🍞', price: 11, hp: .25 }, { n: 'Beterraba assada', ic: '🍠', price: 10, hp: .2, mp: .1 }, { mat: 'couro', n: 'Couro curtido (material)', ic: '🐂', price: 18 }]
+  'farm-granja': [{ n: 'Batata cozida', ic: '🥔', price: 8, hp: .2 }, { n: 'Cenoura crocante', ic: '🥕', price: 7, hp: .15, mp: .1 }, { n: 'Repolho', ic: '🥬', price: 8, hp: .15 }, { n: 'Tomate maduro', ic: '🍅', price: 9, hp: .18, mp: .1 }, { n: 'Leite fresco', ic: '🥛', price: 14, hp: .2, mp: .3 }, { n: 'Bacon defumado', ic: '🥓', price: 28, hp: .5 }, { n: 'Carne de ovelha assada', ic: '🍖', price: 32, hp: .6 }, { n: 'Manta de lã (aquece e relaxa)', ic: '🧶', price: 26, hp: .15, mp: .6 }, { treat: 'osso', n: 'Osso com carne (petisco)', ic: '🐾', price: 6 }],
+  'farm-gado': [{ n: 'Leite fresco', ic: '🥛', price: 15, hp: .2, mp: .3 }, { n: 'Queijo curado', ic: '🧀', price: 20, hp: .4 }, { n: 'Bife na brasa', ic: '🥩', price: 36, hp: .7 }, { n: 'Mingau de aveia', ic: '🥣', price: 12, hp: .25, mp: .15 }, { n: 'Pão de cevada', ic: '🍞', price: 11, hp: .25 }, { n: 'Beterraba assada', ic: '🍠', price: 10, hp: .2, mp: .1 }, { mat: 'couro', n: 'Couro curtido (material)', ic: '🐂', price: 18 }, { treat: 'osso', n: 'Osso com carne (petisco)', ic: '🐾', price: 6 }]
 };
 
 function makeStock(kind) {
@@ -38,7 +40,7 @@ function makeStock(kind) {
     [1, 2, 3].forEach(q => s.push({ ty: 'arm', q, wi: 0, price: val('arm', q, 0) * BUY }));
     return s;
   }
-  if (FARM_GOODS[kind]) return FARM_GOODS[kind].map(g => ({ food: g.mat ? 0 : 1, ...g, desc: g.mat ? 'Material de artesanato · você tem ' + P[g.mat] : '+' + Math.round(g.hp * 100) + '% vida' + (g.mp ? ' · +' + Math.round(g.mp * 100) + '% mana' : '') + ' · consumo imediato' }));
+  if (FARM_GOODS[kind]) return FARM_GOODS[kind].map(g => ({ food: g.mat || g.treat ? 0 : 1, ...g, desc: g.treat ? 'Petisco para cães e gatos (vínculo) · você tem ' + P[g.treat] : g.mat ? 'Material de artesanato · você tem ' + P[g.mat] : '+' + Math.round(g.hp * 100) + '% vida' + (g.mp ? ' · +' + Math.round(g.mp * 100) + '% mana' : '') + ' · consumo imediato' }));
   if (kind === 'herbs') return [
     { pot: 1, n: 'Poção de vida (da Ysolde)', price: Math.max(1, Math.round(PRICE.potTavern * .8)), desc: 'Recupera vida (tecla E) · pilhas de ' + POT_MAX + ' (o resto vai para o cinto)' },
     { food: 1, ic: '🍵', n: 'Chá de camomila', price: 14, hp: .3, mp: .2, desc: '+30% vida · +20% mana · bebe na hora' },
@@ -52,6 +54,7 @@ function makeStock(kind) {
     const a = ammoInfo(wi);
     s.push({ ammo: 1, ic: '🎯', wi, q: 1, n: w.n + ' ×' + a.pack, price: a.price * a.pack, desc: 'Arremesso · ' + a.pack + ' unid. (pilha de até ' + a.max + ') · ' + Math.round(a.brk * 100) + '% de quebra' + (a.consume ? ' · uso único' : ' · o que não quebra cai no chão') });
   });
+  if (kind === 'tavern') s.push({ treat: 'peixe', ic: '🐾', n: 'Peixe seco (petisco)', price: 6, desc: 'Petisco para gatos e cães (vínculo) · você tem ' + P.peixe });
   if (kind === 'trader') s.push({ pot: 1, bomb: 1, n: 'Bomba', price: PRICE.bomb, desc: 'Explosão em área (tecla W) · pilhas de ' + BOMB_MAX + ' (o resto vai para o cinto)' });
   return s;
 }
@@ -100,13 +103,14 @@ function renderShop() {
       r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (plain(it) ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
       const b = document.createElement('button');
       b.textContent = '💰 ' + it.price;
-      const full = it.mat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? beltRoom('bmb') <= 0 : it.pot ? beltRoom('pot') <= 0 : it.ammo ? (!ammoStack(it.wi) && bagFull()) : bagFull();
+      const full = it.mat || it.treat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? beltRoom('bmb') <= 0 : it.pot ? beltRoom('pot') <= 0 : it.ammo ? (!ammoStack(it.wi) && bagFull()) : bagFull();
       b.disabled = P.gold < it.price || full;
       if (full) b.title = it.food ? 'Você já está satisfeito' : it.pot ? 'Cinto cheio: sem vagas na mochila' : 'Mochila cheia';
       b.onclick = () => {
         if (P.gold < it.price || full) return;
         P.gold -= it.price;
         if (it.mat) { P[it.mat]++; lootText('+1 ' + it.n); }
+        else if (it.treat) { P[it.treat]++; lootText(it.ic + ' +1 ' + TREATS[it.treat].n); stock = makeStock(cur.shop); }
         else if (it.food) { P.hp = Math.min(P.max, P.hp + P.max * it.hp); if (it.mp) P.mp = Math.min(P.mmax, P.mp + P.mmax * it.mp); lootText(it.ic + ' ' + it.n); log(it.ic + ' Comeu: ' + it.n); }
         else if (it.ammo) { addItem({ ty: 'wpn', q: 1, wi: it.wi, ct: ammoInfo(it.wi).pack, il: P.lv }); }
         else if (it.bomb) { beltAdd('bmb', 1); lootText('+ bomba'); }
@@ -119,6 +123,7 @@ function renderShop() {
   } else if (FARM_GOODS[k]) {
     // o fazendeiro só recompra o material da própria fazenda (metade do preço)
     const g = FARM_GOODS[k].find(x => x.mat);
+    if (!g) { box.innerHTML = '<p class="shn">Não compro nada — aqui tudo é produzido na granja.</p>'; return; }   // (a granja não tem material para recomprar)
     box.innerHTML = '<p class="shn">Só compro ' + g.n.replace(' (material)', '').toLowerCase() + ' — o resto eu mesmo produzo.</p>';
     const r = document.createElement('div');
     r.className = 'shr';
@@ -160,20 +165,49 @@ function renderShop() {
 const HORSE_COST = 120;
 function say(txt) { $('dtx').textContent = txt; speak(txt, cur && cur.name); }
 
-/** Caixa do gato: acariciar ou sair */
+/** Caixa do bicho (gatos e cachorros da ilha, ou o seu cachorro/gato adotado): carinho, petisco e adoção (bond.js) */
 export function openPetBox(cat) {
-  openDialog({ name: cat.A.dog ? 'Cachorro' : 'Gato', title: cat.A.dog ? 'Cachorro da fazenda' : cat.A.variant === 'preto' ? 'Gato preto' : 'Gatinho', ic: cat.A.dog ? '🐶' : '🐱', petCat: cat, lines: [cat.A.dog ? 'Au! (ele abana o rabo, todo feliz com a visita)' : 'Miau... (ele te olha de olhos semicerrados e se aproxima devagar)'] });
+  const id = cat.bid, inf = info(id), dog = inf.kind === 'dog', mine = adopted(id), h = hearts(id), r = rec(id);
+  const SAY = dog
+    ? ['Grrr... (ele te observa de longe, desconfiado)', 'Au? (ele cheira sua mão, curioso)', 'Au! Au! (ele abana o rabo, feliz com a visita)', 'Au! (ele pula em volta de você, todo animado)', 'Auuu! (ele encosta a cabeça na sua perna)', 'Au! (ele te olha como quem diz: me leva com você?)']
+    : ['Miau... (ele te olha de olhos semicerrados, sem se aproximar)', 'Miau? (ele se aproxima devagar e cheira sua mão)', 'Mrrr... (ele ronrona e se esfrega no seu pé)', 'Miau! (ele vem te seguindo, de rabo erguido)', 'Prrr... (ele se joga no chão e mostra a barriga)', 'Miau! (ele te olha como quem diz: me leva com você?)'];
+  let line = mine ? (r.b < 20 ? (dog ? 'Hmpf... (ele vira a cara: está emburrado e quer atenção)' : 'Hss... (ele vira as costas: está emburrado e quer atenção)') : SAY[Math.max(2, h)]) : SAY[h];
+  if (!BOND.hint) {   // primeira vez: explica o sistema
+    BOND.hint = true;
+    line = 'Dica: acaricie (conta até ' + PET_MAX + 'x por dia) e dê um petisco (1x por dia: peixe seco na Taverna, osso nas fazendas) para ganhar a confiança dele. Com 5 corações você pode adotá-lo como companheiro: um cachorro e um gato.';
+  }
+  const title = (mine ? 'Seu companheiro · humor ' + Math.round(r.b) + '%' : STAGES[h]) + ' · ' + heartStr(id);
+  openDialog({ name: animalName(id), title, ic: dog ? '🐶' : '🐱', petCat: cat, lines: [line] });
+}
+
+function petButtons(add) {
+  const c = cur.petCat, id = c.bid, inf = info(id), left = petsLeft(id);
+  add('Acariciar' + (left ? '' : ' (hoje já basta)'), () => { closeDialog(); startPet(c); });
+  [inf.fav, inf.fav === 'peixe' ? 'osso' : 'peixe'].forEach(t => {
+    const why = canFeed(id, t, P), T = TREATS[t];
+    const b = add('Dar ' + T.n.toLowerCase() + ' (' + (P[t] || 0) + ')' + (why ? ' · ' + why : ''), () => { if (canFeed(id, t, P)) return; closeDialog(); startPet(c, t); });
+    b.disabled = !!why;
+  });
+  if (!adopted(id) && hearts(id) >= 5) {
+    const k = inf.kind, prev = BOND.adopt[k];
+    add('Adotar' + (prev ? ' (' + animalName(prev) + ' volta para casa)' : ''), () => {
+      const back = adopt(id);
+      applyAdoptions();
+      setPet(k);
+      const p = petPos(); p.x = c.x; p.z = c.z;   // o companheiro sai de onde o bicho estava
+      closeDialog();
+      log('🏠 ' + animalName(id) + ' agora é seu companheiro! (painel P)' + (back ? ' · ' + animalName(back) + ' voltou para casa' : ''));
+      saveGame();
+    });
+  }
+  add('Sair', closeDialog);
 }
 
 function buttons() {
   const b = $('dbt');
   b.innerHTML = '';
-  const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); };
-  if (cur.petCat) {
-    add('Acariciar', () => { const c = cur.petCat; closeDialog(); startPet(c); });
-    add('Sair', closeDialog);
-    return;
-  }
+  const add = (t, f) => { const x = document.createElement('button'); x.textContent = t; x.onclick = f; b.append(x); return x; };
+  if (cur.petCat) { petButtons(add); return; }
   [...questButtons(cur), ...questsButtons(cur)].forEach(([t, f]) => add(t, () => f(say, buttons)));   // botões da missão em andamento
   if (cur.stable) {
     COATS.forEach((k, i) => {
@@ -240,6 +274,7 @@ function openShop() {
 function closeShop() { $('shop').style.display = 'none'; if (cur) $('dlg').style.display = 'block'; }
 
 export function closeDialog() {
+  if (cur && cur.petCat) cur.petCat.want = false;   // saiu da caixa do bicho: ele volta a passear (o cachorro/gato adotado volta a seguir)
   cur = null; stopSpeech();
   $('dlg').style.display = 'none';
   closeShop();

@@ -12,7 +12,13 @@ export function inCombat() {
 
 /** O companheiro deve lutar agora? (ataque ligado, jogador vivo, pet acordado e em combate) */
 export function petFighting() {
-  return state.petAttack && !state.petOff && !P.dead && !PDN() && inCombat();
+  return state.petAttack && !state.petOff && !P.dead && !PDN() && !petSulking() && inCombat();
+}
+
+/** Bicho adotado emburrado (humor abaixo de 20, bond.js): só acompanha, não ataca até receber carinho ou petisco */
+export function petSulking() {
+  const m = state.petMood && state.petMood[state.pet.id];
+  return m !== undefined && m < 20;
 }
 
 /** Loot mais próximo da posição `p` (somente a menos de 35 m do jogador) */
@@ -26,3 +32,8 @@ export function wantLoot(p) {
   });
   return b;
 }
+
+/** O companheiro adotado como alvo do carinho/petisco (systems/pet.js): bid = id do bicho (bond.js); x/z seguem o pet a cada quadro.
+ *  Enquanto pet/want/eat estiverem ligados, o cachorro/gato fica parado sentado esperando o jogador. */
+export const COMP = { bid: null, comp: true, pet: false, want: false, eat: false, x: 0, z: 0 };
+export const compHeld = () => COMP.pet || COMP.want || COMP.eat;

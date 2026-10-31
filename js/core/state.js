@@ -31,6 +31,7 @@ export const state = {
   pet: PETLIST[0],  // companheiro ativo
   petHappy: 0,      // tempo restante (s) da animação feliz ao equipar um companheiro
   petAttack: true,  // companheiro ataca? (tecla R)
+  petMood: {},      // humor dos bichos adotados (bond.js): 'dog'/'cat' → 0..100
   lastE: null,      // último inimigo atingido (para a barra de vida)
   lastT: 0,         // quando foi atingido
 };

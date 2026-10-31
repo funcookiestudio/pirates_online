@@ -13,10 +13,12 @@ import { SEED } from '../world/terrain.js';
 import { safeSpot } from './safe.js';
 import { getRent, setRent } from '../world/doors.js';
 import { inDungeon } from '../dungeon/dungeon-scene.js';
+import { saveBond, loadBond } from './bond.js';
+import { applyAdoptions } from '../pets/manager.js';
 
 import { activeChar, saveKey } from '../core/chars.js';
 const KEY = saveKey(activeChar() && activeChar().id);   // um save por personagem
-const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'pot', 'bmb', 'potR', 'bmbR'];
+const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'peixe', 'osso', 'pot', 'bmb', 'potR', 'bmbR'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
 
 export { safeSpot };
@@ -48,6 +50,7 @@ export function saveGame() {
       autoCfg: state.autoCfg,
       dunDone: state.dunDone,
       horse: MOUNT.owned ? 1 + MOUNT.coat : 0,
+      bond: saveBond(),
     }));
   } catch (e) { /* armazenamento indisponível: o jogo segue sem salvar */ }
 }
@@ -98,6 +101,7 @@ export function loadGame() {
     state.quests = s.quests && typeof s.quests === 'object' ? s.quests : {};
     state.quest = s.quest && Number.isFinite(s.quest.st) ? { st: s.quest.st | 0 } : { st: 0 };
     state.owned = s.owned && typeof s.owned === 'object' ? s.owned : {};   // saves antigos não tinham companheiros próprios: começam sem nenhum
+    loadBond(s.bond); applyAdoptions();   // vínculos com os bichos; nome e pelagem do cachorro/gato adotados
     if (PST[s.pet] && state.owned[s.pet]) setPet(s.pet);
     if (s.petOff || !state.owned[s.pet]) unequipPet(true);
     refreshPetButton();

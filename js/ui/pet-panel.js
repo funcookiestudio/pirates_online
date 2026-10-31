@@ -8,6 +8,7 @@ import { emit } from '../core/events.js';
 import { setPet, unequipPet } from '../pets/manager.js';
 import { resetPet, armedButton } from '../systems/reset.js';
 import { svg } from './icons.js';
+import { BOND, rec, heartStr, petsLeft, fedToday, PET_MAX, MOOD_GOOD, MOOD_SULK } from '../systems/bond.js';
 
 /** Aba da árvore de habilidades em exibição (null = a do companheiro ativo) */
 let treeTab = null;
@@ -54,7 +55,7 @@ function renderSheet(id, s, pp) {
   const tile = (n, v, sub) => '<div class="stt-i"><small>' + n + '</small><b>' + v + '</b><u>' + sub + '</u></div>';
   $('pstt').innerHTML =
     tile('Ataque', '+' + (s.lv - 1) * 4 + '%', 'Pontos: ' + s.pts) +
-    tile('Defesa', 0, 'Equipamento em breve') +
+    bondTile(id, tile) +
     tile('Vida', pmax(id), Math.ceil(s.hp) + ' atual' + (s.dn > 0 ? ' · ' + Math.ceil(s.dn) + 's' : ''));
   const bag = $('pbag');
   bag.innerHTML = '';
@@ -66,6 +67,16 @@ function renderSheet(id, s, pp) {
   const r = $('rpp');
   r.innerHTML = '<button class="btn big"></button>';
   armedButton(r.firstChild, 'Resetar ' + pp.n, () => resetPet(id));
+}
+
+/** Cachorro/gato adotado: humor (vínculo) com corações, efeito atual e o que ainda dá para fazer hoje; os outros mostram a Defesa */
+function bondTile(id, tile) {
+  const bid = (id === 'dog' || id === 'cat') && BOND.adopt[id];
+  if (!bid) return tile('Defesa', 0, 'Equipamento em breve');
+  const r = rec(bid), m = Math.round(r.b);
+  const fx = m >= MOOD_GOOD ? 'feliz: +8% dano, +10% veloc.' : m < MOOD_SULK ? 'emburrado: não ataca' : 'sem bônus';
+  const todo = 'carinho ' + (PET_MAX - petsLeft(bid)) + '/' + PET_MAX + ' · petisco ' + (fedToday(bid) ? 'ok' : 'falta');
+  return tile('Humor', heartStr(bid), m + '% · ' + fx + ' · hoje: ' + todo + (r.st ? ' · ' + r.st + ' dia(s) seguidos feliz' : ''));
 }
 
 /** Árvore de habilidades do companheiro: três níveis de nós + barra de detalhe com "Aprender" */

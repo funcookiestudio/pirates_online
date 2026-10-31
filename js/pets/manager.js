@@ -7,23 +7,26 @@ import { puff } from '../systems/effects.js';
 import { log } from '../ui/notify.js';
 import { refreshPetButton } from '../ui/hotbar.js';
 import { PST, PV, pmax } from './stats.js';
-import { inCombat, petFighting } from './common.js';
+import { inCombat, petFighting, COMP } from './common.js';
 import { PAR, FLY_MODELS, flyerUpd, activateFlyer, dropCarried, hideFlyers } from './flyer.js';
 import { MON, monkeyUpd, resetMonkey, dropMonkeyCarried } from './monkey.js';
-import { DOG, dogUpd, resetDog } from './dog.js';
+import { DOG, dogUpd, resetDog, setDogCoat } from './dog.js';
+import { CAT, catUpd, resetCat, hideCat } from './cat.js';
+import { BOND, animalName, coatOf } from '../systems/bond.js';
 
 const isDog = id => id === 'dog' || id === 'rat';   // cachorro e rato compartilham o comportamento terrestre
+const isCat = id => id === 'cat';                    // gato adotado (bond.js): modelo e animações dos gatos da ilha
 
 /** Posição 3D do companheiro ativo */
 export function petPos() {
   const id = state.pet.id;
-  return id === 'monkey' ? MON.g.position : isDog(id) ? DOG.g.position : PAR.g.position;
+  return id === 'monkey' ? MON.g.position : isDog(id) ? DOG.g.position : isCat(id) ? CAT.g.position : PAR.g.position;
 }
 
 /** O companheiro está pousado/sentado no ombro (seguro de ataques)? */
 export function petPerched() {
   const id = state.pet.id;
-  return id === 'monkey' ? MON.s === 'perch' : isDog(id) ? false : PAR.s === 'perch';
+  return id === 'monkey' ? MON.s === 'perch' : isDog(id) || isCat(id) ? false : PAR.s === 'perch';
 }
 
 /** Companheiro recebe dano; ao chegar a 0 de vida desmaia por 20 s */
@@ -45,7 +48,7 @@ export function togglePet() {
   if (state.petOff) { log('Nenhum companheiro equipado (Pets: escolha um para usar)'); return; }
   state.petAttack = !state.petAttack;
   refreshPetButton();
-  const pet = state.pet, dog = isDog(pet.id);
+  const pet = state.pet, dog = isDog(pet.id) || isCat(pet.id);
   log(pet.ic + ' ' + pet.n + (state.petAttack
     ? ': ataca' + (dog ? '' : ' e coleta (só coleta fora de combate)')
     : (dog ? ': só acompanha' : ': somente coleta')));
@@ -73,7 +76,7 @@ function happyFx(dt, g) {
 export function unequipPet(silent) {
   if (state.petOff) return;
   dropCarried(); dropMonkeyCarried(); hideFlyers();
-  MON.g.visible = false; DOG.g.visible = false;
+  MON.g.visible = false; DOG.g.visible = false; hideCat();
   state.petOff = true; state.petHappy = 0;
   P.dr = 0;
   refreshPetButton();
@@ -93,22 +96,46 @@ export function setPet(id) {
   hideFlyers();
   MON.g.visible = false;
   DOG.g.visible = false;
+  hideCat();
 
   state.pet = n;
   if (FLY_MODELS[id]) activateFlyer(id);
   else if (id === 'monkey') resetMonkey();
+  else if (isCat(id)) resetCat(coatOf(BOND.adopt.cat || 'laranja'));
   else resetDog(id);
 
   puff(P.x, 1.8, P.z, 0xffe060, 4, 10);
   state.petHappy = HAPPY_TIME;
   refreshPetButton();
-  log(n.ic + ' ' + n.n + (isDog(id) ? ' agora acompanha você' : ' agora está com você'));
+  log(n.ic + ' ' + n.n + (isDog(id) || isCat(id) ? ' agora acompanha você' : ' agora está com você'));
   emit('pets:changed');
+}
+
+/** Nome e pelagem do cachorro e do gato adotados (bond.js); chamado ao carregar o jogo e ao adotar */
+export function applyAdoptions() {
+  const d = BOND.adopt.dog, c = BOND.adopt.cat;
+  const pd = PETLIST.find(p => p.id === 'dog'), pc = PETLIST.find(p => p.id === 'cat');
+  if (d) { setDogCoat(coatOf(d)); pd.n = animalName(d); }
+  if (c) { pc.n = animalName(c); if (CAT.A && CAT.coat !== coatOf(c) && state.pet.id === 'cat' && !state.petOff) resetCat(coatOf(c)); }
+}
+
+/** Alvo de carinho do companheiro adotado ativo (COMP) acompanha a posição do pet */
+function syncComp() {
+  const id = state.pet.id;
+  COMP.bid = !state.petOff && (id === 'dog' || id === 'cat') ? BOND.adopt[id] : null;
+  if (!COMP.bid) { COMP.pet = COMP.want = COMP.eat = false; return; }
+  const p = petPos(); COMP.x = p.x; COMP.z = p.z;
+}
+
+/** Clique no próprio cachorro/gato adotado (fora de combate): devolve o alvo de carinho */
+export function companionAt(x, z) {
+  if (!COMP.bid || state.petOff || inCombat()) return null;
+  return Math.hypot(COMP.x - x, COMP.z - z) < 1.1 ? COMP : null;
 }
 
 /** Vida do pet, redução de dano para o jogador e o comportamento do pet ativo */
 export function updatePets(dt, now) {
-  if (state.petOff) { P.dr = 0; return; }
+  if (state.petOff) { P.dr = 0; syncComp(); return; }
   const id = state.pet.id, s = PST[id], m = pmax(id);
 
   if (s.dn > 0) {
@@ -125,7 +152,9 @@ export function updatePets(dt, now) {
 
   if (id === 'parrot' || id === 'raven') flyerUpd(dt, now);
   else if (id === 'monkey') monkeyUpd(dt, now);
+  else if (isCat(id)) catUpd(dt, now);
   else dogUpd(dt, now);
 
-  happyFx(dt, id === 'monkey' ? MON.g : isDog(id) ? DOG.g : PAR.g);
+  happyFx(dt, id === 'monkey' ? MON.g : isDog(id) ? DOG.g : isCat(id) ? CAT.g : PAR.g);
+  syncComp();
 }

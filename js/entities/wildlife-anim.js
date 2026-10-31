@@ -68,13 +68,16 @@ const BOAR = {
 const YAW = [.8, 1.1, .7, .4, .1, 0];
 const CAT = {
   k: { Aw: .5, Ar: .75, ew: .9, er: 1.1, tr: .1, yr: .09 }, piv: [.43, -.28], sc: 1.15,
-  modes: ['idle', 'walk', 'run', 'sit', 'groom', 'stretch', 'swipe', 'sleep', 'pet'],
+  modes: ['idle', 'walk', 'run', 'sit', 'groom', 'stretch', 'swipe', 'sleep', 'pet', 'eat', 'roll'],
   pose: {
     idle: (t) => ({ hx: Math.sin(t * 1.3) * .05, hy: Math.sin(t * .7) * .6, ta: .25, y: Math.sin(t * 1.8) * .006 }),
     walk: (t, A) => Object.assign(gaitP(A.ph, false, CAT.k), { hx: Math.sin(A.ph * 2) * .03, ta: .3 }),
     run: (t, A) => Object.assign(gaitP(A.ph, true, CAT.k), { hx: -.1, ta: .12 }),
     sit: (t) => ({ tilt: -1, y: -.3, hl: -1.2, hr: -1.2, khl: 1, khr: 1, fl: 1, fr: 1, hx: 1 + Math.sin(t * 1.3) * .04, hy: Math.sin(t * .7) * .5, ta: .3 }),
     pet: (t) => ({ tilt: -1, y: -.3, hl: -1.2, hr: -1.2, khl: 1, khr: 1, fl: 1, fr: 1, hx: .72 + Math.sin(t * 2.4) * .05, hy: Math.sin(t * 1.1) * .08, hdy: .03, ta: .55, tc: .08, ez: -.12, br: Math.sin(t * 5) * .006 }),   // sentado, cabeça erguida contra a mão, olhos fechados, rabo balançando
+    eat: (t) => ({ tilt: .14, y: -.03, hx: .95 + Math.sin(t * 10) * .07, hdy: -.05, fl: -.28, fr: -.22, kfl: .25, kfr: .2, hl: .05, hr: .05, ta: .5, ez: Math.sin(t * 10) * .04 }),   // em pé, cabeça no chão mastigando o petisco
+    roll: (t) => { const w = Math.sin(t * 5.5);   // vínculo alto: deita de lado, barriga para cima, patinhas brincando no ar, olhos fechados
+      return { rz: Math.PI / 2, y: -.24, fl: -1.2 + w * .3, fr: -1.0 - w * .3, kfl: 1.3 + w * .2, kfr: 1.1 - w * .2, hl: -.7 + w * .15, hr: -.5 - w * .15, khl: 1.3, khr: 1.3, hx: .45, hy: Math.sin(t * 1.3) * .2, ta: .55, tc: -.2, br: Math.sin(t * 2.4) * .012, ez: -.12 }; },
     groom: (t) => { const l = Math.sin(t * 9) * .5 + .5;   // sentado, levanta a pata dianteira e lambe
       return { tilt: -1, y: -.3, hl: -1.2, hr: -1.2, khl: 1, khr: 1, fl: 1, fr: -.75 + l * .12, kfr: 1.7, hx: 1.38 - l * .1, hy: -.25, ta: .2, ez: -.05 }; },
     stretch: (t) => { const u = .5 + .5 * Math.sin(t * .9);   // reverência: peito no chão, traseiro erguido, rabo para cima
@@ -89,11 +92,11 @@ const CAT = {
     const m = A.m, sl = A.W.sleep, blink = ((t * .9 + A.t0) % 4.3) < .13;
     m.scale.setScalar(1 + p.br);
     const sw = Math.min(1, A.W.sit + A.W.pet + A.W.groom); m.legs[0].scale.y = m.legs[1].scale.y = 1 + .4 * sw;   // sentado: as patas da frente se estendem até o chão
-    m.eyes.visible = sl < .5 && !blink && A.W.pet < .5; m.lids.visible = !m.eyes.visible;
+    m.eyes.visible = sl < .5 && !blink && A.W.pet + A.W.roll < .5; m.lids.visible = !m.eyes.visible;
     m.head.rotation.x = p.hx; m.head.rotation.y = p.hy; m.head.position.y = .72 + p.hdy;
     const flick = Math.max(0, Math.sin(t * .7 + A.t0 * 3)) > .97 ? Math.sin(t * 40) * .25 : 0;   // orelha estremece de vez em quando
     m.earL.rotation.z = .3 + Math.sin(t * 9) * .05 * (1 - sl) + p.ez + flick; m.earR.rotation.z = -.3 - Math.sin(t * 9) * .05 * (1 - sl) - p.ez;
-    m.tail.forEach((s, i) => { s.rotation.x = (i ? .05 + p.tc : .7 + p.tf) + p.ta * .2; s.rotation.y = Math.sin(t * 2 - i * .5) * p.ta * .8 + p.tcy * YAW[i] + (A.dog ? Math.sin(t * 11 - i * .5) * .22 * (A.W.sit + A.W.pet + A.W.idle) * (i + 1) / 3 : 0); });
+    m.tail.forEach((s, i) => { s.rotation.x = (i ? .05 + p.tc : .7 + p.tf) + p.ta * .2; s.rotation.y = Math.sin(t * 2 - i * .5) * p.ta * .8 + p.tcy * YAW[i] + (A.dog ? Math.sin(t * 11 - i * .5) * .22 * (A.W.sit + A.W.pet + A.W.idle + A.W.roll + A.W.eat * .5) * (i + 1) / 3 : 0); });
   },
 };
 
