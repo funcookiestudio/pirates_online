@@ -13,7 +13,8 @@ import { groundY, slideTo, walkable } from '../world/terrain.js';
 import { isDark, refreshTorch } from './inventory.js';
 import { freePoint } from './steer.js';
 import { dIn } from '../dungeon/dgrid.js';
-import { VILLAGE_R, rideOk } from '../core/village-const.js';
+import { VILLAGE_R, rideOk, streetSpot } from '../core/village-const.js';
+import { houseAt } from '../world/floors.js';
 import { puff } from './effects.js';
 import { log } from '../ui/notify.js';
 import { state } from '../core/state.js';
@@ -51,9 +52,9 @@ function ensure(k) {
 }
 
 /** Coloca o veículo parado com os cavalos em (x,z) olhando para `yaw` */
-function park(k, x, z, yaw) {
+function park(k, x, z, yaw, exact) {
   const o = ensure(k), L = VKIND[k];
-  const f = freePoint(x, z, 1.4);
+  const f = exact ? { x, z } : freePoint(x, z, 1.4);
   o.x = f.x; o.z = f.z; o.st = 'park';
   const sx = Math.sin(yaw), cz = Math.cos(yaw);
   o.ax = o.x - sx * L.lead; o.az = o.z - cz * L.lead;
@@ -142,7 +143,7 @@ export function loadVeh(s) {
   VEH.paint = Math.max(0, Math.min(PAINTS.length - 1, s.p | 0));
 }
 
-const canDrive = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && rideOk(P.x, P.z) && !P.sit && !P.sitT && P.roll <= 0 && !MOUNT.on;   // na vila: só nas ruas
+const canDrive = () => !P.dead && !P.swimming && !dIn(P.x, P.z) && !houseAt(P.x, P.z, .3) && !P.sit && !P.sitT && P.roll <= 0 && !MOUNT.on;   // na vila pode subir (o veículo fica na rua); dentro de casa não
 const inVillage = (x = P.x, z = P.z) => Math.hypot(x, z) <= VILLAGE_R + 1;
 
 /** Ponto do chão, ao lado da boleia, de onde se sobe/desce (o outro lado, se este estiver bloqueado) */
@@ -207,7 +208,9 @@ export function vehToggle(auto) {
   if (VEH.on) { if (VEH.dis || VEH.t < 1) return; P.tgt = null; startLeave(); return; }
   if (!canDrive()) { log('Aqui não dá: suba em terra firme (na vila, só pelas ruas)'); return; }
   const o = ensure(k);
-  if (inVillage() && (!o.m.root.visible || Math.hypot(o.x - P.x, o.z - P.z) > 16)) { log('Para chamar a ' + N + ', saia da vila (dentro dela ela só anda pelas ruas com você na boleia)'); return; }
+  if (inVillage() && (!o.m.root.visible || !rideOk(o.x, o.z) || Math.hypot(o.x - P.x, o.z - P.z) > 16)) {   // chamada de dentro da vila: aparece na rua do portão mais perto
+    const s = streetSpot(P.x, P.z); park(k, s.x, s.z, s.yaw, true); puff(o.x, 1, o.z, 0xd8c8a0, 4, 3);
+  }
   if (o.m.root.visible && inVillage(o.x, o.z) && !inVillage() && Math.hypot(o.x - P.x, o.z - P.z) > 16) o.m.root.visible = false;   // ficou parada na vila: aparece perto do jogador (não atravessa as casas)
   if (!o.m.root.visible) {   // estava no estábulo: chega perto do jogador
     const a = P.g.rotation.y + Math.PI;
@@ -218,7 +221,7 @@ export function vehToggle(auto) {
   const p = sidePoint(k), d = Math.hypot(p.x - P.x, p.z - P.z);
   if (d < 2.2) { board(k); return; }
   VEH.want = true; VEH.walkT = 25; o.stuck = 0;
-  if (Math.hypot(o.x - P.x, o.z - P.z) > 16) { o.st = 'come'; log('Assobiou: a ' + N + ' está a caminho'); }
+  if (!inVillage() && Math.hypot(o.x - P.x, o.z - P.z) > 16) { o.st = 'come'; log('Assobiou: a ' + N + ' está a caminho'); }
   else log('Indo até a ' + N);
 }
 /** Dispensa o veículo (Shift+H ou segurar o botão): volta ao estábulo */
