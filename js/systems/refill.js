@@ -10,6 +10,7 @@ import { behindWall, npcStand } from './steer.js';
 import { TIDY, NEAR } from './town.js';
 import { dwell } from './dwell.js';
 import { lootText, log } from '../ui/notify.js';
+import { inDungeon, dungeonLeavePortal } from '../dungeon/dungeon-scene.js';
 
 /** Quantas unidades de `k` comprar? Conta slot + cinto; compra quando o total cai a `min` ou menos, até `target`; limitada por ouro, vagas e `beltMax` */
 function toBuy(k, tot, min, target, price, gold) {
@@ -45,6 +46,13 @@ export function refillStep() {
   const urgent = !!pl.pot && P.pot + P.potR <= 0 && (P.hp < P.max * .6 || state.tripUrgent);
   state.tripUrgent = urgent;
   if (!urgent && danger()) return false;                   // inimigo perto: luta primeiro
+  // dentro da dungeon o NPC está do outro lado das paredes: primeiro sai pelo portal (o jogo o leva de volta à vila)
+  if (inDungeon()) {
+    const q = dungeonLeavePortal();
+    if (!state.trip) { state.trip = pl.kind; log((urgent ? 'Vida baixa! ' : '') + 'Sem ' + (pl.pot ? 'poções' : pl.bomb ? 'bombas' : 'projéteis') + ': saindo da dungeon pelo portal'); }
+    P.tgt = null; P.tx = q.x; P.tz = q.z;
+    return true;
+  }
   const n = npcByShop(pl.kind);
   if (!n) return false;
   const nx = n.g.position.x, nz = n.g.position.z, d = Math.hypot(P.x - nx, P.z - nz);

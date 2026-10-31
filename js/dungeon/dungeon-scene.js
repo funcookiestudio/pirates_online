@@ -306,3 +306,10 @@ export function dungeonExit() {
   const p = cur.portals[1];
   return { x: p.x, z: p.z };
 }
+
+/** Portal para sair agora (auto sem poção): o de saída se o chefe morreu, senão o de entrada */
+export function dungeonLeavePortal() {
+  if (!cur) return null;
+  const p = cur.boss.dead ? cur.portals[1] : cur.portals[0];
+  return { x: p.x, z: p.z };
+}
