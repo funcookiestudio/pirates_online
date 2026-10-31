@@ -110,7 +110,7 @@ function buildBody(hum) {
     return P;
   }
 
-  const look = { eye: EYE, lip: 0x2a1626, brow: 0x2a2430 };
+  const look = { eye: EYE, lip: hum ? 0xa01c3c : 0x2a1626, brow: 0x2a2430 };   // fase humana: batom vermelho
   const P = buildUpper({ b: 0x211a2b, fi: PLUM, u: SKIN_C, f: SKIN_C, skin: SKIN_C, belt: 0x3a2860, look });
   P.rotation.order = 'YXZ';
   P.position.set(0, hum ? HUM_Y : LIFT, 0);
@@ -125,6 +125,18 @@ function buildBody(hum) {
   const hbk = (w, h, d, col, x, y, z, rx, ry, rz, live) => { const m = bb(w * K, h * K, d * K, mn(w, h, d) * .18 * K, col); m.position.set(x * K, y * K, z * K); m.rotation.set(rx || 0, ry || 0, rz || 0); (live ? P.head : headDeco).add(m); return m; };
 
   /* torso */
+  const GOWN = 0x1f4d3a, GOWN2 = 0x163829;   // vestido longo verde-esmeralda com detalhes dourados (fase humana)
+  if (hum) {
+    ubk(1.14, .52, .82, .12, GOWN, 0, 1.92, 0);                                    // corpete
+    ubk(.94, .4, .74, .08, GOWN2, 0, 1.5, 0);                                      // cintura marcada (espartilho)
+    for (let i = 0; i < 4; i++) ubk(.2, .03, .04, .01, GOLD, 0, 1.38 + i * .08, .385, 0, 0, i % 2 ? .6 : -.6);   // amarração dourada
+    [-1, 1].forEach(sx => {
+      ubk(.28, .4, .05, .02, SKIN_C, sx * .12, 2.02, .42, 0, 0, sx * .38);         // decote em V
+      ubk(.08, .34, .06, .02, GOLD, sx * .4, 2.2, .3, 0, 0, sx * .15);              // alcinhas douradas
+    });
+    ubk(.16, .2, .05, .02, SKIN_C, 0, 2.12, .42);
+    ubk(.12, .12, .06, .02, 0x58c070, 0, 1.86, .43, 0, 0, .78);                    // broche de esmeralda no decote
+  } else {
   ubk(.52, .34, .05, .02, SKIN_C, 0, 2.02, .405);
   ubk(.90, .34, .70, .05, SKIN_C, 0, 1.50, 0);
   for (let i = 0; i < 5; i++) ubk(.045, .30, .04, .01, DARK, (i - 2) * .16, 1.50, .37, 0, 0, (rnd() - .5) * .3);
@@ -134,6 +146,7 @@ function buildBody(hum) {
   }
   ubk(.5, .1, .5, .03, DARK, -.58, 2.27, 0);
   ubk(.5, .1, .5, .03, DARK, .58, 2.27, 0);
+  }
   if (!hum) for (let i = 0; i < 12; i++) {      // trapos na transição cintura → cauda
     const a = i / 12 * 6.283, hh = .20 + rnd() * .20;
     ubk(.13, hh, .10, .03, i % 2 ? 0x2a2236 : DARK, Math.sin(a) * .52, .88 - hh / 2 + .05, Math.cos(a) * .42, 0, 0, (rnd() - .5) * .3);
@@ -154,8 +167,8 @@ function buildBody(hum) {
       hbk(.08, hh, .08, rnd() < .5 ? 0x5c4a3a : 0x2e2420, Math.sin(a) * r, 1.06 + hh * .35, Math.cos(a) * r, Math.cos(a) * .5, 0, -Math.sin(a) * .5);
     }
   }
-  /* veias no braço */
-  for (let i = 0; i < 14; i++) {
+  /* veias no braço (só na serpente) */
+  if (!hum) for (let i = 0; i < 14; i++) {
     const m = bb(.05 * K, (.12 + rnd() * .14) * K, .04 * K, .01 * K, 0x1c1624), side = rnd() < .5;
     m.position.set((side ? .235 : (rnd() - .5) * .35) * K, -(.06 + rnd() * .34) * K, (side ? (rnd() - .5) * .38 : .25) * K);
     m.rotation.set(0, 0, (rnd() - .5) * 1.6); P.armL.add(m);
@@ -168,23 +181,65 @@ function buildBody(hum) {
     const Bk = (w, h, d, bv, c) => bb(w * K, h * K, d * K, bv * K, c);
     B.legs = [-.26, .26].map(x => {
       const hip = new THREE.Group(); hip.position.set(x * K, 1.1 * K, 0); P.add(hip);
-      pt(Bk(.44, .5, .5, .09, ST), 0, -.2, 0, hip);
+      pt(Bk(.4, .5, .44, .09, SKIN_C), 0, -.2, 0, hip);                              // pernas à mostra pela fenda do vestido
       const knee = new THREE.Group(); knee.position.set(0, -.45 * K, 0); hip.add(knee);
-      pt(Bk(.4, .42, .46, .08, ST), 0, -.2, 0, knee);
+      pt(Bk(.34, .42, .38, .08, SKIN_C), 0, -.2, 0, knee);
       const foot = new THREE.Group(); foot.position.set(0, -.42 * K, 0); knee.add(foot);
-      pt(Bk(.52, .3, .8, .08, DARK), 0, -.08, .1, foot);
-      pt(Bk(.54, .12, .3, .04, 0x0e0a12), 0, -.17, -.18, foot);
+      pt(Bk(.36, .2, .66, .06, DARK), 0, -.02, .16, foot);                            // sandália de salto
+      pt(Bk(.1, .22, .1, .03, GOLD), 0, -.14, -.12, foot);
+      pt(Bk(.38, .05, .4, .02, GOLD), 0, .1, .1, foot);
       return { hip, knee, foot };
     });
-    ubk(1.22, .42, .88, .12, 0x2f4a30, 0, 1.05, 0);     // saia
-    ubk(1.3, .1, .94, .04, 0x4f7a45, 0, .88, 0);        // barra
-    hbk(1.5, .3, 1.45, PL, 0, 1.22, -.05);
-    hbk(1.5, 1.45, .34, PL, 0, .62, -.74);
-    [-1, 1].forEach(sx => { hbk(.3, 1.3, 1.4, PL, sx * .75, .6, -.05); hbk(.26, 1.0, .3, PL, sx * .68, .55, .64); });
-    hbk(1.3, .22, .3, PL, 0, 1.04, .66);
-    hbk(.55, .55, .5, PL, 0, 1.5, -.6, .5, 0, 0);
-    hbk(1.75, .35, 1.15, PL, 0, -.12, 0);
-    B.lumps = [[.3, 1.42, -.2], [-.35, 1.4, .15], [0, 1.34, -.62], [.55, 1.2, -.5], [-.55, 1.2, -.4]].map(p => hbk(.3, .3, .3, LT, p[0], p[1], p[2], 0, 0, 0, true));
+    /* saia longa até o chão, em camadas que abrem embaixo, fenda na frente da perna direita e cauda arrastando atrás */
+    const skirt = new THREE.Group(); P.add(skirt); B.skirt = skirt;
+    const sk = (w, h, d, c, x, y, z, rx, rz) => { const m = Bk(w, h, d, mn(w, h, d) * .16, c); m.position.set(x * K, y * K, z * K); m.rotation.set(rx || 0, 0, rz || 0); skirt.add(m); };
+    const tier = (w, h, d, y, c, slit) => {
+      if (!slit) { sk(w, h, d, c, 0, y, 0); return; }
+      sk(w, h, d * .55, c, 0, y, -d * .225);                                          // metade de trás
+      sk(w / 2, h, d * .5, c, -w / 4, y, d * .25);                                     // frente esquerda
+      sk(.18, h, d * .5, c, .09, y, d * .25);                                          // frente direita, antes da fenda
+      const ow = w / 2 - .38; sk(ow, h, d * .5, c, .38 + ow / 2, y, d * .25, 0, -.06); // depois da fenda, abrindo
+    };
+    tier(1.04, .36, .78, 1.2, GOWN);                                                  // quadril
+    ubk(1.0, .1, .76, .03, GOLD, 0, 1.31, 0);                                         // cinto dourado
+    ubk(.16, .16, .06, .03, 0x58c070, 0, 1.31, .4);
+    tier(1.12, .4, .84, .88, GOWN2, true);
+    tier(1.24, .4, .92, .5, GOWN, true);
+    tier(1.44, .32, 1.06, .17, GOWN2, true);
+    sk(1.5, .06, 1.1, GOLD, 0, .03, -.05);                                             // barra dourada
+    sk(1.2, .12, .8, GOWN2, 0, .06, -.8);                                              // cauda do vestido
+    sk(.86, .08, .6, GOWN, 0, .04, -1.35);
+    [-1, 1].forEach(sx => { sk(.06, 1.0, .06, GOWN2, sx * .3, .55, -.47); sk(.06, .9, .06, GOWN2, sx * .58, .45, .1, 0, sx * .05); });   // pregas
+    fuse(skirt, new Set());
+    /* braceletes dourados e delineado */
+    [P.arm, P.armL].forEach(a => { const m = Bk(.46, .08, .5, .03, GOLD); m.position.set(0, -.12 * K, 0); a.add(m); const c = Bk(.38, .07, .42, .03, GOLD); c.position.set(0, -.32 * K, 0); a.fa.add(c); });
+    [-1, 1].forEach(sx => { hbk(.16, .04, .04, DARK, sx * .44, .66, .54, 0, 0, sx * .45); hbk(.24, .03, .04, DARK, sx * .28, .69, .55); });
+    /* capuz de pano: folgado em volta da cabeça, copa arredondada com a ponta caindo para trás, borda verde emoldurando o rosto */
+    const FD = 0x2a2236, TR = 0x4f7a45;
+    hbk(1.42, 1.3, .3, PL, 0, .6, -.7, -.1, 0, 0);                                   // costas
+    [-1, 1].forEach(sx => {
+      hbk(.26, 1.28, 1.25, PL, sx * .74, .56, -.06, 0, 0, -sx * .1);                // laterais, abrindo embaixo
+      hbk(.1, 1.0, .9, FD, sx * .62, .58, .05, 0, 0, -sx * .1);                    // forro escuro (sombra ao lado do rosto)
+      hbk(.17, 1.0, .18, TR, sx * .68, .55, .6, 0, 0, -sx * .12);                  // borda lateral
+      hbk(.5, .24, .22, PL, sx * .45, -.12, .58, 0, 0, sx * .3);                   // dobra do pescoço na frente
+    });
+    hbk(1.42, .3, 1.3, PL, 0, 1.18, -.08);                                         // copa
+    hbk(1.12, .26, 1.08, PL, 0, 1.36, -.2);
+    hbk(.74, .22, .72, PL, 0, 1.5, -.34);
+    hbk(1.24, .17, .2, TR, 0, 1.12, .62, -.25, 0, 0);                             // borda sobre a testa, caída
+    hbk(.46, .4, .44, PL, 0, 1.44, -.74, .6, 0, 0);                               // ponta do capuz caindo para trás
+    hbk(.3, .34, .32, PL, 0, 1.2, -1.02, 1.0, 0, 0);
+    hbk(.18, .26, .2, FD, 0, .96, -1.18, 1.3, 0, 0);
+    hbk(1.6, .32, 1.2, FD, 0, -.12, -.05);                                         // pano juntando no pescoço
+    /* capa curta sobre os ombros, com a barra em tiras */
+    ubk(2.05, .28, 1.12, .1, PL, 0, 2.3, -.04);
+    ubk(1.95, .9, .14, .05, PL, 0, 1.92, -.52);
+    [-1, 1].forEach(sx => { ubk(.62, .62, .14, .05, PL, sx * .5, 2.02, .46, 0, 0, sx * .22); ubk(.2, .62, .9, .05, PL, sx * 1.0, 2.0, -.04, 0, 0, sx * .12); });
+    for (let i = 0; i < 11; i++) {
+      const a = Math.PI * .55 + i / 10 * Math.PI * .9, hh = .22 + rnd() * .18;
+      ubk(.2, hh, .1, .03, i % 2 ? PL : FD, Math.cos(a) * .98, 1.5 - hh / 2, -Math.abs(Math.sin(a)) * .55, 0, 0, (rnd() - .5) * .25);
+    }
+    B.lumps = [[.35, 1.3, -.25], [-.4, 1.28, .05], [0, 1.44, -.45], [.55, 1.05, -.45], [-.58, 1.0, -.35]].map(p => hbk(.3, .3, .3, LT, p[0], p[1], p[2], 0, 0, 0, true));
   }
   fuse(upDeco, new Set()); fuse(headDeco, new Set());
 
@@ -396,6 +451,8 @@ export function makeMedusa() {
         const hx = -.4 * Math.sin(ph) * walk_v, kx = .9 * mx(0, Math.cos(ph)) * walk_v + .06 * rage_v;
         l.hip.rotation.x = hx; l.knee.rotation.x = kx; l.foot.rotation.x = -(hx + kx) * .7;
       });
+      B.skirt.rotation.z = swing * .035 * walk_v;                                      // a saia balança com o quadril
+      B.skirt.rotation.x = -.03 * walk_v;
       B.lumps.forEach((l, i) => l.scale.setScalar(1 + B.AG * (.25 + .2 * Math.sin(gT * 6 + i * 2.1)) + .03 * Math.sin(gT * 1.5 + i)));
     }
     B.SN.forEach(o => o.update(st.animT));
