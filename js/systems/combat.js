@@ -13,6 +13,7 @@ import { spendAmmo } from './inventory.js';
 import { PV, petXp } from '../pets/stats.js';
 import { puff } from './effects.js';
 import { log, dmgNum } from '../ui/notify.js';
+import { medusaFloor } from '../entities/medusa.js';
 
 /* ---------- Dano ---------- */
 
@@ -24,6 +25,7 @@ import { log, dmgNum } from '../ui/notify.js';
 export function hit(e, d, o) {
   o = o || {};
   if (e.dead) return;
+  if (e.inv) { if (!o.dot) puff(e.x, 2, e.z, 0x9a9890, 2, 3); return; }   // invulnerável (Medusa se transformando)
   e.ag = true;
   if (e.mk > 0) d *= 1 + e.mkv;
   if (o.pet && e.hp < e.max * .35) d *= 1 + PV('exec');
@@ -54,6 +56,7 @@ export function hit(e, d, o) {
     }
   }
 
+  if (e.MD) medusaFloor(e);   // na fase humana a Medusa não morre: transforma-se aos 50%
   if (e.hp <= 0) onKill(e);
 }
 
@@ -67,7 +70,8 @@ function onKill(e) {
   dropLoot(e);
   levelUp();
   state.lastKill = e; emit('enemy:killed');
-  if (e.t.boss) log(e.dun ? 'Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
+  if (e.MD) log('🗿 A Medusa foi derrotada!');
+  else if (e.t.boss) log(e.dun ? 'Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
   else if (e.elite) log('Elite derrotado! +' + xp + ' XP');
 }
 

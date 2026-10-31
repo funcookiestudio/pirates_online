@@ -1,6 +1,6 @@
 # Pirata ARPG
 
-ARPG 3D (Three.js) de pirata: explore a ilha, enfrente esqueletos, piratas fantasmas e o Capitão Maldito, colete loot e evolua junto com seu companheiro.
+ARPG 3D (Three.js) de pirata: explore a ilha, enfrente esqueletos, piratas fantasmas, o Capitão Maldito e a Medusa, colete loot e evolua junto com seu companheiro.
 
 ## Como rodar
 
@@ -58,6 +58,8 @@ js/
     player.js         Dados do jogador, dano recebido, nível
     player-weapon.js  Arma na mão e pose de mira (IK)
     enemies.js        Criação, IA, animação e reaparecimento
+    medusa-model.js   Modelo e animação da Medusa (fase 1 humana encapuzada, fase 2 meia serpente)
+    medusa.js         Chefe Medusa: transformação aos 50%, olhar petrificante, golpe de cauda e cuspe de veneno
     loot.js           Queda, coleta e efeito dos itens
     horse.js          Cavalo (modelo e animação de passo/trote/galope, usado na montaria e nos veículos)
     vehicles.js       Modelos da carroça (1 cavalo) e da carruagem (parelha, boleia, passageiros)

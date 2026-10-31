@@ -82,6 +82,16 @@ export function autoThink(dt) {
   // mochila cheia: vende no ferreiro e guarda no baú
   if (townStep()) { AD.why = 'vender/guardar (' + (state.trip || '?') + ')'; return; }
 
+  // olhar da Medusa: rola no fim do aviso, ou se afasta de costas para ela (medusa.js)
+  const gz = alive.find(e => e.st === 'gaze' && dist(e) < 20);
+  if (gz && !(P.stone > 0)) {
+    const l = dist(gz) || 1;
+    if (gz.tm < .35 && P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) { AD.why = 'rola do olhar da Medusa'; dodge('b'); return; }
+    AD.why = 'vira de costas para a Medusa';
+    P.tgt = null; P.tx = P.x + (P.x - gz.x) / l * 6; P.tz = P.z + (P.z - gz.z) / l * 6;
+    return;
+  }
+
   // esquiva (rolamento para trás): golpe pesado/especial sendo preparado perto, ou vida abaixo de 20% com inimigo colado
   if (state.autoCfg.dodge && P.rcd <= 0 && P.roll <= 0 && !P.swap && !P.sit && !P.sitT) {
     const heavy = alive.find(e => e.st === 'wind' && dist(e) < (e.slam ? 5.6 : 3.6) &&

@@ -31,7 +31,7 @@ function pickDir() {
 export function dodge(dir) {
   if (P.swap || MOUNT.on || VEH.on) return;   // montado (ou na boleia) não rola
   if (P.swimming) { startDive(); return; }   // na água a esquiva é um mergulho
-  if (P.dead || P.roll > 0 || P.rcd > 0 || P.sit > 0 || P.sitT) return;
+  if (P.dead || P.stone > 0 || P.roll > 0 || P.rcd > 0 || P.sit > 0 || P.sitT) return;
   const a = P.g.rotation.y, d = typeof dir === 'string' ? dir : pickDir();
   const vx = { f: Math.sin(a), b: -Math.sin(a), l: Math.cos(a), r: -Math.cos(a) }[d], vz = { f: Math.cos(a), b: -Math.cos(a), l: -Math.sin(a), r: Math.sin(a) }[d];
   P.roll = ROLL_TIME;

@@ -45,6 +45,7 @@ export function updatePlayer(dt) {
     updateBedPending();
     updatePetWalk(c => openPetBox(c));
     if (P.roll > 0) { rollMove(dt); clampToWorld(); }
+    else if (P.stone > 0) { P.vx = P.vz = 0; }   // petrificado pelo olhar da Medusa: não anda nem ataca (medusa.js)
     else if (sleeping()) { P.vx = P.vz = 0; }   // deitado/dormindo: a cama conduz o corpo (bed.js)
     else if (petting()) updatePet(dt);           // ajoelhado acariciando um gato
     else if (P.sit > 0 || P.sitT) updateSit(dt); // sentado/sentando/levantando: não anda nem ataca
@@ -67,7 +68,7 @@ export function updatePlayer(dt) {
   P.cds[1] = Math.max(0, P.cds[1] - dt);
   P.sw = Math.max(0, P.sw - dt * 3);
 
-  animate(dt);
+  if (!(P.stone > 0)) animate(dt);   // petrificado: a pose congela como estátua
   applyAim();
   swimPose(dt);
   applyDoorReach();

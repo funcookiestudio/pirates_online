@@ -161,7 +161,7 @@ export function enterDungeon(D, gen) {
     }
   });
   // chefe no fim do caminho
-  spawn(KIND.BOSS, ex, ez, null, { lv: D.lv + 4 });
+  spawn(D.boss === 'medusa' ? KIND.MEDUSA : KIND.BOSS, ex, ez, null, { lv: D.lv + 4 });   // ruínas (ou a mais funda da ilha, se não houver ruínas): Medusa
   const boss = enemies[enemies.length - 1]; boss.dun = 1;
   boss.ag = true;
 

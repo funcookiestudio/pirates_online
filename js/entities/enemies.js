@@ -15,6 +15,7 @@ import { log } from '../ui/notify.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { enemyStats, ELITE, takenMult } from '../data/scaling.js';
 import { animateEnemyBoar } from './wildlife-anim.js';
+import { initMedusa, medusaThink, animateMedusa, updateMedusaFx } from './medusa.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
@@ -26,13 +27,13 @@ const RESPAWN_TIME = 43.8;
 export function spawn(k, x, z, pat, o = {}) {
   const t = ENEMY_KINDS[k], lv = o.lv || t.lv, elite = !!o.elite && !t.boss, st = enemyStats(t, lv, elite);
   const g = enemyModel(t);
-  if (t.boss) g.scale.setScalar(1.7); else g.scale.setScalar((t.sc || 1) * (elite ? ELITE.scale : 1));
+  if (t.boss) g.scale.setScalar(t.sc || 1.7); else g.scale.setScalar((t.sc || 1) * (elite ? ELITE.scale : 1));
   g.position.set(x, groundY(x, z), z);
   scene.add(g);
 
   // barra de vida sobre a cabeça
   const hb = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .12), new THREE.MeshBasicMaterial({ color: elite ? 0xe8b020 : 0xc0302c }));
-  hb.position.y = t.boss ? 4.2 : t.hbY ? t.hbY / (t.sc || 1) : 2.6 + (t.sc ? (t.sc - 1) * 1.6 : 0);
+  hb.position.y = t.hbY ? t.hbY / (t.sc || 1) : t.boss ? 4.2 : 2.6 + (t.sc ? (t.sc - 1) * 1.6 : 0);
   hb.visible = false;
   g.add(hb);
 
@@ -52,7 +53,9 @@ export function spawn(k, x, z, pat, o = {}) {
     fl: 0, mk: 0, sn: 0, bl: 0, bt: 0, bd: 0, // flash, marca, atordoado, sangramento
     hs: 1, ar: -.4, af: -.3, ln: 0,           // barra suavizada e pose
     ph: Math.random() * 6, id: Math.floor(Math.random() * 2), // fase do passo e lado de flanco
+    MD: g.userData.MD,            // Medusa: controle do modelo de 2 fases
   });
+  if (t.medusa) initMedusa(enemies[enemies.length - 1]);
 }
 
 /* ---------- Atualização por frame ---------- */
@@ -127,7 +130,7 @@ function think(e, dt, c) {
     if (e.ag && d <= reach && e.cd <= 0) {
       e.st = 'wind';
       e.tm = dur;
-      e.slam = bo && ((e.n = (e.n || 0) + 1) % 2 === 0); // o boss alterna golpe normal e pancada em área
+      e.slam = bo && (!e.MD || e.MD.st.phase === 2) && ((e.n = (e.n || 0) + 1) % 2 === 0); // o boss alterna golpe normal e pancada em área
       if (e.slam) {
         e.ring = new THREE.Mesh(
           new THREE.RingGeometry(4.3, 4.6, 24).rotateX(-Math.PI / 2),
@@ -203,6 +206,12 @@ function animate(e, c, dt) {
   else if (e.st === 'chase' && Math.hypot(e.vx, e.vz) > .3) turnTo(e.g, Math.atan2(e.vx, e.vz), 6, dt);
 
   const mv = Math.min(1, Math.hypot(e.vx, e.vz) / T.s);
+  if (e.MD) {   // Medusa: modelo e animação próprios (medusa.js)
+    animateMedusa(e, c, dt);
+    e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
+    e.hb.scale.x = Math.max(.01, e.hs); e.hb.quaternion.copy(cam.quaternion); e.hb.parent.updateMatrixWorld();
+    return;
+  }
   if (e.A) {   // javali: pose de quadrúpede, sem braços
     animateEnemyBoar(e, c, dt, groundY);
     e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
@@ -288,13 +297,14 @@ function updateEnemy(e, dt) {
   }
 
   let wx = 0, wz = 0;
-  if (e.sn <= 0 && !P.dead) [wx, wz] = think(e, dt, c);
+  if (e.sn <= 0 && !P.dead) [wx, wz] = e.MD ? medusaThink(e, dt, c, think) : think(e, dt, c);
   move(e, wx, wz, dt);
   if (!farIdle) animate(e, c, dt);
 }
 
 /** Atualiza todos os inimigos e remove os mortos (agendando o reaparecimento) */
 export function updateEnemies(dt) {
+  updateMedusaFx(dt);   // veneno da Medusa e fim da petrificação
   enemies.forEach(e => updateEnemy(e, dt));
   for (let i = enemies.length - 1; i >= 0; i--) {
     if (enemies[i].dead > 1.2) {

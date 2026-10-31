@@ -54,6 +54,9 @@ export function buildCaves() {
     props.push({ position: { x: c.x - c.dx * 1.2, z: c.z - c.dz * 1.2, y: 0 }, r: 1.2 });
     D.fx = c.x + c.dx * 2.2; D.fz = c.z + c.dz * 2.2;                 // ponto de gatilho, à frente da boca
   });
+  // chefe: a Medusa mora nas ruínas; se a ilha não tiver ruínas, fica na dungeon mais difícil. Nas outras, o Capitão Maldito
+  DUNGEONS.forEach(D => { D.boss = D.theme === 'ruinas' ? 'medusa' : 'capitao'; });
+  if (DUNGEONS.length && !DUNGEONS.some(D => D.boss === 'medusa')) DUNGEONS.reduce((a, b) => b.lv > a.lv ? b : a).boss = 'medusa';
 }
 
 const colorFor = df => df >= 5 ? '#ff4040' : df >= 3 ? '#ff9030' : df >= -2 ? '#f0e050' : df >= -4 ? '#60d060' : '#a0a0a0';
@@ -76,7 +79,7 @@ function show(D) {
     '📐 ' + size,
     'Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
     g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : 'Tesouro espalhado pelo caminho',
-    'Chefe no fim do caminho · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
+    (D.boss === 'medusa' ? '🐍 Chefe: Medusa (2 fases: humana e serpente)' : '☠ Chefe: Capitão Maldito') + ' · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
     '⚠ ' + perigo(df) + ' (você: Nv ' + P.lv + ')',
   ].map(t => '<div>' + t + '</div>').join('');
   $('cvp').style.display = 'block';
