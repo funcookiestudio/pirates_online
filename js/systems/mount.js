@@ -3,7 +3,7 @@
    as pernas dele acompanham a velocidade (trote → galope). Desmonta sozinho na água, na vila, em dungeons e ao morrer. */
 import { scene } from '../core/engine.js';
 import { P } from '../entities/player.js';
-import { mkHorse } from '../entities/farm.js';
+import { mkHorse } from '../entities/horse.js';
 import { groundY, slideTo, walkable } from '../world/terrain.js';
 import { freePoint } from './steer.js';
 import { dIn } from '../dungeon/dgrid.js';
@@ -30,17 +30,17 @@ export const MOUNT = {
   x: 0, z: 0, yaw: 0, ph: 0, sp: 0, root: null, g: null, stuck: 0, idle: 0,
 };
 export const LIFT = .92;                  // altura do quadril do jogador acima do chão, na sela
-const SCALE = 1.15, MOUNT_TIME = .95, DIS_TIME = .8, SIDE = 1.25;   // SIDE = distância lateral (lado esquerdo do cavalo) de onde se sobe/desce
+const SCALE = .9, MOUNT_TIME = .95, DIS_TIME = .8, SIDE = 1.25;   // SIDE = distância lateral (lado esquerdo do cavalo) de onde se sobe/desce
 const sat = x => Math.min(1, Math.max(0, x));
 const ss = x => x * x * (3 - 2 * x);
 
 function ensureHorse() {
   if (MOUNT.root) return;
-  const g = mkHorse(COATS[MOUNT.coat].c, COATS[MOUNT.coat].mz), root = new THREE.Group();
+  const g = mkHorse(MOUNT.coat, 0), root = new THREE.Group();
   g.scale.setScalar(SCALE);
   // sela
-  const saddle = new THREE.Mesh(new THREE.BoxGeometry(.56, .09, .5), new THREE.MeshLambertMaterial({ color: 0x5a2a18 }));
-  saddle.position.set(0, 1.46, .02); g.add(saddle);
+  const saddle = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, .62), new THREE.MeshLambertMaterial({ color: 0x5a2a18 }));
+  saddle.position.set(0, .5, .02); g.HB.add(saddle);   // sela no dorso (acompanha o balanço do corpo)
   root.add(g);
   scene.add(root);
   MOUNT.root = root; MOUNT.g = g;
@@ -292,33 +292,46 @@ function walkToHorse(dt) {
 
 /** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): passo → trote → galope de quatro tempos
     (posteriores esquerdo e direito, depois anteriores esquerdo e direito, com um instante no ar). */
-const TROT = [Math.PI, 0, Math.PI, 0], GALOP = [2.83, 3.46, 0, .63];   // fases de [AE, AD, PE, PD] (anterior/posterior esquerdo/direito)
+const OFF = { w: [.25, .75, 0, .5], t: [0, .5, .5, 0], g: [.5, .38, .12, 0] };   // fase de [AE, AD, PE, PD] em passo, trote e galope
+const lp = (a, b, u) => a + (b - a) * u;
+function gait(u, duty, A, lift) {
+  u = ((u % 1) + 1) % 1;
+  if (u < duty) { const s = u / duty; return [-A + 2 * A * s, .04 + .22 * Math.max(0, (s - .7) / .3)]; }
+  const s = (u - duty) / (1 - duty), e = s * s * (3 - 2 * s);
+  return [A - 2 * A * e, .04 + lift * Math.sin(Math.PI * s)];
+}
+/** Pernas, pescoço e cauda do cavalo conforme a velocidade (v em m/s): parado → passo → trote → galope */
 function animateHorseLegs(dt, v) {
   const g = MOUNT.g;
   if (!g) return;
   MOUNT.sp += (Math.min(v, 12) - MOUNT.sp) * (1 - Math.exp(-dt * 10));
-  const s = MOUNT.sp;
-  MOUNT.ph += dt * (s > .2 ? 3.2 + s * 1.55 : 0);
-  MOUNT.idle += dt;
-  const ph = MOUNT.ph, run = sat((s - 2.2) / 3.6), amp = sat(s / 2.2), PI2 = Math.PI * 2;
-  const A = (.42 + .5 * run) * amp;
+  const s = MOUNT.sp, t = MOUNT.idle += dt;
+  const gl = sat((s - 4.5) / 2.5), tr = sat((s - 1.6) / 1.2) * (1 - gl), wk = sat((s - .1) / .3) * (1 - sat((s - 1.6) / 1.2));
+  const sum = wk + tr + gl, mv = Math.min(1, sum), nn = sum || 1, br = Math.sin(t * 1.5);
+  const W = (a, b, c) => (wk * a + tr * b + gl * c) / nn;
+  MOUNT.ph += dt * (sum > .01 ? W(5, 8, 12.5) : 5);
+  const ph = MOUNT.ph, duty = W(.62, .45, .3), A = W(.45, .58, .85), lift = W(.9, 1.15, 1.45);
+  const toss = Math.max(0, Math.sin(t * .23) - .9) / .1, paw = Math.max(0, Math.sin(t * .37) - .88) / .12;
   g.legs.forEach((l, i) => {
-    const off = TROT[i] + (GALOP[i] - TROT[i]) * run, f = ph + off + (i < 2 ? 0 : 0);
-    const c = Math.cos(f), sn = Math.sin(f);
-    const reach = i < 2 ? 1.15 : .95;                                  // anteriores alcançam mais; posteriores empurram
-    l.rotation.x = c * A * reach * (c < 0 ? 1.1 : 1) - .05 * run * amp;   // apoio (c>0) vai para trás, balanço para a frente
-    l.knee.rotation.x = (Math.max(0, sn) * (.85 + .55 * run) + (i < 2 ? .08 : .15) * (1 - c) * .5) * amp;   // dobra no balanço
+    const o = W(OFF.w[i], OFF.t[i], OFF.g[i]), [hip, kn] = gait(ph / 6.283 - o, duty, A, lift);
+    let hx = hip * mv, kx = lp(.03, kn, mv);
+    if (i === 0) { const p = paw * (1 - mv); hx += -p * .7 + Math.sin(t * 14) * .12 * p; kx += p * 1.1; }   // bate a pata parado
+    l.rotation.x = hx; l.knee.rotation.x = kx; l.foot.rotation.x = hx * .25 + kx * .3;
   });
-  // quique: um por ciclo no galope (suspensão), dois no trote
-  const bobG = (.5 + .5 * Math.cos(ph + 1.9)) * .13 * run, bobT = Math.abs(Math.sin(ph)) * .05 * (1 - run);
-  MOUNT.bob = (bobG + bobT) * amp;
-  g.position.y = MOUNT.bob;
-  g.rotation.x = Math.sin(ph + .4) * .055 * run * amp;                 // balança o corpo (cabeça sobe, garupa desce)
-  g.neck.rotation.x = .55 - run * .3 - Math.sin(ph + .4) * .16 * run * amp + Math.sin(ph * 2) * .04 * (1 - run) * amp + Math.sin(MOUNT.idle * 1.4) * .04 * (1 - amp);
-  g.head.rotation.x = -.05 + Math.sin(ph + 1) * .07 * run * amp;
-  g.tail.rotation.x = .35 + amp * (.25 + .45 * run) + Math.sin(MOUNT.idle * 2.2) * .12 + Math.sin(ph) * .1 * run;
-  g.earL.rotation.z = Math.sin(MOUNT.idle * 3) * .05 * (1 - amp) - run * .35;
-  g.earR.rotation.z = -Math.sin(MOUNT.idle * 3.4) * .05 * (1 - amp) + run * .35;
+  const HB = g.HB;
+  MOUNT.bob = W(Math.cos(ph * 2) * .012, Math.cos(ph * 2) * .028, Math.sin(ph * 2 + .5) * .07) * mv + br * .004;   // a sela sobe e desce; o cavaleiro acompanha
+  HB.position.y = 1.4 + MOUNT.bob;
+  HB.rotation.x = W(Math.sin(ph) * .015, Math.sin(ph * 2) * .02, Math.sin(ph + 1) * .06) * mv;
+  HB.rotation.z = W(Math.sin(ph) * .02, Math.sin(ph) * .012, Math.sin(ph) * .015) * mv + Math.sin(t * .5) * .008 * (1 - mv);
+  g.neck.rotation.x = lp(.75 + Math.sin(t * .6) * .04 - toss * .12, W(.75 + Math.sin(ph) * .08, .82 + Math.sin(ph * 2) * .03, .98 + Math.sin(ph) * .08), mv);
+  g.head.rotation.x = .1 + Math.sin(t * .5) * .05 * (1 - mv) - gl * .15 - toss * .3;
+  g.head.rotation.y = Math.sin(t * .3) * .18 * (1 - mv) * (MOUNT.on ? .3 : 1);
+  g.tail.rotation.x = lp(.12 + Math.sin(t * 1.1) * .08, W(.2 + Math.sin(ph * .5) * .12, .35 + Math.sin(ph) * .1, .9 + Math.sin(ph * 2) * .12), mv);
+  g.tail.rotation.z = Math.sin(t * .9) * .1 * (1 - mv) + Math.sin(ph) * .08 * mv;
+  g.tail2.rotation.x = Math.sin(t * 1.7 + 1) * .15 + gl * .4 + Math.sin(ph * 1.5) * .1 * mv;
+  const fk = Math.sin(t * .9) > .96 ? Math.sin(t * 40) * .25 : 0;
+  g.earL.rotation.z = fk + Math.sin(t * .7) * .04; g.earR.rotation.z = -Math.sin(t * .8) * .04;
+  g.earL.rotation.x = g.earR.rotation.x = -gl * .5;
 }
 
 const V3 = THREE.Vector3, OFFY = new V3(0, .72, 0);
@@ -372,7 +385,7 @@ export function mountPose(dt) {
     const sd = i ? 1 : -1, arm = torch ? hands[0] : hands[i];
     if (!arm || k < .6) { reins[i].visible = false; return; }
     arm.fa.localToWorld(_a.set(0, -.32, 0));
-    hd.localToWorld(_b.set(sd * .1, -.08, .42));
+    hd.localToWorld(_b.set(sd * .15, -.08, .64));
     placeRein(reins[i], _a, _b);
     reins[i].visible = true;
   });

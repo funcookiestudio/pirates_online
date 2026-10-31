@@ -3,6 +3,7 @@
 import { FARMSITE } from './farm-site.js';
 import { FEED } from './farmer.js';
 import { wb } from '../core/utils.js';
+import { mkHorse } from './horse.js';
 import { groundY, walkable, nearObstacle, onRoad } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
 import { P } from './player.js';
@@ -311,59 +312,6 @@ export function mkOx() {
   g.add(tl);
   g.tail = tl;
   g.scale.setScalar(1.05);
-  return g;
-}
-
-/** Cavalo. Expõe: g.head, g.neck, g.legs[4] (com .knee), g.tail, g.earL, g.earR */
-export function mkHorse(c = 0x8a4a22, mz = 0xb87a4a) {
-  const g = new THREE.Group(), dk = 0x2a1a10;
-  g.add(
-    wb(.52, .6, 1.2, c, 0, 1.12, 0),
-    wb(.46, .22, .5, mz, 0, .86, .1),
-    wb(.5, .1, .3, 0xa02020, 0, 1.4, .1),          // manta
-    wb(.54, .3, .3, c, 0, 1.2, -.5)
-  );
-  const nk = new THREE.Group();
-  nk.position.set(0, 1.2, .5);
-  nk.rotation.x = .55;
-  nk.add(wb(.28, .7, .3, c, 0, .32, 0), wb(.08, .7, .1, dk, 0, .32, -.19)); // pescoço + crina
-  g.add(nk);
-  const h = new THREE.Group();
-  h.position.set(0, .72, .04);
-  h.rotation.x = -.05;
-  h.add(
-    wb(.26, .3, .32, c, 0, 0, 0),
-    wb(.2, .2, .34, mz, 0, -.06, .3),
-    wb(.04, .05, .02, dk, .06, -.08, .48),
-    wb(.04, .05, .02, dk, -.06, -.08, .48),
-    wb(.04, .04, .04, 0x111111, .14, .06, .08),
-    wb(.04, .04, .04, 0x111111, -.14, .06, .08),
-    wb(.08, .12, .1, dk, 0, .2, -.1)               // topete
-  );
-  const ear = k => {
-    const e = new THREE.Group();
-    e.position.set(k * .09, .18, -.04);
-    e.add(wb(.06, .16, .06, c, 0, .06, 0));
-    h.add(e);
-    return e;
-  };
-  g.earL = ear(-1);
-  g.earR = ear(1);
-  nk.add(h);
-  g.neck = nk;
-  g.head = h;
-  g.legs = [
-    quadLeg(g, -.18, .86, .46, .14, .43, .43, c, dk),
-    quadLeg(g, .18, .86, .46, .14, .43, .43, c, dk),
-    quadLeg(g, -.18, .86, -.46, .14, .43, .43, c, dk),
-    quadLeg(g, .18, .86, -.46, .14, .43, .43, c, dk)
-  ];
-  const tl = new THREE.Group();
-  tl.position.set(0, 1.35, -.62);
-  tl.rotation.x = .35;
-  tl.add(wb(.1, .7, .12, dk, 0, -.35, -.04));
-  g.add(tl);
-  g.tail = tl;
   return g;
 }
 
@@ -678,7 +626,7 @@ const HERDS = [
 /** Cria os currais (até um por grupo) em torno da vila, em direções diferentes */
 export function buildFarm() {
   const MK = { rooster: mkRooster, hen: mkHen, duck: mkDuck, turkey: mkTurkey, peacock: mkPeacock, pig: mkPig, sheep: mkSheep, cow: mkCow, ox: mkOx, horse: mkHorse };
-  const SCALE = { rooster: .9, hen: .9, duck: .9, turkey: 1, peacock: 1, pig: 1, sheep: 1, cow: 1, ox: 1, horse: 1 };
+  const SCALE = { rooster: .9, hen: .9, duck: .9, turkey: 1, peacock: 1, pig: 1, sheep: 1, cow: 1, ox: 1, horse: .8 };
   if (FARMSITE.ok) {
     FARMSITE.sites.forEach(st => st.pens.forEach(pn => pn.kinds.forEach((kind, i) => {
       const w = pn.pts[i % pn.pts.length], g = MK[kind](), root = new THREE.Group();
