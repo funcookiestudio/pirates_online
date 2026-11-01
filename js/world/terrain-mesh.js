@@ -1,4 +1,5 @@
 import { reserved } from './reserve.js';
+import { DRAGON_ISLE } from '../core/isle.js';
 /* Malha 3D da ilha procedural: relevo com cor por vértice, mar, rios/lagos, pontes e vegetação instanciada.
    Tudo é marcado userData.dyn para o mergeStatics deixar quieto (a malha já é única e instanciada). */
 import { scene } from '../core/engine.js';
@@ -16,7 +17,9 @@ function col(h, ny, rw, v, mo, dep) {
   c = mixc(c, [.14, .42, .55], ss(-3.6, -2.4, h)); c = mixc(c, [.60, .74, .62], ss(-1.6, -.8, h)); c = mixc(c, [.87, .79, .56], ss(-.2, .3, h));
   const t = Math.min(1, Math.max(0, (h - .8) / 5));
   let g = mixc([.66, .62, .32], [.42, .62, .27], ss(.28, .42, mo)); g = mixc(g, [.22, .46, .23], ss(.46, .6, mo)); g = mixc(g, [.30, .40, .27], ss(.62, .7, mo) * ss(1.8, 1.1, h));
-  g = [g[0] * (1 - .25 * t), g[1] * (1 - .2 * t), g[2] * (1 - .1 * t)]; c = mixc(c, g, ss(.6, 1.1, h));
+  g = [g[0] * (1 - .25 * t), g[1] * (1 - .2 * t), g[2] * (1 - .1 * t)];
+  if (DRAGON_ISLE) g = mixc(g, [.36, .30, .24], .72);   // Ilha dos Dragões: terra de cinzas em vez de grama
+  c = mixc(c, g, ss(.6, 1.1, h));
   c = mixc(c, [.46, .43, .41], Math.max(ss(6, 6.9, h), ss(.9, .72, ny))); c = mixc(c, [.88, .88, .92], ss(9, 9.7, h));
   c = mixc(c, [.56, .42, .27], rw * ss(.1, .45, h)); c = mixc(c, [.40, .46, .40], ss(0, .5, dep));
   return [c[0] * v, c[1] * v, c[2] * v];

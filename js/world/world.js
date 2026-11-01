@@ -10,6 +10,8 @@ import { CAVES, initTerrain, groundY, walkable, onRoad, SEA } from './terrain.js
 import { buildTerrainMesh } from './terrain-mesh.js';
 import { chooseFarmSite } from '../entities/farm-site.js';
 import { reserved } from './reserve.js';
+import { DRAGON_ISLE } from '../core/isle.js';
+import { buildDragonScenery } from './dragon-isle.js';
 
 export function buildWorld() {
   initTerrain(POST_DATA);        // relevo procedural: vila plana em y=0, postos em platôs
@@ -41,4 +43,6 @@ export function buildWorld() {
     scene.add(m);
     props.push(m);
   }
+
+  if (DRAGON_ISLE) buildDragonScenery();   // ninhos, covil do Ancestral, ossos e árvores queimadas
 }

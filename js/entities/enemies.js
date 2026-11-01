@@ -18,6 +18,7 @@ import { animateEnemyBoar } from './wildlife-anim.js';
 import { animateSerpent } from './serpent.js';
 import { stoneTick, updateHead } from '../systems/medusa-head.js';
 import { initMedusa, medusaThink, animateMedusa, updateMedusaFx } from './medusa.js';
+import { initDragon, dragonThink, animateDragon, dragonClear } from './dragon.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
@@ -57,8 +58,10 @@ export function spawn(k, x, z, pat, o = {}) {
     ph: Math.random() * 6, id: Math.floor(Math.random() * 2), // fase do passo e lado de flanco
     MD: g.userData.MD,            // Medusa: controle do modelo de 2 fases
     SN: g.userData.SN,            // serpente: animação do corpo
+    DR: g.userData.DR,            // dragão / wiverno: animação do modelo (dragon-model.js)
   });
   if (t.medusa) initMedusa(enemies[enemies.length - 1]);
+  if (t.dragon) initDragon(enemies[enemies.length - 1]);
 }
 
 /* ---------- Atualização por frame ---------- */
@@ -67,13 +70,14 @@ export function spawn(k, x, z, pat, o = {}) {
 function animateDeath(e, dt) {
   e.dead += dt;
   if (e.ring) { scene.remove(e.ring); e.ring = null; }
+  if (e.DS) dragonClear(e);
   const u = Math.min(1, e.dead * 2.5), f = Math.exp(-dt * 6);
   e.x += e.kx * dt;
   e.z += e.kz * dt;
   e.kx *= f;
   e.kz *= f;
   if (e.SN) { e.g.rotation.z = 2.9 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) + .3 * Math.sin(u * Math.PI), e.z); return; }   // serpente: vira de barriga para cima
-  if (e.A) { e.g.rotation.z = 1.45 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) - .05 * u, e.z); return; }   // quadrúpede tomba de lado
+  if (e.A || e.DR) { e.g.rotation.z = 1.45 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) - .05 * u, e.z); return; }   // quadrúpede tomba de lado
   e.g.rotation.x = 1.55 * (1 - Math.pow(1 - u, 3));
   e.g.position.set(e.x, groundY(e.x, e.z) - .12 * u, e.z);
 }
@@ -180,10 +184,10 @@ function think(e, dt, c) {
 /** Soma separação entre inimigos e integra velocidade + empurrão */
 function move(e, wx, wz, dt) {
   if (Math.hypot(wx, wz) > .1 && e.ag && e.st === 'chase' && !P.dead) {
-    const sp = Math.hypot(wx, wz), m = e.sm || (e.sm = { side: 0 }), [nx, nz] = navTarget(m, e.x, e.z, P.x, P.z, e.t.boss ? 1.1 : .6), nd = Math.hypot(nx - e.x, nz - e.z) || 1;
+    const sp = Math.hypot(wx, wz), m = e.sm || (e.sm = { side: 0 }), [nx, nz] = navTarget(m, e.x, e.z, P.x, P.z, (e.t.cr || (e.t.boss ? 1.1 : .6))), nd = Math.hypot(nx - e.x, nz - e.z) || 1;
     wx = (nx - e.x) / nd * sp; wz = (nz - e.z) / nd * sp;
   }
-  if (Math.hypot(wx, wz) > .1 && !e.dead) [wx, wz] = steer(e.x, e.z, wx, wz, e.t.boss ? 1.1 : .6, e.sm || (e.sm = { side: 0 }), 12);
+  if (Math.hypot(wx, wz) > .1 && !e.dead) [wx, wz] = steer(e.x, e.z, wx, wz, (e.t.cr || (e.t.boss ? 1.1 : .6)), e.sm || (e.sm = { side: 0 }), 12);
   enemies.forEach(o => {
     if (o !== e && !o.dead) {
       const sx = e.x - o.x, sz = e.z - o.z, sd = Math.hypot(sx, sz);
@@ -199,7 +203,7 @@ function move(e, wx, wz, dt) {
   [e.x, e.z] = slideTo(e.x, e.z, e.x + (e.vx + e.kx) * dt, e.z + (e.vz + e.kz) * dt);
   e.kx *= kk;
   e.kz *= kk;
-  collide(e, e.t.boss ? 1.1 : .6);
+  collide(e, (e.t.cr || (e.t.boss ? 1.1 : .6)));
 }
 
 /** Rotação, passos, pose do golpe e barra de vida */
@@ -210,6 +214,12 @@ function animate(e, c, dt) {
   else if (e.st === 'chase' && Math.hypot(e.vx, e.vz) > .3) turnTo(e.g, Math.atan2(e.vx, e.vz), 6, dt);
 
   const mv = Math.min(1, Math.hypot(e.vx, e.vz) / T.s);
+  if (e.DR) {   // dragão e wiverno: modelo e animação próprios (dragon.js)
+    animateDragon(e, c, dt);
+    e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
+    e.hb.scale.x = Math.max(.01, e.hs); e.hb.quaternion.copy(cam.quaternion); e.hb.parent.updateMatrixWorld();
+    return;
+  }
   if (e.MD || e.SN) {   // Medusa e serpente: modelo e animação próprios (medusa.js, serpent.js)
     if (e.MD) animateMedusa(e, c, dt); else animateSerpent(e, c, dt, groundY, turnTo, P);
     e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
@@ -302,7 +312,7 @@ function updateEnemy(e, dt) {
   }
 
   let wx = 0, wz = 0;
-  if (e.sn <= 0 && !P.dead) [wx, wz] = e.MD ? medusaThink(e, dt, c, think) : think(e, dt, c);
+  if (e.sn <= 0 && !P.dead) [wx, wz] = e.MD ? medusaThink(e, dt, c, think) : e.DS ? dragonThink(e, dt, c, think) : think(e, dt, c);
   move(e, wx, wz, dt);
   if (!farIdle) animate(e, c, dt);
 }

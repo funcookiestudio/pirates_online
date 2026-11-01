@@ -1,6 +1,6 @@
 /* Postos inimigos: anéis de dificuldade ao redor da vila. [graus, raio, nome, equipe[[tipo, 'p'atrulha | 's'entinela, raio]]] */
 import { KIND, ENEMY_KINDS } from './enemies.js';
-import { MEDUSA_ISLE } from '../core/isle.js';
+import { MEDUSA_ISLE, DRAGON_ISLE } from '../core/isle.js';
 
 const K = KIND;
 /* 8 acampamentos, do mais fácil (perto da vila, Nv ~1) ao mais difícil (ponto mais distante, chefe, Nv ~20).
@@ -28,7 +28,19 @@ const MEDUSA_CAMPS = [
   ['Ossuário Maldito',           [[GW, 'p', 5], [GW, 'p', 5.5], [GH, 'p', 5], [SM, 'p', 4.5]], 8],
   ['Templo da Medusa',           [[K.MEDUSA, 's', 2.2], [S, 'p', 5], [S, 'p', 5.5], [SK, 'p', 6], [GH, 'p', 6]], 6],
 ];
-export const POST_DATA = (MEDUSA_ISLE ? MEDUSA_CAMPS : CAMPS).map(([name, crew, add], i) => {
+/* Ilha dos Dragões: ninhos de wivernos, restos de caçadores caídos, o Vale dos Dragões e, no ponto mais distante, o Covil do Dragão Ancestral */
+const WY = K.WIVERNO, DR = K.DRAGAO;
+const DRAGON_CAMPS = [
+  ['Ninho dos Wivernos',          [[WY, 'p', 4], [WY, 'p', 4], [WY, 'p', 4.5], [SK, 's', 2.6]], 0],
+  ['Acampamento Queimado',        [[WY, 'p', 4], [WY, 'p', 4.5], [GW, 's', 2.6], [SK, 'p', 5]], 1],
+  ['Penhasco dos Wivernos',       [[WY, 'p', 4.5], [WY, 'p', 5], [WY, 'p', 5], [WY, 'p', 5.5]], 2],
+  ['Ossuário dos Caçadores',      [[GW, 'p', 4.5], [GW, 'p', 5], [GH, 's', 2.8], [WY, 'p', 5]], 3],
+  ['Fenda de Fogo',               [[DR, 's', 2.8], [WY, 'p', 5], [WY, 'p', 5.5]], 3],
+  ['Vale dos Dragões',            [[DR, 'p', 5], [DR, 'p', 5.5], [WY, 'p', 5], [WY, 'p', 6]], 4],
+  ['Garganta Vulcânica',          [[DR, 's', 2.8], [DR, 'p', 5], [WY, 'p', 5.5], [WY, 'p', 6]], 5],
+  ['Covil do Dragão Ancestral',   [[K.ANCIAO, 's', 2.6], [DR, 'p', 6], [DR, 'p', 6.5], [WY, 'p', 6], [WY, 'p', 6.5]], 4],
+];
+export const POST_DATA = (MEDUSA_ISLE ? MEDUSA_CAMPS : DRAGON_ISLE ? DRAGON_CAMPS : CAMPS).map(([name, crew, add], i) => {
   const lvs = crew.map(c => ENEMY_KINDS[c[0]].lv + add);
   return { id: i, ring: Math.min(3, i >> 1), name, crew, add, x: 0, z: 0, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };   // x,z: definidos pelo relevo (terrain.js)
 });

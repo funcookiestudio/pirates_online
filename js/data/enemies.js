@@ -4,7 +4,7 @@
    c = cores do corpo: [pele, camisa, calça, chapéu] */
 
 /** Índices dos tipos no array ENEMY_KINDS */
-export const KIND = { SKELETON: 0, GHOST: 1, BOSS: 2, GRUMETE: 3, CONTRA: 4, GUERREIRO: 5, SOMBRA: 6, CORSARIO: 7, BRUTO: 8, JAVALI: 9, MEDUSA: 10, SERPENTE: 11 };
+export const KIND = { SKELETON: 0, GHOST: 1, BOSS: 2, GRUMETE: 3, CONTRA: 4, GUERREIRO: 5, SOMBRA: 6, CORSARIO: 7, BRUTO: 8, JAVALI: 9, MEDUSA: 10, SERPENTE: 11, WIVERNO: 12, DRAGAO: 13, ANCIAO: 14 };
 
 export const ENEMY_KINDS = [
   { n: 'Esqueleto',              lv: 2,  hm: 1.1, dm: 1.55,  s: 2.6, c: [0xddd8c0, 0xbbb69a, 0x6a6a5a, 0x333333], xm: .47 },
@@ -19,4 +19,8 @@ export const ENEMY_KINDS = [
   { n: 'Javali',                lv: 3,  hm: 1.7, dm: 1.75, s: 3.4, c: [0x5a4634, 0x2e2218, 0x8a7258, 0x1c1410], xm: .5, sc: 1.2, animal: 'boar', hbY: 1.7, lblY: 2.0 },   // selvagem da floresta: hostil, investe
   { n: 'Medusa Encapuzada',      lv: 13, hm: 6.4, dm: 2.5, s: 2.3, c: [0xd8d5e0, 0x39304a, 0x211a2b, 0x4f7a45], xm: 2.6, boss: 1, medusa: 1, sc: 1.25 },   // chefe de 2 fases (entities/medusa.js): humana → serpente aos 50%
   { n: 'Serpente',               lv: 4,  hm: 1.25, dm: 1.95, s: 3.1, c: [0x4f7a45, 0x8cae5a, 0x2f4a30, 0x2f4a30], xm: .48, snake: 1, hbY: 1.5, lblY: 1.8 },   // cobra das dungeons da Medusa (entities/serpent.js): rasteja e dá o bote
+  // Ilha dos Dragões (modelos em entities/dragon-model.js, IA em entities/dragon.js): reach = alcance do golpe, dur = preparo, cr = raio de colisão, fire = [alcance, meio-ângulo] do sopro
+  { n: 'Wiverno',                lv: 5,  hm: 1.9, dm: 2.05, s: 3.4, c: [0x3f6a3a, 0x23401f, 0xd6cf8a, 0x6a9a4a], xm: .62, sc: 1.0, dragon: 'wyvern', coats: [0, 1, 2, 3], horns: [0, 0, 1], hbY: 4.9, lblY: 5.2, reach: 2.7, dur: .5, cr: .85 },   // rápido; mergulha em rasante
+  { n: 'Dragão',                 lv: 9,  hm: 3.7, dm: 2.4, s: 2.7, c: [0xa3302a, 0x6e1d1a, 0xe0b46a, 0xc4492f], xm: .9, sc: 1.15, dragon: 'dragon', coats: [0, 1, 2], horns: [0, 1, 2, 3], hbY: 5.6, lblY: 5.9, reach: 3.3, dur: .7, cr: 1.05, fire: [10, .42] },   // sopro de fogo em cone
+  { n: 'Dragão Ancestral',       lv: 14, hm: 7.8, dm: 2.7, s: 2.5, c: [0xc9a032, 0x8a6a1a, 0xf3e6b0, 0xe0bb4a], xm: 3.0, boss: 1, sc: 1.9, dragon: 'dragon', coats: [4], horns: [2], hbY: 9.6, lblY: 10, reach: 4.8, dur: .9, cr: 1.7, fire: [15, .55] },   // chefe da ilha: sopro largo, pancada em área e fúria abaixo de 50%
 ];

@@ -1,6 +1,6 @@
 # Pirata ARPG
 
-ARPG 3D (Three.js) de pirata: explore a ilha, enfrente esqueletos, piratas fantasmas, o Capitão Maldito e a Medusa, colete loot e evolua junto com seu companheiro.
+ARPG 3D (Three.js) de pirata: explore a ilha, enfrente esqueletos, piratas fantasmas, o Capitão Maldito, a Medusa e os dragões, colete loot e evolua junto com seu companheiro.
 
 ## Como rodar
 
@@ -53,6 +53,7 @@ js/
     pets.js           Companheiros e árvore de habilidades
   world/
     world.js          Chão, árvores e pedras
+    dragon-isle.js    Cenário da Ilha dos Dragões: ninhos, covil com tesouro, crânios, costelas e árvores queimadas
   entities/         Coisas que existem no mundo
     character.js      Corpo "de blocos" (jogador e inimigos)
     player.js         Dados do jogador, dano recebido, nível
@@ -60,6 +61,8 @@ js/
     enemies.js        Criação, IA, animação e reaparecimento
     medusa-model.js   Modelo e animação da Medusa (fase 1 humana encapuzada, fase 2 meia serpente)
     medusa.js         Chefe Medusa: transformação aos 50%, olhar petrificante, golpe de cauda e cuspe de veneno
+    dragon-model.js   Modelos do Dragão e do Wiverno (5 escamas, 4 chifres; andar, voo, planeio e fogo)
+    dragon.js         Ilha dos Dragões: sopro de fogo em cone (dragões), rasante (wivernos) e fúria do Dragão Ancestral
     loot.js           Queda, coleta e efeito dos itens
     horse.js          Cavalo (modelo e animação de passo/trote/galope, usado na montaria e nos veículos)
     vehicles.js       Modelos da carroça (1 cavalo) e da carruagem (parelha, boleia, passageiros)

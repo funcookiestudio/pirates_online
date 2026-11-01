@@ -75,6 +75,7 @@ function onKill(e) {
   levelUp();
   state.lastKill = e; emit('enemy:killed');
   if (e.MD) { log('🗿 A Medusa foi derrotada!'); markMedusaKilled(); }
+  else if (e.DR && e.t.boss) log('🐉 O Dragão Ancestral caiu! Ele voltará em 45s.');
   else if (e.t.boss) log(e.dun ? 'Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
   else if (e.elite) log('Elite derrotado! +' + xp + ' XP');
 }
