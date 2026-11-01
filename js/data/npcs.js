@@ -48,4 +48,5 @@ export const ISLANDS = [
   { seed: 'corvo', name: 'Ilha do Corvo', cost: 25, tier: 1 },
   { seed: 'tormenta', name: 'Ilha da Tormenta', cost: 25, tier: 2 },
   { seed: 'caveira', name: 'Ilha da Caveira', cost: 25, tier: 3 },
+  { seed: 'medusa', name: 'Ilha da Medusa', cost: 50, tier: 3, needsMedusa: true },
 ];

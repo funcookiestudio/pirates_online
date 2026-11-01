@@ -1,5 +1,6 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
+import { MEDUSA_ISLE } from '../core/isle.js';
 import { houseAt } from '../world/floors.js';
 import { enterClick, openDoorById, doorClosed, tickRent, setDoorLock, npcOpenDoor, doorFront } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
@@ -59,12 +60,19 @@ function dress(g, soldier) {
 }
 
 /** Cria um NPC: role 'guard' (fica no posto, olhando para fora) ou 'citizen' (passeia perto de casa) */
+const STONE = new THREE.MeshLambertMaterial({ color: 0x8c8a86 });
+const STONE_LINES = ['...', 'Uma estátua de pedra, com o rosto congelado num grito de terror. Na base, gravado: "Não olhe para ela."', 'Gravado na pedra: "Ela mora no templo, ao fim da ilha. Os olhos dela... não encare."'];
 export function makeNpc(role, x, z, ry, cols, v = 0, info = null, work = null) {
   const sp = specFor(role, v, info, cols);
   const g = person(cols[0], cols[1], cols[2], cols[3], sp);
   g.position.set(x, 0, z);
   g.rotation.y = ry;
   dress(g, sp.sk === 'guarda');
+  if (MEDUSA_ISLE && (role === 'citizen' || role === 'guard' || role === 'royal') && !(info && info.ferry)) {   // moradores petrificados
+    g.traverse(m => { if (m.isMesh) m.material = STONE; });
+    info = info ? Object.assign({}, info, { shop: null, quest: null, lines: STONE_LINES }) : info;
+    g.userData.stone = true;
+  }
   scene.add(g);
   let lab = null;
   if (role === 'citizen' && info) { lab = document.createElement('div'); lab.className = 'npcl'; lab.textContent = info.ic + ' ' + info.name; ren.domElement.after(lab); }
@@ -254,7 +262,9 @@ export function updateNpcs(dt, now) {
     P.rumYaw = Math.atan2(cx - P.x, cz - P.z);
   }
   frameNo++;
-  list.forEach((n, ix) => {   // longe do jogador (e sem script): atualiza 1 quadro a cada 3, com o tempo acumulado
+  list.forEach((n, ix) => {
+    if (n.g.userData.stone) return;   // estátua: não anda nem trabalha
+    // longe do jogador (e sem script): atualiza 1 quadro a cada 3, com o tempo acumulado
     const far = !n.q && Math.hypot(P.x - n.g.position.x, P.z - n.g.position.z) > 26 && talking !== n;
     if (far) { n.acc = (n.acc || 0) + dt; if ((frameNo + ix) % 3) return; npcStep(n, n.acc); n.acc = 0; }
     else { n.acc = 0; npcStep(n, dt); }

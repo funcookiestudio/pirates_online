@@ -1,4 +1,5 @@
 /* Dia e noite: céu, névoa e luzes seguem a hora do relógio do jogo (core/clock.js). */
+import { MEDUSA_ISLE } from '../core/isle.js';
 import { scene, hemi, torch, cam } from '../core/engine.js';
 import { hourNow } from '../core/clock.js';
 
@@ -46,6 +47,7 @@ function glowWindows() {
   }
   glass.forEach((id, m) => { const k = HL.pos[id] ? HL.lit[id] ?? 1 : 1, gl = base * k; m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; });
 }
+const GREEN = new THREE.Color(0x3f6a40);
 export function updateDayNight(inDungeon) {
   const h = hourNow();
   if (++glassT === 90) glass = null;   // recolhe os vidros depois que o mundo foi fundido
@@ -59,6 +61,7 @@ export function updateDayNight(inDungeon) {
   const a = K[i], b = K[i + 1], u = (h - a[0]) / (b[0] - a[0]);
   if (!(scene.background instanceof THREE.Color)) scene.background = new THREE.Color();
   mix(scene.background, a[1], b[1], u);
+  if (MEDUSA_ISLE) scene.background.lerp(GREEN, .45);   // céu esverdeado e doentio
   scene.fog.color.copy(scene.background);
   mix(hemi.color, a[2], b[2], u); mix(hemi.groundColor, a[3], b[3], u);
   hemi.intensity = a[4] + (b[4] - a[4]) * u;

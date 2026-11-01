@@ -1,4 +1,5 @@
 /* Combate do jogador: golpes, balas, giro, bomba, poção e o cálculo de dano (hit). */
+import { markMedusaKilled } from '../core/isle.js';
 import { xpMult, dealtMult } from '../data/scaling.js';
 import { scene } from '../core/engine.js';
 import { state, aim } from '../core/state.js';
@@ -73,7 +74,7 @@ function onKill(e) {
   headOnKill();   // recarrega a cabeça da Medusa
   levelUp();
   state.lastKill = e; emit('enemy:killed');
-  if (e.MD) log('🗿 A Medusa foi derrotada!');
+  if (e.MD) { log('🗿 A Medusa foi derrotada!'); markMedusaKilled(); }
   else if (e.t.boss) log(e.dun ? 'Chefe derrotado!' : 'O Capitão Maldito caiu! Ele voltará em 45s.');
   else if (e.elite) log('Elite derrotado! +' + xp + ' XP');
 }

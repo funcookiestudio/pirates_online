@@ -1,5 +1,6 @@
 /* Postos inimigos: anéis de dificuldade ao redor da vila. [graus, raio, nome, equipe[[tipo, 'p'atrulha | 's'entinela, raio]]] */
 import { KIND, ENEMY_KINDS } from './enemies.js';
+import { MEDUSA_ISLE } from '../core/isle.js';
 
 const K = KIND;
 /* 8 acampamentos, do mais fácil (perto da vila, Nv ~1) ao mais difícil (ponto mais distante, chefe, Nv ~20).
@@ -15,7 +16,19 @@ const CAMPS = [
   ['Praia dos Naufragados',        [[K.BRUTO, 's', 2.4], [K.BRUTO, 'p', 5], [K.GUERREIRO, 'p', 5.5], [K.GHOST, 'p', 4.5]], 10],
   ['Fortim do Capitão Maldito',    [[K.BOSS, 's', 2.2], [K.CORSARIO, 'p', 5], [K.CORSARIO, 'p', 5.5], [K.SOMBRA, 'p', 6]], 8],
 ];
-export const POST_DATA = CAMPS.map(([name, crew, add], i) => {
+/* Ilha da Medusa: só serpentes, esqueletos e mortos-vivos; o último posto é o Templo da Medusa */
+const S = K.SERPENTE, SK = K.SKELETON, GW = K.GUERREIRO, GH = K.GHOST, SM = K.SOMBRA;
+const MEDUSA_CAMPS = [
+  ['Ninho das Serpentes',        [[S, 'p', 4], [S, 'p', 4], [SK, 'p', 4.5], [SK, 's', 2.6]], 0],
+  ['Cripta Rastejante',          [[SK, 'p', 4], [SK, 'p', 4.5], [S, 'p', 4], [S, 'p', 5]], 2],
+  ['Cova dos Mortos',            [[GW, 'p', 4], [GW, 'p', 4.5], [SK, 'p', 5], [SK, 'p', 5]], 3],
+  ['Bivaque dos Mortos-Vivos',   [[GH, 'p', 4.5], [GH, 'p', 4.5], [SK, 'p', 5], [GW, 's', 2.6]], 4],
+  ['Poço das Víboras',           [[S, 'p', 4], [S, 'p', 4.5], [S, 'p', 5], [GH, 's', 2.8]], 5],
+  ['Vigia das Sombras',          [[SM, 'p', 4.5], [SM, 'p', 5], [GH, 's', 2.8], [S, 'p', 5]], 6],
+  ['Ossuário Maldito',           [[GW, 'p', 5], [GW, 'p', 5.5], [GH, 'p', 5], [SM, 'p', 4.5]], 8],
+  ['Templo da Medusa',           [[K.MEDUSA, 's', 2.2], [S, 'p', 5], [S, 'p', 5.5], [SK, 'p', 6], [GH, 'p', 6]], 6],
+];
+export const POST_DATA = (MEDUSA_ISLE ? MEDUSA_CAMPS : CAMPS).map(([name, crew, add], i) => {
   const lvs = crew.map(c => ENEMY_KINDS[c[0]].lv + add);
   return { id: i, ring: Math.min(3, i >> 1), name, crew, add, x: 0, z: 0, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };   // x,z: definidos pelo relevo (terrain.js)
 });
