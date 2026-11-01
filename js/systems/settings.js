@@ -217,6 +217,12 @@ export function initSettings() {
     };
     const rnd = () => { const w = ['mar', 'vento', 'ouro', 'coral', 'bruma', 'farol', 'recife', 'duna', 'lume', 'sal']; return w[Math.floor(Math.random() * w.length)] + '-' + Math.random().toString(36).slice(2, 7); };
     let pend = null;
+    const il = $('mp-isl');   // teleporte: um botão por ilha (toque de novo para confirmar)
+    ISLANDS.concat([{ seed: 'medusa', name: 'Ilha da Medusa' }].filter(m => !ISLANDS.some(i => i.seed === m.seed))).forEach(i => {
+      const b = document.createElement('button'); b.type = 'button';
+      b.textContent = '⛵ ' + i.name + (i.seed === SEED ? ' (aqui)' : ''); b.disabled = i.seed === SEED;
+      b.onclick = () => go(i.seed); il.appendChild(b);
+    });
     $('mp-new').onclick = () => { if (!pend || armed !== pend) pend = rnd(); $('mp-seed').value = pend; go(pend); };
     $('mp-go').onclick = () => go($('mp-seed').value);
     $('mp-home').onclick = () => go('brisa');
