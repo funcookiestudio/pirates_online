@@ -9,6 +9,7 @@ import { addRect } from './imap.js';
 import { addDoor, roomRented } from './doors.js';
 import { addBed } from './beds.js';
 import { addCabinet } from './cabinets.js';
+import { ROOM_LIGHTS } from './house-lights.js';
 
 export const TAVERN_SC = 1.28;
 
@@ -126,6 +127,8 @@ function bnc(x,z,w){B(w,.08,.35,x,.5,z,WOOD);for(const a of[-1,1])B(.08,.4,.3,x+
 {const ch=new THREE.Mesh(new THREE.TorusGeometry(.6,.05,4,12),M(TM));ch.rotation.x=Math.PI/2;ch.position.set(0,2.45,.4);S.add(ch);
  for(const a of[0,1,2,3,4,5]){const x=Math.cos(a*1.047)*.6,z=Math.sin(a*1.047)*.6;C(.03,.03,.14,6,x,2.55,.4+z,0xe8dcb0);const f=new THREE.Mesh(new THREE.ConeGeometry(.03,.08,4),M(0xffc040,0xffa020));f.position.set(x,2.66,.4+z);S.add(f)}
  B(.02,.4,.02,0,2.7,.4,IRON);}
+// luz do salão: acende ao escurecer e fica acesa a noite toda (daynight.js); lustre, lareira e lado da escada/entrada
+for(const [lx,lz,k] of[[-.5,.4,2.6],[3.4,-1,2],[-3.2,1.6,1.8]]){const l=new THREE.PointLight(0xffb868,0,10,1);l.position.set(lx,2.2,lz);l.userData.k=k;S.add(l);ROOM_LIGHTS.push(l)}
 for(const q of[[-3,2],[3,-.5],[-1.5,-1],[0,2.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);C(.1,0,.4,5,q[0],2.45,q[1],0x6a8f3a);C(.08,0,.3,5,q[0]+.15,2.5,q[1],0xb8a040)}
 XR=true;
 // andar de cima: camas, partições, mesa

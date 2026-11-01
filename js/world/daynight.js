@@ -36,7 +36,7 @@ export const isNight = h => h >= 21 || h < 6;
 export const isEvening = h => h >= 20.5 || h < 6;
 
 let glass = null, lamps = null, ids = null, lampK = -1, glassT = 0;
-import { HL } from './house-lights.js';
+import { HL, ROOM_LIGHTS } from './house-lights.js';
 /** Das 22h às 6h as casas apagam as luzes: janelas e lampiões de dentro. Ficam acesos o térreo da taverna (vidro 6) e o castelo (vidro 0) */
 export const lightsOut = h => h >= 22 || h < 6;
 const STAY_LIT = new Set([0, 6]);
@@ -63,6 +63,7 @@ function glowWindows(h) {
     HL.lit[id] = c + (on - c) * .03;
   }
   glass.forEach((id, m) => { const gl = base * HL.lit[id]; m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; });
+  for (const l of ROOM_LIGHTS) l.intensity = base * l.userData.k;   // salão da taverna: aceso enquanto estiver escuro
   const on = late ? 0 : 1; lampK = lampK < 0 ? on : lampK + (on - lampK) * .03;
   for (const m of lamps) { m.emissive.setHex(m.userData.em0).multiplyScalar(lampK); m.color.setHex(m.userData.c0).multiplyScalar(.35 + .65 * lampK); }
 }
