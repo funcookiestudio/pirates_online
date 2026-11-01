@@ -19,9 +19,12 @@ import { animateSerpent } from './serpent.js';
 import { stoneTick, updateHead } from '../systems/medusa-head.js';
 import { initMedusa, medusaThink, animateMedusa, updateMedusaFx } from './medusa.js';
 import { initDragon, dragonThink, animateDragon, dragonClear } from './dragon.js';
+import { initHydra, hydraThink, animateHydra, hydraClear } from './hydra.js';
+import { initUndead, undeadThink, undeadPower, undeadHitFx } from './undead.js';
 
 /** Tempo (s) até um inimigo morto reaparecer */
 const RESPAWN_TIME = 43.8;
+let CLK = 0;   // relógio das animações extras (s)
 
 /* ---------- Criação ---------- */
 
@@ -59,9 +62,12 @@ export function spawn(k, x, z, pat, o = {}) {
     MD: g.userData.MD,            // Medusa: controle do modelo de 2 fases
     SN: g.userData.SN,            // serpente: animação do corpo
     DR: g.userData.DR,            // dragão / wiverno: animação do modelo (dragon-model.js)
+    HM: g.userData.HM,            // hidra: animação do modelo (hydra-model.js)
   });
   if (t.medusa) initMedusa(enemies[enemies.length - 1]);
   if (t.dragon) initDragon(enemies[enemies.length - 1]);
+  if (t.hydra) initHydra(enemies[enemies.length - 1]);
+  if (t.undead) initUndead(enemies[enemies.length - 1]);
 }
 
 /* ---------- Atualização por frame ---------- */
@@ -71,13 +77,14 @@ function animateDeath(e, dt) {
   e.dead += dt;
   if (e.ring) { scene.remove(e.ring); e.ring = null; }
   if (e.DS) dragonClear(e);
+  if (e.HY) hydraClear(e);
   const u = Math.min(1, e.dead * 2.5), f = Math.exp(-dt * 6);
   e.x += e.kx * dt;
   e.z += e.kz * dt;
   e.kx *= f;
   e.kz *= f;
   if (e.SN) { e.g.rotation.z = 2.9 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) + .3 * Math.sin(u * Math.PI), e.z); return; }   // serpente: vira de barriga para cima
-  if (e.A || e.DR) { e.g.rotation.z = 1.45 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) - .05 * u, e.z); return; }   // quadrúpede tomba de lado
+  if (e.A || e.DR || e.HM) { e.g.rotation.z = 1.45 * (1 - Math.pow(1 - u, 3)); e.g.position.set(e.x, groundY(e.x, e.z) - .05 * u, e.z); return; }   // quadrúpede tomba de lado
   e.g.rotation.x = 1.55 * (1 - Math.pow(1 - u, 3));
   e.g.position.set(e.x, groundY(e.x, e.z) - .12 * u, e.z);
 }
@@ -165,11 +172,12 @@ function think(e, dt, c) {
 
       if (e.slam) {
         if (e.ring) { scene.remove(e.ring); e.ring = null; }
-        puff(e.x, .4, e.z, 0xff6a2a, 9, 18);
+        puff(e.x, .4, e.z, T.undead === 'vampire' ? 0xa01030 : T.undead === 'mummy' ? 0xe0c070 : 0xff6a2a, 9, 18);
         state.SHK = Math.max(state.SHK, .7);
-        if (d < 4.6) hurtP(dm * 1.3, aim, 9);
+        if (d < 4.6) { hurtP(dm * 1.3, aim, 9); if (e.UD) undeadHitFx(e, dm * 1.3); }
       } else if (d <= reach + .7) {
         hurtP(dm, aim, 4);
+        if (e.UD) undeadHitFx(e, dm);
       }
     }
   } else if (e.st === 'rec' && e.tm <= 0) {
@@ -220,6 +228,12 @@ function animate(e, c, dt) {
     e.hb.scale.x = Math.max(.01, e.hs); e.hb.quaternion.copy(cam.quaternion); e.hb.parent.updateMatrixWorld();
     return;
   }
+  if (e.HM) {   // hidra: modelo e animação próprios (hydra.js)
+    animateHydra(e, c, dt);
+    e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
+    e.hb.scale.x = Math.max(.01, e.hs); e.hb.quaternion.copy(cam.quaternion); e.hb.parent.updateMatrixWorld();
+    return;
+  }
   if (e.MD || e.SN) {   // Medusa e serpente: modelo e animação próprios (medusa.js, serpent.js)
     if (e.MD) animateMedusa(e, c, dt); else animateSerpent(e, c, dt, groundY, turnTo, P);
     e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
@@ -240,6 +254,7 @@ function animate(e, c, dt) {
     tf = -.3 - u * .8;
     tl = -.2 * u;
   } else if (e.st === 'rec') { ta = .1; tf = -.1; tl = .25; }
+  else if (e.st === 'dash') { const u = Math.max(0, 1 - e.tm / 1.1); ta = -.9; tf = -.8; tl = u < .5 ? -.15 : .45; }   // investida: agacha e lança o corpo
   else if (e.st === 'stag') { ta = .5; tl = -.3; }
 
   const ak = 1 - Math.exp(-dt * (e.st === 'rec' ? 26 : 11));
@@ -252,6 +267,7 @@ function animate(e, c, dt) {
   e.g.position.set(e.x, groundY(e.x, e.z), e.z);
   e.g.up.rotation.set(0, 0, 0);
   gait(e.g, dt, gaitSpeed(Math.hypot(e.vx, e.vz)), { twist: e.st === 'wind' || e.st === 'rec' ? 0 : 1, sword: false });
+  if (e.g.userData.fx) { CLK += dt; if (e.UD) undeadPower(e, dt); e.g.userData.fx(e, dt, mv, CLK); }   // peças extras dos mortos-vivos (undead-model.js)
 
   e.hs += (e.hp / e.max - e.hs) * (1 - Math.exp(-dt * 10));
   e.hb.scale.x = Math.max(.01, e.hs);
@@ -298,8 +314,8 @@ function updateEnemy(e, dt) {
     dx, dz, bo,
     d: Math.hypot(dx, dz) || 1,
     aim: Math.atan2(dx, dz),
-    reach: bo ? 3 : 1.9,
-    dur: bo ? .9 : .45,
+    reach: e.t.reach || (bo ? 3 : 1.9),
+    dur: e.t.dur || (bo ? .9 : .45),
   };
   e.tm -= dt;
   e.cd -= dt;
@@ -312,7 +328,7 @@ function updateEnemy(e, dt) {
   }
 
   let wx = 0, wz = 0;
-  if (e.sn <= 0 && !P.dead) [wx, wz] = e.MD ? medusaThink(e, dt, c, think) : e.DS ? dragonThink(e, dt, c, think) : think(e, dt, c);
+  if (e.sn <= 0 && !P.dead) [wx, wz] = e.MD ? medusaThink(e, dt, c, think) : e.DS ? dragonThink(e, dt, c, think) : e.HY ? hydraThink(e, dt, c, think) : e.UD ? undeadThink(e, dt, c, think) : think(e, dt, c);
   move(e, wx, wz, dt);
   if (!farIdle) animate(e, c, dt);
 }

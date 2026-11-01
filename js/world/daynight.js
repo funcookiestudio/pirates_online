@@ -1,5 +1,5 @@
 /* Dia e noite: céu, névoa e luzes seguem a hora do relógio do jogo (core/clock.js). */
-import { MEDUSA_ISLE, DRAGON_ISLE } from '../core/isle.js';
+import { MEDUSA_ISLE, DRAGON_ISLE, VAMPIRE_ISLE, HYDRA_ISLE, MUMMY_ISLE } from '../core/isle.js';
 import { scene, hemi, torch, cam } from '../core/engine.js';
 import { hourNow } from '../core/clock.js';
 
@@ -67,7 +67,7 @@ function glowWindows(h) {
   const on = late ? 0 : 1; lampK = lampK < 0 ? on : lampK + (on - lampK) * .03;
   for (const m of lamps) { m.emissive.setHex(m.userData.em0).multiplyScalar(lampK); m.color.setHex(m.userData.c0).multiplyScalar(.35 + .65 * lampK); }
 }
-const GREEN = new THREE.Color(0x3f6a40), EMBER = new THREE.Color(0x8a3a22);
+const GREEN = new THREE.Color(0x3f6a40), EMBER = new THREE.Color(0x8a3a22), DUSK = new THREE.Color(0x4a1a3a), MURK = new THREE.Color(0x3a5a2a), SAND = new THREE.Color(0xd8a45a);
 export function updateDayNight(inDungeon) {
   const h = hourNow();
   if (++glassT === 90) glass = null;   // recolhe os vidros depois que o mundo foi fundido
@@ -83,6 +83,9 @@ export function updateDayNight(inDungeon) {
   mix(scene.background, a[1], b[1], u);
   if (MEDUSA_ISLE) scene.background.lerp(GREEN, .45);   // céu esverdeado e doentio
   if (DRAGON_ISLE) scene.background.lerp(EMBER, .4);    // céu em brasa, da fumaça dos dragões
+  if (VAMPIRE_ISLE) scene.background.lerp(DUSK, .5);    // céu roxo-sangue, sempre crepuscular
+  if (HYDRA_ISLE) scene.background.lerp(MURK, .5);      // céu turvo de pântano
+  if (MUMMY_ISLE) scene.background.lerp(SAND, .3);      // céu alaranjado de poeira do deserto
   scene.fog.color.copy(scene.background);
   mix(hemi.color, a[2], b[2], u); mix(hemi.groundColor, a[3], b[3], u);
   hemi.intensity = a[4] + (b[4] - a[4]) * u;

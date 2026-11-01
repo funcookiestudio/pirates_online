@@ -10,12 +10,13 @@ import { CAVES, initTerrain, groundY, walkable, onRoad, SEA } from './terrain.js
 import { buildTerrainMesh } from './terrain-mesh.js';
 import { chooseFarmSite } from '../entities/farm-site.js';
 import { reserved } from './reserve.js';
-import { DRAGON_ISLE } from '../core/isle.js';
+import { DRAGON_ISLE, RUINS_ISLE } from '../core/isle.js';
+import { buildRuinsScenery, themedTree } from './ruins-isle.js';
 import { buildDragonScenery } from './dragon-isle.js';
 
 export function buildWorld() {
   initTerrain(POST_DATA);        // relevo procedural: vila plana em y=0, postos em platôs
-  chooseFarmSite([...POST_DATA, ...CAVES]);   // reserva o terreno da fazenda antes de nascer a vegetação
+  if (!RUINS_ISLE) chooseFarmSite([...POST_DATA, ...CAVES]);   // (ilhas de ruínas não têm fazenda) reserva o terreno da fazenda antes de nascer a vegetação
   buildTerrainMesh(POST_DATA);
 
   for (let i = 0, tries = 0; i < 70 && tries < 3000; tries++) {
@@ -29,7 +30,7 @@ export function buildWorld() {
 
     if (Math.random() < .5) {
       // árvore sorteada: palmeiras, bananeira, pinheiro, frondosa ou baobá
-      m = makeTree();
+      m = RUINS_ISLE ? themedTree() : makeTree();
     } else {
       // pedra
       m = new THREE.Mesh(new THREE.DodecahedronGeometry(.9, 0), xray(M(0x6a6a62)));
@@ -44,5 +45,6 @@ export function buildWorld() {
     props.push(m);
   }
 
+  if (RUINS_ISLE) buildRuinsScenery();   // acampamentos e ruínas temáticos (vampiros, hidra ou múmia)
   if (DRAGON_ISLE) buildDragonScenery();   // ninhos, covil do Ancestral, ossos e árvores queimadas
 }

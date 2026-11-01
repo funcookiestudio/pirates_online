@@ -6,6 +6,8 @@ import { state } from './core/state.js';
 import { buildWorld } from './world/world.js';
 import { buildVillage } from './world/village.js';
 import { buildCastle } from './world/castle.js';
+import { RUINS_ISLE } from './core/isle.js';
+import { buildRuinsCamp } from './world/ruins-isle.js';
 import { initDialog } from './ui/dialog.js';
 import { updateNpcs, npcList, talkTo } from './entities/npc.js';
 import { updatePerf, DIAG } from './systems/perf.js';
@@ -134,8 +136,7 @@ function tick(now) {
 
 const worldBefore = new Set(scene.children);
 buildWorld();
-buildVillage();
-buildCastle();
+if (RUINS_ISLE) buildRuinsCamp(); else { buildVillage(); buildCastle(); }   // ilhas de ruínas: só um acampamento de chegada, sem vila nem castelo
 initInput();
 initWorldMap();
 initCaves();
@@ -155,13 +156,13 @@ if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets
 } // antes de povoar a ilha: a vida dos inimigos depende do nível
 buildOutposts();
 buildPois();
-buildFarmSite();   // fazenda de verdade (celeiro, casa, pasto, plantação)
+if (!RUINS_ISLE) buildFarmSite();   // fazenda de verdade (celeiro, casa, pasto, plantação)
 // desempenho: funde o cenário estático (fora NPCs, inimigos e peças animadas)
 const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
 const mr = mergeStatics(worldBefore, dyn);
 if (location.hash === '#dev') console.log('merge', mr);
-buildFarm();
-buildWildlife();   // cervos, javalis e gatos (criados depois da fusão para continuarem animáveis)
+if (!RUINS_ISLE) { buildFarm(); buildWildlife(); }
+   // cervos, javalis e gatos (criados depois da fusão para continuarem animáveis)
 initMount(MOUNT.owned, MOUNT.coat);   // cavalo comprado espera junto ao portão leste
 initVehicles();   // carroça/carruagem compradas também   // animais de fazenda (enfeite) — criados depois da fusão para continuarem animáveis
 // o jogo sempre começa na vila, com o personagem sentado descansando (clicar no mundo o levanta)

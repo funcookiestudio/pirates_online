@@ -1,6 +1,6 @@
 # Pirata ARPG
 
-ARPG 3D (Three.js) de pirata: explore a ilha, enfrente esqueletos, piratas fantasmas, o Capitão Maldito, a Medusa e os dragões, colete loot e evolua junto com seu companheiro.
+ARPG 3D (Three.js) de pirata: explore a ilha, enfrente esqueletos, piratas fantasmas, o Capitão Maldito, a Medusa, os dragões, vampiros, a Hidra e a Múmia, colete loot e evolua junto com seu companheiro.
 
 ## Como rodar
 
@@ -54,6 +54,7 @@ js/
   world/
     world.js          Chão, árvores e pedras
     dragon-isle.js    Cenário da Ilha dos Dragões: ninhos, covil com tesouro, crânios, costelas e árvores queimadas
+    ruins-isle.js     Ilhas dos Vampiros, da Hidra e da Múmia (sem vila): acampamento de chegada, ruínas e acampamentos por posto (ver docs/ilhas-ruinas.md)
   entities/         Coisas que existem no mundo
     character.js      Corpo "de blocos" (jogador e inimigos)
     player.js         Dados do jogador, dano recebido, nível
@@ -63,6 +64,9 @@ js/
     medusa.js         Chefe Medusa: transformação aos 50%, olhar petrificante, golpe de cauda e cuspe de veneno
     dragon-model.js   Modelos do Dragão e do Wiverno (5 escamas, 4 chifres; andar, voo, planeio e fogo)
     dragon.js         Ilha dos Dragões: sopro de fogo em cone (dragões), rasante (wivernos) e fúria do Dragão Ancestral
+    undead-model.js   Modelos dos mortos-vivos e bandidos: zumbi, vampiro/Conde, múmia/Faraó, bandido, caveira
+    undead.js         Investida e cura do vampiro, maldição da múmia, fúria dos chefes das ilhas de ruínas
+    hydra-model.js    Modelo da Hidra (7 cabeças + 2 que brotam) e das Crias; hydra.js: bote, jato venenoso e fúria
     loot.js           Queda, coleta e efeito dos itens
     horse.js          Cavalo (modelo e animação de passo/trote/galope, usado na montaria e nos veículos)
     vehicles.js       Modelos da carroça (1 cavalo) e da carruagem (parelha, boleia, passageiros)

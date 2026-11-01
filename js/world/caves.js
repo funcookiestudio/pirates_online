@@ -13,6 +13,7 @@ import { generateDungeon, THEMES, hash } from '../dungeon/dungeongen.js';
 import { tierOf, tierBonus } from '../data/scaling.js';
 import { WEAPONS } from '../data/weapons.js';
 import { enterDungeon, rewardOf } from '../dungeon/dungeon-scene.js';
+import { VAMPIRE_ISLE, HYDRA_ISLE, MUMMY_ISLE } from '../core/isle.js';
 
 const M = c => xray(M0(c));
 const NAMES = {
@@ -21,6 +22,12 @@ const NAMES = {
   caverna: ['Caverna dos Ecos', 'Gruta da Maré Negra', 'Caverna do Kraken', 'Gruta dos Esqueletos'],
 };
 const TYPE = { cripta: 'Cripta · salas e corredores', ruinas: 'Ruínas · salas desgastadas e passagens abertas', caverna: 'Caverna natural · túneis tortuosos' };
+/** Ilhas de ruínas: nomes próprios das dungeons e o chefe de todas elas */
+const ISLE_BOSS = VAMPIRE_ISLE ? 'conde' : HYDRA_ISLE ? 'hidra' : MUMMY_ISLE ? 'farao' : null;
+if (ISLE_BOSS) {
+  const N2 = { conde: ['Cripta do Conde', 'Catacumbas Sangrentas', 'Mausoléu dos Esquecidos', 'Ruínas da Abadia'], hidra: ['Gruta da Hidra', 'Ruínas Alagadas', 'Caverna das Cabeças', 'Cripta do Brejo'], farao: ['Tumba do Faraó', 'Câmara das Múmias', 'Ruínas do Deserto', 'Catacumbas de Areia'] }[ISLE_BOSS];
+  Object.keys(NAMES).forEach(k => { NAMES[k] = N2; });
+}
 export const DUNGEONS = [];       // { id, name, theme, seed, lv, x, z, ... }
 let prompting = null, cooldown = 0;
 
@@ -29,7 +36,7 @@ const bx = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxG
 export function buildCaves() {
   const tb = tierBonus(tierOf(SEED));
   CAVES.forEach((c, i) => {
-    const hs = hash(SEED + ':' + i), theme = THEMES[hs % 3], name = NAMES[theme][(hs >> 3) % 4];
+    const hs = hash(SEED + ':' + i), theme = THEMES[hs % 3], name = NAMES[theme][(hs >>> 3) % 4];
     const lv = tb + 3 + Math.round((c.t || 0) * 17);         // nível pela ilha (tier) e pelo custo de caminho desde a vila (3 → 20)
     const D = { id: i, name, theme, seed: SEED + ':' + i, lv, x: c.x, z: c.z, dx: c.dx, dz: c.dz, info: null };
     DUNGEONS.push(D);
@@ -54,6 +61,7 @@ export function buildCaves() {
     props.push({ position: { x: c.x - c.dx * 1.2, z: c.z - c.dz * 1.2, y: 0 }, r: 1.2 });
     D.fx = c.x + c.dx * 2.2; D.fz = c.z + c.dz * 2.2;                 // ponto de gatilho, à frente da boca
   });
+  if (ISLE_BOSS) { DUNGEONS.forEach(D => { D.boss = ISLE_BOSS; }); return; }   // ilhas de ruínas: o chefe da ilha em todas as dungeons
   // chefe: a Medusa mora nas ruínas; se a ilha não tiver ruínas, fica na dungeon mais difícil. Nas outras, o Capitão Maldito
   DUNGEONS.forEach(D => { D.boss = D.theme === 'ruinas' ? 'medusa' : 'capitao'; });
   if (DUNGEONS.length && !DUNGEONS.some(D => D.boss === 'medusa')) DUNGEONS.reduce((a, b) => b.lv > a.lv ? b : a).boss = 'medusa';
@@ -79,7 +87,7 @@ function show(D) {
     '📐 ' + size,
     'Rota até o chefe: ' + g.path + ' passos' + (g.loops ? ' · ' + g.loops + ' atalhos' : ''),
     g.nooks.length ? '💰 ' + g.nooks.length + ' câmaras secretas com tesouro' : 'Tesouro espalhado pelo caminho',
-    (D.boss === 'medusa' ? '🐍 Chefe: Medusa (2 fases: humana e serpente) · esqueletos e serpentes' : '☠ Chefe: Capitão Maldito') + ' · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
+    ({ conde: '🦇 Chefe: Conde Vampiro · zumbis, vampiros e múmias', hidra: '🐍 Chefe: Hidra · esqueletos, serpentes e crias', farao: '🏺 Chefe: Faraó Múmia · caveiras, bandidos e múmias' }[D.boss] || (D.boss === 'medusa' ? '🐍 Chefe: Medusa (2 fases: humana e serpente) · esqueletos, serpentes e múmias' : '☠ Chefe: Capitão Maldito')) + ' · baú do chefe' + (state.dunDone[D.seed] ? '' : ' · 1ª vitória: ' + (rewardOf(D) ? WEAPONS[rewardOf(D).wi].n + ' + ' : '') + 'tocha mágica'),
     '⚠ ' + perigo(df) + ' (você: Nv ' + P.lv + ')',
   ].map(t => '<div>' + t + '</div>').join('');
   $('cvp').style.display = 'block';

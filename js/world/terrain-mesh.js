@@ -1,5 +1,5 @@
 import { reserved } from './reserve.js';
-import { DRAGON_ISLE } from '../core/isle.js';
+import { DRAGON_ISLE, VAMPIRE_ISLE, HYDRA_ISLE, MUMMY_ISLE } from '../core/isle.js';
 /* Malha 3D da ilha procedural: relevo com cor por vértice, mar, rios/lagos, pontes e vegetação instanciada.
    Tudo é marcado userData.dyn para o mergeStatics deixar quieto (a malha já é única e instanciada). */
 import { scene } from '../core/engine.js';
@@ -14,11 +14,14 @@ const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a
 /** cor do terreno: água rasa → areia → grama (por umidade) → rocha → neve; estrada em terra */
 function col(h, ny, rw, v, mo, dep) {
   let c = [.08, .26, .43];
-  c = mixc(c, [.14, .42, .55], ss(-3.6, -2.4, h)); c = mixc(c, [.60, .74, .62], ss(-1.6, -.8, h)); c = mixc(c, [.87, .79, .56], ss(-.2, .3, h));
+  c = mixc(c, [.14, .42, .55], ss(-3.6, -2.4, h)); c = mixc(c, [.60, .74, .62], ss(-1.6, -.8, h)); c = mixc(c, [.87, .79, .56], ss(-.2, .3, h)); if (HYDRA_ISLE) c = mixc(c, [.30, .38, .22], ss(-.2, .3, h) * .8);
   const t = Math.min(1, Math.max(0, (h - .8) / 5));
   let g = mixc([.66, .62, .32], [.42, .62, .27], ss(.28, .42, mo)); g = mixc(g, [.22, .46, .23], ss(.46, .6, mo)); g = mixc(g, [.30, .40, .27], ss(.62, .7, mo) * ss(1.8, 1.1, h));
   g = [g[0] * (1 - .25 * t), g[1] * (1 - .2 * t), g[2] * (1 - .1 * t)];
   if (DRAGON_ISLE) g = mixc(g, [.36, .30, .24], .72);   // Ilha dos Dragões: terra de cinzas em vez de grama
+  if (VAMPIRE_ISLE) g = mixc(g, [.27, .25, .31], .85);   // Ilha dos Vampiros: terra morta, cinza-arroxeada
+  if (HYDRA_ISLE) g = mixc(g, [.18, .30, .17], .8);      // Ilha da Hidra: brejo verde-escuro
+  if (MUMMY_ISLE) g = mixc(g, [.82, .70, .46], .92);     // Ilha da Múmia: areia do deserto
   c = mixc(c, g, ss(.6, 1.1, h));
   c = mixc(c, [.46, .43, .41], Math.max(ss(6, 6.9, h), ss(.9, .72, ny))); c = mixc(c, [.88, .88, .92], ss(9, 9.7, h));
   c = mixc(c, [.56, .42, .27], rw * ss(.1, .45, h)); c = mixc(c, [.40, .46, .40], ss(0, .5, dep));
@@ -111,11 +114,13 @@ function vegetation(posts) {
   const f = (a, k) => { const x = a[0] - VX, z = a[1] - VZ; return ok(x, z) ? [x, z, groundY(x, z), a] : false; };
   // árvores e pedras maiores (o personagem tem ~2 m) e mais densas: pinheiros e arbustos ganham um vizinho
   const SC = { pl: 2.1, pi: 2.4, ro: 2.2, bu: 1.8 };
+  // ilhas de ruínas: vegetação rala e de outra cor (vampiros: mortas e acinzentadas · hidra: pântano escuro · múmia: seca do deserto)
+  const TH = VAMPIRE_ISLE ? { pl: 0x4a4a3c, p1: 0x2e2e3c, p2: 0x3a3a4c, bu: 0x3a3642, keep: .45 } : HYDRA_ISLE ? { pl: 0x2e5a2a, p1: 0x1f4a2a, p2: 0x245830, bu: 0x2e4a24, keep: 1 } : MUMMY_ISLE ? { pl: 0x9a9a4a, p1: 0x6a6a3a, p2: 0x7a7a44, bu: 0xa89a5a, keep: .3 } : null;
   const L = (list, key, dup) => {
     const out = [];
     list.forEach(a => {
       const x = a[0] - VX, z = a[1] - VZ;
-      if (ok(x, z)) { const w = a.slice(); w[0] = x; w[1] = z; w[2] *= SC[key]; out.push(w); }
+      if (ok(x, z) && (!TH || key === 'ro' || rr() < TH.keep)) { const w = a.slice(); w[0] = x; w[1] = z; w[2] *= SC[key]; out.push(w); }
       if (dup && rr() < .55) {
         const x2 = x + (rr() - .5) * 7, z2 = z + (rr() - .5) * 7;
         if (ok(x2, z2) && walkable(x2, z2)) { const w = a.slice(); w[0] = x2; w[1] = z2; w[2] *= SC[key] * (.75 + rr() * .5); w[4] = rr() * 6; out.push(w); }
@@ -133,7 +138,7 @@ function vegetation(posts) {
   };
   pl.forEach(a => put(0, a, 'pl')); pi.forEach(a => put(0, a, 'pi')); ro.forEach(a => put(0, a, 'ro')); bu.forEach(a => put(0, a, 'bu'));
   const PINE = (() => {   // pinheiro: tronco e copas fundidos, cor por vértice (a variação de brilho por árvore vem da cor da instância)
-    const parts = [[trunk.clone().scale(1, .8, 1), 0x5a3e22], [new THREE.ConeGeometry(.62, 1.3, 6).translate(0, 1.35, 0), 0x2a6a34], [new THREE.ConeGeometry(.42, .9, 6).translate(0, 2.05, 0), 0x2f7438]];
+    const parts = [[trunk.clone().scale(1, .8, 1), 0x5a3e22], [new THREE.ConeGeometry(.62, 1.3, 6).translate(0, 1.35, 0), TH ? TH.p1 : 0x2a6a34], [new THREE.ConeGeometry(.42, .9, 6).translate(0, 2.05, 0), TH ? TH.p2 : 0x2f7438]];
     const pos = [], nor = [], col = [], k = 1 / .867;
     parts.forEach(([g, hex]) => { const n = g.toNonIndexed(), cc = new THREE.Color(hex), cnt = n.attributes.position.count; pos.push(...n.attributes.position.array); nor.push(...n.attributes.normal.array); for (let i = 0; i < cnt; i++) col.push(Math.min(1, cc.r * k), Math.min(1, cc.g * k), Math.min(1, cc.b * k)); });
     const bg = new THREE.BufferGeometry();
@@ -145,10 +150,10 @@ function vegetation(posts) {
     const q = new THREE.Group(); q.userData.c = [c.x, c.z];
     q.add(
       inst(trunk, c.pl, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], a[3]); o.scale.set(a[2], 1.5 * a[2], a[2]); }, 0x7a5a34, .1, rr),
-      inst(cone(.8, .4, 6), c.pl, (o, a) => { o.position.set(a[0] - Math.sin(a[3]) * 1.5 * a[2], Y(a) + 1.5 * a[2] * Math.cos(a[3]) + .1, a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0x3d9a3a, .12, rr),
+      inst(cone(.8, .4, 6), c.pl, (o, a) => { o.position.set(a[0] - Math.sin(a[3]) * 1.5 * a[2], Y(a) + 1.5 * a[2] * Math.cos(a[3]) + .1, a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, TH ? TH.pl : 0x3d9a3a, .12, rr),
       inst(PINE, c.pi, (o, a) => { o.position.set(a[0], Y(a), a[1]); o.rotation.set(0, a[4], 0); o.scale.setScalar(a[2]); }, 0xdddddd, .12, rr, true),   // tronco + 2 cones numa só peça (1 chamada em vez de 3)
       inst(ico(), c.ro, (o, a) => { o.position.set(a[0], Y(a) + .1, a[1]); o.rotation.set(a[4], a[4] * 2, 0); o.scale.set(a[2], a[2] * .7, a[2] * 1.1); }, 0x7a7672, .14, rr),
-      inst(ico(), c.bu, (o, a) => { o.position.set(a[0], Y(a) + .12 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2] * 1.1, a[2] * .7, a[2] * 1.1); }, null, .12, rr),
+      inst(ico(), c.bu, (o, a) => { o.position.set(a[0], Y(a) + .12 * a[2], a[1]); o.rotation.set(0, a[4], 0); o.scale.set(a[2] * 1.1, a[2] * .7, a[2] * 1.1); }, TH ? TH.bu : null, .12, rr),
     );
     g.add(q);
   });

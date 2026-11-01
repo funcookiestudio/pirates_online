@@ -4,6 +4,7 @@ import { dIn, dWalk } from '../dungeon/dgrid.js';
 import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { CASTLE, ZONES } from './reserve.js';
+import { RUINS_ISLE } from '../core/isle.js';
 
 /** Semente da ilha: padrão 'brisa'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
 const savedSeed = () => { try { return localStorage.getItem('pirata-ilha'); } catch (e) { return null; } };
@@ -37,7 +38,7 @@ export function initTerrain(posts = [], seed = SEED) {
   flatten(0, 0, VILLAGE_R + 5, VILLAGE_R + 17, 0);
 
   // castelo: no alto, num planalto escolhido pelo gerador (layout), de frente para a vila; o platô é nivelado na altura dele
-  {
+  if (!RUINS_ISLE) {   // (ilhas de ruínas não têm castelo)
     const cs = isl.layout.castle, cx = cs.x - VX, cz = cs.z - VZ, cy = heightAt(cx, cz);
     CASTLE.x = cx; CASTLE.z = cz; CASTLE.y = cy; CASTLE.th = cs.th; CASTLE.ok = true;
     ZONES.push({ x: cx, z: cz, fx: Math.sin(CASTLE.th), fz: Math.cos(CASTLE.th), x0: -20, x1: 20, z0: -15, z1: 36 });   // pegada do castelo (pátio incluído), no giro dele

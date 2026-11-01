@@ -5,6 +5,8 @@ import { resolveLook } from './look.js';
 import { makeMedusa } from './medusa-model.js';
 import { makeSerpent } from './serpent.js';
 import { makeDragonFoe } from './dragon-model.js';
+import { makeUndead } from './undead-model.js';
+import { makeHydraFoe } from './hydra-model.js';
 export { hideSword };
 
 /**
@@ -37,6 +39,8 @@ export function playerModel(female, look) {
 export function enemyModel(t) {
   if (t.medusa) { const M = makeMedusa(); M.g.userData.MD = M; return M.g; }   // Medusa: modelo próprio de 2 fases (medusa-model.js)
   if (t.dragon) return makeDragonFoe(t);   // dragão / wiverno da Ilha dos Dragões (dragon-model.js)
+  if (t.hydra) return makeHydraFoe(t);   // Hidra e Cria da Hidra (hydra-model.js)
+  if (t.undead) return makeUndead(t);   // zumbi, vampiro, múmia, bandido e caveira das ilhas de ruínas (undead-model.js)
   if (t.snake) return makeSerpent();   // serpente: as cobras do cabelo da Medusa, em tamanho grande (serpent.js)
   if (t.animal) { const A = makeAnimal(t.animal); A.g.userData.A = A; return A.g; }   // javali: corpo de quadrúpede (wildlife-anim.js)
   const [sk, sh, pa, ht] = t.c;

@@ -26,6 +26,12 @@ const LOOK = {   // piso (xadrez de 2 tons), parede, topo da parede, detalhe e c
   ruinas:  { floor: 0x5c5440, floor2: 0x4c4636, wall: 0x7c7458, cap: 0xa09870, deco: 0x6a7a48, glow: 0xffb040, bg: 0x0c0c0a },
   caverna: { floor: 0x4a3e34, floor2: 0x3c322a, wall: 0x6a5846, cap: 0x8a7458, deco: 0x7a6a58, glow: 0x60c0ff, bg: 0x0a0806 },
 };
+/** Monstros e chefe das dungeons de cada ilha de ruínas (D.boss = chave) */
+const ISLE_DUN = {
+  conde: { mobs: [KIND.ZUMBI, KIND.ZUMBI, KIND.SKELETON, KIND.VAMPIRO, KIND.MUMIA], boss: KIND.CONDE },
+  hidra: { mobs: [KIND.SKELETON, KIND.GUERREIRO, KIND.SERPENTE, KIND.SERPENTE, KIND.HIDRINHA], boss: KIND.HIDRA },
+  farao: { mobs: [KIND.CAVEIRA, KIND.CAVEIRA, KIND.BANDIDO, KIND.MUMIA, KIND.MUMIA], boss: KIND.FARAO },
+};
 const MOBS = { cripta: [KIND.SKELETON, KIND.GUERREIRO, KIND.GHOST, KIND.SOMBRA], ruinas: [KIND.GRUMETE, KIND.SKELETON, KIND.CORSARIO, KIND.GUERREIRO], caverna: [KIND.CONTRA, KIND.GRUMETE, KIND.BRUTO, KIND.CORSARIO] };
 const M = c => xray(M0(c));
 
@@ -148,7 +154,7 @@ export function enterDungeon(D, gen) {
   const spots = [];
   if (gen.rooms.length) gen.rooms.forEach(r => { if (!r.start && !r.end && grid[r.cy * W + r.cx]) spots.push({ x: wx(r.cx), z: wz(r.cy), big: r.big, w: r.w, h: r.h }); });
   else for (let k = 0; k < W * H; k += 37) if (grid[k]) { const [x, z] = cellXZ(k); if (Math.hypot(x - sx, z - sz) > 16 && Math.hypot(x - ex, z - ez) > 12) spots.push({ x, z, w: 5, h: 5 }); }
-  const kinds = D.boss === 'medusa' ? [KIND.SKELETON, KIND.GUERREIRO, KIND.SERPENTE, KIND.SERPENTE] : MOBS[D.theme], list = [];   // covil da Medusa: esqueletos e serpentes
+  const kinds = ISLE_DUN[D.boss] ? ISLE_DUN[D.boss].mobs : D.boss === 'medusa' ? [KIND.SKELETON, KIND.GUERREIRO, KIND.SERPENTE, KIND.SERPENTE, KIND.MUMIA] : MOBS[D.theme], list = [];   // covil da Medusa: esqueletos e serpentes
   spots.forEach(s => {
     const n = (s.big ? 4 : 2) + (R() < .5 ? 1 : 0) + (D.lv >= 20 ? 1 : 0) + (D.lv >= 40 ? 1 : 0);   // mais inimigos em dungeons de nível alto
     for (let q = 0; q < n; q++) {
@@ -161,7 +167,7 @@ export function enterDungeon(D, gen) {
     }
   });
   // chefe no fim do caminho
-  spawn(D.boss === 'medusa' ? KIND.MEDUSA : KIND.BOSS, ex, ez, null, { lv: D.lv + 4 });   // ruínas (ou a mais funda da ilha, se não houver ruínas): Medusa
+  spawn(ISLE_DUN[D.boss] ? ISLE_DUN[D.boss].boss : D.boss === 'medusa' ? KIND.MEDUSA : KIND.BOSS, ex, ez, null, { lv: D.lv + 4 });   // ruínas (ou a mais funda da ilha, se não houver ruínas): Medusa
   const boss = enemies[enemies.length - 1]; boss.dun = 1;
   boss.ag = true;
 

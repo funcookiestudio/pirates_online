@@ -1,6 +1,6 @@
 /* Postos inimigos: anéis de dificuldade ao redor da vila. [graus, raio, nome, equipe[[tipo, 'p'atrulha | 's'entinela, raio]]] */
 import { KIND, ENEMY_KINDS } from './enemies.js';
-import { MEDUSA_ISLE, DRAGON_ISLE } from '../core/isle.js';
+import { MEDUSA_ISLE, DRAGON_ISLE, VAMPIRE_ISLE, HYDRA_ISLE, MUMMY_ISLE } from '../core/isle.js';
 
 const K = KIND;
 /* 8 acampamentos, do mais fácil (perto da vila, Nv ~1) ao mais difícil (ponto mais distante, chefe, Nv ~20).
@@ -21,12 +21,12 @@ const S = K.SERPENTE, SK = K.SKELETON, GW = K.GUERREIRO, GH = K.GHOST, SM = K.SO
 const MEDUSA_CAMPS = [
   ['Ninho das Serpentes',        [[S, 'p', 4], [S, 'p', 4], [SK, 'p', 4.5], [SK, 's', 2.6]], 0],
   ['Cripta Rastejante',          [[SK, 'p', 4], [SK, 'p', 4.5], [S, 'p', 4], [S, 'p', 5]], 2],
-  ['Cova dos Mortos',            [[GW, 'p', 4], [GW, 'p', 4.5], [SK, 'p', 5], [SK, 'p', 5]], 3],
+  ['Cova dos Mortos',            [[GW, 'p', 4], [GW, 'p', 4.5], [SK, 'p', 5], [SK, 'p', 5], [K.MUMIA, 's', 2.8]], 3],
   ['Bivaque dos Mortos-Vivos',   [[GH, 'p', 4.5], [GH, 'p', 4.5], [SK, 'p', 5], [GW, 's', 2.6]], 4],
   ['Poço das Víboras',           [[S, 'p', 4], [S, 'p', 4.5], [S, 'p', 5], [GH, 's', 2.8]], 5],
   ['Vigia das Sombras',          [[SM, 'p', 4.5], [SM, 'p', 5], [GH, 's', 2.8], [S, 'p', 5]], 6],
-  ['Ossuário Maldito',           [[GW, 'p', 5], [GW, 'p', 5.5], [GH, 'p', 5], [SM, 'p', 4.5]], 8],
-  ['Templo da Medusa',           [[K.MEDUSA, 's', 2.2], [S, 'p', 5], [S, 'p', 5.5], [SK, 'p', 6], [GH, 'p', 6]], 6],
+  ['Ossuário Maldito',           [[GW, 'p', 5], [GW, 'p', 5.5], [GH, 'p', 5], [SM, 'p', 4.5], [K.MUMIA, 'p', 5]], 8],
+  ['Templo da Medusa',           [[K.MEDUSA, 's', 2.2], [S, 'p', 5], [S, 'p', 5.5], [SK, 'p', 6], [K.MUMIA, 'p', 6]], 6],
 ];
 /* Ilha dos Dragões: ninhos de wivernos, restos de caçadores caídos, o Vale dos Dragões e, no ponto mais distante, o Covil do Dragão Ancestral */
 const WY = K.WIVERNO, DR = K.DRAGAO;
@@ -40,7 +40,41 @@ const DRAGON_CAMPS = [
   ['Garganta Vulcânica',          [[DR, 's', 2.8], [DR, 'p', 5], [WY, 'p', 5.5], [WY, 'p', 6]], 5],
   ['Covil do Dragão Ancestral',   [[K.ANCIAO, 's', 2.6], [DR, 'p', 6], [DR, 'p', 6.5], [WY, 'p', 6], [WY, 'p', 6.5]], 4],
 ];
-export const POST_DATA = (MEDUSA_ISLE ? MEDUSA_CAMPS : DRAGON_ISLE ? DRAGON_CAMPS : CAMPS).map(([name, crew, add], i) => {
+/* Ilha dos Vampiros: cemitérios, capelas e abadias em ruínas, acampamentos de caçadores caídos; zumbis, esqueletos, vampiros e múmias; o Conde Vampiro no castelo em ruínas */
+const ZB = K.ZUMBI, VP = K.VAMPIRO, MU = K.MUMIA, BD = K.BANDIDO, CV = K.CAVEIRA, HI = K.HIDRINHA;
+const VAMPIRE_CAMPS = [
+  ['Cemitério Abandonado',          [[ZB, 'p', 4], [ZB, 'p', 4], [ZB, 'p', 4.5], [SK, 's', 2.6]], 0],
+  ['Capela em Ruínas',              [[ZB, 'p', 4], [ZB, 'p', 4.5], [SK, 'p', 5], [GW, 's', 2.6]], 1],
+  ['Acampamento dos Caçadores',     [[GW, 'p', 4.5], [GW, 'p', 5], [ZB, 'p', 5], [SK, 'p', 5]], 2],
+  ['Mausoléu dos Esquecidos',       [[ZB, 'p', 4.5], [ZB, 'p', 5], [MU, 's', 2.8], [GH, 'p', 5]], 3],
+  ['Ruínas da Abadia',              [[VP, 's', 2.8], [ZB, 'p', 5], [ZB, 'p', 5], [SK, 'p', 5.5]], 3],
+  ['Catacumbas Sangrentas',         [[VP, 'p', 5], [VP, 'p', 5.5], [ZB, 'p', 5], [MU, 'p', 5.5]], 4],
+  ['Jardim dos Mortos',             [[VP, 's', 2.8], [VP, 'p', 5.5], [MU, 'p', 5.5], [ZB, 'p', 6]], 5],
+  ['Castelo do Conde Vampiro',      [[K.CONDE, 's', 2.6], [VP, 'p', 6], [VP, 'p', 6.5], [ZB, 'p', 6], [MU, 'p', 6.5]], 4],
+];
+/* Ilha da Hidra: brejo de esqueletos e serpentes, acampamentos de caçadores, altares em ruínas; a Hidra no covil do fundo do pântano */
+const HYDRA_CAMPS = [
+  ['Brejo dos Esqueletos',          [[SK, 'p', 4], [SK, 'p', 4.5], [S, 'p', 4], [S, 's', 2.6]], 0],
+  ['Acampamento dos Caçadores',     [[GW, 'p', 4.5], [SK, 'p', 5], [S, 'p', 4.5], [S, 's', 2.6]], 1],
+  ['Ninho das Víboras',             [[S, 'p', 4], [S, 'p', 4.5], [S, 'p', 5], [SK, 's', 2.6]], 2],
+  ['Ruínas Alagadas',               [[GW, 'p', 4.5], [GW, 'p', 5], [S, 'p', 5], [SK, 'p', 5]], 2],
+  ['Pântano Venenoso',              [[HI, 's', 2.8], [S, 'p', 5], [S, 'p', 5.5], [SK, 'p', 5.5]], 3],
+  ['Altar das Cabeças',             [[HI, 'p', 5], [HI, 'p', 5.5], [GW, 'p', 5], [S, 'p', 5]], 4],
+  ['Fosso dos Ossos',               [[HI, 's', 2.8], [HI, 'p', 5.5], [GW, 'p', 5.5], [S, 'p', 5.5]], 5],
+  ['Covil da Hidra',                [[K.HIDRA, 's', 2.8], [HI, 'p', 6], [HI, 'p', 6.5], [S, 'p', 6], [S, 'p', 6.5], [SK, 'p', 6]], 3],
+];
+/* Ilha da Múmia: acampamentos de bandidos, cavas de caveiras, mercado saqueado e tumbas; o Faraó Múmia na pirâmide */
+const MUMMY_CAMPS = [
+  ['Acampamento dos Bandidos',      [[BD, 'p', 4], [BD, 'p', 4], [BD, 'p', 4.5], [CV, 's', 2.6]], 0],
+  ['Ruínas do Oásis',               [[BD, 'p', 4], [BD, 'p', 4.5], [CV, 'p', 5], [CV, 'p', 5]], 1],
+  ['Cova das Caveiras',             [[CV, 'p', 4], [CV, 'p', 4.5], [CV, 'p', 5], [CV, 's', 2.6]], 2],
+  ['Mercado Saqueado',              [[BD, 'p', 4.5], [BD, 'p', 5], [MU, 's', 2.8], [CV, 'p', 5]], 3],
+  ['Tumba Esquecida',               [[MU, 'p', 4.5], [MU, 'p', 5], [CV, 'p', 5], [CV, 'p', 5.5]], 3],
+  ['Fortim dos Saqueadores',        [[BD, 'p', 5], [BD, 'p', 5], [BD, 'p', 5.5], [MU, 's', 2.8], [CV, 's', 3]], 4],
+  ['Avenida das Esfinges',          [[MU, 'p', 5], [MU, 'p', 5.5], [MU, 'p', 5.5], [CV, 'p', 6]], 5],
+  ['Pirâmide do Faraó',             [[K.FARAO, 's', 2.8], [MU, 'p', 6], [MU, 'p', 6.5], [CV, 'p', 6], [CV, 'p', 6.5], [BD, 'p', 6.5]], 4],
+];
+export const POST_DATA = (MEDUSA_ISLE ? MEDUSA_CAMPS : DRAGON_ISLE ? DRAGON_CAMPS : VAMPIRE_ISLE ? VAMPIRE_CAMPS : HYDRA_ISLE ? HYDRA_CAMPS : MUMMY_ISLE ? MUMMY_CAMPS : CAMPS).map(([name, crew, add], i) => {
   const lvs = crew.map(c => ENEMY_KINDS[c[0]].lv + add);
   return { id: i, ring: Math.min(3, i >> 1), name, crew, add, x: 0, z: 0, lo: Math.min(...lvs), hi: Math.max(...lvs), prev: -1 };   // x,z: definidos pelo relevo (terrain.js)
 });

@@ -4,7 +4,7 @@
    c = cores do corpo: [pele, camisa, calça, chapéu] */
 
 /** Índices dos tipos no array ENEMY_KINDS */
-export const KIND = { SKELETON: 0, GHOST: 1, BOSS: 2, GRUMETE: 3, CONTRA: 4, GUERREIRO: 5, SOMBRA: 6, CORSARIO: 7, BRUTO: 8, JAVALI: 9, MEDUSA: 10, SERPENTE: 11, WIVERNO: 12, DRAGAO: 13, ANCIAO: 14 };
+export const KIND = { SKELETON: 0, GHOST: 1, BOSS: 2, GRUMETE: 3, CONTRA: 4, GUERREIRO: 5, SOMBRA: 6, CORSARIO: 7, BRUTO: 8, JAVALI: 9, MEDUSA: 10, SERPENTE: 11, WIVERNO: 12, DRAGAO: 13, ANCIAO: 14, ZUMBI: 15, VAMPIRO: 16, CONDE: 17, MUMIA: 18, FARAO: 19, BANDIDO: 20, CAVEIRA: 21, HIDRA: 22, HIDRINHA: 23 };
 
 export const ENEMY_KINDS = [
   { n: 'Esqueleto',              lv: 2,  hm: 1.1, dm: 1.55,  s: 2.6, c: [0xddd8c0, 0xbbb69a, 0x6a6a5a, 0x333333], xm: .47 },
@@ -23,4 +23,15 @@ export const ENEMY_KINDS = [
   { n: 'Wiverno',                lv: 5,  hm: 1.9, dm: 2.05, s: 3.4, c: [0x3f6a3a, 0x23401f, 0xd6cf8a, 0x6a9a4a], xm: .62, sc: 1.0, dragon: 'wyvern', coats: [0, 1, 2, 3], horns: [0, 0, 1], hbY: 4.9, lblY: 5.2, reach: 2.7, dur: .5, cr: .85 },   // rápido; mergulha em rasante
   { n: 'Dragão',                 lv: 9,  hm: 3.7, dm: 2.4, s: 2.7, c: [0xa3302a, 0x6e1d1a, 0xe0b46a, 0xc4492f], xm: .9, sc: 1.15, dragon: 'dragon', coats: [0, 1, 2], horns: [0, 1, 2, 3], hbY: 5.6, lblY: 5.9, reach: 3.3, dur: .7, cr: 1.05, fire: [10, .42] },   // sopro de fogo em cone
   { n: 'Dragão Ancestral',       lv: 14, hm: 7.8, dm: 2.7, s: 2.5, c: [0xc9a032, 0x8a6a1a, 0xf3e6b0, 0xe0bb4a], xm: 3.0, boss: 1, sc: 1.9, dragon: 'dragon', coats: [4], horns: [2], hbY: 9.6, lblY: 10, reach: 4.8, dur: .9, cr: 1.7, fire: [15, .55] },   // chefe da ilha: sopro largo, pancada em área e fúria abaixo de 50%
+  // Ilhas de ruínas (modelos em entities/undead-model.js e hydra-model.js, IA em entities/undead.js e hydra.js):
+  // undead = tipo de modelo · drain = fração do dano que cura o atacante · slow = segundos de lentidão no golpe · dash = [alcance mín, máx] da investida · hydra = nº de cabeças
+  { n: 'Zumbi',                  lv: 6,  hm: 2.1, dm: 1.7, s: 1.9, c: [0x86a06a, 0x6a6a58, 0x4a4a3e, 0x3a3228], xm: .62, sc: 1.05, undead: 'zombie', reach: 1.9, dur: .6, lblY: 2.7 },   // lento e resistente; moscas em volta
+  { n: 'Vampiro',                lv: 10, hm: 2.7, dm: 2.2, s: 3.1, c: [0xe6dfec, 0x241a2c, 0x15101a, 0x7a1226], xm: .9, sc: 1.05, undead: 'vampire', drain: .4, dash: [4.5, 11], reach: 2.0, dur: .45, lblY: 2.9 },   // investida sombria e suga vida
+  { n: 'Conde Vampiro',          lv: 15, hm: 7.8, dm: 2.7, s: 2.8, c: [0xe6dfec, 0x241a2c, 0x15101a, 0x7a1226], xm: 3.0, boss: 1, sc: 1.55, undead: 'vampire', lord: 1, msg: '🦇 O Conde Vampiro virou pó! Ele voltará em 45s.', drain: .3, dash: [5, 13], reach: 3.1, dur: .8, hbY: 4.6, lblY: 4.9 },   // chefe da ilha: capa, morcegos, investida e pancada em área
+  { n: 'Múmia',                  lv: 9,  hm: 3.1, dm: 2.1, s: 2.2, c: [0xd8caa2, 0xc7b78c, 0xb5a47a, 0x4a3b28], xm: .85, sc: 1.1, undead: 'mummy', slow: 2.5, reach: 2.0, dur: .6, lblY: 2.8 },   // cambaleia, mas a maldição das bandagens deixa o alvo lento
+  { n: 'Faraó Múmia',            lv: 16, hm: 8.4, dm: 2.7, s: 2.4, c: [0xece6d6, 0xdcd4be, 0xcfc6ac, 0x6a5a44], xm: 3.2, boss: 1, sc: 1.6, undead: 'mummy', lord: 1, msg: '🏺 O Faraó Múmia desabou em areia! Ele voltará em 45s.', slow: 3.5, reach: 3.2, dur: .85, hbY: 4.8, lblY: 5.1 },   // chefe da ilha: máscara de ouro, maldição da areia e pancada em área
+  { n: 'Bandido do Deserto',     lv: 6,  hm: 1.6, dm: 1.95, s: 2.9, c: [0xc8946a, 0x7a5a30, 0x4a3a28, 0xb8a060], xm: .55, undead: 'bandit', reach: 1.9, dur: .42 },
+  { n: 'Caveira',                lv: 5,  hm: 1.4, dm: 1.85, s: 2.8, c: [0xd8c89a, 0x7dffb0, 0x4a3a28, 0x2a2018], xm: .5, undead: 'skull', reach: 1.9, dur: .42 },   // esqueleto do deserto: faixa de ouro, olhos verdes
+  { n: 'Hidra',                  lv: 15, hm: 8.8, dm: 2.7, s: 2.3, c: [0x3f6a42, 0x1f3a26, 0xc9c27a, 0x7aa84a], xm: 3.1, boss: 1, sc: 1.15, hydra: 7, msg: '🐍 A Hidra tombou! Ela voltará em 45s.', coats: [0, 1, 3], hbY: 6.2, lblY: 6.6, reach: 3.6, dur: .8, cr: 1.6, fire: [13, .5] },   // chefe do pântano: 7 cabeças, cospe veneno, regenera 2 cabeças abaixo de 50%
+  { n: 'Cria da Hidra',          lv: 8,  hm: 3.0, dm: 2.15, s: 2.7, c: [0x5a3a7a, 0x2a1a40, 0xb8e060, 0x8ae040], xm: .8, sc: .62, hydra: 3, coats: [0, 1, 3, 4], hbY: 3.7, lblY: 4.0, reach: 2.4, dur: .5, cr: 1.0 },   // 3 cabeças; morde rápido
 ];
