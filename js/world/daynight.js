@@ -35,17 +35,36 @@ const stars = (() => {
 export const isNight = h => h >= 21 || h < 6;
 export const isEvening = h => h >= 20.5 || h < 6;
 
-let glass = null, glassT = 0;
+let glass = null, lamps = null, ids = null, lampK = -1, glassT = 0;
 import { HL } from './house-lights.js';
-/** Janelas acendem ao entardecer (vidros 0xbfe0f0|id: materiais fundidos por quadra, coletados uma vez); a casa cujo morador deitou para dormir apaga */
-function glowWindows() {
-  if (!glass) { glass = new Map(); scene.traverse(o => { const m = o.isMesh && o.material; if (m && !Array.isArray(m) && m.transparent && m.emissive) { const hx = m.color.getHex(); if ((hx >> 4) === 0xbfe0f) glass.set(m, hx & 15); } }); }
-  const base = stars.material.opacity;
-  for (const id in HL.pos) {
-    const p = HL.pos[id], off = id != 6 && HL.asleep && HL.asleep(p[0], p[1], 9) ? 1 : 0, c = HL.lit[id] ?? 1;
-    HL.lit[id] = c + (off ? 0 : 1) * 0 + ((1 - off) - c) * .03;
+/** Das 22h às 6h as casas apagam as luzes: janelas e lampiões de dentro. Ficam acesos o térreo da taverna (vidro 6) e o castelo (vidro 0) */
+export const lightsOut = h => h >= 22 || h < 6;
+const STAY_LIT = new Set([0, 6]);
+const LAMP = 0xffd891, CANDLE = 0xffc041;   // lampiões e velas de dentro das casas (cor marcada: os da rua e da taverna usam 0xffd890/0xffc040)
+/** Janelas acendem ao entardecer (vidros 0xbfe0f0|id: materiais fundidos por quadra, coletados uma vez); apagam às 22h ou quando o morador deitou para dormir */
+function glowWindows(h) {
+  if (!glass) {
+    glass = new Map(); lamps = [];
+    scene.traverse(o => {
+      const m = o.isMesh && o.material; if (!m || Array.isArray(m) || !m.emissive) return;
+      const hx = m.color.getHex();
+      if (m.transparent && (hx >> 4) === 0xbfe0f) glass.set(m, hx & 15);
+      else if (m.userData.c0 || hx === LAMP || hx === CANDLE) {
+        if (!m.userData.c0) { m.userData.c0 = hx; m.userData.em0 = m.emissive.getHex(); }
+        if (!lamps.includes(m)) lamps.push(m);
+      }
+    });
+    ids = new Set(glass.values());
   }
-  glass.forEach((id, m) => { const k = HL.pos[id] ? HL.lit[id] ?? 1 : 1, gl = base * k; m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; });
+  const base = stars.material.opacity, late = lightsOut(h);
+  for (const id of ids) {
+    const p = HL.pos[id], asleep = p && id != 6 && HL.asleep && HL.asleep(p[0], p[1], 9);
+    const on = asleep || (late && !STAY_LIT.has(id)) ? 0 : 1, c = HL.lit[id] ?? on;
+    HL.lit[id] = c + (on - c) * .03;
+  }
+  glass.forEach((id, m) => { const gl = base * HL.lit[id]; m.emissive.setRGB(1, .72, .3).multiplyScalar(gl * .9); m.opacity = .93 + gl * .07; });
+  const on = late ? 0 : 1; lampK = lampK < 0 ? on : lampK + (on - lampK) * .03;
+  for (const m of lamps) { m.emissive.setHex(m.userData.em0).multiplyScalar(lampK); m.color.setHex(m.userData.c0).multiplyScalar(.35 + .65 * lampK); }
 }
 const GREEN = new THREE.Color(0x3f6a40);
 export function updateDayNight(inDungeon) {
@@ -54,7 +73,7 @@ export function updateDayNight(inDungeon) {
   stars.visible = !inDungeon && stars.material.opacity > .02;
   if (inDungeon) { lastH = -1; return; }
   stars.position.copy(cam.position);
-  glowWindows();
+  glowWindows(h);
   if (Math.abs(h - lastH) < .01) return;
   lastH = h;
   let i = 0; while (i < K.length - 2 && h >= K[i + 1][0]) i++;

@@ -118,8 +118,8 @@ for(const [x,z] of[[-3.4,.3],[-3.3,1.2]]){B(.7,.6,.7,x,.4,z,0x9a7444);B(.5,.5,.6
 {const sk=new THREE.Mesh(new THREE.SphereGeometry(.38,7,5),M(0xcdb88a));sk.scale.set(1,.9,.75);sk.position.set(-2.6,.35,.4);S.add(sk)}
 // cordas e ferragens penduradas na parede lateral, balança de pratos pequena e lampiões
 for(let i=0;i<3;i++){const rp=new THREE.Mesh(new THREE.TorusGeometry(.22,.06,5,10),M(0xb89a5a));rp.position.set(-3.85,1.6+i*.0,-1.4+i*.5);rp.rotation.y=Math.PI/2;S.add(rp)}
-for(const q of[[-1.75,1.3],[1.75,-1.3],[-3.5,.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);B(.1,.14,.1,q[0],2.5,q[1],0xffd890,S,0xffb040)}
-B(.02,.5,.02,0,2.65,0,IRON);B(.2,.3,.2,0,2.25,0,0xffd890,S,0xffb040);B(.28,.05,.28,0,2.43,0,IRON);
+for(const q of[[-1.75,1.3],[1.75,-1.3],[-3.5,.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);B(.1,.14,.1,q[0],2.5,q[1],0xffd891,S,0xffb040)}
+B(.02,.5,.02,0,2.65,0,IRON);B(.2,.3,.2,0,2.25,0,0xffd891,S,0xffb040);B(.28,.05,.28,0,2.43,0,IRON);
 for(let i=0;i<5;i++){B(.06,.5,.06,-.4+i*.25,2.4,2.0,[0xb83a2a,0xd4a830,0x4a7a3a][i%3])}   // fieiras de pimenta penduradas
 // mapa das rotas comerciais na parede da direita
 B(.05,.9,1.3,3.93,1.8,-.1,TM);B(.06,.8,1.2,3.92,1.8,-.1,0xe6dcb4);B(.07,.4,.7,3.9,1.8,-.1,0x7aa0b8);

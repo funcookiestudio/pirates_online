@@ -166,7 +166,7 @@ export function buildAvesHouse(x, z, th, y0 = 0, style = {}) {
   for (const z of [-2, 0, 2]) B(8, .16, .2, 0, 2.95, z, TM);
   for (let i = 0; i < 7; i++) B(.06, .5 + (i % 3) * .1, .06, -3 + i * .45, 2.65, 0, [0xb83a2a, 0xd4a830, 0x4a7a3a, 0xe8d8b8][i % 4]);
   for (let i = 0; i < 5; i++) { SP(.11, 1.4 + i * .1, 2.35 - i * .12, 2.0, 0xe8d8b8); } B(.02, .7, .02, 1.8, 2.7, 2.0, 0xb89a5a);
-  for (const q of [[-2.6, 1.0], [1.6, 1.2], [-1.0, -1.5]]) { B(.01, .3, .01, q[0], 2.8, q[1], 0x999999); B(.12, .16, .12, q[0], 2.55, q[1], 0xffd890, undefined, 0xffb040); }
+  for (const q of [[-2.6, 1.0], [1.6, 1.2], [-1.0, -1.5]]) { B(.01, .3, .01, q[0], 2.8, q[1], 0x999999); B(.12, .16, .12, q[0], 2.55, q[1], 0xffd891, undefined, 0xffb040); }
   // gaiola de canário pendurada junto à janela da frente
   { const gc = new THREE.Group(); gc.position.set(-1.9, 2.15, 2.4); S.add(gc); B(.01, .5, .01, 0, .4, 0, 0x999999, gc); C(.2, .2, .04, 10, 0, 0, 0, 0xc8a040, gc); C(.2, .2, .04, 10, 0, .4, 0, 0xc8a040, gc); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; B(.015, .4, .015, Math.cos(a) * .19, .2, Math.sin(a) * .19, 0xc8a040, gc); } SP(.07, 0, .08, 0, 0xf2d230, gc, 1.2, 1, 1); }
   // quadro bordado na parede oeste e armação com chapéus

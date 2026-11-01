@@ -140,7 +140,7 @@ export function buildAlchemistHouse(x, z, th, y0 = 0) {
   G(new THREE.SphereGeometry(.18, 8, 6), 2.4, 1.2, 2.65, 0x4a8aaa, 0x113344); C(.03, .05, .15, 6, 2.4, 1.0, 2.65, IRON);
   B(.8, 1.1, .04, .4, 1.7, 2.82, 0xe8d9a8); for (let i = 0; i < 7; i++) B(.04, .04, .02, .4 + Math.cos(i * 1.3) * .3, 1.7 + Math.sin(i * 2.1) * .35, 2.79, 0xffd040, undefined, 0xaa8800);
   // ── lampião e ervas penduradas ──
-  B(.02, .5, .02, .4, 2.65, .5, IRON); B(.2, .28, .2, .4, 2.3, .5, 0xffd890, undefined, 0xffb040);
+  B(.02, .5, .02, .4, 2.65, .5, IRON); B(.2, .28, .2, .4, 2.3, .5, 0xffd891, undefined, 0xffb040);
   for (const zz of [-2, 0, 2]) B(8, .16, .2, 0, 2.95, zz, TM);
   for (let i = 0; i < 7; i++) { B(.04, .55, .04, -3.2 + i * .35, 2.65, -.3, 0x7a5a30); C(0, .13, .4, 5, -3.2 + i * .35, 2.3, -.3, [0x3f8a3a, 0x5aa04a, 0x8a6aa0][i % 3]); }
   // ── cama no canto dos fundos ──

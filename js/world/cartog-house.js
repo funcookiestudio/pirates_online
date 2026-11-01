@@ -117,7 +117,7 @@ chair(.6,.75,Math.PI);chair(1.3,.75,Math.PI);
 // escrivaninha junto à parede dos fundos, com cadeira, penas, tinteiro, velas e mapa enrolado
 B(1.9,.1,.8,-1.0,.92,-2.4,WOOD);for(const x of[-1.9,-.1])for(const z of[-2.7,-2.1])B(.1,.9,.1,x,.47,z,WOOD2);B(1.7,.4,.06,-1.0,.62,-2.1,WOOD2);
 B(.6,.03,.45,-1.3,.985,-2.35,0xeadfb8);C(.05,.06,.12,6,-.7,1.05,-2.3,0x1a1a1f);B(.02,.35,.02,-.66,1.2,-2.3,0xe8e0c8).rotation.z=.3;
-C(.03,.03,.16,6,-1.9+.1,1.06,-2.5,0xe8dcb0);{const cf=new THREE.Mesh(new THREE.ConeGeometry(.025,.07,4),M(0xffc040,0xffa020));cf.position.set(-1.8,1.17,-2.5);S.add(cf)}
+C(.03,.03,.16,6,-1.9+.1,1.06,-2.5,0xe8dcb0);{const cf=new THREE.Mesh(new THREE.ConeGeometry(.025,.07,4),M(0xffc041,0xffa020));cf.position.set(-1.8,1.17,-2.5);S.add(cf)}
 {const sc2=C(.05,.05,.7,6,-.3,1.0,-2.5,0xd8c9a0);sc2.rotation.z=Math.PI/2}
 chair(-1.0,-1.6,Math.PI);
 // estante de livros e rolos de mapas na parede esquerda
@@ -141,12 +141,12 @@ B(.7,.9,.05,-3.94,1.8,-1.4,TM);B(.6,.8,.06,-3.93,1.8,-1.4,0xe6dcb4);
  B(2.0,.12,1.05,ox,.5,oz,WOOD2);B(1.95,.2,1.0,ox,.62,oz,0xd6c394);B(1.4,.1,1.02,ox-.2,.75,oz,0x2f4a6a);B(.4,.12,.7,3.55,.78,oz,0xf0ead8);B(.1,1.1,1.1,3.9,.85,oz,WOOD2)}
 // barril de rolos de mapas e lanterna
 C(.22,.26,.7,8,3.4,.4,2.2,WOOD);for(let i=0;i<5;i++){const rl=C(.045,.045,.9,6,3.3+(i%3)*.1,1.0,2.1+((i*1.3)%1)*.2,[0xd8c9a0,0xe6dcb4,0xc9b48a][i%3]);rl.rotation.z=.25-i*.1}
-B(.02,.5,.02,0,2.65,0,IRON);B(.2,.3,.2,0,2.25,0,0xffd890,S,0xffb040);B(.28,.05,.28,0,2.43,0,IRON);
+B(.02,.5,.02,0,2.65,0,IRON);B(.2,.3,.2,0,2.25,0,0xffd891,S,0xffb040);B(.28,.05,.28,0,2.43,0,IRON);
 // luneta de bronze junto à janela da frente
 {const g=new THREE.Group();g.position.set(1.8,0,2.2);S.add(g);for(const a of[0,2.1,4.2]){const l=B(.04,1.1,.04,Math.cos(a)*.18,.52,Math.sin(a)*.18,WOOD2,g);l.rotation.z=Math.cos(a)*.17;l.rotation.x=-Math.sin(a)*.17}
  const t=C(.06,.09,1.1,8,0,1.15,.1,0xb08a30,g);t.rotation.x=Math.PI/2-.15}
 // ervas/âncoras penduradas: lampiões de teto
-for(const q of[[-1.75,1.3],[1.75,-1.3],[-3.5,.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);B(.1,.14,.1,q[0],2.5,q[1],0xffd890,S,0xffb040)}
+for(const q of[[-1.75,1.3],[1.75,-1.3],[-3.5,.5]]){B(.01,.25,.01,q[0],2.7,q[1],0x999999);B(.1,.14,.1,q[0],2.5,q[1],0xffd891,S,0xffb040)}
 
   const K = CARTOG_SC;
   scene.add(root);
