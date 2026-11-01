@@ -185,3 +185,23 @@ body:not(.arc) #xpa { right: 126px; left: calc(50% + 1px); bottom: 0; }
 body.arc #xpp { left: calc(var(--eo, 0px) + 10px); }
 body.arc #xpa { right: calc(var(--eo, 0px) + 10px); }
 
+/* ============ Letras (atalho) e números (contagem) dos botões redondos: ficam por cima do aro, sem serem cortados ============ */
+#sk > div:not(#sawrap), #s5, #sa { overflow: visible; }
+#sk > div:not(#sawrap) > small, #s5 > small, #sa > small,
+#sk > div:not(#sawrap) > em, #s5 > em, #sa > em {
+  position: absolute; z-index: 3; box-sizing: border-box; min-width: 16px; height: 16px; padding: 0 4px;
+  display: flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap; pointer-events: none;
+  border-radius: 8px; border: 1px solid #a07a3a; background: #0c0807; box-shadow: 0 1px 3px #000c; text-shadow: 0 1px 1px #000;
+}
+#sk > div:not(#sawrap) > small, #s5 > small, #sa > small { left: -6px; right: auto; bottom: -6px; top: auto; font-size: 10px; color: #e0c890; }
+#sk > div:not(#sawrap) > em, #s5 > em, #sa > em { right: -6px; left: auto; top: -6px; bottom: auto; font-size: 11px; font-weight: bold; color: #fff; }
+#sk > div:not(#sawrap) > em:empty, #s5 > em:empty, #sa > em:empty { display: none; }
+/* recarga: sem o corte do botão, a sombra é recortada no mesmo círculo do botão */
+#sk .cd { z-index: 2; pointer-events: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 10%22%3E%3Ccircle cx=%225%22 cy=%225%22 r=%225%22/%3E%3C/svg%3E") 50% 100% / 100% auto no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 10%22%3E%3Ccircle cx=%225%22 cy=%225%22 r=%225%22/%3E%3C/svg%3E") 50% 100% / 100% auto no-repeat; }
+@media (max-width: 520px) {
+  #sk > div:not(#sawrap) > small, #s5 > small, #sa > small, #sk > div:not(#sawrap) > em, #s5 > em, #sa > em { min-width: 13px; height: 13px; padding: 0 3px; }
+  #sk > div:not(#sawrap) > small, #s5 > small, #sa > small { font-size: 8px; left: -4px; bottom: -4px; }
+  #sk > div:not(#sawrap) > em, #s5 > em, #sa > em { font-size: 9px; right: -4px; top: -4px; }
+}
