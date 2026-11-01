@@ -3,7 +3,8 @@ import { scene } from '../core/engine.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
 import { makeTree } from './trees.js';
-import { makeRock, makeDecor } from './nature-kit.js';
+import { makeRock } from './rocks.js';
+import { makeFlora } from './flora.js';
 import { POST_DATA } from '../data/posts.js';
 import { CAVES, initTerrain, groundY, walkable, onRoad, SEA } from './terrain.js';
 import { buildTerrainMesh } from './terrain-mesh.js';
@@ -33,7 +34,7 @@ export function buildWorld() {
     } else {
       // pedra
       m = makeRock();
-      m.position.y += y;
+      m.position.y = y - .1;
     }
 
     m.position.x = x;
@@ -43,14 +44,15 @@ export function buildWorld() {
     props.push(m);
   }
 
-  // enfeites do Nature MegaKit (sem colisão): seixos, cogumelos e flores
-  for (let i = 0, tries = 0; i < 160 && tries < 4000; tries++) {
-    const x = (Math.random() * 2 - 1) * 150, z = (Math.random() * 2 - 1) * 150, y = groundY(x, z);
-    if (reserved(x, z, 1) || Math.hypot(x, z) < VILLAGE_R + 4 || onRoad(x, z, 1) || y < SEA + 1 || !walkable(x, z)) continue;
-    i++;
-    const d = makeDecor();
-    d.position.set(x, y, z);
-    scene.add(d);
+  if (!RUINS_ISLE) {   // vegetação rasteira temática (sem colisão); as ilhas de ruínas têm cenário próprio
+    for (let i = 0, tries = 0; i < 200 && tries < 5000; tries++) {
+      const x = (Math.random() * 2 - 1) * 150, z = (Math.random() * 2 - 1) * 150, y = groundY(x, z);
+      if (reserved(x, z, 1) || Math.hypot(x, z) < VILLAGE_R + 3 || onRoad(x, z, 1) || y < SEA + 1 || !walkable(x, z)) continue;
+      i++;
+      const f = makeFlora();
+      f.position.set(x, y, z);
+      scene.add(f);
+    }
   }
 
   if (RUINS_ISLE) buildRuinsScenery();   // acampamentos e ruínas temáticos (vampiros, hidra ou múmia)

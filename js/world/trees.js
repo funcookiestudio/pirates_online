@@ -1,11 +1,14 @@
 /* Outras árvores (bananeira, pinheiro, frondosa, baobá), de modelos em Árvores_de_tronco_em_cubos.html.
    Troncos de cubos e folhagem em cor única. Cada tipo: [função, escala, raio de colisão]. */
 import { xray } from './xray.js';
+import { texMat } from './textures.js';
 import { makePalm, leafGeo, rng } from './palm.js';
 
 const V3 = THREE.Vector3, Q = THREE.Quaternion;
 const box = new THREE.BoxGeometry(1, 1, 1);
 const cache = {};
+const bark = {};
+const B = c => bark[c] || (bark[c] = xray(texMat('bark', new THREE.Color(c).lerp(new THREE.Color(0xffffff), .55).getHex())));
 const M = c => cache[c] || (cache[c] = xray(new THREE.MeshLambertMaterial({ color: c })));
 const leafMat = xray(new THREE.MeshLambertMaterial({ color: 0x8ec850, side: THREE.DoubleSide }));
 const rad_ = d => d * Math.PI / 180;
@@ -18,7 +21,7 @@ function stack(g, a, b, c, n, w0, w1, col, r, bulge = 0) {
   const len = (P0.distanceTo(P1) + P1.distanceTo(P2) + P0.distanceTo(P2)) / 2;
   for (let i = 0; i < n; i++) {
     const t = (i + .5) / n, w = (w0 + (w1 - w0) * t + bulge * Math.sin(Math.PI * t)) * (i % 2 ? .93 : 1);
-    const m = new THREE.Mesh(box, M(col));
+    const m = new THREE.Mesh(box, B(col));
     m.scale.set(w, len / n * 1.15, w);
     m.position.copy(bez(t));
     const q = new Q().setFromUnitVectors(up, tan(t));
@@ -29,15 +32,26 @@ function stack(g, a, b, c, n, w0, w1, col, r, bulge = 0) {
   return { end: bez(1), dir: tan(1) };
 }
 
-/** Moita de folhagem facetada */
+/** Moita de folhagem facetada: aglomerado de 4 tufos deformados, escuros embaixo e claros no topo (cor por vértice) */
+const blobMat = xray(new THREE.MeshLambertMaterial({ vertexColors: true }));
 function blob(rad, col, sd) {
-  const geo = new THREE.IcosahedronGeometry(rad, 1), p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i), s = 1 + .14 * Math.sin(x * 4.1 + y * 3.3 + z * 5.7 + sd);
-    p.setXYZ(i, x * s, y * s * .9, z * s);
+  const g = new THREE.Group(), r = rng(Math.floor(sd * 977 + rad * 1000)), base = new THREE.Color(col), lo = base.clone().multiplyScalar(.62), hi = base.clone().lerp(new THREE.Color(0xe4f08a), .28);
+  for (let k = 0; k < 4; k++) {
+    const R = k ? rad * (.5 + r() * .25) : rad, geo = new THREE.IcosahedronGeometry(R, 1), p = geo.attributes.position, c = new Float32Array(p.count * 3), t = new THREE.Color();
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i), s = 1 + .16 * Math.sin(x * 4.1 + y * 3.3 + z * 5.7 + sd + k);
+      p.setXYZ(i, x * s, y * s * .9, z * s);
+      t.copy(lo).lerp(hi, Math.min(1, Math.max(0, (y / R + 1) / 2 + (r() - .5) * .18)));
+      c.set([t.r, t.g, t.b], i * 3);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, blobMat);
+    if (k) { const a = r() * 6.28; m.position.set(Math.cos(a) * rad * .75, (r() - .3) * rad * .6, Math.sin(a) * rad * .75); }
+    m.castShadow = true;
+    g.add(m);
   }
-  geo.computeVertexNormals();
-  return new THREE.Mesh(geo, M(col));
+  return g;
 }
 
 function banana(s) {

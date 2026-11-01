@@ -1,6 +1,7 @@
 /* Palmeiras: tronco de cubos (cor única) que acompanha uma curva + copa de folhas largas.
    Modelo vindo de Palmeiras_de_tronco_em_cubos.html, adaptado ao jogo (materiais Lambert, escala menor). */
 import { xray } from './xray.js';
+import { texMat } from './textures.js';
 
 const V3 = THREE.Vector3, Q = THREE.Quaternion;
 
@@ -8,7 +9,7 @@ export function rng(s) {
   return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 
-const trunkMat = xray(new THREE.MeshLambertMaterial({ color: 0xb9693b }));
+const trunkMat = xray(texMat('bark', 0xf0c8a8));
 const leafMat = xray(new THREE.MeshLambertMaterial({ color: 0x8ec850, side: THREE.DoubleSide }));
 const budMat = xray(new THREE.MeshLambertMaterial({ color: 0xecc96b }));
 const box = new THREE.BoxGeometry(1, 1, 1);
