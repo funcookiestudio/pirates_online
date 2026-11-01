@@ -23,11 +23,11 @@ function build() {
 export function questCard(q, rr = render) {
   const [tn, tc] = TIERS[q.tier], c = el('div', 'qb-card qb-' + q.state + (openId === q.id ? ' open' : ''));
   c.style.setProperty('--tc', tc);
-  const pct = q.state === 'done' || q.state === 'ready' ? 100 : q.need > 0 ? Math.min(100, Math.round(100 * q.n / q.need)) : 0;
+  const pct = q.pct;   // todas as etapas: as já feitas + o progresso da atual
   const stat = { open: 'Disponível', on: 'Em andamento', ready: 'Pronta para entregar', done: 'Concluída', lock: 'Requer Nv ' + q.lv }[q.state];
   c.innerHTML = '<div class="qb-top"><div class="qb-ttl">' + esc(q.title) + '</div><span class="qb-lv' + (q.state === 'lock' ? ' bad' : '') + '">Nv ' + q.lv + '</span></div>'
     + '<div class="qb-sub">' + esc(q.giver) + '<span class="qb-tier">' + tn + '</span></div>'
-    + '<div class="qb-chips"><span>' + q.xp + ' XP</span><span>' + q.gold + '</span><span class="qb-st">' + stat + '</span></div>'
+    + '<div class="qb-chips"><span>' + q.xp + ' XP</span><span>' + q.gold + ' ouro</span><span class="qb-st">' + stat + '</span></div>'
     + (q.state === 'on' || q.state === 'ready' ? '<div class="qb-bar"><i style="width:' + pct + '%"></i></div>' : '');
   c.addEventListener('click', () => { openId = openId === q.id ? null : q.id; rr(); });
   if (openId === q.id) {

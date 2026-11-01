@@ -29,11 +29,12 @@ export function goQuest(q) {
   if (q.state === 'on') {
     const sp = questSpot(q.id);
     if (sp && sp.remo) return toNpc('Capitão Remo');
+    if (sp && sp.dun) { log('O objetivo de ' + q.title + ' fica dentro de dungeons'); return false; }
     if (sp) {
       const f = sp.region ? freePoint(sp.x, sp.z, .7) : { x: sp.x, z: sp.z };
       return go(() => { P.tx = f.x; P.tz = f.z; }, 'Indo até o objetivo de ' + q.title + '...');
     }
-    log('O objetivo de ' + q.title + ' fica dentro de dungeons');
+    log('🧭 O alvo de ' + q.title + ' não está por perto agora: explore os arredores');
     return false;
   }
   return toNpc(questGiver(q.id) || q.giver);

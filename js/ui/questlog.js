@@ -1,5 +1,5 @@
 /* Aba MISSÕES do painel do personagem: resumo, quatro visões (Ativas · Por NPC · Por nível · Concluídas) e cartões interativos. */
-import { boardData } from '../systems/quests.js';
+import { boardData, CARTAZ_MAX } from '../systems/quests.js';
 import { questCard } from './questboard.js';
 import { goFirst, firstLabel } from './questgo.js';
 import { questHud, RAT_GOLD } from '../systems/quest.js';
@@ -11,12 +11,12 @@ const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls)
 const rank = q => ({ ready: 0, on: 1, open: 2, lock: 3, done: 4 }[q.state]);
 
 export function renderQuestLog(host, rerender) {
-  const all = boardData().filter(q => q.taken), n = s => all.filter(q => q.state === s).length;
+  const every = boardData(), all = every.filter(q => q.taken), n = s => all.filter(q => q.state === s).length, total = every.length + 1;   // +1: a missão inicial
   const fst = state.quest.st;   // missão inicial: 0..3 em andamento · 4 concluída
   host.innerHTML = '';
   const done = n('done') + (fst >= 4 ? 1 : 0), on = n('on') + (fst < 4 ? 1 : 0), ready = n('ready'), open = n('open');
-  const sum = el('div', 'ql-sum', '<div class="ql-st"><b>' + on + '</b><span>em andamento</span></div><div class="ql-st"><b>' + ready + '</b><span>para entregar</span></div><div class="ql-st"><b>' + open + '</b><span>disponíveis</span></div><div class="ql-st"><b>' + done + '/' + (all.length + 1) + '</b><span>concluídas</span></div>');
-  const bar = el('div', 'qb-bar ql-all', '<i style="width:' + Math.round(100 * done / Math.max(1, all.length + 1)) + '%"></i>');
+  const sum = el('div', 'ql-sum', '<div class="ql-st"><b>' + on + '</b><span>em andamento</span></div><div class="ql-st"><b>' + ready + '</b><span>para entregar</span></div><div class="ql-st"><b>' + open + '</b><span>disponíveis</span></div><div class="ql-st"><b>' + done + '/' + total + '</b><span>concluídas</span></div>');
+  const bar = el('div', 'qb-bar ql-all', '<i style="width:' + Math.round(100 * done / total) + '%"></i>');
   const vs = el('div', 'qb-tabs ql-views');
   VIEWS.forEach(([k, lb]) => { const b = el('button', 'qb-tab' + (view === k ? ' on' : ''), lb); b.onclick = () => { view = k; rerender(); }; vs.appendChild(b); });
   host.append(sum, bar, vs);
@@ -49,7 +49,7 @@ export function renderQuestLog(host, rerender) {
     cards(list, box);
     if (box.children.length) body.appendChild(box);
     if (pins.length) {
-      body.appendChild(el('div', 'ql-gh', '<div class="ql-gt">Cartazes</div><small>missões que você pegou no Mural · ' + pins.length + '/6</small>'));
+      body.appendChild(el('div', 'ql-gh', '<div class="ql-gt">Cartazes</div><small>missões que você pegou no Mural · ' + pins.length + '/' + CARTAZ_MAX + '</small>'));
       const pb = el('div', 'ql-cards'); cards(pins, pb); body.appendChild(pb);
     }
     if (!box.children.length && !pins.length) empty('Nenhuma missão ativa. Pegue um cartaz no Mural de Missões!');

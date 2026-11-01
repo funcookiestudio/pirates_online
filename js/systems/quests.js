@@ -29,6 +29,7 @@ import { gait, gaitSpeed } from '../entities/gait.js';
 import { npcList } from '../entities/npc.js';
 import { pois } from '../world/pois.js';
 import { slideTo, SEED } from '../world/terrain.js';
+import { ISLANDS } from '../data/npcs.js';
 
 /** [fração do XP do nível, múltiplo do ouro] por tamanho da missão */
 export const TIER = { curta: [.15, 8], media: [.25, 15], longa: [.4, 30], epica: [.6, 60] };
@@ -101,7 +102,7 @@ const QUESTS = [
     reward: {}, rewardTxt: 'conforme a sua escolha' },
   { id: 'procurado', giver: 'Mural de Missões', title: 'Procurado: Capitão Maldito', lv: 12, tier: 'epica',
     say: { ask: 'PROCURADO: Capitão Maldito, vivo ou morto! A recompensa é generosa. Ele é um chefe de verdade: leve poções, bombas e um bom equipamento. Ele ressurge depois de um tempo, mas só o primeiro abate vale a recompensa.', on: 'O Capitão Maldito vaga pela costa leste, no Fortim. Derrube-o e volte ao Mural.', ready: 'O cartaz está riscado: O Capitão Maldito caiu! Cobre sua recompensa.' },
-    stages: [{ k: 'wanted', n: 1, hud: () => 'Derrote o Capitão Maldito (chefe da costa leste, no Fortim)' }],
+    stages: [{ k: 'wanted', n: 1, boss: 'Capitão Maldito', hud: () => 'Derrote o Capitão Maldito (chefe da costa leste, no Fortim)' }],
     reward: { magic: 1, pot: 5, bmb: 3 }, rewardTxt: 'uma arma Mágica, 5 poções e 3 bombas' },
   { id: 'cofre', giver: 'Mestre Breu', title: 'O Cofre do Mestre', lv: 10, tier: 'longa',
     say: { ask: 'Meu antigo mestre guardou o cofre de ferramentas no fundo de uma dungeon, com um guardião para vigiá-lo. Entre numa dungeon de nível 8 ou mais e derrote o chefe. O cofre abre sozinho quando o guardião cai!', on: 'Entre numa dungeon (nível 8 ou mais) e derrote o chefe. Depois, volte aqui.', ready: 'Ahoy! As ferramentas do velho mestre! Tome estes machados, eu fico com o resto.' },
@@ -149,11 +150,29 @@ const QUESTS = [
     stages: [{ k: 'throw', n: 10, hud: q => 'Acerte inimigos com armas de arremesso (' + q.n + '/10)' }],
     onStart: () => give('Faca de arremesso', 15), reward: { faca: 10 }, rewardTxt: '10 facas de arremesso' },
 ];
-/** Etapas de outra ilha (`isl`): só rodam na ilha certa; nas outras o painel manda viajar */
-const ISLN = { corvo: 'Ilha do Corvo', tormenta: 'Ilha da Tormenta', caveira: 'Ilha da Caveira' };
-const here = st => !st.isl || st.isl === SEED;
+/** Etapas de outra ilha (`isl`): só rodam na ilha certa; nas outras o painel manda viajar.
+   Sem `isl`, a etapa é da ilha natal (os postos, NPCs e clareiras de cada ilha são outros); só as de dungeon/arremesso/javali valem em qualquer ilha. */
+const ISLN = { corvo: 'Ilha do Corvo', tormenta: 'Ilha da Tormenta', caveira: 'Ilha da Caveira', home: 'Ilha Natal' };
+const TRAVEL = new Set(ISLANDS.filter(i => i.cost > 0).map(i => i.seed));
+const ANYWHERE = new Set(['dkill', 'dclear', 'throw', 'kill']);
+const here = st => st.isl ? st.isl === SEED : ANYWHERE.has(st.k) || !TRAVEL.has(SEED);
+const islName = st => ISLN[st.isl || 'home'];
 const QMAP = Object.fromEntries(QUESTS.map(d => [d.id, d]));
-const Q = () => state.quests || (state.quests = {});
+let qChecked = null;
+/** Estado das missões; ao trocar de objeto (save carregado) corrige entradas inválidas (etapa fora da lista, campos faltando) */
+const Q = () => {
+  const qs = state.quests || (state.quests = {});
+  if (qs !== qChecked) {
+    qChecked = qs;
+    Object.entries(qs).forEach(([id, q]) => {
+      const d = QMAP[id]; if (!d) return;
+      if (!q || typeof q !== 'object' || !['on', 'ready', 'done'].includes(q.s)) { delete qs[id]; return; }
+      ['i', 'n', 't', 'a'].forEach(f => { if (!Number.isFinite(q[f]) || q[f] < 0) q[f] = 0; });
+      if (q.s === 'on' && q.i >= d.stages.length) q.s = 'ready';
+    });
+  }
+  return qs;
+};
 const stageOf = (d, q) => d.stages[q.i];
 
 // ---- Contratos de dungeon (Mural): condição extra numa dungeon, repetível; paga ao derrotar o chefe cumprindo a condição ----
@@ -169,7 +188,7 @@ export function contractHud() {
   const d = CONTRACTS[c.c], r = c.run;
   if (!d) return '';
   if (!r) return d.ic + ' Contrato ' + d.n + ': entre numa dungeon';
-  return d.ic + ' Contrato ' + d.n + (r.fail ? ': ' + r.fail : ': ' + (d.limit ? ' ' + fmt(Math.max(0, d.limit - r.t)) : ''));
+  return d.ic + ' Contrato ' + d.n + ': ' + (r.fail ? r.fail : d.limit ? fmt(Math.max(0, d.limit - r.t)) : 'valendo');
 }
 const failC = why => { const r = state.contract && state.contract.run; if (r && !r.fail) { r.fail = why; log('Contrato falhou: ' + why); } };
 on('dungeon:enter', () => { const c = state.contract; if (c && !c.run) { c.run = { lv: state.dunNow.lv, t: 0, a: 0, fail: '' }; log('Contrato valendo: ' + CONTRACTS[c.c].hint); } });
@@ -198,14 +217,14 @@ export function pegarCartaz(id) {
   if (!d || q || P.lv < d.lv) return 'no';
   if (c.includes(id)) return 'has';
   if (c.length >= CARTAZ_MAX) { log('Você já guarda ' + CARTAZ_MAX + ' cartazes: solte um antes de pegar outro'); return 'full'; }
-  (state.qtaken || (state.qtaken = [])).includes(id) || state.qtaken.push(id);   // só as missões que o jogador pegou no Mural aparecem na aba Missões
   c.push(id); log('Cartaz guardado: ' + d.title + ' — veja na aba Missões do inventário'); saveGame(); return 'ok';
 }
-export function soltarCartaz(id) { state.cartazes = (state.cartazes || []).filter(x => x !== id); if (!Q()[id]) state.qtaken = (state.qtaken || []).filter(x => x !== id); saveGame(); }
-/** Para onde ir numa missão ativa: o item/área mais perto (exato) ou a região; {remo:true} se a etapa é de outra ilha; null se não há local (ex.: dentro de dungeon) */
+export function soltarCartaz(id) { state.cartazes = (state.cartazes || []).filter(x => x !== id); saveGame(); }
+/** Para onde ir numa missão ativa: o item/área mais perto (exato) ou a região; {remo:true} se a etapa é de outra ilha; {dun:true} se é dentro de dungeons; null se o alvo não está por perto agora */
 export function questSpot(id) {
   const d = QMAP[id], q = Q()[id]; if (!d || !q || q.s !== 'on') return null;
   const st = stageOf(d, q); if (!here(st)) return { remo: true };
+  if (st.k === 'dclear' || st.k === 'dkill') return { dun: true };
   let best = null, bd = 1e9;
   PK.filter(p => p.id === id && p.si === q.i).forEach(p => { const dd = Math.hypot(p.x - P.x, p.z - P.z); if (dd < bd) { bd = dd; best = { x: p.x, z: p.z }; } });
   if (best) return best;
@@ -220,12 +239,14 @@ export function boardData() {
   return QUESTS.map(d => {
     const q = Q()[d.id], [pc, gm] = TIER[d.tier], st = q && q.s !== 'done' && q.s !== 'ready' ? stageOf(d, q) : null;
     const sv = q && q.s === 'done' ? 'done' : q && q.s === 'ready' ? 'ready' : q ? 'on' : P.lv >= d.lv ? 'open' : 'lock';   // (não chamar de state: escondia o estado global e o cartaz nunca aparecia)
+    const frac = st && st.n ? Math.min(1, (q.n || 0) / st.n) : 0;   // etapas sem contagem (ir até, escolta) contam só ao terminar
+    const cartaz = (state.cartazes || []).includes(d.id);
     return {
-      id: d.id, title: d.title, giver: d.giver, cartaz: (state.cartazes || []).includes(d.id), taken: (state.cartazes || []).includes(d.id) || (state.qtaken || []).includes(d.id), tracked: state.qtrack === d.id, lv: d.lv, tier: d.tier, state: sv, mural: d.giver === 'Mural de Missões',
+      id: d.id, title: d.title, giver: d.giver, cartaz, taken: cartaz || !!q, tracked: state.qtrack === d.id, lv: d.lv, tier: d.tier, state: sv, mural: d.giver === 'Mural de Missões',   // taken: aparece na aba Missões do inventário (cartaz guardado ou missão já aceita)
       xp: Math.round(xpToNext(d.lv) * pc), gold: Math.round(goldAt(d.lv) * gm), reward: d.rewardTxt || '',
       ask: d.say.ask, step: q && q.s === 'on' ? q.i + 1 : 0, steps: d.stages.length,
-      hud: st ? st.hud(q) : '', need: st && st.k !== 'hold' && st.k !== 'stalk' && st.k !== 'chase' ? st.n || 0 : 0, n: q && q.s === 'on' ? Math.floor(q.n || 0) : 0,
-      isl: st && st.isl ? ISLN[st.isl] : '', away: !!(st && !here(st)),
+      hud: st ? st.hud(q) : '', pct: !q ? 0 : q.s !== 'on' ? 100 : Math.round(100 * (q.i + frac) / d.stages.length),
+      isl: st && !here(st) ? islName(st) : '', away: !!(st && !here(st)),
     };
   });
 }
@@ -248,7 +269,7 @@ export function questsHud() {
     if (!q || q.s === 'done') return;
     const sh = q.t > 0 ? q.a / q.t : 0, pen = sh >= .1 ? '  auto −' + Math.round(40 * sh) + '%' : '';   // quanto da recompensa o auto já custou
     const st = q.s === 'ready' ? null : stageOf(d, q);
-    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + (here(st) ? st.hud(q) : 'viaje para a ' + ISLN[st.isl] + ' (Capitão Remo, no porto)') + pen);
+    out.push(q.s === 'ready' ? '📜 ' + d.title + ': volte a ' + d.giver : '📜 ' + d.title + ': ' + (here(st) ? st.hud(q) : 'viaje para a ' + islName(st) + ' (Capitão Remo, no porto)') + pen);
   });
   if (state.contract && !state.contract.run) out.push(contractHud());
   const nc = (state.cartazes || []).length;
@@ -257,15 +278,13 @@ export function questsHud() {
 }
 
 /** Fala do NPC dono de missão (substitui a fala aleatória) ou null */
-export function questsSay(cur) {
-  for (const d of QUESTS) {
-    if (d.giver !== cur.name) continue;
-    const q = Q()[d.id];
-    if (q && q.s === 'done') continue;
-    if (!q) return P.lv >= d.lv ? d.say.ask : 'Tenho um serviço para quem tiver coragem... volte quando for pelo menos Nv ' + d.lv + ', marujo.';
-    return q.s === 'ready' ? d.say.ready : d.say.on;
-  }
-  return null;
+export function questsSay(cur) {   // com várias missões do mesmo NPC: entregar > em andamento > disponível > trancada (a de menor nível)
+  const mine = QUESTS.filter(d => d.giver === cur.name).map(d => [d, Q()[d.id]]).filter(([d, q]) => !q || q.s !== 'done');
+  if (!mine.length) return null;
+  const pick = mine.find(([d, q]) => q && q.s === 'ready') || mine.find(([d, q]) => q && q.s === 'on') || mine.find(([d, q]) => !q && P.lv >= d.lv);
+  if (!pick) return 'Tenho um serviço para quem tiver coragem... volte quando for pelo menos Nv ' + Math.min(...mine.map(([d]) => d.lv)) + ', marujo.';
+  const [d, q] = pick;
+  return !q ? d.say.ask : q.s === 'ready' ? d.say.ready : d.say.on;
 }
 
 /** Botões do diálogo: aceitar / receber recompensa */
@@ -287,8 +306,7 @@ export function questsButtons(cur) {
 }
 
 function start(d) {
-  Q()[d.id] = { s: 'on', i: 0, n: 0, t: 0, a: 0 };
-  if (d.giver === 'Mural de Missões' && !(state.qtaken || (state.qtaken = [])).includes(d.id)) state.qtaken.push(d.id);   // aceita direto no Mural também conta
+  Q()[d.id] = { s: 'on', i: 0, n: 0, t: 0, a: 0, got: 0 };
   state.cartazes = (state.cartazes || []).filter(x => x !== d.id);   // o cartaz some ao aceitar a missão
   log('Missão aceita: ' + d.title);
   if (d.onStart) d.onStart();
@@ -296,7 +314,7 @@ function start(d) {
 }
 
 function advance(d, q) {
-  q.n = 0; q.wv = 0; q.i++;
+  q.n = 0; q.wv = 0; q.got = 0; q.i++;
   if (q.i >= d.stages.length) { q.s = 'ready'; log('✅ ' + d.title + ': volte a ' + d.giver + ' para receber a recompensa'); }
   else { const nx = stageOf(d, q); q.tl = nx.limit || null; log('📜 ' + d.title + ': ' + nx.hud(q)); }
   saveGame();
@@ -332,14 +350,16 @@ on('enemy:killed', () => {
   if (!e) return;
   active('kill').forEach(([d, q]) => { if (e.t.n === 'Javali' && !e.qid) bump(d, q); });
   if (e.dun) active('dkill').forEach(([d, q]) => bump(d, q));
-  active('wanted').forEach(([d, q]) => { if (e.t.boss && !e.dun) bump(d, q); });
+  active('wanted').forEach(([d, q]) => { const b = stageOf(d, q).boss; if (e.t.boss && !e.dun && (!b || e.t.n === b)) bump(d, q); });   // `boss`: só aquele chefe (a Medusa não vale pelo Capitão Maldito)
   active('boss').forEach(([d, q]) => { if (e.qid === d.id) bump(d, q); });
 });
 on('dungeon:clear', () => { const lv = (state.dunNow && state.dunNow.lv) || 0; active('dclear').forEach(([d, q]) => { if (lv >= stageOf(d, q).min) bump(d, q); }); });
 on('shot:thrown-hit', () => { active('throw').forEach(([d, q]) => bump(d, q)); });
 
 // ---- itens no mundo (coletas): barris, fragmentos, ervas, tesouro ----
-const PK = [];   // { m, x, z, id, si, night }
+const PK = [];   // { m, x, z, id, si, k, night }
+/** Itens já coletados da etapa (bit k = item k). Saves antigos só tinham a contagem: os n primeiros contam como pegos */
+const gotOf = q => Number.isFinite(q.got) ? q.got : (1 << (q.n | 0)) - 1;
 function pickMesh(kind, radius = 4) {
   const g = new THREE.Group(), L = c => new THREE.MeshLambertMaterial({ color: c }), add = (geo, c, y) => { const m = new THREE.Mesh(geo, L(c)); m.position.y = y; g.add(m); return m; };
   let col = 0xffd040;
@@ -360,10 +380,11 @@ function updateCollects(dt, list) {
   cur.forEach(([d, q]) => {
     const st = stageOf(d, q);
     if (!PK.some(p => p.id === d.id && p.si === q.i)) {   // cria os que faltam
-      const area = st.k !== 'collect';
-      for (let k = area ? 0 : q.n; k < (area ? 1 : st.n); k++) {
+      const area = st.k !== 'collect', got = gotOf(q);
+      for (let k = 0; k < (area ? 1 : st.n); k++) {
+        if (!area && (got >> k) & 1) continue;   // já coletado: não volta ao recarregar
         const pt = st.spot(k); if (!pt) break;
-        const m = pickMesh(st.model, st.r); m.position.set(pt.x, 0, pt.z); scene.add(m); PK.push({ m, x: pt.x, z: pt.z, id: d.id, si: q.i, night: !!st.night, msg: st.msg, area });
+        const m = pickMesh(st.model, st.r); m.position.set(pt.x, 0, pt.z); scene.add(m); PK.push({ m, x: pt.x, z: pt.z, id: d.id, si: q.i, k, night: !!st.night, msg: st.msg, area });
       }
     }
   });
@@ -374,7 +395,7 @@ function updateCollects(dt, list) {
     if (!p.area && !hid && Math.hypot(P.x - p.x, P.z - p.z) < 1.8) {
       const e = cur.find(([d, q]) => d.id === p.id && q.i === p.si);
       scene.remove(p.m); PK.splice(i, 1); lootText(p.msg);
-      if (e) bump(e[0], e[1]);
+      if (e) { e[1].got = gotOf(e[1]) | (1 << p.k); bump(e[0], e[1]); }
     }
   }
 }
@@ -409,8 +430,8 @@ function updateEscort(dt, list) {
   enemies.forEach(e => { if (!e.dead && Math.hypot(e.x - x, e.z - z) < 2.4) ESC.hp -= e.dmg * .25 * dt; });
   ESC.bar.scale.x = Math.max(.02, 1.2 * ESC.hp / ESC.max);
   if (ESC.hp <= 0) {   // Breu caiu: recomeça a escolta
-    log('O Mestre Breu caiu! Fale com ele de novo para recomeçar a escolta.');
-    q.i = 0; q.n = 0; q.wv = 0; clearEscort(); clearPk(); saveGame(); return;
+    log('O Mestre Breu caiu! Volte até ele, na vila, para recomeçar a escolta.');
+    q.i = 0; q.n = 0; q.wv = 0; q.got = 0; clearEscort(); clearPk(); saveGame(); return;
   }
   if (st.k === 'escort' && pk) {   // chegou ao porto?
     if (Math.hypot(x - pk.x, z - pk.z) < st.r) advance(d, q);
@@ -425,21 +446,22 @@ function updateEscort(dt, list) {
   }
 }
 
-let bossOut = false, T = 0;
+let T = 0;
+/** Cria o chefe de uma missão ativa (cada missão tem o seu: dá para ter o Presa-Torta e o Cão Rouco ao mesmo tempo) */
 function ensureBoss(d) {
-  if (bossOut && enemies.some(e => e.qid === d.id && !e.dead)) return;
+  if (enemies.some(e => e.qid === d.id && !e.dead)) return;
   const bs = d.stages.find(x => x.k === 'boss');
   if (bs && bs.at) {   // chefe de missão com ponto próprio
     const p = bs.at(); if (!p || Math.hypot(P.x - p.x, P.z - p.z) > 120) return;
     spawn(bs.kind, p.x, p.z, undefined, { lv: Math.max(d.lv, P.lv), elite: true });
-    enemies[enemies.length - 1].qid = d.id; bossOut = true; log('⭐ ' + bs.name + ' apareceu!'); return;
+    enemies[enemies.length - 1].qid = d.id; log('⭐ ' + bs.name + ' apareceu!'); return;
   }
   const n = npcByShop('farm-granja');
   const bx = n ? n.g.position.x : P.x, bz = n ? n.g.position.z : P.z;
   if (!n || Math.hypot(P.x - bx, P.z - bz) > 120) return;   // só cria quando o jogador está por perto
   const p = freePoint(bx + 16, bz + 6, 1);
   spawn(KIND.JAVALI, p.x, p.z, undefined, { lv: Math.max(3, P.lv), elite: true });
-  enemies[enemies.length - 1].qid = d.id; bossOut = true;
+  enemies[enemies.length - 1].qid = d.id;
   log('O Presa-Torta apareceu perto da granja!');
 }
 
@@ -541,12 +563,11 @@ export function updateQuests(dt) {
   updateCatch(dt, list);
   list.forEach(([d, q]) => {   // limite de tempo da etapa (ex.: voltar antes da maré cobrir)
     const st = stageOf(d, q);
-    if (st.limit && q.tl != null && (q.tl -= dt) <= 0) { q.i = st.back || 0; q.n = 0; q.tl = null; clearPk(); log('Tempo esgotado! ' + d.title + ': recomece pela etapa anterior'); saveGame(); }
+    if (st.limit && q.tl != null && (q.tl -= dt) <= 0) { q.i = st.back || 0; q.n = 0; q.got = 0; q.tl = null; clearPk(); log('Tempo esgotado! ' + d.title + ': recomece pela etapa anterior'); saveGame(); }
   });
   if ((T -= dt) > 0) return;
   T = 1.5;
-  const jq = list.find(([d, q]) => stageOf(d, q).k === 'boss');
-  if (jq) ensureBoss(jq[0]); else bossOut = false;
+  list.filter(([d, q]) => stageOf(d, q).k === 'boss').forEach(([d]) => ensureBoss(d));
 }
 
 /** Regiões das missões ativas para o mapa: [{ x, z, r, t }] (círculo amarelo). Os pontos exatos recebem um deslocamento fixo: marca a REGIÃO, não o ponto. */
@@ -564,7 +585,7 @@ export function questMarks() {
       else if (st.at) { const p = st.at(); if (p) out.push({ x: p.x, z: p.z, r: 32, t: d.title }); }
       else { const n = npcByShop('farm-granja'); if (n) out.push({ x: n.g.position.x + 16, z: n.g.position.z + 6, r: 32, t: d.title }); }
     } else if (st.k === 'wanted') {
-      const e = enemies.find(z => !z.dead && z.t.boss && !z.dun);
+      const e = enemies.find(z => !z.dead && z.t.boss && !z.dun && (!st.boss || z.t.n === st.boss));
       if (e) out.push({ x: e.x, z: e.z, r: 30, t: d.title });
       else { const f = POST_DATA.find(p => /Capitão Maldito/.test(p.n || p.name || '')); if (f) out.push({ x: f.x, z: f.z, r: 34, t: d.title }); }
     } else if (st.k === 'catch') {
