@@ -2,9 +2,8 @@
 import { scene } from '../core/engine.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
-import { M } from '../core/utils.js';
-import { xray } from './xray.js';
 import { makeTree } from './trees.js';
+import { makeRock, makeDecor } from './nature-kit.js';
 import { POST_DATA } from '../data/posts.js';
 import { CAVES, initTerrain, groundY, walkable, onRoad, SEA } from './terrain.js';
 import { buildTerrainMesh } from './terrain-mesh.js';
@@ -33,9 +32,8 @@ export function buildWorld() {
       m = RUINS_ISLE ? themedTree() : makeTree();
     } else {
       // pedra
-      m = new THREE.Mesh(new THREE.DodecahedronGeometry(.9, 0), xray(M(0x6a6a62)));
-      m.position.y = .4 + y;
-      m.r = 1;
+      m = makeRock();
+      m.position.y += y;
     }
 
     m.position.x = x;
@@ -43,6 +41,16 @@ export function buildWorld() {
     if (m.position.y === 0) m.position.y = y;
     scene.add(m);
     props.push(m);
+  }
+
+  // enfeites do Nature MegaKit (sem colisão): seixos, cogumelos e flores
+  for (let i = 0, tries = 0; i < 160 && tries < 4000; tries++) {
+    const x = (Math.random() * 2 - 1) * 150, z = (Math.random() * 2 - 1) * 150, y = groundY(x, z);
+    if (reserved(x, z, 1) || Math.hypot(x, z) < VILLAGE_R + 4 || onRoad(x, z, 1) || y < SEA + 1 || !walkable(x, z)) continue;
+    i++;
+    const d = makeDecor();
+    d.position.set(x, y, z);
+    scene.add(d);
   }
 
   if (RUINS_ISLE) buildRuinsScenery();   // acampamentos e ruínas temáticos (vampiros, hidra ou múmia)
