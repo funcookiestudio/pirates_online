@@ -19,6 +19,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { hash } from './dungeongen.js';
 import { emit } from '../core/events.js';
 import { buildGimmicks, updateGimmicks, gimmickMarks } from './dungeon-gimmicks.js';
+import { makeZones, chunkAt, tickZones, addAsleep, nextMob, unspawned, zoneStats } from './dungeon-zones.js';
 
 const C = 2, WH = 3.6, OX = 3000, OZ = 3000;
 const LOOK = {   // piso (xadrez de 2 tons), parede, topo da parede, detalhe e cor da névoa de cada tema
@@ -45,6 +46,9 @@ export const dungeonMarks = () => !cur ? [] : [
 ];
 export const currentDungeon = () => cur && cur.D;
 export const dungeonGimmicks = () => cur && cur.gm;
+/** Próximo inimigo adormecido ao alcance andando (o auto vai até ele quando não há ninguém acordado) */
+export const dungeonNext = () => cur && nextMob(cur.Z);
+export const dungeonStats = () => cur && zoneStats(cur.Z);
 
 const rngSeed = s => { let a = 0; for (const c of s) a = (a * 31 + c.charCodeAt(0)) | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
 
@@ -77,6 +81,8 @@ export function enterDungeon(D, gen) {
   const wx = i => ox + (i + .5) * C, wz = j => oz + (j + .5) * C;
   const cellXZ = k => [wx(k % W), wz((k / W) | 0)];
   const g = new THREE.Group();
+  const Z = makeZones(g, W, H);   // zonas: cenário em pedaços + inimigos dormentes (dungeon-zones.js)
+  const cg = (i, j) => chunkAt(Z, i, j), cgXZ = (x, z) => cg(Math.floor((x - ox) / C), Math.floor((z - oz) / C));
 
   // piso e paredes em instâncias (parede só onde encosta no piso)
   const fl = [], wl = [];
@@ -109,8 +115,8 @@ export function enterDungeon(D, gen) {
     if (r.w < 4 || r.h < 4) return;
     for (const [cx, cy] of [[r.x, r.y], [r.x + r.w - 1, r.y + r.h - 1]]) {
       if (!grid[cy * W + cx]) continue;
-      const p = new THREE.Mesh(new THREE.CylinderGeometry(.18, .22, 1.1, 6), post); p.position.set(wx(cx), .55, wz(cy)); g.add(p);
-      const f = new THREE.Mesh(new THREE.ConeGeometry(.22, .5, 5), ember); f.position.set(wx(cx), 1.4, wz(cy)); g.add(f);
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(.18, .22, 1.1, 6), post); p.position.set(wx(cx), .55, wz(cy)); cg(cx, cy).add(p);
+      const f = new THREE.Mesh(new THREE.ConeGeometry(.22, .5, 5), ember); f.position.set(wx(cx), 1.4, wz(cy)); cg(cx, cy).add(f);
     }
   });
 
@@ -122,10 +128,10 @@ export function enterDungeon(D, gen) {
     const x = wx(i) + (R() - .5) * 1.1, z = wz(j) + (R() - .5) * 1.1;
     if (D.theme === 'caverna') {
       const h = .5 + R() * 1.1, m = new THREE.Mesh(new THREE.ConeGeometry(.2 + R() * .2, h, 5), decoMat);
-      m.position.set(x, h / 2, z); g.add(m);
+      m.position.set(x, h / 2, z); cg(i, j).add(m);
     } else {
       const m = new THREE.Mesh(new THREE.BoxGeometry(.2 + R() * .35, .12 + R() * .2, .2 + R() * .35), decoMat);
-      m.position.set(x, .08, z); m.rotation.y = R() * 3; g.add(m);
+      m.position.set(x, .08, z); m.rotation.y = R() * 3; cg(i, j).add(m);
     }
   });
   gen.rooms.forEach(r => {
@@ -133,7 +139,7 @@ export function enterDungeon(D, gen) {
     for (const [a, b] of [[-3, -3], [3, -3], [-3, 3], [3, 3]]) {
       const cx = r.cx + a, cy = r.cy + b; if (!grid[cy * W + cx]) continue;
       grid[cy * W + cx] = 0;   // a coluna é sólida
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, WH, 7), M(look.cap)); c.position.set(wx(cx), WH / 2, wz(cy)); g.add(c);
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(.35, .45, WH, 7), M(look.cap)); c.position.set(wx(cx), WH / 2, wz(cy)); cg(cx, cy).add(c);
     }
   });
   let tn = 0;
@@ -142,8 +148,8 @@ export function enterDungeon(D, gen) {
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const x = i + dx, y = j + dz;
       if (x < 0 || y < 0 || x >= W || y >= H || !grid[y * W + x]) continue;
-      const f = new THREE.Mesh(new THREE.ConeGeometry(.2, .55, 5), flame); f.position.set(wx(i) + dx * (C / 2 + .02), 2, wz(j) + dz * (C / 2 + .02)); g.add(f);
-      const br = new THREE.Mesh(new THREE.BoxGeometry(.14, .5, .14), post); br.position.set(f.position.x, 1.55, f.position.z); g.add(br);
+      const f = new THREE.Mesh(new THREE.ConeGeometry(.2, .55, 5), flame); f.position.set(wx(i) + dx * (C / 2 + .02), 2, wz(j) + dz * (C / 2 + .02)); cg(x, y).add(f);
+      const br = new THREE.Mesh(new THREE.BoxGeometry(.14, .5, .14), post); br.position.set(f.position.x, 1.55, f.position.z); cg(x, y).add(br);
       wallTorch.push({ f, br, wn });
       tn++; break;
     }
@@ -155,6 +161,8 @@ export function enterDungeon(D, gen) {
   if (gen.rooms.length) gen.rooms.forEach(r => { if (!r.start && !r.end && grid[r.cy * W + r.cx]) spots.push({ x: wx(r.cx), z: wz(r.cy), big: r.big, w: r.w, h: r.h }); });
   else for (let k = 0; k < W * H; k += 37) if (grid[k]) { const [x, z] = cellXZ(k); if (Math.hypot(x - sx, z - sz) > 16 && Math.hypot(x - ex, z - ez) > 12) spots.push({ x, z, w: 5, h: 5 }); }
   const kinds = ISLE_DUN[D.boss] ? ISLE_DUN[D.boss].mobs : D.boss === 'medusa' ? [KIND.SKELETON, KIND.GUERREIRO, KIND.SERPENTE, KIND.SERPENTE, KIND.MUMIA] : MOBS[D.theme], list = [];   // covil da Medusa: esqueletos e serpentes
+  Z.list = list;
+  const cellAt = (x, z) => Math.floor((z - oz) / C) * W + Math.floor((x - ox) / C);
   spots.forEach(s => {
     const n = (s.big ? 4 : 2) + (R() < .5 ? 1 : 0) + (D.lv >= 20 ? 1 : 0) + (D.lv >= 40 ? 1 : 0);   // mais inimigos em dungeons de nível alto
     for (let q = 0; q < n; q++) {
@@ -162,23 +170,25 @@ export function enterDungeon(D, gen) {
       let x = s.x + Math.cos(a) * d, z = s.z + Math.sin(a) * d;
       if (!grid[Math.floor((z - oz) / C) * W + Math.floor((x - ox) / C)]) { x = s.x; z = s.z; }
       const k = kinds[Math.floor(R() * kinds.length)], elite = R() < .12 + Math.min(.12, D.lv * .003);
-      spawn(k, x, z, null, { lv: D.lv + (R() < .35 ? 1 : 0), elite });
-      enemies[enemies.length - 1].dun = 1; list.push(enemies[enemies.length - 1]);
+      const lv = D.lv + (R() < .35 ? 1 : 0);
+      Z.mobs.push({ k, x, z, lv, elite, cell: cellAt(x, z), e: null });   // só é criado quando o jogador chega perto (dungeon-zones.js)
     }
   });
-  // chefe no fim do caminho
+  // chefe no fim do caminho (criado já, mas dorme até o jogador chegar)
   spawn(ISLE_DUN[D.boss] ? ISLE_DUN[D.boss].boss : D.boss === 'medusa' ? KIND.MEDUSA : KIND.BOSS, ex, ez, null, { lv: D.lv + 4 });   // ruínas (ou a mais funda da ilha, se não houver ruínas): Medusa
-  const boss = enemies[enemies.length - 1]; boss.dun = 1;
-  boss.ag = true;
+  const boss = enemies[enemies.length - 1];
+  addAsleep(Z, boss);
 
   // baús: um por beco com tesouro e o do chefe
   const chests = [];
-  const addChest = (x, z, boss) => { const c = chestMesh(x, z, boss); g.add(c); chests.push({ g: c, x, z, boss, open: 0 }); };
+  const addChest = (x, z, boss) => { const c = chestMesh(x, z, boss); cgXZ(x, z).add(c); chests.push({ g: c, x, z, boss, open: 0 }); };
   gen.nooks.forEach(n => addChest(wx(n.x), wz(n.y), false));
   addChest(ex + 3 * (R() < .5 ? 1 : -1), ez, true);
 
   // porta trancada + chave (guardião elite) e armadilhas
   const gm = buildGimmicks({ gen, grid, g, W, H, ox, oz, C, WH, wx, wz, s0: gen.s0, e0: gen.e0, R, D, spots, kinds, list });
+  if (gm.guard) addAsleep(Z, gm.guard);   // guardião da chave também dorme até chegarem perto
+  gm.traps.forEach(t => cgXZ(t.x, t.z).add(t.t));   // armadilhas saem da cena com o pedaço
 
   // portal de entrada/saída no início
   const pIn = portal(sx, sz, 0xa070ff); g.add(pIn);
@@ -186,14 +196,14 @@ export function enterDungeon(D, gen) {
   scene.add(g);
 
   cur = {
-    D, g, chests, boss, list, gm, wl, wallIm, capIm, wallH, wallTorch,
+    D, g, Z, chests, boss, list, gm, wl, wallIm, capIm, wallH, wallTorch,
     portals: [{ g: pIn, x: sx, z: sz, on: true, armed: false }, { g: pOut, x: ex, z: ez + 4, on: false, armed: true }],
     saved: { bg: scene.background, fog: scene.fog, hemi: null, torch: torch.intensity },
   };
   const hemi = scene.children.find(o => o.isHemisphereLight);
   if (hemi) { cur.saved.hemi = hemi.intensity; hemi.intensity = .5; }
   scene.background = new THREE.Color(look.bg);
-  scene.fog = new THREE.Fog(look.bg, 16, 44);
+  scene.fog = new THREE.Fog(look.bg, 14, 34);   // o que está além do alcance já some no escuro
   refreshTorch();
 
   setAuto(false);
@@ -212,6 +222,7 @@ export function leaveDungeon(msg) {
   const { D, g, saved } = cur;
   scene.remove(g);
   g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  cur.Z.chunks.forEach(c => c.g.traverse(o => { if (o.geometry) o.geometry.dispose(); }));
   for (let i = enemies.length - 1; i >= 0; i--) if (enemies[i].dun) { scene.remove(enemies[i].g); enemies.splice(i, 1); }
   for (let i = loot.length - 1; i >= 0; i--) if (loot[i].m.position.x > 2000) { scene.remove(loot[i].m); loot.splice(i, 1); }
   scene.background = saved.bg; scene.fog = saved.fog;
@@ -248,6 +259,7 @@ export function updateDungeon(dt, now) {
   if (!cur || P.dead) return;
   const t = now / 1000;
   dSee(P.x, P.z, 7);
+  tickZones(cur.Z, dt);
   cur.portals.forEach(p => { if (p.g.visible) { p.g.children[0].rotation.z = t; p.g.children[0].scale.setScalar(1 + Math.sin(t * 3) * .04); } });
   if (!cur.portals[1].g.visible && cur.boss.dead) { cur.portals[1].g.visible = true; cur.portals[1].on = true; log('Chefe derrotado! O portal de saída se abriu'); state.dunNow = cur.D; emit('dungeon:clear'); firstClear(cur.D); }
   cur.portals.forEach(p => {
@@ -298,7 +310,7 @@ function lowerWalls(dt) {
 /** Objetivo da dungeon como missão (painel "Missão"): null fora da dungeon */
 export function dungeonQuest() {
   if (!cur) return null;
-  const { D, boss, gm, list } = cur, left = list.filter(e => !e.dead).length;
+  const { D, boss, gm, list } = cur, left = list.filter(e => !e.dead).length + unspawned(cur.Z);
   const head = '🕳 ' + D.name + ' — ';
   if (boss.dead) return head + 'Missão cumprida! Use o portal de saída para voltar à vila';
   if (gm && gm.keyObj) return head + 'Pegue a chave que o guardião deixou';

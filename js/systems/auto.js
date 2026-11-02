@@ -16,7 +16,7 @@ import { STEER, markStuck, AUTODBG as AD } from './steer.js';
 import { doorBusy, cancelDoor } from '../world/doors.js';
 import { torchStep } from './torch-auto.js';
 import { lootFilter } from './lootrule.js';
-import { dungeonGimmicks, dungeonExit } from '../dungeon/dungeon-scene.js';
+import { dungeonGimmicks, dungeonExit, dungeonNext } from '../dungeon/dungeon-scene.js';
 import { gimmickGoal } from '../dungeon/dungeon-gimmicks.js';
 
 const STUCK = { x: 0, z: 0, t: 0 };
@@ -208,7 +208,9 @@ export function autoThink(dt) {
       } else {
         let g = null, gd = 1e9;
         alive.forEach(e => { const d = dist(e); if (d < gd) { gd = d; g = e; } });
+        const dn = g ? null : dungeonNext();   // dungeon: inimigos adormecidos não estão em `enemies` — vai até o mais próximo andando
         if (g) { AD.why = 'indo até inimigo longe'; P.tx = g.x; P.tz = g.z; }
+        else if (dn) { AD.why = 'explorando a dungeon'; P.tx = dn.x; P.tz = dn.z; }
         else if (respawns.length) { AD.why = 'indo ao ponto de respawn'; P.tx = respawns[0].x; P.tz = respawns[0].z; }
         else AD.why = 'sem alvo (nada a fazer)';
       }
