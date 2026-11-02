@@ -1,6 +1,7 @@
 /* Tela de seleção de personagem (estilo Diablo IV): lista de vagas à esquerda, o personagem em 3D ao centro, detalhes à direita
    e "Iniciar jogo" embaixo. Funciona em retrato e paisagem (celular): no retrato o personagem fica em cima e a lista embaixo.
    Roda ANTES do jogo carregar (boot.js): só usa THREE (global), core/chars.js e o corpo humano (human.js, sem dependências). */
+import { CLASSES, CLASS_KEYS, classOf } from '../data/classes.js';
 import { chars, activeChar, createChar, deleteChar, setActive, summary, MAX_CHARS } from '../core/chars.js';
 import { playerModel } from '../entities/character.js';
 import { SKINS, SKIN_NAMES, HAIRC, HAIRC_NAMES, EYES, EYE_NAMES, LIPS, LIP_NAMES, HAIR_NAMES, BEARD_NAMES, defaultLook, randomLook } from '../entities/look.js';
@@ -57,6 +58,7 @@ const CSS = `
 #cs .gen{display:flex;gap:10px}
 #cs .gen button{flex:1;appearance:none;font:inherit;color:#cdb98f;background:#1a110d;border:2px solid #4a3220;border-radius:4px;padding:12px 6px;cursor:pointer;font-size:14px;letter-spacing:.1em;text-transform:uppercase;touch-action:manipulation}
 #cs .gen button i{display:block;font-style:normal;font-size:30px;line-height:1.1}
+#cs .kl{display:flex;gap:6px}#cs .kl button{flex:1;appearance:none;font:inherit;color:#cdb98f;background:#1a110d;border:2px solid #4a3220;border-radius:4px;padding:6px 2px;cursor:pointer;font-size:12px;touch-action:manipulation}#cs .kl button.on{border-color:#e8e0d0;background:linear-gradient(#7a1414,#4a0c0c);color:#fff}#cs .kd{font-size:12px;color:#cdb98f;min-height:32px}
 #cs .gen button.on{border-color:#e8e0d0;background:linear-gradient(#7a1414,#4a0c0c);color:#fff}
 #cs label{font-size:12px;letter-spacing:.15em;color:#b9a47c;text-transform:uppercase}
 #cs .nrow{display:flex;gap:8px}
@@ -107,6 +109,7 @@ export function runCharSelect() {
       <div class="modal" data-k="modal"><div class="dlg pn" style="position:relative">
         <h2>Novo personagem</h2>
         <div class="gen"><button data-g="m" class="on"><i></i>Masculino</button><button data-g="f"><i></i>Feminino</button></div>
+        <div class="kl" data-k="kl"></div><div class="kd" data-k="kd"></div>
         <div class="ap" data-k="ap"></div>
         <div><label>Nome</label><div class="nrow"><input data-k="name" maxlength="14" autocomplete="off" spellcheck="false"><button class="btn dim dice" data-k="dice" title="Nome aleatório"></button></div></div>
         <div class="err" data-k="err"></div>
@@ -205,7 +208,7 @@ export function runCharSelect() {
       const c = list.find(q => q.id === sel);
       if (c) show(c.f, c.a);
       const s = c ? summary(c.id) : null;
-      $('info').innerHTML = c ? `<div class="big"></div><div class="row k"><span>Nível</span><b>${s.lv}</b></div><div class="row"><span>Ouro</span><b>${s.gold}</b></div><div class="row"><span>Gênero</span><b>${c.f ? 'Feminino' : 'Masculino'}</b></div><div class="row"><span>Último jogo</span><b>${fmt(s.saved)}</b></div>` : '<div class="big">Nenhum personagem</div><div class="hint">Crie o seu primeiro pirata</div>';
+      $('info').innerHTML = c ? `<div class="big"></div><div class="row k"><span>Nível</span><b>${s.lv}</b></div><div class="row"><span>Ouro</span><b>${s.gold}</b></div><div class="row"><span>Classe</span><b>${classOf(c).n}</b></div><div class="row"><span>Gênero</span><b>${c.f ? 'Feminino' : 'Masculino'}</b></div><div class="row"><span>Último jogo</span><b>${fmt(s.saved)}</b></div>` : '<div class="big">Nenhum personagem</div><div class="hint">Crie o seu primeiro pirata</div>';
       if (c) $('info').querySelector('.big').textContent = c.name;
       $('del').style.visibility = c ? 'visible' : 'hidden';
       $('del').textContent = armed ? 'Toque de novo para excluir' : 'Excluir personagem';
@@ -218,7 +221,12 @@ export function runCharSelect() {
       if (!chars().length) openCreate();
     };
 
-    let look = defaultLook(false);
+    let look = defaultLook(false), klass = CLASS_KEYS[0];
+    function buildKl() {
+      $('kl').innerHTML = CLASS_KEYS.map(k => '<button data-kl="' + k + '" class="' + (k === klass ? 'on' : '') + '">' + CLASSES[k].ic + ' ' + CLASSES[k].n + '</button>').join('');
+      $('kd').textContent = CLASSES[klass].d;
+      $('kl').querySelectorAll('button').forEach(b => { b.onclick = () => { klass = b.dataset.kl; buildKl(); }; });
+    }
     const swatch = (key, cols, names) => '<div class="sw">' + cols.map((c, i) => '<b data-sw="' + key + '" data-i="' + i + '" title="' + names[i] + '" style="background:#' + c.toString(16).padStart(6, '0') + '"></b>').join('') + '</div>';
     const arrow = (key, label) => '<div class="ar"><label>' + label + '</label><div class="st"><button data-st="' + key + '" data-d="-1">◀</button><span data-nm="' + key + '"></span><button data-st="' + key + '" data-d="1">▶</button></div></div>';
     function buildAp() {
@@ -241,13 +249,13 @@ export function runCharSelect() {
     function setGender(g) { gender = g; root.querySelectorAll('.gen button').forEach(b => b.classList.toggle('on', b.dataset.g === g)); look = defaultLook(g === 'f'); buildAp(); refreshAp(); }
     root.querySelectorAll('.gen button').forEach(b => { b.onclick = () => setGender(b.dataset.g); });
     $('dice').onclick = () => { $('name').value = pick(NAMES[gender]); };
-    function openCreate() { if (chars().length >= MAX_CHARS) return; $('err').textContent = ''; $('modal').classList.add('on'); root.classList.add('ed'); resize(); setGender('m'); $('name').value = pick(NAMES.m); $('cancel').style.display = chars().length ? '' : 'none'; }
+    function openCreate() { if (chars().length >= MAX_CHARS) return; klass = CLASS_KEYS[0]; buildKl(); $('err').textContent = ''; $('modal').classList.add('on'); root.classList.add('ed'); resize(); setGender('m'); $('name').value = pick(NAMES.m); $('cancel').style.display = chars().length ? '' : 'none'; }
     $('new').onclick = openCreate;
     $('cancel').onclick = () => { $('modal').classList.remove('on'); root.classList.remove('ed'); resize(); render(); };
     $('ok').onclick = () => {
       const nm = $('name').value.trim();
       if (nm.length < 2) { $('err').textContent = 'O nome precisa ter pelo menos 2 letras.'; return; }
-      const c = createChar(nm, gender === 'f', look);
+      const c = createChar(nm, gender === 'f', look, klass);
       if (!c) { $('err').textContent = 'Não há vagas livres.'; return; }
       sel = c.id; $('modal').classList.remove('on'); root.classList.remove('ed'); resize(); render();
     };

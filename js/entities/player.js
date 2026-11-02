@@ -4,6 +4,7 @@ import { scene } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { person, hideSword, playerModel } from './character.js';
 import { activeChar } from '../core/chars.js';
+import { classOf } from '../data/classes.js';
 import { puff } from '../systems/effects.js';
 import { log, banner } from '../ui/notify.js';
 import { emit } from '../core/events.js';
@@ -15,14 +16,15 @@ import { emit } from '../core/events.js';
  *  cd = recarga do ataque · cds = recargas [giro, bomba] · sw = animação do golpe
  *  gold/pot = ouro e poções · wid = índice da arma equipada · dr = redução de dano
  */
+const CL = classOf(activeChar());   // classe do personagem ativo (bônus em classes.js)
 export const P = {
   g: playerModel(!!(activeChar() && activeChar().f), activeChar() && activeChar().a),
-  x: 0, z: 5, hp: 100, max: 100, mp: 60, mmax: 60, lv: 1, xp: 0, nxt: 60, dmg: 12,
-  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: 3.2, gold: 0, couro: 0, penas: 0, peixe: 0, osso: 0, pot: 3, bmb: 3, potR: 0, bmbR: 0, dead: false,   // potR/bmbR: reserva no cinto
+  x: 0, z: 5, hp: CL.hp, max: CL.hp, mp: CL.mp, mmax: CL.mp, lv: 1, xp: 0, nxt: 60, dmg: CL.dmg, cls: CL, crit: CL.crit,
+  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: CL.sp, gold: 0, couro: 0, penas: 0, peixe: 0, osso: 0, pot: 3, bmb: 3, potR: 0, bmbR: 0, dead: false,   // potR/bmbR: reserva no cinto
   
   walk: 0, wid: 0, cds: [0, 0], vx: 0, vz: 0, ph: 0,
   // animação e combo
-  aa: -.4, af: -.3, lean: 0, dr: 0, cb: 0, cbt: 0, imp: 0, ay: 0,
+  aa: -.4, af: -.3, lean: 0, dr: CL.dr, cb: 0, cbt: 0, imp: 0, ay: 0,
   // esquiva: roll = tempo restante da rolada · rcd = recarga · rdx,rdz = direção
   roll: 0, rcd: 0, rdx: 0, rdz: 0,
   // sentar: sit = progresso (0 em pé … 1 sentado) · sitT = objetivo (0 ou 1) · sitF = levantar rápido
@@ -71,9 +73,9 @@ export function levelUp() {
     P.xp -= P.nxt;
     P.lv++;
     P.nxt = xpToNext(P.lv);
-    P.max += 15;
-    P.mmax += 8;
-    P.dmg += 3;
+    P.max += P.cls.g[0];
+    P.mmax += P.cls.g[1];
+    P.dmg += P.cls.g[2];
     P.hp = P.max;
     P.mp = P.mmax;
     log('Nível ' + P.lv + '!');

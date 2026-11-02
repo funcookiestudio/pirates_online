@@ -35,7 +35,7 @@ export function dodge(dir) {
   const a = P.g.rotation.y, d = typeof dir === 'string' ? dir : pickDir();
   const vx = { f: Math.sin(a), b: -Math.sin(a), l: Math.cos(a), r: -Math.cos(a) }[d], vz = { f: Math.cos(a), b: -Math.cos(a), l: -Math.sin(a), r: Math.sin(a) }[d];
   P.roll = ROLL_TIME;
-  P.rcd = ROLL_CD;
+  P.rcd = ROLL_CD * P.cls.rcd;
   P.rdir = d;
   P.rdx = vx;
   P.rdz = vz;

@@ -34,7 +34,7 @@ export function hit(e, d, o) {
   if (o.pet && e.hp < e.max * .35) d *= 1 + PV('exec');
   d *= dealtMult(e.lv - P.lv);                      // inimigo muito acima do seu nível: seus golpes quase não fazem cócegas
 
-  const cr = o.cr !== undefined ? o.cr : Math.random() < .15;
+  const cr = o.cr !== undefined ? o.cr : Math.random() < (o.pet ? .15 : P.crit);
   d = Math.round(d * (.85 + Math.random() * .3) * (cr ? 2 : 1));
   e.hp -= d;
 
@@ -87,12 +87,12 @@ function onKill(e) {
 export function spin() {
   if (headReady()) { useHead(); return; }   // com a cabeça da Medusa e cargas, o Q petrifica em vez de girar
   if (P.cds[0] > 0 || P.dead) return;
-  P.cds[0] = 3;
+  P.cds[0] = 3 * (P.cls.cd || 1);
   P.sw = 1;
   puff(P.x, 1, P.z, 0xaaddff, 8, 14);
   enemies.forEach(e => {
     const d = Math.hypot(e.x - P.x, e.z - P.z);
-    if (d < 4) hit(e, P.dmg * 2, { kn: 1.2 });
+    if (d < 4) hit(e, P.dmg * 2 * P.cls.area, { kn: 1.2 });
   });
 }
 
@@ -100,7 +100,7 @@ export function spin() {
 export function bomb() {
   if (P.cds[1] > 0 || P.dead || P.bmb <= 0) return;
   P.bmb--;
-  P.cds[1] = 5;
+  P.cds[1] = 5 * (P.cls.cd || 1);
   const m = new THREE.Mesh(new THREE.SphereGeometry(.22, 6, 5), M(0x111111));
   m.position.set(P.x, 1.4, P.z);
   scene.add(m);
@@ -139,7 +139,7 @@ export function updateBombs(dt) {
       puff(x, .5, z, 0x333333, 5, 8);
       enemies.forEach(e => {
         const d = Math.hypot(e.x - x, e.z - z);
-        if (d < 5) hit(e, P.dmg * 3 * (1 - d / 7), { kn: 1.6, ang: Math.atan2(e.x - x, e.z - z) });
+        if (d < 5) hit(e, P.dmg * 3 * P.cls.area * (1 - d / 7), { kn: 1.6, ang: Math.atan2(e.x - x, e.z - z) });
       });
       scene.remove(b.m);
       bombs.splice(i, 1);
@@ -181,7 +181,7 @@ export function attack(dx, dz) {
   m.position.set(mx, my, mz);
   scene.add(m);
   const sp = W.thrown ? spendAmmo() : null;   // arremesso é finito: gasta 1 (pode quebrar ou cair no chão)
-  shots.push({ m, t, rec: sp && sp.keep ? sp : null, d: P.dmg * W.mul, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0 });
+  shots.push({ m, t, rec: sp && sp.keep ? sp : null, d: P.dmg * W.mul * P.cls.ranged, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0 });
 }
 
 /** Momento do golpe corpo a corpo: acerta quem está no arco à frente */
@@ -194,7 +194,7 @@ export function impact() {
     let da = Math.atan2(dx, dz) - a;
     da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da)));
     if (e !== P.tgt && da > arc / 2) return;
-    hit(e, P.dmg * W.mul * (fin ? 1.4 : 1) * (e === P.tgt ? 1 : .7), { kn: fin ? 1.6 : .8, fin, ang: a, cr: W.crit && Math.random() < .15 + W.crit ? true : undefined });
+    hit(e, P.dmg * W.mul * P.cls.melee * (fin ? 1.4 : 1) * (e === P.tgt ? 1 : .7), { kn: fin ? 1.6 : .8, fin, ang: a, cr: W.crit && Math.random() < .15 + W.crit ? true : undefined });
     if (!e.dead) {   // efeitos das armas: sangramento e atordoamento
       if (W.bleed && Math.random() < W.bleed) { e.bl = 3; e.bd = Math.max(1, P.dmg * .25); e.bt = .5; }
       if (W.stun && Math.random() < W.stun) e.sn = Math.max(e.sn || 0, e.t.boss ? .35 : 1);
