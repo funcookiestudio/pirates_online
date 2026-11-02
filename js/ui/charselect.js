@@ -2,6 +2,7 @@
    e "Iniciar jogo" embaixo. Funciona em retrato e paisagem (celular): no retrato o personagem fica em cima e a lista embaixo.
    Roda ANTES do jogo carregar (boot.js): só usa THREE (global), core/chars.js e o corpo humano (human.js, sem dependências). */
 import { CLASSES, CLASS_KEYS, classOf } from '../data/classes.js';
+import { bannerSvg } from './class-banner.js';
 import { chars, activeChar, createChar, deleteChar, setActive, summary, MAX_CHARS } from '../core/chars.js';
 import { playerModel } from '../entities/character.js';
 import { SKINS, SKIN_NAMES, HAIRC, HAIRC_NAMES, EYES, EYE_NAMES, LIPS, LIP_NAMES, HAIR_NAMES, BEARD_NAMES, defaultLook, randomLook } from '../entities/look.js';
@@ -30,7 +31,7 @@ const CSS = `
 #cs .sb{font-size:12px;color:#b9a47c;margin-top:2px}
 #cs .lv{margin-left:auto;font-size:20px;font-weight:700;color:#f0e4c8;min-width:34px;text-align:right;flex:none}
 #cs .lv small{display:block;font-size:9px;letter-spacing:.15em;color:#b9a47c;font-weight:600}
-#cs .info{display:flex;flex-direction:column;gap:6px;text-align:center}
+#cs .fita{position:absolute;right:16px;top:100%;margin-top:-6px;width:42px;height:66px;filter:drop-shadow(0 3px 4px #000a);pointer-events:none}#cs .fita svg{width:100%;height:100%;display:block}#cs .info{display:flex;flex-direction:column;gap:6px;text-align:center}
 #cs .info .big{font-size:22px;font-weight:700;color:#f0e4c8;overflow:hidden;text-overflow:ellipsis}
 #cs .info .row{display:flex;justify-content:space-between;font-size:13px;border-top:1px solid #3a2718;padding-top:6px;color:#b9a47c}
 #cs .info .row b{color:#f0e4c8}
@@ -58,7 +59,9 @@ const CSS = `
 #cs .gen{display:flex;gap:10px}
 #cs .gen button{flex:1;appearance:none;font:inherit;color:#cdb98f;background:#1a110d;border:2px solid #4a3220;border-radius:4px;padding:12px 6px;cursor:pointer;font-size:14px;letter-spacing:.1em;text-transform:uppercase;touch-action:manipulation}
 #cs .gen button i{display:block;font-style:normal;font-size:30px;line-height:1.1}
-#cs .kl{display:flex;gap:6px}#cs .kl button{flex:1;appearance:none;font:inherit;color:#cdb98f;background:#1a110d;border:2px solid #4a3220;border-radius:4px;padding:6px 2px;cursor:pointer;font-size:12px;touch-action:manipulation}#cs .kl button.on{border-color:#e8e0d0;background:linear-gradient(#7a1414,#4a0c0c);color:#fff}#cs .kd{font-size:12px;color:#cdb98f;min-height:32px}
+#cs .kl{display:flex;gap:6px}#cs .kl button{flex:1 1 0;min-width:0;appearance:none;font:inherit;color:#e6d5ac;background:#2a1a12;border:2px solid #6b4a2e;border-radius:4px;padding:6px 2px;cursor:pointer;font-size:11px;line-height:1.25;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;touch-action:manipulation}#cs .kl button i{display:block;font-style:normal;font-size:20px;line-height:1.1}#cs .kl button.on{border-color:#ffe9a8;background:linear-gradient(#a02020,#5c1010);color:#fff}#cs .kd{font-size:12px;line-height:1.35;color:#e6d5ac;min-height:48px;overflow-wrap:anywhere}
+@media (orientation:portrait),(max-width:700px){#cs .kl{gap:4px}#cs .kl button{font-size:10px;padding:4px 1px}#cs .kl button i{font-size:16px}#cs .kd{font-size:11px;min-height:40px}}
+@media (orientation:landscape) and (max-height:500px){#cs .kl button{font-size:10px;padding:3px 1px}#cs .kl button i{display:inline;font-size:14px;margin-right:3px}#cs .kd{font-size:11px;min-height:30px}}
 #cs .gen button.on{border-color:#e8e0d0;background:linear-gradient(#7a1414,#4a0c0c);color:#fff}
 #cs label{font-size:12px;letter-spacing:.15em;color:#b9a47c;text-transform:uppercase}
 #cs .nrow{display:flex;gap:8px}
@@ -72,19 +75,20 @@ const CSS = `
 @keyframes csr{to{transform:rotate(360deg)}}
 /* retrato: personagem em cima, lista embaixo (rolável), detalhes numa faixa fina */
 @media (orientation:portrait),(max-width:700px){
- #cs .L{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:auto;width:auto;bottom:calc(80px + env(safe-area-inset-bottom,0px));height:min(40vh,300px);padding:14px 10px 10px}
- #cs .R{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:max(10px,env(safe-area-inset-top,0px));width:auto;flex-direction:row;align-items:center;padding:14px 12px 10px;gap:10px}
+ #cs .L{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:auto;width:auto;bottom:calc(80px + env(safe-area-inset-bottom,0px));height:min(28vh,220px);padding:12px 10px 8px;gap:6px}
+ #cs .L .slot{min-height:46px;padding:5px 8px}#cs .L .av{width:34px;height:34px;font-size:18px}
+ #cs .R{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));top:max(10px,env(safe-area-inset-top,0px));width:auto;flex-direction:column;align-items:stretch;padding:16px 14px 10px;gap:8px}
+ #cs .fita{width:46px;height:72px;right:14px}
  #cs .R h2{display:none}
  #cs .R .info{flex:1;min-width:0;text-align:left}
  #cs .R .info .big{font-size:18px}
- #cs .R .info .row{display:none}
- #cs .R .info .row.k{display:flex;border:0;padding:0}
- #cs .R .btn{padding:8px 10px;font-size:11px}
+ #cs .R .info{gap:4px}#cs .R .info .row{font-size:12px;padding-top:4px}
+ #cs .R .btn{padding:7px 10px;font-size:11px}
  #cs .bar .btn{min-width:min(320px,86vw)}
 }
 @media (orientation:landscape) and (max-height:480px){
  #cs .L{top:max(8px,env(safe-area-inset-top,0px));bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(300px,36vw);padding:12px 10px 8px}
- #cs .R{top:max(8px,env(safe-area-inset-top,0px));width:min(250px,28vw);padding:14px 12px 12px}
+ #cs .R{top:max(8px,env(safe-area-inset-top,0px));width:min(250px,28vw);padding:14px 12px 12px}#cs .fita{width:34px;height:54px;right:12px}
  #cs .slot{min-height:50px;padding:6px}#cs .av{width:36px;height:36px;font-size:19px}
  #cs .bar{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}#cs .bar .btn{padding:11px 16px;font-size:14px}
  #cs .info .big{font-size:18px}
@@ -161,8 +165,8 @@ export function runCharSelect() {
       // retrato: o personagem sobe (a lista ocupa a parte de baixo); paisagem: fica ao centro, entre os painéis
       cam.fov = portrait ? 32 : 28;
       cam.position.set(0, portrait ? 1.6 : 1.5, portrait ? 8.4 : 7.4);
-      cam.lookAt(0, portrait ? .55 : 1.0, 0);
-      cam.zoom = 1; cam.clearViewOffset();
+      cam.lookAt(0, portrait ? .72 : 1.0, 0);
+      cam.zoom = portrait ? .62 : 1; cam.clearViewOffset();
       if (root.classList.contains('ed')) {   // editando: o painel ocupa parte da tela; o personagem vai para a área livre
         if (portrait) { const dh = h * .42; cam.zoom = .66; cam.setViewOffset(w, h, 0, dh * .5, w, h); }
         else { const dw = Math.min(440, w * .5); cam.zoom = .9; cam.setViewOffset(w, h, -dw * .5, 0, w, h); }
@@ -198,7 +202,7 @@ export function runCharSelect() {
       const L = $('list'); L.innerHTML = '';
       list.forEach(c => {
         const s = summary(c.id), d = document.createElement('div'); d.className = 'slot' + (c.id === sel ? ' on' : '');
-        d.innerHTML = `<div class="av ${c.f ? 'f' : 'm'}">${c.f ? '♀' : '♂'}</div><div style="min-width:0"><div class="nm"></div><div class="sb">${c.f ? 'Pirata' : 'Pirata'} · ${fmt(s.saved || c.t)}</div></div><div class="lv"><small>NÍVEL</small>${s.lv}</div>`;
+        d.innerHTML = `<div class="av ${c.f ? 'f' : 'm'}">${c.f ? '♀' : '♂'}</div><div style="min-width:0"><div class="nm"></div><div class="sb">${classOf(c).n} · ${fmt(s.saved || c.t)}</div></div><div class="lv"><small>NÍVEL</small>${s.lv}</div>`;
         d.querySelector('.nm').textContent = c.name;
         d.onclick = () => { sel = c.id; armed = 0; render(); };
         d.ondblclick = start;
@@ -210,6 +214,7 @@ export function runCharSelect() {
       const s = c ? summary(c.id) : null;
       $('info').innerHTML = c ? `<div class="big"></div><div class="row k"><span>Nível</span><b>${s.lv}</b></div><div class="row"><span>Ouro</span><b>${s.gold}</b></div><div class="row"><span>Classe</span><b>${classOf(c).n}</b></div><div class="row"><span>Gênero</span><b>${c.f ? 'Feminino' : 'Masculino'}</b></div><div class="row"><span>Último jogo</span><b>${fmt(s.saved)}</b></div>` : '<div class="big">Nenhum personagem</div><div class="hint">Crie o seu primeiro pirata</div>';
       if (c) $('info').querySelector('.big').textContent = c.name;
+      { const R = root.querySelector('.R'), old = R.querySelector('.fita'); if (old) old.remove(); const sv = c && bannerSvg(c.k); R.classList.toggle('kf', !!sv); if (sv) { const f = document.createElement('div'); f.className = 'fita'; f.innerHTML = sv; R.appendChild(f); } }
       $('del').style.visibility = c ? 'visible' : 'hidden';
       $('del').textContent = armed ? 'Toque de novo para excluir' : 'Excluir personagem';
       $('go').disabled = !c;
@@ -223,7 +228,7 @@ export function runCharSelect() {
 
     let look = defaultLook(false), klass = CLASS_KEYS[0];
     function buildKl() {
-      $('kl').innerHTML = CLASS_KEYS.map(k => '<button data-kl="' + k + '" class="' + (k === klass ? 'on' : '') + '">' + CLASSES[k].ic + ' ' + CLASSES[k].n + '</button>').join('');
+      $('kl').innerHTML = CLASS_KEYS.map(k => '<button data-kl="' + k + '" class="' + (k === klass ? 'on' : '') + '"><i>' + CLASSES[k].ic + '</i>' + CLASSES[k].n + '</button>').join('');
       $('kd').textContent = CLASSES[klass].d;
       $('kl').querySelectorAll('button').forEach(b => { b.onclick = () => { klass = b.dataset.kl; buildKl(); }; });
     }
