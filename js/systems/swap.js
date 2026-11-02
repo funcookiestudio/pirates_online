@@ -49,6 +49,7 @@ export function updateSwap(dt) {
 }
 
 let lastAuto = -1e9;
+let autoOut = false;   // o auto guardou o arco/cajado por falta de flechas/virotes (volta quando houver de novo)
 
 /** Auto combate: respeita a arma escolhida; só com a arma de fogo na mão e inimigo perto (< 4,5) ele guarda a de fogo e saca a corpo a corpo.
     `dist` = distância do inimigo mais próximo. Intervalo mínimo de 2,5 s entre trocas. */
@@ -56,7 +57,8 @@ export function autoWeapon(dist) {
   if (P.swap || P.dead || !P.models.gun || !P.models.wpn) return;
   const now = performance.now();
   if (now - lastAuto < 2500) return;
-  if (P.act === 'gun' && !hasAmmo(WEAPONS[P.wid])) { lastAuto = now; switchWeapon(); return; }   // sem flechas/virotes: saca a arma corpo a corpo
+  if (P.act === 'gun' && !hasAmmo(WEAPONS[P.wid])) { lastAuto = now; autoOut = true; switchWeapon(); return; }
+  if (autoOut && P.act === 'wpn' && hasAmmo(WEAPONS[P.wids.gun]) && dist >= 6) { autoOut = false; lastAuto = now; switchWeapon(); return; }   // flechas de volta: saca o arco de novo   // sem flechas/virotes: saca a arma corpo a corpo
   if (dist < 4.5 && P.act === 'gun') {
     lastAuto = now;
     switchWeapon();

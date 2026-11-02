@@ -9,7 +9,7 @@ import { torch as torchLight, hemi } from '../core/engine.js';
 import { state } from '../core/state.js';
 import { log, lootText } from '../ui/notify.js';
 import { hourNow } from '../core/clock.js';
-import { isThrown, ammoInfo, ammoCt, setCt } from '../data/ammo.js';
+import { isThrown, ammoInfo, ammoCt, setCt, QUIVER_MAX } from '../data/ammo.js';
 
 /** Itens guardados na mochila */
 export const bag = [];
@@ -65,7 +65,7 @@ export function beltTick(dt) {
 /** Preços fixos: poção na taverna / com a mercadora, bomba com a mercadora */
 export const PRICE = { potTavern: 25, potTrader: 32, bomb: 45 };
 /** O item caído `l` não pode ser coletado agora (mochila cheia ou poções no limite)? */
-export const lootBlocked = l => ((l.ty === 'wpn' || l.ty === 'arm') && bagFull() && !(isThrown({ ty: l.ty, w: l.wi }) && ammoStack(l.wi))) || (l.ty === 'pot' && beltRoom('pot') <= 0);
+export const lootBlocked = l => (l.ty === 'quiver' && P[l.qk] >= QUIVER_MAX) || ((l.ty === 'wpn' || l.ty === 'arm') && bagFull() && !(isThrown({ ty: l.ty, w: l.wi }) && ammoStack(l.wi))) || (l.ty === 'pot' && beltRoom('pot') <= 0);
 
 /** Equipamento atual: arma corpo a corpo (wpn), arma de fogo (gun) e armadura (arm). Uma arma fica na mão, a outra no coldre. */
 export const eq = { wpn: null, gun: null, arm: null, off: null };   // off = segunda mão (livre): outra arma do mesmo tipo

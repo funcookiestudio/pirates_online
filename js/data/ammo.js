@@ -17,6 +17,10 @@ export const AMMO = {
 };
 const DEF = { max: 10, brk: .3, price: 15, pack: 5 };
 
+/** Aljava: flechas e virotes (P.arrows / P.bolts). max = limite · pack e price = pacote vendido no ferreiro */
+export const QUIVER_MAX = 99;
+export const QUIVER = { arrows: { n: 'Flechas', pack: 20, price: 30 }, bolts: { n: 'Virotes', pack: 15, price: 36 } };
+
 /** É uma arma de arremesso (item de mochila)? */
 export const isThrown = it => !!it && it.ty === 'wpn' && it.w != null && !!WEAPONS[it.w] && !!WEAPONS[it.w].thrown;
 /** Dados de munição da arma de índice `w` */

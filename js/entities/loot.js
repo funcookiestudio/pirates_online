@@ -1,4 +1,5 @@
 /* Itens no chão: queda ao matar inimigos, coleta pelo jogador ou pelo companheiro. */
+import { QUIVER_MAX } from '../data/ammo.js';
 import { scene } from '../core/engine.js';
 import { groundY, slideTo } from '../world/terrain.js';
 import { loot } from '../core/registry.js';
@@ -96,6 +97,20 @@ export function dropItem(it, from) {
 }
 
 /** Projétil de arremesso que não quebrou: cai no chão para ser recolhido (1 unidade) */
+/* flecha/virote caído: haste deitada, geometria e materiais compartilhados */
+const QG = { sh: new THREE.BoxGeometry(.04, .7, .04), tip: new THREE.ConeGeometry(.07, .16, 4).translate(0, .43, 0), fe: new THREE.BoxGeometry(.14, .14, .01).translate(0, -.32, 0) };
+const QM = { wood: new THREE.MeshBasicMaterial({ color: 0xcaa66a }), bolt: new THREE.MeshBasicMaterial({ color: 0x8a8a90 }), steel: new THREE.MeshBasicMaterial({ color: 0xdde3e8 }), fea: new THREE.MeshBasicMaterial({ color: 0xe8e0d0 }) };
+/** Deixa uma flecha (k = 'arrows') ou virote ('bolts') no chão para recolher */
+export function dropQuiver(x, z, k) {
+  const m = new THREE.Group(), a = new THREE.Group();
+  a.add(new THREE.Mesh(QG.sh, k === 'bolts' ? QM.bolt : QM.wood), new THREE.Mesh(QG.tip, QM.steel), new THREE.Mesh(QG.fe, QM.fea));
+  a.rotation.z = Math.PI / 2; a.scale.setScalar(1.3);
+  m.add(a);
+  m.position.set(x, groundY(x, z) + .3, z);
+  scene.add(m);
+  loot.push({ m, ty: 'quiver', qk: k, n: 1, q: 1, il: 1, ammo: true, life: LOOT_LIFE - 25 });
+}
+
 export function dropAmmo(x, z, wi, q) {
   const m = lootModel('wpn', q, wi);
   m.position.set(x, .3, z);
@@ -113,6 +128,9 @@ export function applyLoot(l, tag) {
     lootText(p + '+' + g + ' ouro');
   } else if (l.ty === 'pot') {
     if (beltAdd('pot', 1)) lootText(p + '+ poção');
+  } else if (l.ty === 'quiver') {
+    P[l.qk] = Math.min(QUIVER_MAX, (P[l.qk] || 0) + l.n);
+    lootText(p + '+ ' + (l.qk === 'bolts' ? 'virote' : 'flecha'));
   } else if (l.ty === 'head') {
     giveHead();
   } else if (bagFull()) {

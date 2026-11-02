@@ -2,7 +2,8 @@
    e, com a mochila quase cheia (a partir do limite de ir à vila), só o que vale mais que o pior item guardado. */
 import { state } from '../core/state.js';
 import { WEAPONS } from '../data/weapons.js';
-import { bag, pickSlot, bagUsed } from './inventory.js';
+import { bag, eq, pickSlot, bagUsed } from './inventory.js';
+import { P } from '../entities/player.js';
 import { activeChar } from '../core/chars.js';
 
 /** O item caído `l` como item de mochila (valor e nível calculados como em addItem) */
@@ -18,6 +19,7 @@ export function lootFilter(l) {
   if (l.ty === 'gold') return c.lootGold;
   if (l.ty === 'pot') return c.lootPot;
   if (l.ty === 'head') return true;
+  if (l.ty === 'quiver') return !!(WEAPONS[eq.gun && eq.gun.w] && (l.qk === 'bolts' ? WEAPONS[eq.gun.w].xbow : WEAPONS[eq.gun.w].bow)) || P[l.qk] < 20;   // só junta se usa a arma (ou a aljava está quase vazia)
   if (l.ammo) return true;   // projétil que caiu: sempre recolhe
   const w = l.ty === 'wpn';
   if (!(w ? c.lootWpn : c.lootArm) || l.q < (w ? c.lootWpnQ : c.lootArmQ)) return false;

@@ -8,7 +8,7 @@ import { M } from '../core/utils.js';
 import { WEAPONS } from '../data/weapons.js';
 import { P, levelUp } from '../entities/player.js';
 import { aimOffset } from '../entities/player-weapon.js';
-import { dropLoot, dropAmmo } from '../entities/loot.js';
+import { dropLoot, dropAmmo, dropQuiver } from '../entities/loot.js';
 import { emit } from '../core/events.js';
 import { spendAmmo } from './inventory.js';
 import { PV, petXp } from '../pets/stats.js';
@@ -262,7 +262,7 @@ export function updateShots(dt) {
       const dx = s.t.x - p.x, dy = 1.3 - p.y, dz = s.t.z - p.z, d = Math.hypot(dx, dy, dz);
       if (d < .8) {
         hit(s.t, s.d, { kn: .6 });
-        if (s.ar && Math.random() < .35) P[s.ar]++;   // às vezes a flecha/virote se aproveita
+        if (s.ar) { s.arHit = true; if (Math.random() < .6) dropQuiver(s.t.x + (Math.random() - .5) * .8, s.t.z + (Math.random() - .5) * .8, s.ar); }   // 60% ficam no chão perto do alvo
         if (s.mg) puff(s.t.x, 1.2, s.t.z, s.mg, 4, 8);
         if (s.th) emit('shot:thrown-hit');   // (missão "Mão Firme")
         if (s.th && s.fx) puff(s.t.x, 1, s.t.z, 0xa77be0, 6, 10);
@@ -284,6 +284,7 @@ export function updateShots(dt) {
       }
     }
     if (done) {
+      if (s.ar && !s.arHit) dropQuiver(p.x, p.z, s.ar);   // o alvo morreu no ar: a flecha cai onde estava
       if (s.rec) dropAmmo(p.x + (Math.random() - .5), p.z + (Math.random() - .5), s.rec.w, s.rec.q);
       scene.remove(s.m);
       shots.splice(i, 1);

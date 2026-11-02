@@ -46,8 +46,10 @@ export const SKILLS = {
    RANK: bônus por rank de habilidade ativa (máx. RANK.max): +dano, -recarga, -custo de mana.
    PTS: pontos ganhos (habilidades: 1 por nível a partir do 2 · talentos: 1 a cada 2 níveis a partir do 3). Ranks e talentos ficam no save (campo `skills`).
    TSTAT: efeito de 1 rank de cada tipo de talento (v = valor; hp e mp são fixos na vida/mana máxima, o resto é fração).
-   Os multiplicadores de dano, durações e raios de cada habilidade estão no começo de cada função em js/systems/skills.js (CAST) e as armas das
-   classes em js/data/weapons-class.js (b, mul, cd, rng, mp, kb, crit, bleed). Dano = P.dmg × mult × P.cls.(melee|ranged|area|magic) × (1 + RANK.dmg × rank). */
+   TUNE: os números de cada habilidade (mult = multiplicador de dano, dur = duração em s, r = raio, range = alcance, kn = empurrão, etc.).
+   Dano = P.dmg × mult × P.cls.(melee|ranged|area|magic) × (1 + RANK.dmg × rank). As armas das classes ficam em js/data/weapons-class.js
+   (b, mul, cd, rng, mp, kb, crit, bleed). Custo de mana e recarga base de cada ativa estão em SKILLS.<classe>.act[i] (mp, cd). Mudou o número? Basta salvar:
+   nada mais precisa ser editado (js/systems/skills.js só lê esta tabela). */
 export const RANK = { max: 3, dmg: .12, cd: .06, mp: .04 };
 export const PTS = { skill: lv => Math.max(0, lv - 1), talent: lv => Math.max(0, Math.floor((lv - 1) / 2)) };
 export const TSTAT = {
@@ -78,4 +80,30 @@ export const TALENTS = {
     BR('Sombra', 'plank', '#b070ff', ['Passos leves', 'Esquiva', 'Fôlego curto', 'Vulto', 'Reflexos', 'Fantasma'], ['spd', 'dr', 'cdr', 'spd', 'dr', 'cdr']),
     BR('Veneno', 'gun', '#8fd04a', ['Frasco extra', 'Toxina', 'Frio calculado', 'Concentração', 'Peçonha', 'Mestre dos venenos'], ['mp', 'dmg', 'mpc', 'mpr', 'dmg', 'hp']),
   ],
+};
+
+export const TUNE = {
+  guerreiro: {
+    pele: { hits: 3, pct: .1, rank: .02, dur: 4 },                                        // passiva: a cada `hits` golpes, escudo de pct da vida máx.
+    cata: { range: 12, r: 3.2, mult: 2.5, kn: 1.3, stun: 1, stunBoss: .3 },               // Golpe Cataclísmico
+    grito: { dur: 8, dmg: .25, dr: .2, radius: 14 },                                        // Grito de Guerra
+    muralha: { dur: 5, take: .3, mult: 2, r: 4.6, kn: 1.6 },                                // Muralha (take = fração do dano recebido)
+  },
+  cacador: {
+    aguia: { dist: 6, crit: .1, rank: .02 },                                                // passiva: crítico em alvos distantes
+    tiro: { range: 20, len: 20, w: 1.1, wBoss: .7, mult: 2.2, kn: .5 },                     // Tiro Perfurante
+    trap: { max: 2, life: 20, trigger: 1.2, root: 2, rootBoss: .6, bleed: 3, bleedMult: .3 }, // Armadilha de Espinhos
+    chuva: { range: 16, r: 5, shots: 8, dur: 3, mult: 1.2, hit: 1.5 },                      // Chuva de Balas
+  },
+  mago: {
+    fluxo: { regenOut: .03, regenIn: .01, rank: .15, cdr: .5 },                              // passiva: % da mana máx/s e redução de recarga por skill usada
+    fogo: { range: 22, speed: 18, hit: 1.2, r: 3, mult: 2.2, burn: 3, burnMult: .3 },       // Bola de Fogo
+    gelo: { r: 5.2, mult: 1.5, slow: 4 },                                                   // Nova de Gelo
+    storm: { dur: 6, bolts: 12, every: .5, r: 8, mult: 1.4, chain: 1.5 },                   // Tempestade Arcana
+  },
+  ladino: {
+    passo: { range: 12, mult: 2 },                                                          // Passo Sombrio
+    adagas: { range: 16, mult: 1, poison: 4, pmult: .35, stacks: 3 },                       // Adagas Venenosas
+    danca: { dur: 4, hits: 6, every: .62, r: 10, mult: 1.3 },                               // Dança das Lâminas
+  },
 };

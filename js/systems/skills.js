@@ -6,7 +6,7 @@ import { state } from '../core/state.js';
 import { enemies } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { activeChar } from '../core/chars.js';
-import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS } from '../data/skills.js';
+import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS, TUNE as U } from '../data/skills.js';
 import { START } from '../data/classes.js';
 import { WEAPONS } from '../data/weapons.js';
 import { eq, bag, setWeapon } from './inventory.js';
@@ -24,7 +24,7 @@ import * as V from './skillvfx.js';
 const { G } = V;
 const S = {
   on: false, k: null, D: null, clock: 0,
-  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], tl: {}, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
+  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], tl: {}, tb: { hp: 0, mp: 0 }, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
   hits: 0, hitT: -9, shield: 0, shT: 0, gt: 0, mur: 0, lev: 0, pose: 0,
   leap: null, tp: null, cast: null, balls: [], traps: [], rain: null, storm: null, dance: null, daggers: [],
   bub: null, shell: null, aura: null, orbs: null, ret: null, ghosted: null, dead: false, combat: false, ct: 0, hasteT: 0, fsT: 0,
@@ -55,9 +55,9 @@ const lerp = (a, b, u) => a + (b - a) * u;
 /** Antes do dano: devolve o dano final; pode forçar crítico (o.cr) ou somar chance (o.cb) */
 function pre(e, d, o) {
   if (o.pet || o.dot) return d;
-  if (S.gt > 0) d *= 1.25;                                      // Grito de Guerra
+  if (S.gt > 0) d *= 1 + U.guerreiro.grito.dmg;                                      // Grito de Guerra
   d *= 1 + S.TT.dmg; o.cb = (o.cb || 0) + S.TT.crit;             // talentos
-  if (S.k === 'cacador' && dist(e) > 6) o.cb += .1 + .02 * S.rk[3]; // Olho de Águia
+  if (S.k === 'cacador' && dist(e) > U.cacador.aguia.dist) o.cb += U.cacador.aguia.crit + U.cacador.aguia.rank * S.rk[3]; // Olho de Águia
   if (S.k === 'ladino' && !e.fsd) {                              // Golpe Furtivo: o 1º golpe num inimigo que ainda não te atacou
     e.fsd = true;
     if (!e.atkd && o.cr === undefined) { o.cr = true; fsFx(e); }
@@ -69,8 +69,8 @@ function post(e, o) {
   if (S.k !== 'guerreiro' || o.pet || o.dot) return;
   if (S.clock - S.hitT < .12) return;                            // vários alvos do mesmo golpe contam uma vez
   S.hitT = S.clock;
-  if (++S.hits >= 3) {
-    S.hits = 0; S.shield = P.max * (.1 + .02 * S.rk[3]); S.shT = 4;
+  if (++S.hits >= U.guerreiro.pele.hits) {
+    S.hits = 0; S.shield = P.max * (U.guerreiro.pele.pct + U.guerreiro.pele.rank * S.rk[3]); S.shT = U.guerreiro.pele.dur;
     const B = V.budget(); B.max = 10;
     V.sparks(B, P.x, by() + 1, P.z, [0xffd860, 0xfff0a0], 8, 3.5, .6, .09, 2, 4);
     V.ring(B, P.x, by() + .15, P.z, 0xffd860, .4, 1.8, .4, .7);
@@ -80,8 +80,8 @@ function post(e, o) {
 function hurt(d) {
   if (P.inv > 0) return 0;
   d *= 1 - S.TT.dr;
-  if (S.mur > 0) d *= .3;
-  if (S.gt > 0) d *= .8;
+  if (S.mur > 0) d *= U.guerreiro.muralha.take;
+  if (S.gt > 0) d *= 1 - U.guerreiro.grito.dr;
   if (S.shield > 0) { const a = Math.min(S.shield, d); S.shield -= a; d -= a; }
   return d;
 }
@@ -122,7 +122,7 @@ export function useSkill(i) {
   if (ok === false) return false;
   P.mp -= cost;
   S.cds[i] = S.cdm[i] = cdOf(i);
-  if (S.k === 'mago') for (let j = 0; j < 3; j++) if (j !== i) S.cds[j] = Math.max(0, S.cds[j] - .5);   // Fluxo Arcano
+  if (S.k === 'mago') for (let j = 0; j < 3; j++) if (j !== i) S.cds[j] = Math.max(0, S.cds[j] - U.mago.fluxo.cdr);   // Fluxo Arcano
   return true;
 }
 
@@ -132,7 +132,7 @@ const CAST = {
   guerreiro: [
     /* Golpe Cataclísmico: agacha, salta em arco até o alvo e esmaga o chão */
     () => {
-      const t = pickTarget(12);
+      const t = pickTarget(U.guerreiro.cata.range);
       if (!t) { warn('Sem alvo por perto'); return false; }
       const ang = Math.atan2(t.x - P.x, t.z - P.z), land = Math.max(0, dist(t) - 1.3);
       const lp = landing(P.x + Math.sin(ang) * land, P.z + Math.cos(ang) * land) || { x: P.x, z: P.z }, x1 = lp.x, z1 = lp.z;
@@ -141,18 +141,18 @@ const CAST = {
     },
     /* Grito de Guerra: onda vermelha, aura e provoca os inimigos próximos */
     () => {
-      S.gt = 8; S.pose = .55;
+      S.gt = U.guerreiro.grito.dur; S.pose = .55;
       const B = V.budget(), y = by();
       V.ring(B, P.x, y + .15, P.z, 0xff3a20, .5, 6, .6, .85);
       V.ring(B, P.x, y + .15, P.z, 0xffb090, .3, 6, .85, .5);
       V.disc(B, P.x, y + .1, P.z, 0xff2010, 1, 6, .5, .3);
       V.sparks(B, P.x, y + 1, P.z, [0xff4a30, 0xffd0a0], 12, 4, .7, .09, 3, 3);
       state.SHK = Math.max(state.SHK, .3);
-      for (const e of enemies) if (!e.dead && dist(e) < 14) { e.ag = true; e.tn = 8; }
+      for (const e of enemies) if (!e.dead && dist(e) < U.guerreiro.grito.radius) { e.ag = true; e.tn = U.guerreiro.grito.dur; }
     },
     /* Muralha: casco de pedra translúcido; ao fim quebra e solta a onda de choque */
     () => {
-      S.mur = 5; S.pose = .4;
+      S.mur = U.guerreiro.muralha.dur; S.pose = .4;
       const B = V.budget(), y = by();
       V.ring(B, P.x, y + .15, P.z, 0xb0a890, .4, 2.6, .45, .7);
       V.sparks(B, P.x, y + .3, P.z, 0x8a8070, 8, 3, .6, .12, 2.5, 8);
@@ -162,15 +162,15 @@ const CAST = {
   cacador: [
     /* Tiro Perfurante: feixe que atravessa todos na linha */
     () => {
-      const t = pickTarget(20), ang = t ? Math.atan2(t.x - P.x, t.z - P.z) : P.g.rotation.y;
+      const t = pickTarget(U.cacador.tiro.range), ang = t ? Math.atan2(t.x - P.x, t.z - P.z) : P.g.rotation.y;
       face(ang); S.pose = .35;
       const dx = Math.sin(ang), dz = Math.cos(ang), B = V.budget(), y = by() + 1.3;
-      const x0 = P.x + dx * .8, z0 = P.z + dz * .8, R = 20;
+      const x0 = P.x + dx * .8, z0 = P.z + dz * .8, R = U.cacador.tiro.len;
       for (const e of enemies) {
         if (e.dead || e.inv) continue;
         const rx = e.x - P.x, rz = e.z - P.z, al = rx * dx + rz * dz, pp = Math.abs(rx * dz - rz * dx);
-        if (al > 0 && al < R && pp < 1.1 + (e.t.boss ? .7 : 0)) {
-          dealt(e, 2.2, 'ranged', { kn: .5, ang });
+        if (al > 0 && al < R && pp < U.cacador.tiro.w + (e.t.boss ? U.cacador.tiro.wBoss : 0)) {
+          dealt(e, U.cacador.tiro.mult, 'ranged', { kn: U.cacador.tiro.kn, ang });
           V.ring(B, e.x, ey(e) + .2, e.z, 0xffffff, .3, 1.7, .4, .9);
           V.flash(B, e.x, ey(e) + 1.2, e.z, 0xe8ffb0, .2, .9, .25, .8);
         }
@@ -186,19 +186,19 @@ const CAST = {
       const a = P.g.rotation.y, x = P.x + Math.sin(a) * 1.8, z = P.z + Math.cos(a) * 1.8;
       if (!walkable(x, z)) { warn('Sem espaço aqui'); return false; }
       S.pose = .3;
-      if (S.traps.length >= 2) dropTrap(S.traps.shift());
+      if (S.traps.length >= U.cacador.trap.max) dropTrap(S.traps.shift());
       S.traps.push(makeTrap(x, z));
       const B = V.budget(); B.max = 8;
       V.sparks(B, x, groundY(x, z) + .1, z, 0xa8b0b8, 6, 2, .4, .08, 1.5, 6);
     },
     /* Chuva de Balas: marca a área (círculo verde girando) e dispara 8 tiros em 3 s */
     () => {
-      const t = pickTarget(16);
+      const t = pickTarget(U.cacador.chuva.range);
       let x, z;
       if (t) { x = t.x; z = t.z; } else { const a = P.g.rotation.y; x = P.x + Math.sin(a) * 7; z = P.z + Math.cos(a) * 7; }
       S.pose = .5;
       const y = groundY(x, z);
-      S.rain = { x, z, y, t: 0, n: 0, dur: 3,
+      S.rain = { x, z, y, t: 0, n: 0, dur: U.cacador.chuva.dur,
         r1: V.solid(G.RING, 0x6bff5a, .85, x, y + .12, z, [5, 1, 5]), r2: V.solid(G.RING, 0xffe070, .6, x, y + .13, z, [3, 1, 3]),
         r3: V.solid(G.DISC, 0x40c030, .12, x, y + .1, z, [5, 1, 5]) };
     },
@@ -206,7 +206,7 @@ const CAST = {
   mago: [
     /* Bola de Fogo: a esfera cresce na mão e sai voando */
     () => {
-      const t = pickTarget(22), ang = t ? Math.atan2(t.x - P.x, t.z - P.z) : P.g.rotation.y;
+      const t = pickTarget(U.mago.fogo.range), ang = t ? Math.atan2(t.x - P.x, t.z - P.z) : P.g.rotation.y;
       face(ang); S.pose = .4;
       S.cast = { k: 'fire', t: 0, dur: .24, ang, orb: V.solid(G.ORB, 0xffb040, .95, P.x, by() + 1.5, P.z, .1) };
     },
@@ -215,9 +215,9 @@ const CAST = {
       S.pose = .4;
       const B = V.budget(), x = P.x, z = P.z, y = by();
       for (const e of enemies) {
-        if (e.dead || e.inv || dist(e) > 5.2) continue;
-        dealt(e, 1.5, 'area', { kn: .9 });
-        if (!e.dead) e.slow = 4;
+        if (e.dead || e.inv || dist(e) > U.mago.gelo.r) continue;
+        dealt(e, U.mago.gelo.mult, 'area', { kn: .9 });
+        if (!e.dead) e.slow = U.mago.gelo.slow;
       }
       V.ring(B, x, y + .15, z, 0xa8ecff, .5, 5.4, .55, .9);
       V.ring(B, x, y + .17, z, 0xffffff, .3, 4.2, .4, .8);
@@ -233,7 +233,7 @@ const CAST = {
     },
     /* Tempestade Arcana: levita e chama raios por 6 s */
     () => {
-      S.storm = { t: 0, n: 0, dur: 6 };
+      S.storm = { t: 0, n: 0, dur: U.mago.storm.dur };
       const B = V.budget(), y = by();
       V.ring(B, P.x, y + .15, P.z, 0xa070ff, .5, 4, .6, .8);
       V.pillar(B, P.x, y, P.z, 0xc8a0ff, .9, 3.5, .7, .4);
@@ -243,7 +243,7 @@ const CAST = {
   ladino: [
     /* Passo Sombrio: some em fumaça e reaparece atrás do alvo */
     () => {
-      const t = pickTarget(12);
+      const t = pickTarget(U.ladino.passo.range);
       if (!t) { warn('Sem alvo por perto'); return false; }
       S.tp = { t: 0, tg: t, ox: P.x, oz: P.z, ph: 0 };
       P.inv = 1; stopMove();
@@ -253,7 +253,7 @@ const CAST = {
     },
     /* Adagas Venenosas: 3 adagas em leque */
     () => {
-      const t = pickTarget(16), ang = t ? Math.atan2(t.x - P.x, t.z - P.z) : P.g.rotation.y;
+      const t = pickTarget(U.ladino.adagas.range), ang = t ? Math.atan2(t.x - P.x, t.z - P.z) : P.g.rotation.y;
       face(ang); S.pose = .3;
       for (let i = -1; i <= 1; i++) {
         const a = ang + i * .3, m = V.solid(G.BEAM, 0xb0f060, 1, P.x + Math.sin(a) * .8, by() + 1.3, P.z + Math.cos(a) * .8, [.07, .07, .6]);
@@ -263,8 +263,8 @@ const CAST = {
     },
     /* Dança das Lâminas: 4 s invulnerável, 6 golpes pulando entre os inimigos */
     () => {
-      S.dance = { t: 0, n: 0, dur: 4, last: null };
-      P.inv = 4; fadePlayer(true);
+      S.dance = { t: 0, n: 0, dur: U.ladino.danca.dur, last: null };
+      P.inv = U.ladino.danca.dur; fadePlayer(true);
       smoke(P.x, by(), P.z);
     },
   ],
@@ -321,7 +321,7 @@ function makeTrap(x, z) {
   }
   g.position.set(x, y, z); g.scale.setScalar(.01);
   scene.add(g);
-  return { x, z, t: 20, g, mats: [plate, metal], age: 0 };
+  return { x, z, t: U.cacador.trap.life, g, mats: [plate, metal], age: 0 };
 }
 function dropTrap(t) {
   if (!t) return;
@@ -331,8 +331,8 @@ function dropTrap(t) {
 function trapFire(t, e) {
   S.dmx = S.fx[1];
   const B = V.budget(), y = ey(e);
-  e.root = e.t.boss ? .6 : 2;
-  e.bl = 3; e.bd = Math.max(1, dm(.3, 'ranged')); e.bt = .5;
+  e.root = e.t.boss ? U.cacador.trap.rootBoss : U.cacador.trap.root;
+  e.bl = U.cacador.trap.bleed; e.bd = Math.max(1, dm(U.cacador.trap.bleedMult, 'ranged')); e.bt = .5;
   for (let i = 0; i < 7; i++) {
     const a = i / 7 * 6.283;
     V.add(B, G.CONE, 0xe8eef2, e.x + Math.sin(a) * .5, y, e.z + Math.cos(a) * .5, [.12, 1.1, .12], { life: .6, o: .95, rot: [Math.cos(a) * .3, 0, -Math.sin(a) * .3] });
@@ -371,7 +371,7 @@ export function updateSkills(dt) {
   if (S.k === 'mago') {
     S.ct -= dt;
     if (S.ct <= 0) { S.ct = .3; S.combat = enemies.some(e => !e.dead && e.ag && dist(e) < 26); }
-    P.mp = Math.min(P.mmax, P.mp + Math.max(0, (S.combat ? .01 : .03) * (1 + .15 * S.rk[3]) * P.mmax - 3) * dt);
+    P.mp = Math.min(P.mmax, P.mp + Math.max(0, (S.combat ? U.mago.fluxo.regenIn : U.mago.fluxo.regenOut) * (1 + U.mago.fluxo.rank * S.rk[3]) * P.mmax - 3) * dt);
   }
   if (S.TT.mpr) P.mp = Math.min(P.mmax, P.mp + S.TT.mpr * P.mmax * dt);
   P.tspd = S.TT.spd;
@@ -434,7 +434,7 @@ export function updateSkills(dt) {
       t.age += dt; t.t -= dt;
       t.g.scale.setScalar(Math.min(1, t.age * 5));
       let fired = false;
-      if (t.age > .35) for (const e of enemies) if (!e.dead && !e.inv && Math.hypot(e.x - t.x, e.z - t.z) < 1.2) { trapFire(t, e); fired = true; break; }
+      if (t.age > .35) for (const e of enemies) if (!e.dead && !e.inv && Math.hypot(e.x - t.x, e.z - t.z) < U.cacador.trap.trigger) { trapFire(t, e); fired = true; break; }
       if (fired || t.t <= 0) { if (!fired) dropTrap(t); S.traps.splice(i, 1); }
     }
     const tg = P.tgt;
@@ -517,9 +517,9 @@ function updLeap(dt, y) {
     const x = L.x1, z = L.z1, gy = groundY(x, z);
     S.leap = null; stopMove();
     for (const e of enemies) {
-      if (e.dead || e.inv || Math.hypot(e.x - x, e.z - z) > 3.2) continue;
-      dealt(e, 2.5, 'melee', { kn: 1.3, ang: Math.atan2(e.x - x, e.z - z) });
-      if (!e.dead) e.sn = Math.max(e.sn || 0, e.t.boss ? .3 : 1);
+      if (e.dead || e.inv || Math.hypot(e.x - x, e.z - z) > U.guerreiro.cata.r) continue;
+      dealt(e, U.guerreiro.cata.mult, 'melee', { kn: U.guerreiro.cata.kn, ang: Math.atan2(e.x - x, e.z - z) });
+      if (!e.dead) e.sn = Math.max(e.sn || 0, e.t.boss ? U.guerreiro.cata.stunBoss : U.guerreiro.cata.stun);
     }
     quake(x, gy, z);
     state.SHK = Math.max(state.SHK, .7); state.HS = Math.max(state.HS, .09);
@@ -544,8 +544,8 @@ function shellBreak(y) {
   S.dmx = S.fx[2];
   const B = V.budget(), x = P.x, z = P.z;
   for (const e of enemies) {
-    if (e.dead || e.inv || dist(e) > 4.6) continue;
-    dealt(e, 2, 'melee', { kn: 1.6, ang: Math.atan2(e.x - x, e.z - z) });
+    if (e.dead || e.inv || dist(e) > U.guerreiro.muralha.r) continue;
+    dealt(e, U.guerreiro.muralha.mult, 'melee', { kn: U.guerreiro.muralha.kn, ang: Math.atan2(e.x - x, e.z - z) });
   }
   V.ring(B, x, y + .15, z, 0xd8d0c0, .5, 4.8, .55, .85);
   V.ring(B, x, y + .17, z, 0xffffff, .3, 3.5, .35, .7);
@@ -565,14 +565,14 @@ function updRain(dt) {
   R.r1.rotation.y += dt * 1.8; R.r2.rotation.y -= dt * 2.6;
   const fade = R.t > R.dur ? Math.max(0, 1 - (R.t - R.dur) / .35) : 1;
   R.r1.material.opacity = .85 * fade; R.r2.material.opacity = .6 * fade; R.r3.material.opacity = .12 * fade;
-  while (R.n < 8 && R.t >= R.n * (R.dur / 8)) {
+  while (R.n < U.cacador.chuva.shots && R.t >= R.n * (R.dur / U.cacador.chuva.shots)) {
     R.n++;
-    const cand = enemies.filter(e => !e.dead && !e.inv && Math.hypot(e.x - R.x, e.z - R.z) < 5);
+    const cand = enemies.filter(e => !e.dead && !e.inv && Math.hypot(e.x - R.x, e.z - R.z) < U.cacador.chuva.r);
     let px, pz;
     if (cand.length && Math.random() < .75) { const e = cand[(Math.random() * cand.length) | 0]; px = e.x; pz = e.z; }
     else { const a = rnd(0, 6.283), r = Math.sqrt(Math.random()) * 4.6; px = R.x + Math.sin(a) * r; pz = R.z + Math.cos(a) * r; }
     const gy = groundY(px, pz), B = { n: 0, max: 5 };
-    for (const e of cand) if (!e.dead && Math.hypot(e.x - px, e.z - pz) < 1.5) dealt(e, 1.2, 'ranged', { kn: .3, ang: Math.atan2(e.x - px, e.z - pz) });
+    for (const e of cand) if (!e.dead && Math.hypot(e.x - px, e.z - pz) < U.cacador.chuva.hit) dealt(e, U.cacador.chuva.mult, 'ranged', { kn: .3, ang: Math.atan2(e.x - px, e.z - pz) });
     V.bolt(B, px + rnd(-.5, .5), gy + 13, pz, px, gy + .2, pz, 0xe8ff90, .1, .2, 1);
     V.disc(B, px, gy + .1, pz, 0xe8ff90, .4, 1.4, .3, .6);
     V.add(B, G.DISC, 0xb8a888, px, gy + .25, pz, .6, { life: .6, o: .4, v: [0, .7, 0], grow: [1.8, 0, 1.8] });
@@ -599,23 +599,23 @@ function updCast(dt, y) {
 function updBalls(dt) {
   S.dmx = S.fx[0];
   for (let i = S.balls.length - 1; i >= 0; i--) {
-    const b = S.balls[i], st = 18 * dt;
+    const b = S.balls[i], st = U.mago.fogo.speed * dt;
     b.x += b.dx * st; b.z += b.dz * st; b.d += st;
     b.m.position.set(b.x, b.y, b.z); b.glow.position.set(b.x, b.y, b.z);
     b.glow.scale.setScalar(.75 + Math.sin(S.clock * 30) * .08);
     b.tr -= dt;
     if (b.tr <= 0) { b.tr = .05; V.sparks(b.B, b.x, b.y, b.z, [0xff8a20, 0xffd060], 1, 1, .4, .09, .5, 2); }
-    let boom = b.d >= 22;
-    if (!boom) for (const e of enemies) if (!e.dead && !e.inv && Math.hypot(e.x - b.x, e.z - b.z) < 1.2) { boom = true; break; }
+    let boom = b.d >= U.mago.fogo.range;
+    if (!boom) for (const e of enemies) if (!e.dead && !e.inv && Math.hypot(e.x - b.x, e.z - b.z) < U.mago.fogo.hit) { boom = true; break; }
     if (boom) { fireBoom(b.x, b.y, b.z); V.drop(b.m); V.drop(b.glow); S.balls.splice(i, 1); }
   }
 }
 function fireBoom(x, y, z) {
   const B = V.budget(), gy = groundY(x, z);
   for (const e of enemies) {
-    if (e.dead || e.inv || Math.hypot(e.x - x, e.z - z) > 3) continue;
-    dealt(e, 2.2, 'area', { kn: 1, ang: Math.atan2(e.x - x, e.z - z) });
-    if (!e.dead) { e.bn = 3; e.bnt = .5; e.bnd = dm(.3, 'area'); }
+    if (e.dead || e.inv || Math.hypot(e.x - x, e.z - z) > U.mago.fogo.r) continue;
+    dealt(e, U.mago.fogo.mult, 'area', { kn: 1, ang: Math.atan2(e.x - x, e.z - z) });
+    if (!e.dead) { e.bn = U.mago.fogo.burn; e.bnt = .5; e.bnd = dm(U.mago.fogo.burnMult, 'area'); }
   }
   V.flash(B, x, y, z, 0xfff0b0, .4, 2.6, .25, .9);
   V.flash(B, x, y, z, 0xff7a20, .3, 3.4, .45, .55);
@@ -634,14 +634,14 @@ function updStorm(dt, y) {
   T.t += dt;
   const ov = $('skov');
   if (ov) ov.classList.toggle('on', T.t < T.dur);
-  while (T.n < 12 && T.t >= T.n * .5) {
+  while (T.n < U.mago.storm.bolts && T.t >= T.n * U.mago.storm.every) {
     T.n++;
-    const cand = enemies.filter(e => !e.dead && !e.inv && dist(e) < 8);
+    const cand = enemies.filter(e => !e.dead && !e.inv && dist(e) < U.mago.storm.r);
     let px, pz, tg = null;
     if (cand.length) { tg = cand[(Math.random() * cand.length) | 0]; px = tg.x; pz = tg.z; }
-    else { const a = rnd(0, 6.283), r = Math.sqrt(Math.random()) * 8; px = P.x + Math.sin(a) * r; pz = P.z + Math.cos(a) * r; }
+    else { const a = rnd(0, 6.283), r = Math.sqrt(Math.random()) * U.mago.storm.r; px = P.x + Math.sin(a) * r; pz = P.z + Math.cos(a) * r; }
     const gy = groundY(px, pz);
-    if (tg) { dealt(tg, 1.4, 'area', { kn: .2 }); for (const e of cand) if (e !== tg && !e.dead && Math.hypot(e.x - px, e.z - pz) < 1.5) dealt(e, 1.4, 'area', { kn: .2 }); }
+    if (tg) { dealt(tg, U.mago.storm.mult, 'area', { kn: .2 }); for (const e of cand) if (e !== tg && !e.dead && Math.hypot(e.x - px, e.z - pz) < U.mago.storm.chain) dealt(e, U.mago.storm.mult, 'area', { kn: .2 }); }
     lightning(px, gy, pz);
   }
   if (T.t >= T.dur) { S.storm = null; if (ov) ov.classList.remove('on'); }
@@ -679,7 +679,7 @@ function updTp(dt, y) {
       P.g.visible = true;
       smoke(nx, groundY(nx, nz), nz);
       if (!e.dead) {
-        dealt(e, 2, 'melee', { cr: true, kn: .6, ang: Math.atan2(ex - nx, ez - nz) });
+        dealt(e, U.ladino.passo.mult, 'melee', { cr: true, kn: .6, ang: Math.atan2(ex - nx, ez - nz) });
         const B = V.budget(); B.max = 6; fsFx(e); arcCut(B, e);
         state.SHK = Math.max(state.SHK, .25); state.HS = Math.max(state.HS, .05);
       }
@@ -698,10 +698,10 @@ function updDaggers(dt) {
     if (g.tt <= 0) { g.tt = .045; V.sparks(g.B, g.x, g.y, g.z, [0x7aff40, 0xd0ff90], 1, .6, .4, .07, 0, 4); }
     let hitE = null;
     for (const e of enemies) if (!e.dead && !e.inv && Math.hypot(e.x - g.x, e.z - g.z) < 1) { hitE = e; break; }
-    if (hitE || g.d > 16) {
+    if (hitE || g.d > U.ladino.adagas.range) {
       if (hitE) {
-        dealt(hitE, 1, 'ranged', { kn: .3, ang: g.a });
-        if (!hitE.dead) { hitE.pn = Math.min(3, (hitE.pn || 0) + 1); hitE.ps = 4; hitE.pst = hitE.pst > 0 ? hitE.pst : .5; hitE.psd = dm(.35, 'ranged'); }
+        dealt(hitE, U.ladino.adagas.mult, 'ranged', { kn: .3, ang: g.a });
+        if (!hitE.dead) { hitE.pn = Math.min(U.ladino.adagas.stacks, (hitE.pn || 0) + 1); hitE.ps = U.ladino.adagas.poison; hitE.pst = hitE.pst > 0 ? hitE.pst : .5; hitE.psd = dm(U.ladino.adagas.pmult, 'ranged'); }
         const B = { n: 0, max: 7 };
         V.flash(B, g.x, g.y, g.z, 0x7aff40, .2, .9, .3, .7);
         V.sparks(B, g.x, g.y, g.z, [0x6aff40, 0x2a8a20], 6, 3, .6, .08, 1, 8);   // gotas verdes
@@ -717,9 +717,9 @@ function updDance(dt) {
   S.dmx = S.fx[2];
   D.t += dt; P.inv = Math.max(P.inv, .25); stopMove();
   P.g.arm.rotation.x = -1.2 + Math.sin(D.t * 28) * .9;
-  while (D.n < 6 && D.t >= D.n * .62 + .12) {
+  while (D.n < U.ladino.danca.hits && D.t >= D.n * U.ladino.danca.every + .12) {
     D.n++;
-    const cand = enemies.filter(e => !e.dead && !e.inv && dist(e) < 10);
+    const cand = enemies.filter(e => !e.dead && !e.inv && dist(e) < U.ladino.danca.r);
     if (!cand.length) continue;
     let e = cand[(Math.random() * cand.length) | 0];
     if (cand.length > 1 && e === D.last) e = cand[(cand.indexOf(e) + 1) % cand.length];
@@ -730,7 +730,7 @@ function updDance(dt) {
     const ld = landing(e.x + rx * 1.2, e.z + rz * 1.2);
     if (ld) { P.x = ld.x; P.z = ld.z; }
     stopMove(); face(Math.atan2(e.x - P.x, e.z - P.z));
-    dealt(e, 1.3, 'melee', { kn: .3, ang: Math.atan2(e.x - P.x, e.z - P.z) });
+    dealt(e, U.ladino.danca.mult, 'melee', { kn: .3, ang: Math.atan2(e.x - P.x, e.z - P.z) });
     const B = V.budget(); B.max = 8;
     arcCut(B, e); arcCut(B, e);
     V.sparks(B, e.x, ey(e) + 1.2, e.z, [0xffffff, 0xb080ff], 4, 4, .35, .07, 1, 3);
@@ -828,6 +828,7 @@ export function initSkills() {
   try { const kk = JSON.parse(localStorage.getItem('pirata-skillkeys')); if (Array.isArray(kk) && kk.length === 3 && kk.every(x => typeof x === 'string')) S.keys = kk; } catch (e) { /* padrão */ }
   buildUI();
   recalc();
+  buildKeyRow();
   refreshKeys();
   document.addEventListener('keydown', e => {
     if (e.repeat || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
@@ -865,7 +866,7 @@ function refreshCosts() {
   UI.b.forEach((el, i) => { const em = el.querySelector('em'); if (em) em.textContent = costOf(i); el.title = tipOf(i); });
 }
 /** Vida e mana máximas dadas pelos talentos (fixas: entram em P.max/P.mmax ao aprender e saem ao redefinir) */
-const flat = () => ({ hp: S.TT.hp, mp: S.TT.mp });
+const flat = () => ({ hp: S.TT.hp, mp: S.TT.mp });   // total dos talentos agora; o que já entrou em max/mmax fica em S.tb (salvo à parte)
 export function learnSkill(i) {
   if (!S.on || i < 0 || i > 3) return false;
   if (i < 3 && P.lv < SKILL_LV[i]) return false;
@@ -880,28 +881,33 @@ export function learnTalent(b, i) {
   if (!n || talentRank(b, i) >= RANK.max || talentPoints() <= 0 || !talentReq(b, i)) return false;
   const k = b + ':' + i; S.tl[k] = (S.tl[k] || 0) + 1;
   const before = flat(); recalc(); const after = flat();
-  P.max += after.hp - before.hp; P.hp += after.hp - before.hp; P.mmax += after.mp - before.mp; P.mp += after.mp - before.mp;   // +vida/+mana máximas entram direto
+  const dh = after.hp - before.hp, dmn = after.mp - before.mp;
+  P.max += dh; P.hp += dh; P.mmax += dmn; P.mp += dmn;   // +vida/+mana máximas entram direto…
+  S.tb.hp += dh; S.tb.mp += dmn; P.tmaxBonus = S.tb;      // …e o quanto entrou fica guardado (P.tmaxBonus) para o reset não depender de max/mmax salvos
   return true;
 }
 /** Redefinir: devolve todos os pontos (grátis); a vida/mana máximas dos talentos saem de volta */
 export function respec() {
   if (!S.on) return;
-  const before = flat();
   S.rk = [0, 0, 0, 0]; S.tl = {};
   recalc();
-  P.max -= before.hp; P.mmax -= before.mp;
+  P.max = Math.max(1, P.max - S.tb.hp); P.mmax = Math.max(1, P.mmax - S.tb.mp);   // tira só o que os talentos puseram
+  S.tb.hp = S.tb.mp = 0;
   P.hp = Math.min(P.hp, P.max); P.mp = Math.min(P.mp, P.mmax);
   refreshCosts();
 }
-export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.tl = {}; if (S.on) { recalc(); } }
+export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.tl = {}; S.tb.hp = S.tb.mp = 0; if (S.on) { recalc(); } }
 /** Dados salvos (campo `skills` do save): ranks, talentos, migração feita e teclas ficam no navegador */
-export const skillData = () => (S.on ? { rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig } : null);
+export const skillData = () => (S.on ? { rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } } : null);
 export function loadSkillData(o) {
   if (!S.on || !o) return;
   if (Array.isArray(o.rk)) S.rk = [0, 1, 2, 3].map(i => Math.max(0, Math.min(RANK.max, o.rk[i] | 0)));
   if (o.tl && typeof o.tl === 'object') { S.tl = {}; Object.keys(o.tl).forEach(k => { const n = o.tl[k] | 0; if (n > 0 && /^\d:\d$/.test(k)) S.tl[k] = Math.min(RANK.max, n); }); }
   S.mig = o.mig ? 1 : 0;
+  S.tb = { hp: Math.max(0, +(o.tb && o.tb.hp) || 0), mp: Math.max(0, +(o.tb && o.tb.mp) || 0) };
   recalc();
+  if (!o.tb) { S.tb = { hp: S.TT.hp, mp: S.TT.mp }; }   // save da versão anterior (sem tb): o bônus era o dos ranks aprendidos
+  P.tmaxBonus = S.tb;
 }
 /** Escolher a tecla de uma habilidade: o próximo toque de tecla vira o atalho */
 export function captureKey(i, done) {
@@ -918,7 +924,25 @@ export function captureKey(i, done) {
   };
   document.addEventListener('keydown', h, true);
 }
-function refreshKeys() { if (UI) UI.b.forEach((el, i) => { const sm = el.querySelector('small'); if (sm) sm.textContent = keyLabel(S.keys[i]); }); }
+function refreshKeys() {
+  if (UI) UI.b.forEach((el, i) => { const sm = el.querySelector('small'); if (sm) sm.textContent = keyLabel(S.keys[i]); el.title = tipOf(i); });
+  document.querySelectorAll('#sk-keys button').forEach((b, i) => { b.textContent = keyLabel(S.keys[i]); });
+}
+/** Ajustes ▸ Jogo: uma linha com os 3 atalhos das habilidades (toque num botão e aperte a nova tecla) */
+function buildKeyRow() {
+  const hand = $('gx-hand');
+  if (!hand || $('sk-keys')) return;
+  const row = document.createElement('div');
+  row.className = 'acr';
+  row.innerHTML = '<span>Teclas das habilidades</span><span id="sk-keys" style="display:flex;gap:6px"></span>';
+  hand.parentElement.after(row);
+  [0, 1, 2].forEach(i => {
+    const b = document.createElement('button');
+    b.className = 'ahb'; b.type = 'button'; b.title = 'Escolher a tecla da habilidade ' + (i + 1);
+    b.onclick = () => { b.textContent = '…'; captureKey(i, refreshKeys); };
+    $('sk-keys').append(b);
+  });
+}
 
 /** Personagem novo: a arma inicial já foi dada; personagem com classe e save antigo (Cutelo nv1, mochila vazia): recebe a da classe, uma vez */
 export function markStart() { S.mig = 1; }

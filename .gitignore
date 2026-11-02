@@ -1,2 +1,6 @@
 node_modules
 preview
+
+tools/tests/node_modules/
+tools/tests/three/
+tools/tests/package*.json
