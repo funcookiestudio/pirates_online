@@ -1,7 +1,7 @@
 /* NPCs da vila (cidadãos e guardas): usam o mesmo modelo/esqueleto do personagem (person)
    e mudam só a roupa, o chapéu e o que carregam. */
 import { MEDUSA_ISLE } from '../core/isle.js';
-import { houseAt } from '../world/floors.js';
+import { houseShell } from '../world/floors.js';
 import { enterClick, openDoorById, doorClosed, tickRent, setDoorLock, npcOpenDoor, doorFront } from '../world/doors.js';
 import { VILLAGE_R } from '../core/village-const.js';
 import { scene, ren } from '../core/engine.js';
@@ -153,7 +153,8 @@ export function talkTo(n) {
   else if (d < 3.4) arrive(n);
 }
 /** O NPC está dentro de uma casa e o personagem fora dela? (não dá para conversar através da parede) */
-const behindWall = n => { const h = houseAt(n.g.position.x, n.g.position.z, .2); return !!h && !P.up && houseAt(P.x, P.z, .2) !== h; };
+// houseShell: só conta o que está entre as paredes (o beiral/varanda da frente da taberna, onde fica a cadeira da Polly, é rua)
+const behindWall = n => { const h = houseShell(n.g.position.x, n.g.position.z); return !!h && !P.up && houseShell(P.x, P.z) !== h; };
 
 function arrive(n) {
   want = null;

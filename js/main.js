@@ -61,6 +61,7 @@ import { initMobileHud } from './ui/mobilehud.js';
 import { dungeonGimmicks, dungeonStats, updateDungeon, inDungeon, leaveDungeon } from './dungeon/dungeon-scene.js';
 import { initCaves, clickCave, DUNGEONS } from './world/caves.js';
 import { updateStatusBars, updateOverlays } from './ui/hud.js';
+import { initSkills, updateSkills, SK } from './systems/skills.js';
 import { log } from './ui/notify.js';
 import './systems/death.js';
 import { initFullscreen, initPwa } from './ui/fullscreen.js';
@@ -96,6 +97,7 @@ function tick(now) {
   if (CFG.diag === 'draw') { const a = performance.now(); ren.render(scene, cam); DIAG.rend += ((performance.now() - a) - DIAG.rend) * .1; DIAG.js = 0; DIAG.calls = ren.info.render.calls; DIAG.tris = ren.info.render.triangles; return; }   // diagnóstico: só desenho
   S('updatePlayer', () => updatePlayer(dt));
   S('updateEnemies', () => updateEnemies(dt));
+  S('updateSkills', () => updateSkills(realDt));
   S('updateLod', () => updateLod(realDt));
   S('updateDayNight', () => updateDayNight(inDungeon()));
   S('updateNpcs', () => updateNpcs(realDt, now));
@@ -148,6 +150,7 @@ initSettings(); initUpdater();
 setWeapon();
 refreshPetButton();
 initMobileHud();
+initSkills();   // habilidades da classe (botões, teclas 1-3); sem classe: nada
 initHotbarFit();
 const loaded = loadGame();
 if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets nem outros itens
@@ -172,5 +175,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? 'Progresso carregado' : 'Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { BOND, HL, PET, petWalk, WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, VEH, giveVehicle, setUse, unequipPet, dungeonGimmicks, dungeonStats, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { SK, BOND, HL, PET, petWalk, WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, VEH, giveVehicle, setUse, unequipPet, dungeonGimmicks, dungeonStats, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

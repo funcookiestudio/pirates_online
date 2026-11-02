@@ -8,6 +8,7 @@ import { refillStep } from './refill.js';
 import { townStep, TIDY } from './town.js';
 import { autoWeapon } from './swap.js';
 import { spin, bomb, potion } from './combat.js';
+import { autoSkill } from './skills.js';
 import { dodge } from './dodge.js';
 import { MOUNT, toggleMount } from './mount.js';
 import { VILLAGE_R } from '../core/village-const.js';
@@ -149,6 +150,8 @@ export function autoThink(dt) {
 
   // giro quando cercado
   if (state.autoCfg.spin && alive.filter(e => dist(e) < 4).length >= 3 && P.cds[0] <= 0) spin();
+
+  autoSkill();   // 1ª habilidade da classe (se houver)
 
   // bomba em boss ou grupos
   const t = P.tgt;

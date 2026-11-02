@@ -56,9 +56,10 @@ scene.add(mark);
 export function hurtP(d, a, kn) {
   if (P.dead || P.roll > 0 || P.diveUnder) return; // invulnerável durante a rolada e debaixo d'água
   d *= 1 - (P.dr || 0);
+  if (P.skh) { d = P.skh.hurt(d); if (d <= 0) return; }   // habilidades de classe: invulnerável, Muralha, escudo (skills.js)
   if (P.sitT) { P.sitT = 0; P.sitF = true; } // levou dano sentado: levanta às pressas
   P.hp -= d;
-  if (kn) { P.vx += Math.sin(a) * kn; P.vz += Math.cos(a) * kn; }
+  if (kn && !P.noKb) { P.vx += Math.sin(a) * kn; P.vz += Math.cos(a) * kn; }
   state.SHK = Math.max(state.SHK, .15);
   puff(P.x, 1.3, P.z, 0xc02020, 3, 3);
   if (P.hp <= 0) {
@@ -81,5 +82,6 @@ export function levelUp() {
     log('Nível ' + P.lv + '!');
     banner('NÍVEL ' + P.lv);
     puff(P.x, 1, P.z, 0xffe060, 6, 16);
+    if (P.skh) P.skh.lvl(P.lv);   // aviso de habilidade nova (níveis 6 e 12)
   }
 }

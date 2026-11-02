@@ -54,7 +54,7 @@ export function updatePlayer(dt) {
     else if (MOUNT.on) { const sp0 = P.sp, px = P.x, pz = P.z; P.sp *= mountMult(); moveAndAct(dt); P.sp = sp0; streetClamp(px, pz); }   // montado: ~2× mais rápido
     else if (VEH.on && (VEH.dis || VEH.t < 1)) { P.vx = P.vz = 0; }   // subindo/descendo da boleia (vehicle.js)
     else if (VEH.on) { const sp0 = P.sp, px = P.x, pz = P.z; P.sp *= vehMult(); moveAndAct(dt); P.sp = sp0; vehTurn(dt, px, pz); streetClamp(px, pz); }   // conduzindo carroça/carruagem: curva aberta
-    else { const sp0 = P.sp; if (P.slow > 0) { P.slow -= dt; P.sp *= .6; } moveAndAct(dt); P.sp = sp0; stuckWatch(dt); }   // P.slow: maldição da múmia / veneno da hidra
+    else { const sp0 = P.sp; if (P.slow > 0) { P.slow -= dt; P.sp *= .6; } if (P.haste > 0) P.sp *= 1.2; moveAndAct(dt); P.sp = sp0; stuckWatch(dt); }   // P.slow: maldição da múmia / veneno da hidra
   }
 
   // recargas e temporizadores

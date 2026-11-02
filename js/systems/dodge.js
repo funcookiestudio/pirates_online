@@ -3,6 +3,7 @@
 import { VEH } from './vehicle.js';
 import { P } from '../entities/player.js';
 import { puff } from './effects.js';
+import { dodgeFx } from './skillfx.js';
 import { gaitReset } from '../entities/gait.js';
 import { startDive } from './swim.js';
 import { MOUNT } from './mount.js';
@@ -43,6 +44,8 @@ export function dodge(dir) {
   P.sw = 0;
   P.vx = P.vz = 0;
   puff(P.x, .2, P.z, 0xc9b48a, 3, 6);
+  dodgeFx(P);
+  if (P.skh) P.skh.dodged();
 }
 
 /** Desloca o jogador durante a rolada (substitui o movimento normal) */

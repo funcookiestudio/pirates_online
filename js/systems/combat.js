@@ -13,6 +13,7 @@ import { emit } from '../core/events.js';
 import { spendAmmo } from './inventory.js';
 import { PV, petXp } from '../pets/stats.js';
 import { puff } from './effects.js';
+import { spinFx, bombFx, bombTint, potionFx, swingColor } from './skillfx.js';
 import { log, dmgNum } from '../ui/notify.js';
 import { medusaFloor } from '../entities/medusa.js';
 import { HEAD, headReady, useHead, headOnKill } from './medusa-head.js';
@@ -33,10 +34,12 @@ export function hit(e, d, o) {
   if (e.stone > 0) d *= 1.5;   // estátua (cabeça da Medusa): leva +50%
   if (o.pet && e.hp < e.max * .35) d *= 1 + PV('exec');
   d *= dealtMult(e.lv - P.lv);                      // inimigo muito acima do seu nível: seus golpes quase não fazem cócegas
+  if (P.skh) d = P.skh.pre(e, d, o);                 // habilidades de classe: bônus de dano, crítico garantido (skills.js)
 
-  const cr = o.cr !== undefined ? o.cr : Math.random() < (o.pet ? .15 : P.crit);
+  const cr = o.cr !== undefined ? o.cr : Math.random() < (o.pet ? .15 : P.crit + (o.cb || 0));
   d = Math.round(d * (.85 + Math.random() * .3) * (cr ? 2 : 1));
   e.hp -= d;
+  if (P.skh) P.skh.post(e, o);
 
   if (!o.dot) {
     dmgNum(e, d, cr);
@@ -89,7 +92,8 @@ export function spin() {
   if (P.cds[0] > 0 || P.dead) return;
   P.cds[0] = 3 * (P.cls.cd || 1);
   P.sw = 1;
-  puff(P.x, 1, P.z, 0xaaddff, 8, 14);
+  puff(P.x, 1, P.z, P.cls.fx[0], 8, 14);
+  spinFx(P);
   enemies.forEach(e => {
     const d = Math.hypot(e.x - P.x, e.z - P.z);
     if (d < 4) hit(e, P.dmg * 2 * P.cls.area, { kn: 1.2 });
@@ -102,6 +106,7 @@ export function bomb() {
   P.bmb--;
   P.cds[1] = 5 * (P.cls.cd || 1);
   const m = new THREE.Mesh(new THREE.SphereGeometry(.22, 6, 5), M(0x111111));
+  bombTint(m, P);
   m.position.set(P.x, 1.4, P.z);
   scene.add(m);
   const dx = aim.x - P.x, dz = aim.z - P.z;
@@ -115,6 +120,7 @@ export function potion() {
     P.pot--; emit('potion:used');
     P.hp = Math.min(P.max, P.hp + 60);
     puff(P.x, 1, P.z, 0xff6060, 4, 8);
+    potionFx(P);
   }
 }
 
@@ -135,6 +141,7 @@ export function updateBombs(dt) {
     }
     if (b.t <= 0) {
       const x = b.m.position.x, z = b.m.position.z;
+      bombFx(x, z, P);
       puff(x, .5, z, 0xff9a2a, 8, 16);
       puff(x, .5, z, 0x333333, 5, 8);
       enemies.forEach(e => {
@@ -204,7 +211,7 @@ export function impact() {
   // arco visual do golpe
   const m = new THREE.Mesh(
     new THREE.RingGeometry(rg * .55, rg, 16, 1, Math.PI / 2 - arc / 2, arc).rotateX(-Math.PI / 2),
-    new THREE.MeshBasicMaterial({ color: fin ? 0xffd070 : 0xddeeff, transparent: true, opacity: .5, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ color: P.cls.fx ? swingColor(P, fin) : fin ? 0xffd070 : 0xddeeff, transparent: true, opacity: .5, side: THREE.DoubleSide })
   );
   m.position.set(P.x, .15, P.z);
   m.rotation.y = a + Math.PI;

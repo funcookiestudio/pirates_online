@@ -39,7 +39,8 @@ export function updateParticles(dt) {
     const f = particles[i];
     f.t -= dt * 1.4;
     f.m.position.addScaledVector(f.v, dt);
-    if (f.gs) f.m.scale.addScalar(f.gs * dt);
+    if (f.gs) f.m.scale.x += f.gs * dt, f.m.scale.z += f.gs * dt, f.m.scale.y += (f.gy === undefined ? f.gs : f.gy) * dt;
+    if (f.rs) f.m.rotation.y += f.rs * dt;
     f.m.material.opacity = Math.max(0, f.t);
     if (f.t <= 0) {
       scene.remove(f.m);

@@ -101,7 +101,7 @@ function think(e, dt, c) {
   if (e.st === 'chase') {
     const hx = e.hx - e.x, hz = e.hz - e.z, hd = Math.hypot(hx, hz);
     if (!e.ag && d < (bo ? 14 : 11)) e.ag = true;       // viu o jogador
-    if (e.ag && (d > 26 || hd > 38)) e.ag = false;      // desistiu
+    if (e.ag && !(e.tn > 0) && (d > 26 || hd > 38)) e.ag = false;      // desistiu (provocado pelo Grito de Guerra: não desiste)
 
     if (!e.ag) {
       // volta para casa regenerando, depois passeia perto dela
@@ -143,6 +143,7 @@ function think(e, dt, c) {
 
     // começa o golpe
     if (e.ag && d <= reach && e.cd <= 0) {
+      e.atkd = true;   // já tentou te atacar (Golpe Furtivo do Ladino só vale antes disso)
       e.st = 'wind';
       e.tm = dur;
       e.slam = bo && (!e.MD || e.MD.st.phase === 2) && ((e.n = (e.n || 0) + 1) % 2 === 0); // o boss alterna golpe normal e pancada em área
@@ -295,7 +296,7 @@ function updateEnemy(e, dt) {
   e.fl = Math.max(0, e.fl - dt);
   e.mk = Math.max(0, e.mk - dt);
   e.sn = Math.max(0, e.sn - dt);
-  e.ms.forEach(m => m.emissive.setHex(e.fl > 0 ? 0x993322 : 0));
+  e.ms.forEach(m => m.emissive.setHex(e.fl > 0 ? 0x993322 : e.tint || 0));
 
   // sangramento (dano contínuo)
   if (e.bl > 0) {
@@ -329,6 +330,7 @@ function updateEnemy(e, dt) {
 
   let wx = 0, wz = 0;
   if (e.sn <= 0 && !P.dead) [wx, wz] = e.MD ? medusaThink(e, dt, c, think) : e.DS ? dragonThink(e, dt, c, think) : e.HY ? hydraThink(e, dt, c, think) : e.UD ? undeadThink(e, dt, c, think) : think(e, dt, c);
+  if (e.root > 0) { wx = wz = 0; } else if (e.slow > 0) { wx *= .5; wz *= .5; }   // preso (armadilha) / lento (gelo): skills.js
   move(e, wx, wz, dt);
   if (!farIdle) animate(e, c, dt);
 }

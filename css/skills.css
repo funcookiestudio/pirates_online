@@ -1,0 +1,53 @@
+/* Habilidades de classe: fileira de botões redondos (3 ativas + ícone da passiva) e barra de mana.
+   Computador e celular deitado: acima da barra, à direita da câmera · celular em pé (arco): acima do arco, do lado da mão. */
+
+#skl {
+  position: fixed; z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  left: 50%; margin-left: 74px; bottom: calc(var(--hbh, 112px) + 10px);
+  user-select: none; -webkit-user-select: none; touch-action: manipulation; pointer-events: none;
+}
+body.arc #skl { left: auto; margin-left: 0; right: calc(env(safe-area-inset-right, 0px) + 6px); bottom: calc(env(safe-area-inset-bottom, 0px) + 262px); }
+body.arc.hand-l #skl { right: auto; left: calc(env(safe-area-inset-left, 0px) + 6px); }
+body.ui-open #skl, body.pre #skl, body.lay-edit #skl { visibility: hidden; }
+body.menu-open #skl { opacity: .15; pointer-events: none; }
+
+#skm { position: relative; width: 100%; height: 12px; border: 1px solid #5a7ad0; background: #050a1ccc; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 4px #000a; }
+#skmi { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(#7fc0ff, #2a5ad0 60%, #14308a); transition: width .2s; }
+#skmt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; line-height: 1; color: #fff; text-shadow: 0 1px 2px #000; }
+
+#skrow { display: flex; align-items: center; gap: 8px; }
+#skl .skp, #skl .skb { flex: none; pointer-events: auto; }
+#skl .skp {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--c);
+  background: radial-gradient(circle at 50% 30%, #2b201b, #0f0a09); box-shadow: 0 0 0 1px var(--c), 0 0 0 3px #0c0807, 0 3px 8px #000b; opacity: .9;
+}
+#skl .skp svg { width: 60%; height: 60%; }
+
+#skl .skb {
+  position: relative; width: 50px; height: 50px; border-radius: 50%; overflow: hidden; cursor: pointer; color: var(--c);
+  background: radial-gradient(circle at 50% 30%, #3a2a24, #0f0a09);
+  box-shadow: 0 0 0 2px var(--c), 0 0 0 4px #0c0807, 0 0 0 5px var(--c), 0 6px 14px #000b;
+  display: grid; place-items: center;
+}
+#skl .skb:active { transform: scale(.92); }
+#skl .skb > svg { width: 56%; height: 56%; position: relative; z-index: 1; filter: drop-shadow(0 1px 2px #000); }
+#skl .skc { position: absolute; inset: 0; z-index: 2; border-radius: 50%; background: conic-gradient(#000c var(--p, 0%), transparent 0); pointer-events: none; }
+#skl .skt { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: bold; color: #fff; text-shadow: 0 1px 3px #000, 0 0 4px #000; pointer-events: none; }
+#skl .skb em { position: absolute; z-index: 3; right: 5px; bottom: 2px; font-style: normal; font-size: 10px; font-weight: bold; color: #8fc4ff; text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+#skl .skb small { position: absolute; z-index: 3; left: 6px; top: 2px; font-size: 10px; color: #e0c890; text-shadow: 0 1px 2px #000; }
+body.arc #skl .skb small { display: none; }
+#skl .skb u { display: none; text-decoration: none; }
+#skl .skb.nm { filter: saturate(.5) brightness(.75); }
+#skl .skb.nm em { color: #ff7070; }
+#skl .skb.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0c0807, 0 0 0 5px var(--c), 0 0 14px var(--c), 0 6px 14px #000b; }
+#skl .skb.lk { filter: grayscale(1) brightness(.6); cursor: default; }
+#skl .skb.lk > svg, #skl .skb.lk em, #skl .skb.lk small { display: none; }
+#skl .skb.lk u { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ddd; }
+#skl .skb.lk u svg { width: 44%; height: 44%; }
+#skl .skb.lk u s { text-decoration: none; font-size: 9px; line-height: 1; margin-top: 1px; }
+
+/* céu violeta leve durante a Tempestade Arcana */
+#skov { position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity .6s; background: radial-gradient(ellipse at 50% 0%, #8a5bff55, #4a2a9a22 55%, #2a1a6a33); mix-blend-mode: screen; }
+#skov.on { opacity: 1; }
+
+@media (max-width: 520px) { #skl .skb { width: 46px; height: 46px; } #skl .skp { width: 26px; height: 26px; } }
