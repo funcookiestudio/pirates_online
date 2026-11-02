@@ -205,6 +205,17 @@ export function mountWeapons(ids, act) {
 }
 
 /** Pose do braço da tocha: erguido à frente (ilumina adiante), balança pouco; a tocha fica em pé, levemente inclinada */
+/** Escudo ou segunda arma na mão livre (braço esquerdo): o modelo acompanha o antebraço */
+export function mountOff(wi) {
+  const fa = P.g.armL.fa;
+  if (P.offM) { fa.remove(P.offM); P.offM = null; }
+  if (wi == null) return;
+  const W = WEAPONS[wi], m = W.build(), w = new THREE.Group();
+  if (W.shield) { w.position.set(.09, -.2, .02); m.position.y = .12; m.rotation.y = 1.45; }   // escudo de lado no antebraço, face para fora
+  else { w.position.set(0, -.32, 0); w.rotation.set(-.5, 0, 0); m.scale.setScalar(.95); }    // arma curta empunhada para a frente
+  w.add(m);
+  fa.add(w); P.offM = w;
+}
 export const TORCH_ARM = { x: -.78, fa: -.62, z: .1 };
 
 /** Tocha na mão livre (braço esquerdo): monta/remove o modelo */

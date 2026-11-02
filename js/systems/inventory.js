@@ -1,6 +1,6 @@
 /* Mochila e equipamento. */
 import { P } from '../entities/player.js';
-import { mountWeapons, mountTorch } from '../entities/player-weapon.js';
+import { mountWeapons, mountTorch, mountOff } from '../entities/player-weapon.js';
 import { WEAPONS, RN, AN } from '../data/weapons.js';
 import { emit } from '../core/events.js';
 import { itemReq } from '../data/scaling.js';
@@ -72,7 +72,8 @@ export const eq = { wpn: null, gun: null, arm: null, off: null };   // off = seg
 
 /** Em qual espaço de equipamento o item entra */
 export const isTorch = it => !!it && it.ty === 'wpn' && !!WEAPONS[it.w].torch;
-export const slotOf = it => it.ty === 'arm' ? 'arm' : isTorch(it) ? 'off' : (WEAPONS[it.w].gun ? 'gun' : 'wpn');
+export const isShield = it => !!it && it.ty === 'wpn' && !!WEAPONS[it.w].shield;
+export const slotOf = it => it.ty === 'arm' ? 'arm' : isTorch(it) || isShield(it) ? 'off' : (WEAPONS[it.w].gun ? 'gun' : 'wpn');
 
 /** Adiciona à mochila um item caído (`l` = { ty, q, wi }) */
 /** Pilha existente do arremesso `w` (a equipada ou a da mochila) */
@@ -103,7 +104,8 @@ export function addItem(l) {
     Mão 2: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas); armas grandes (mosquete) ocupam as duas mãos. */
 export function pickSlot(it, better) {
   if (better && P.lv < itemReq(it)) return null;      // auto-equipar só itens que o nível permite
-  if (isTorch(it)) return !better && canEquipTo(it, 'off') ? 'off' : null;   // o auto-equipar não mexe na tocha: torch-auto.js cuida dela (só no escuro)
+  if (isTorch(it)) return !better && canEquipTo(it, 'off') ? 'off' : null;
+  if (isShield(it)) return canEquipTo(it, 'off') && (!better || !eq.off) ? 'off' : null;   // escudo: só na mão livre (o auto só equipa se estiver vazia)   // o auto-equipar não mexe na tocha: torch-auto.js cuida dela (só no escuro)
   if (better && it.ty === 'wpn' && WEAPONS[it.w].big && isTorch(eq.off) && (state.autoCfg.torch === 2 || (state.autoCfg.torch === 1 && isDark()))) return null;   // tocha em uso: o auto-equipar não volta à arma de 2 mãos (o torch-auto a guarda e devolve quando clarear)
   const s = slotOf(it);
   if (s === 'arm') return !eq.arm || !better || it.v > eq.arm.v ? 'arm' : null;
@@ -120,6 +122,7 @@ export function pickSlot(it, better) {
 export function canEquipTo(it, slot) {
   // tocha: só na mão 2 (com arma de 2 mãos na mão ela some até voltar a uma de 1 mão)
   if (isTorch(it)) return slot === 'off';
+  if (isShield(it)) return slot === 'off' && !!eq.wpn && !WEAPONS[eq.wpn.w].big;   // escudo: precisa de arma de 1 mão na principal
   const s = slotOf(it);
   if (slot === s) return true;
   if (slot === 'off') return s !== 'arm' && !WEAPONS[it.w].big && !!eq[s] && !WEAPONS[eq[s].w].big;
@@ -142,7 +145,7 @@ export function equip(i, forced) {
     // grande na mão principal ocupa as duas mãos; mão 2 e principal de tipos diferentes não se misturam
     applyWeaponBonus(); refreshTorch();
   } else {
-    if (WEAPONS[it.w].big && eq.off && slotOf(eq.off) === slot && !isTorch(eq.off) && bagUsed() < BAG_MAX) { bag.push(eq.off); eq.off = null; }
+    if (WEAPONS[it.w].big && eq.off && (slotOf(eq.off) === slot || isShield(eq.off)) && !isTorch(eq.off) && bagUsed() < BAG_MAX) { bag.push(eq.off); eq.off = null; }
     P.swap = null;
     // a arma nova vai para a mão se for do espaço que já estava na mão; senão vai direto para o coldre
     setWeapon(P.models[P.act] && P.act !== slot ? P.act : slot);
@@ -172,6 +175,7 @@ export function applyWeaponBonus() {
   const nb = ((eq[P.act] && eq[P.act].v) || 0) + (eq.off && slotOf(eq.off) === P.act ? Math.round(eq.off.v * .6) : 0) + (isTorch(eq.off) ? Math.round(eq.off.v * .5) : 0);
   P.dmg += nb - P.wb;
   P.wb = nb;
+  P.shieldDr = isShield(eq.off) ? WEAPONS[eq.off.w].sdr || 0 : 0;   // escudo na mão livre: menos dano recebido
 }
 
 /** Monta as armas equipadas; `prefer` = qual fica na mão ('wpn' ou 'gun') */
@@ -185,6 +189,7 @@ export const torchLit = () => { const m = state.autoCfg.torch; return m !== 0 &&
 export function refreshTorch() {
   const has = isTorch(eq.off);
   mountTorch(has ? eq.off.w : null);
+  mountOff(eq.off && !has ? eq.off.w : null);   // escudo ou 2ª arma na mão livre
   const on = has && torchLit();
   if (P.torchM) P.torchM.visible = on;
   torchLight.distance = on ? 44 : 22;

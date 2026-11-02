@@ -1,4 +1,5 @@
 /* Reset do personagem e de cada companheiro (botões do inventário). */
+import { wipeSkills } from './skills.js';
 import { P } from '../entities/player.js';
 import { PST, pmax } from '../pets/stats.js';
 import { emit } from '../core/events.js';
@@ -24,6 +25,7 @@ export function resetPlayer() {
   P.act = 'wpn';
   setWeapon('wpn');
   emit('inventory:changed');
+  wipeSkills();   // ranks e talentos voltam a zero
   saveGame();
   log('Personagem resetado');
 }

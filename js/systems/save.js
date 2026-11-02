@@ -19,6 +19,7 @@ import { saveHead, loadHead } from './medusa-head.js';
 import { applyAdoptions } from '../pets/manager.js';
 
 import { activeChar, saveKey } from '../core/chars.js';
+import { skillData, loadSkillData } from './skills.js';
 const KEY = saveKey(activeChar() && activeChar().id);   // um save por personagem
 const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'peixe', 'osso', 'pot', 'bmb', 'potR', 'bmbR', 'arrows', 'bolts'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
@@ -44,7 +45,7 @@ export function saveGame() {
       t: Date.now(),
       seed: SEED, pos: lastSafe, rent: getRent(),
       player: Object.fromEntries(PLAYER_FIELDS.map(f => [f, P[f]])),
-      bag, chest, eq, act: P.act, pets,
+      bag, chest, eq, act: P.act, pets, skills: skillData(),
       pet: state.pet.id,
       quest: state.quest, quests: state.quests, cartazes: state.cartazes, qtrack: state.qtrack, contract: state.contract, owned: state.owned,
       petOff: !!state.petOff,
@@ -67,6 +68,7 @@ export function loadGame() {
 
     PLAYER_FIELDS.forEach(f => { if (Number.isFinite(s.player[f])) P[f] = s.player[f]; });
     setRent(s.rent);
+    loadSkillData(s.skills);   // ranks e talentos (a vida/mana máximas dos talentos já estão em max/mmax)
     P.nxt = xpToNext(P.lv);               // curva de XP nova: recalcula a partir do nível salvo
     P.xp = Math.min(P.xp, P.nxt - 1);
     P.hp = P.max;

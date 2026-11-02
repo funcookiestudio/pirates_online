@@ -41,3 +41,41 @@ export const SKILLS = {
     ],
   },
 };
+
+/* ===================== Balanceamento: ajuste os números aqui =====================
+   RANK: bônus por rank de habilidade ativa (máx. RANK.max): +dano, -recarga, -custo de mana.
+   PTS: pontos ganhos (habilidades: 1 por nível a partir do 2 · talentos: 1 a cada 2 níveis a partir do 3). Ranks e talentos ficam no save (campo `skills`).
+   TSTAT: efeito de 1 rank de cada tipo de talento (v = valor; hp e mp são fixos na vida/mana máxima, o resto é fração).
+   Os multiplicadores de dano, durações e raios de cada habilidade estão no começo de cada função em js/systems/skills.js (CAST) e as armas das
+   classes em js/data/weapons-class.js (b, mul, cd, rng, mp, kb, crit, bleed). Dano = P.dmg × mult × P.cls.(melee|ranged|area|magic) × (1 + RANK.dmg × rank). */
+export const RANK = { max: 3, dmg: .12, cd: .06, mp: .04 };
+export const PTS = { skill: lv => Math.max(0, lv - 1), talent: lv => Math.max(0, Math.floor((lv - 1) / 2)) };
+export const TSTAT = {
+  dmg: { v: .03, pct: 1, t: 'de dano' }, crit: { v: .02, pct: 1, t: 'de chance de crítico' }, dr: { v: .02, pct: 1, t: 'menos dano recebido' },
+  hp: { v: 10, t: 'de vida máxima' }, mp: { v: 8, t: 'de mana máxima' }, spd: { v: .02, pct: 1, t: 'de velocidade' },
+  cdr: { v: .03, pct: 1, t: 'menos recarga das habilidades' }, mpc: { v: .03, pct: 1, t: 'menos custo de mana' }, mpr: { v: .004, pct: 1, t: 'da mana máxima por segundo' },
+};
+const BR = (n, ic, col, names, keys) => ({ n, ic, col, nodes: names.map((nm, i) => ({ n: nm, k: keys[i] })) });
+/** 3 ramos por classe, 6 nós por ramo (máx. 3 ranks cada); cada nó exige o anterior do ramo */
+export const TALENTS = {
+  guerreiro: [
+    BR('Baluarte', 'sword', '#e8776b', ['Pele grossa', 'Couraça', 'Coração de ferro', 'Escudo vivo', 'Fôlego de aço', 'Inabalável'], ['hp', 'dr', 'hp', 'dr', 'mp', 'hp']),
+    BR('Fúria', 'gun', '#f0b04a', ['Golpe pesado', 'Olho de sangue', 'Braço firme', 'Ímpeto', 'Fúria crescente', 'Destruidor'], ['dmg', 'crit', 'dmg', 'cdr', 'dmg', 'crit']),
+    BR('Marcha', 'plank', '#5b9bf0', ['Passo firme', 'Respiração', 'Disciplina', 'Pés de ferro', 'Tática', 'Veterano'], ['spd', 'mpr', 'cdr', 'spd', 'mpc', 'mpr']),
+  ],
+  cacador: [
+    BR('Precisão', 'gun', '#f0b04a', ['Mira firme', 'Olho de águia', 'Disparo certeiro', 'Ponta afiada', 'Caçador nato', 'Tiro mortal'], ['crit', 'dmg', 'crit', 'dmg', 'crit', 'dmg']),
+    BR('Sobrevivência', 'sword', '#e8776b', ['Couro curtido', 'Pés leves', 'Resistência', 'Instinto', 'Camuflagem', 'Vigor'], ['hp', 'spd', 'dr', 'hp', 'dr', 'hp']),
+    BR('Armadilhas', 'plank', '#5b9bf0', ['Ferragens', 'Gatilho rápido', 'Armadilheiro', 'Fôlego', 'Chuva forte', 'Mestre caçador'], ['cdr', 'mpc', 'cdr', 'mpr', 'mpc', 'cdr']),
+  ],
+  mago: [
+    BR('Arcano', 'gun', '#c890ff', ['Mente aguçada', 'Reserva arcana', 'Poder bruto', 'Fluxo', 'Canalização', 'Arquimago'], ['dmg', 'mp', 'dmg', 'mpr', 'dmg', 'mp']),
+    BR('Elementos', 'sword', '#f0b04a', ['Centelha', 'Foco', 'Fúria elemental', 'Precisão', 'Tempestade', 'Cataclismo'], ['dmg', 'crit', 'cdr', 'crit', 'dmg', 'cdr']),
+    BR('Proteção', 'plank', '#5b9bf0', ['Véu', 'Vigor arcano', 'Barreira', 'Economia', 'Fluidez', 'Eterno'], ['dr', 'hp', 'dr', 'mpc', 'spd', 'hp']),
+  ],
+  ladino: [
+    BR('Assassino', 'sword', '#e8776b', ['Golpe baixo', 'Ponto fraco', 'Lâmina afiada', 'Sangue frio', 'Execução', 'Sombra mortal'], ['dmg', 'crit', 'dmg', 'crit', 'dmg', 'crit']),
+    BR('Sombra', 'plank', '#b070ff', ['Passos leves', 'Esquiva', 'Fôlego curto', 'Vulto', 'Reflexos', 'Fantasma'], ['spd', 'dr', 'cdr', 'spd', 'dr', 'cdr']),
+    BR('Veneno', 'gun', '#8fd04a', ['Frasco extra', 'Toxina', 'Frio calculado', 'Concentração', 'Peçonha', 'Mestre dos venenos'], ['mp', 'dmg', 'mpc', 'mpr', 'dmg', 'hp']),
+  ],
+};

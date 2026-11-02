@@ -6,7 +6,13 @@ import { state } from '../core/state.js';
 import { enemies } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { activeChar } from '../core/chars.js';
-import { SKILLS, SKILL_LV } from '../data/skills.js';
+import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS } from '../data/skills.js';
+import { START } from '../data/classes.js';
+import { WEAPONS } from '../data/weapons.js';
+import { eq, bag, setWeapon } from './inventory.js';
+import { inDungeon } from '../dungeon/dungeon-scene.js';
+import { freePoint } from './steer.js';
+import { houseAt } from '../world/floors.js';
 import { hit } from './combat.js';
 import { MOUNT } from './mount.js';
 import { VEH } from './vehicle.js';
@@ -18,18 +24,18 @@ import * as V from './skillvfx.js';
 const { G } = V;
 const S = {
   on: false, k: null, D: null, clock: 0,
-  cds: [0, 0, 0], cdm: [1, 1, 1],
+  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], tl: {}, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
   hits: 0, hitT: -9, shield: 0, shT: 0, gt: 0, mur: 0, lev: 0, pose: 0,
   leap: null, tp: null, cast: null, balls: [], traps: [], rain: null, storm: null, dance: null, daggers: [],
   bub: null, shell: null, aura: null, orbs: null, ret: null, ghosted: null, dead: false, combat: false, ct: 0, hasteT: 0, fsT: 0,
 };
-export const SK = { S, useSkill, update: dt => updateSkills(dt), vfx: () => V.vfxCount(), get on() { return S.on; } };
+export const SK = { S, useSkill, update: dt => updateSkills(dt), vfx: () => V.vfxCount(), migrate: () => migrateStart(), auto: () => autoSkill(), get on() { return S.on; } };
 
 const dist = (e, x, z) => Math.hypot(e.x - (x === undefined ? P.x : x), e.z - (z === undefined ? P.z : z));
 const by = () => groundY(P.x, P.z) + (P.fy || 0);              // chão sob o jogador (também no andar de cima)
 const ey = e => groundY(e.x, e.z);
 const rnd = (a, b) => a + Math.random() * (b - a);
-const dm = (m, ty) => P.dmg * m * (P.cls[ty] || 1);
+const dm = (m, ty) => P.dmg * m * S.dmx * (P.cls[ty] || 1);
 const dealt = (e, m, ty, o) => hit(e, dm(m, ty), Object.assign({ sk: 1 }, o));
 const face = a => { P.g.rotation.y = a; P.ay = a; };
 const alive = () => enemies.filter(e => !e.dead && !e.inv);
@@ -50,7 +56,8 @@ const lerp = (a, b, u) => a + (b - a) * u;
 function pre(e, d, o) {
   if (o.pet || o.dot) return d;
   if (S.gt > 0) d *= 1.25;                                      // Grito de Guerra
-  if (S.k === 'cacador' && dist(e) > 6) o.cb = (o.cb || 0) + .1; // Olho de Águia
+  d *= 1 + S.TT.dmg; o.cb = (o.cb || 0) + S.TT.crit;             // talentos
+  if (S.k === 'cacador' && dist(e) > 6) o.cb += .1 + .02 * S.rk[3]; // Olho de Águia
   if (S.k === 'ladino' && !e.fsd) {                              // Golpe Furtivo: o 1º golpe num inimigo que ainda não te atacou
     e.fsd = true;
     if (!e.atkd && o.cr === undefined) { o.cr = true; fsFx(e); }
@@ -63,7 +70,7 @@ function post(e, o) {
   if (S.clock - S.hitT < .12) return;                            // vários alvos do mesmo golpe contam uma vez
   S.hitT = S.clock;
   if (++S.hits >= 3) {
-    S.hits = 0; S.shield = P.max * .1; S.shT = 4;
+    S.hits = 0; S.shield = P.max * (.1 + .02 * S.rk[3]); S.shT = 4;
     const B = V.budget(); B.max = 10;
     V.sparks(B, P.x, by() + 1, P.z, [0xffd860, 0xfff0a0], 8, 3.5, .6, .09, 2, 4);
     V.ring(B, P.x, by() + .15, P.z, 0xffd860, .4, 1.8, .4, .7);
@@ -72,6 +79,7 @@ function post(e, o) {
 /** Dano recebido: invulnerável, Muralha (30%), Grito (-20%) e o escudo da Pele de Ferro */
 function hurt(d) {
   if (P.inv > 0) return 0;
+  d *= 1 - S.TT.dr;
   if (S.mur > 0) d *= .3;
   if (S.gt > 0) d *= .8;
   if (S.shield > 0) { const a = Math.min(S.shield, d); S.shield -= a; d -= a; }
@@ -79,7 +87,7 @@ function hurt(d) {
 }
 function dodged() {
   if (S.k !== 'ladino') return;
-  P.haste = 2; S.hasteT = 0;
+  P.haste = 2; P.hasteK = 1.2 + .04 * S.rk[3]; S.hasteT = 0;
 }
 function lvl(lv) {
   const i = SKILL_LV.indexOf(lv);
@@ -96,27 +104,26 @@ let warnT = 0;
 const warn = t => { const n = performance.now(); if (n - warnT > 900) { warnT = n; log(t); } };
 
 export const hasSkills = () => S.on;
+export const classData = () => S.D;
+export const classKey = () => S.k;
+const costOf = i => Math.max(1, Math.ceil(S.D.act[i].mp * (1 - RANK.mp * S.rk[i] - S.TT.mpc)));
+const cdOf = i => Math.max(.5, S.D.act[i].cd * (1 - RANK.cd * S.rk[i] - S.TT.cdr));
 export function useSkill(i) {
   if (!S.on || P.dead || P.stone > 0 || P.roll > 0 || P.swap || P.sit > 0 || P.sitT || P.swimming || MOUNT.on || VEH.on || S.leap || S.tp || S.dance) return false;
   const def = S.D.act[i];
   if (!def) return false;
   if (P.lv < SKILL_LV[i]) { warn('Habilidade bloqueada: Nv ' + SKILL_LV[i]); return false; }
   if (S.cds[i] > 0) return false;
-  if (P.mp < def.mp) { warn('Mana insuficiente'); blinkMana(); return false; }
-  if (CAST[S.k][i](def) === false) return false;
-  P.mp -= def.mp;
-  S.cds[i] = S.cdm[i] = def.cd;
+  const cost = costOf(i);
+  if (P.mp < cost) { warn('Mana insuficiente'); blinkMana(); return false; }
+  S.dmx = S.fx[i] = 1 + RANK.dmg * S.rk[i];   // o rank da habilidade vale também para os efeitos que acontecem depois (S.fx)
+  const ok = CAST[S.k][i](def);
+  S.dmx = 1;
+  if (ok === false) return false;
+  P.mp -= cost;
+  S.cds[i] = S.cdm[i] = cdOf(i);
   if (S.k === 'mago') for (let j = 0; j < 3; j++) if (j !== i) S.cds[j] = Math.max(0, S.cds[j] - .5);   // Fluxo Arcano
   return true;
-}
-
-/** Auto-combate: usa a 1ª habilidade quando o alvo está na distância certa e sobra mana */
-export function autoSkill() {
-  if (!S.on || P.dead || S.cds[0] > 0 || P.lv < SKILL_LV[0]) return;
-  const t = P.tgt;
-  if (!t || t.dead || P.mp < S.D.act[0].mp + P.mmax * .15) return;
-  const d = dist(t), r = { guerreiro: [3, 10], cacador: [3, 16], mago: [3, 16], ladino: [2.5, 11] }[S.k];
-  if (d >= r[0] && d <= r[1]) useSkill(0);
 }
 
 /* ====================================================== habilidades ====================================================== */
@@ -128,8 +135,7 @@ const CAST = {
       const t = pickTarget(12);
       if (!t) { warn('Sem alvo por perto'); return false; }
       const ang = Math.atan2(t.x - P.x, t.z - P.z), land = Math.max(0, dist(t) - 1.3);
-      let x1 = P.x + Math.sin(ang) * land, z1 = P.z + Math.cos(ang) * land;
-      if (!walkable(x1, z1)) { x1 = P.x; z1 = P.z; }
+      const lp = landing(P.x + Math.sin(ang) * land, P.z + Math.cos(ang) * land) || { x: P.x, z: P.z }, x1 = lp.x, z1 = lp.z;
       S.leap = { x0: P.x, z0: P.z, x1, z1, t: 0, crouch: .16, dur: .56, ang };
       face(ang); P.tgt = t; stopMove();
     },
@@ -323,6 +329,7 @@ function dropTrap(t) {
   t.mats.forEach(m => m.dispose());
 }
 function trapFire(t, e) {
+  S.dmx = S.fx[1];
   const B = V.budget(), y = ey(e);
   e.root = e.t.boss ? .6 : 2;
   e.bl = 3; e.bd = Math.max(1, dm(.3, 'ranged')); e.bt = .5;
@@ -348,6 +355,10 @@ export function updateSkills(dt) {
   S.dead = false;
   const y = by();
 
+  /* entrar/sair de dungeon: armadilhas, bolas, adagas, chuva e tempestade não atravessam o portal */
+  const dn = inDungeon();
+  if (dn !== S.dun) { S.dun = dn; clearWorld(); }
+
   /* recargas e tempos */
   for (let i = 0; i < 3; i++) if (S.cds[i] > 0) S.cds[i] = Math.max(0, S.cds[i] - dt);
   if (S.shT > 0) { S.shT -= dt; if (S.shT <= 0) S.shield = 0; }
@@ -360,13 +371,16 @@ export function updateSkills(dt) {
   if (S.k === 'mago') {
     S.ct -= dt;
     if (S.ct <= 0) { S.ct = .3; S.combat = enemies.some(e => !e.dead && e.ag && dist(e) < 26); }
-    P.mp = Math.min(P.mmax, P.mp + Math.max(0, (S.combat ? .01 : .03) * P.mmax - 3) * dt);
+    P.mp = Math.min(P.mmax, P.mp + Math.max(0, (S.combat ? .01 : .03) * (1 + .15 * S.rk[3]) * P.mmax - 3) * dt);
   }
+  if (S.TT.mpr) P.mp = Math.min(P.mmax, P.mp + S.TT.mpr * P.mmax * dt);
+  P.tspd = S.TT.spd;
 
   /* estados nos inimigos */
   for (const e of enemies) {
     if (e.dead) continue;
     let tint = 0;
+    if (e.st === 'wind') e.atkd = true;   // já está te atacando (chefes com IA própria também): o Golpe Furtivo só vale antes
     if (e.slow > 0) { e.slow -= dt; tint = 0x2a6cc0; }
     if (e.root > 0) e.root -= dt;
     if (e.tn > 0) e.tn -= dt;
@@ -485,6 +499,7 @@ function hasteTrail() {
 /* --- Golpe Cataclísmico --- */
 function updLeap(dt, y) {
   const L = S.leap;
+  S.dmx = S.fx[0];
   L.t += dt; stopMove();
   P.cd = Math.max(P.cd, .2);
   if (L.t < L.crouch) {
@@ -526,6 +541,7 @@ function quake(x, y, z) {
   }
 }
 function shellBreak(y) {
+  S.dmx = S.fx[2];
   const B = V.budget(), x = P.x, z = P.z;
   for (const e of enemies) {
     if (e.dead || e.inv || dist(e) > 4.6) continue;
@@ -544,6 +560,7 @@ function shellBreak(y) {
 /* --- Chuva de Balas --- */
 function updRain(dt) {
   const R = S.rain;
+  S.dmx = S.fx[2];
   R.t += dt;
   R.r1.rotation.y += dt * 1.8; R.r2.rotation.y -= dt * 2.6;
   const fade = R.t > R.dur ? Math.max(0, 1 - (R.t - R.dur) / .35) : 1;
@@ -580,6 +597,7 @@ function updCast(dt, y) {
   }
 }
 function updBalls(dt) {
+  S.dmx = S.fx[0];
   for (let i = S.balls.length - 1; i >= 0; i--) {
     const b = S.balls[i], st = 18 * dt;
     b.x += b.dx * st; b.z += b.dz * st; b.d += st;
@@ -612,6 +630,7 @@ function fireBoom(x, y, z) {
 /* --- Tempestade Arcana --- */
 function updStorm(dt, y) {
   const T = S.storm;
+  S.dmx = S.fx[2];
   T.t += dt;
   const ov = $('skov');
   if (ov) ov.classList.toggle('on', T.t < T.dur);
@@ -645,6 +664,7 @@ function lightning(x, gy, z) {
 /* --- Passo Sombrio --- */
 function updTp(dt, y) {
   const T = S.tp;
+  S.dmx = S.fx[0];
   T.t += dt; stopMove(); P.inv = Math.max(P.inv, .3);
   if (T.ph === 0) {
     P.g.visible = false;
@@ -653,9 +673,7 @@ function updTp(dt, y) {
       const e = T.tg;
       const ex = e.dead ? T.ox : e.x, ez = e.dead ? T.oz : e.z;
       let dx = ex - T.ox, dz = ez - T.oz; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-      let nx = ex + dx * 1.4, nz = ez + dz * 1.4;
-      if (!walkable(nx, nz)) { nx = ex - dx * 1.4; nz = ez - dz * 1.4; }
-      if (!walkable(nx, nz)) { nx = T.ox; nz = T.oz; }
+      const dest = landing(ex + dx * 1.4, ez + dz * 1.4) || landing(ex - dx * 1.4, ez - dz * 1.4) || { x: T.ox, z: T.oz }, nx = dest.x, nz = dest.z;
       P.x = nx; P.z = nz; stopMove();
       face(Math.atan2(ex - nx, ez - nz));
       P.g.visible = true;
@@ -671,6 +689,7 @@ function updTp(dt, y) {
 
 /* --- Adagas Venenosas --- */
 function updDaggers(dt) {
+  S.dmx = S.fx[1];
   for (let i = S.daggers.length - 1; i >= 0; i--) {
     const g = S.daggers[i], st = 24 * dt;
     g.x += Math.sin(g.a) * st; g.z += Math.cos(g.a) * st; g.d += st;
@@ -695,6 +714,7 @@ function updDaggers(dt) {
 /* --- Dança das Lâminas --- */
 function updDance(dt) {
   const D = S.dance;
+  S.dmx = S.fx[2];
   D.t += dt; P.inv = Math.max(P.inv, .25); stopMove();
   P.g.arm.rotation.x = -1.2 + Math.sin(D.t * 28) * .9;
   while (D.n < 6 && D.t >= D.n * .62 + .12) {
@@ -707,8 +727,8 @@ function updDance(dt) {
     ghost(P.x, by(), P.z, 0x9a60ff, .55);
     let dx = P.x - e.x, dz = P.z - e.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
     const a0 = rnd(-1.2, 1.2), c = Math.cos(a0), s = Math.sin(a0), rx = dx * c - dz * s, rz = dx * s + dz * c;
-    const nx = e.x + rx * 1.2, nz = e.z + rz * 1.2;
-    if (walkable(nx, nz)) { P.x = nx; P.z = nz; }
+    const ld = landing(e.x + rx * 1.2, e.z + rz * 1.2);
+    if (ld) { P.x = ld.x; P.z = ld.z; }
     stopMove(); face(Math.atan2(e.x - P.x, e.z - P.z));
     dealt(e, 1.3, 'melee', { kn: .3, ang: Math.atan2(e.x - P.x, e.z - P.z) });
     const B = V.budget(); B.max = 8;
@@ -717,6 +737,27 @@ function updDance(dt) {
     state.SHK = Math.max(state.SHK, .1);
   }
   if (D.t >= D.dur) { S.dance = null; P.inv = 0; fadePlayer(false); smoke(P.x, by(), P.z); }
+}
+
+/** Ponto de chegada de salto/teleporte: chão firme, sem props e sem entrar numa casa (ou sair dela) */
+function landing(x, z) {
+  if (!walkable(x, z)) return null;
+  const h = houseAt(x, z, .3);
+  if (h && h !== houseAt(P.x, P.z, .3)) return null;   // não atravessa parede de casa
+  const f = freePoint(x, z, .7);
+  if (!f || !walkable(f.x, f.z) || Math.hypot(f.x - x, f.z - z) > 1.2) return null;
+  return { x: f.x, z: f.z };
+}
+/** Remove o que fica no mundo (armadilhas, bolas, adagas, chuva, tempestade); usado ao entrar/sair de dungeon */
+function clearWorld() {
+  S.traps.forEach(dropTrap); S.traps.length = 0;
+  S.balls.forEach(b => { V.drop(b.m); V.drop(b.glow); }); S.balls.length = 0;
+  S.daggers.forEach(g => V.drop(g.m)); S.daggers.length = 0;
+  if (S.rain) { [S.rain.r1, S.rain.r2, S.rain.r3].forEach(V.drop); S.rain = null; }
+  if (S.cast) { V.drop(S.cast.orb); S.cast = null; }
+  S.storm = null;
+  const ov = $('skov'); if (ov) ov.classList.remove('on');
+  V.clearVfx();
 }
 
 function cancelAll() {
@@ -743,7 +784,7 @@ function buildUI() {
   D.act.forEach((a, i) => {
     const el = document.createElement('div');
     el.id = 'k' + (i + 1); el.className = 'skb'; el.dataset.i = i; el.style.setProperty('--c', D.css);
-    el.title = a.n + ' — ' + a.d + ' (tecla ' + (i + 1) + ')';
+    el.title = tipOf(i);
     el.innerHTML = svgOf(a.ic) + (i === 0 ? '<i class="skpas" title="Passiva: ' + D.pas.n + ' — ' + D.pas.d + '">' + svgOf(D.pas.ic) + '</i>' : '') +
       `<span class="skc"></span><b class="skt"></b><em>${a.mp}</em><small>${i + 1}</small><u>${svgOf(LOCK)}<s>Nv ${SKILL_LV[i]}</s></u>`;
     el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSkill(i); });
@@ -784,10 +825,133 @@ export function initSkills() {
   P.inv = 0;
   S.auraR = [V.solid(G.RING, D.col[0], .22, 0, 0, 0, 1), V.solid(G.RING, D.col[1], .16, 0, 0, 0, .6)];
   S.auraR[0].visible = S.auraR[1].visible = false;
+  try { const kk = JSON.parse(localStorage.getItem('pirata-skillkeys')); if (Array.isArray(kk) && kk.length === 3 && kk.every(x => typeof x === 'string')) S.keys = kk; } catch (e) { /* padrão */ }
   buildUI();
+  recalc();
+  refreshKeys();
   document.addEventListener('keydown', e => {
     if (e.repeat || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
-    const k = { Digit1: 0, Numpad1: 0, Digit2: 1, Numpad2: 1, Digit3: 2, Numpad3: 2 }[e.code];
-    if (k !== undefined) useSkill(k);
+    if (S.capture !== undefined) return;   // escolhendo a tecla de uma habilidade (painel)
+    let k = S.keys.indexOf(e.code);
+    if (k < 0 && /^(Digit|Numpad)[123]$/.test(e.code) && S.keys.every((c, j) => /^Digit\d$/.test(c))) k = +e.code.slice(-1) - 1;   // teclado numérico também vale enquanto as teclas são as padrão
+    if (k >= 0 && k < 3) useSkill(k);
   });
+}
+
+/* ====================================================== pontos, ranks e talentos ====================================================== */
+
+const sum = o => Object.values(o).reduce((a, b) => a + b, 0);
+/** Pontos livres (derivados do nível: ninguém perde nada por save antigo) */
+export const skillPoints = () => Math.max(0, PTS.skill(P.lv) - sum(S.rk));
+export const talentPoints = () => Math.max(0, PTS.talent(P.lv) - sum(S.tl));
+export const rankOf = i => S.rk[i] || 0;
+export const talentRank = (b, i) => S.tl[b + ':' + i] || 0;
+export const keyLabel = c => (c || '').replace(/^Digit/, '').replace(/^Key/, '').replace(/^Numpad/, 'N');
+export const skillKeys = () => S.keys.slice();
+export const effCost = i => costOf(i);
+export const effCd = i => cdOf(i);
+/** Soma dos talentos aprendidos */
+function recalc() {
+  const T = { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 };
+  const tr = TALENTS[S.k] || [];
+  tr.forEach((br, b) => br.nodes.forEach((n, i) => { T[n.k] += TSTAT[n.k].v * talentRank(b, i); }));
+  Object.assign(S.TT, T);
+  refreshCosts();
+}
+/** Dica completa do botão: nome, descrição, tecla, custo e recarga efetivos e rank */
+export const tipOf = i => { const a = S.D.act[i]; return a.n + ' — ' + a.d + '\nTecla ' + keyLabel(S.keys[i]) + ' · ' + costOf(i) + ' de mana · recarga ' + cdOf(i).toFixed(1) + ' s · rank ' + S.rk[i] + '/' + RANK.max + (P.lv < SKILL_LV[i] ? '\n🔒 Libera no nível ' + SKILL_LV[i] : ''); };
+function refreshCosts() {
+  if (!UI) return;
+  UI.b.forEach((el, i) => { const em = el.querySelector('em'); if (em) em.textContent = costOf(i); el.title = tipOf(i); });
+}
+/** Vida e mana máximas dadas pelos talentos (fixas: entram em P.max/P.mmax ao aprender e saem ao redefinir) */
+const flat = () => ({ hp: S.TT.hp, mp: S.TT.mp });
+export function learnSkill(i) {
+  if (!S.on || i < 0 || i > 3) return false;
+  if (i < 3 && P.lv < SKILL_LV[i]) return false;
+  if (S.rk[i] >= RANK.max || skillPoints() <= 0) return false;
+  S.rk[i]++;
+  refreshCosts();
+  return true;
+}
+export function talentReq(b, i) { return i === 0 || talentRank(b, i - 1) > 0; }
+export function learnTalent(b, i) {
+  const br = (TALENTS[S.k] || [])[b], n = br && br.nodes[i];
+  if (!n || talentRank(b, i) >= RANK.max || talentPoints() <= 0 || !talentReq(b, i)) return false;
+  const k = b + ':' + i; S.tl[k] = (S.tl[k] || 0) + 1;
+  const before = flat(); recalc(); const after = flat();
+  P.max += after.hp - before.hp; P.hp += after.hp - before.hp; P.mmax += after.mp - before.mp; P.mp += after.mp - before.mp;   // +vida/+mana máximas entram direto
+  return true;
+}
+/** Redefinir: devolve todos os pontos (grátis); a vida/mana máximas dos talentos saem de volta */
+export function respec() {
+  if (!S.on) return;
+  const before = flat();
+  S.rk = [0, 0, 0, 0]; S.tl = {};
+  recalc();
+  P.max -= before.hp; P.mmax -= before.mp;
+  P.hp = Math.min(P.hp, P.max); P.mp = Math.min(P.mp, P.mmax);
+  refreshCosts();
+}
+export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.tl = {}; if (S.on) { recalc(); } }
+/** Dados salvos (campo `skills` do save): ranks, talentos, migração feita e teclas ficam no navegador */
+export const skillData = () => (S.on ? { rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig } : null);
+export function loadSkillData(o) {
+  if (!S.on || !o) return;
+  if (Array.isArray(o.rk)) S.rk = [0, 1, 2, 3].map(i => Math.max(0, Math.min(RANK.max, o.rk[i] | 0)));
+  if (o.tl && typeof o.tl === 'object') { S.tl = {}; Object.keys(o.tl).forEach(k => { const n = o.tl[k] | 0; if (n > 0 && /^\d:\d$/.test(k)) S.tl[k] = Math.min(RANK.max, n); }); }
+  S.mig = o.mig ? 1 : 0;
+  recalc();
+}
+/** Escolher a tecla de uma habilidade: o próximo toque de tecla vira o atalho */
+export function captureKey(i, done) {
+  S.capture = i;
+  const h = e => {
+    e.preventDefault(); e.stopPropagation(); document.removeEventListener('keydown', h, true);
+    S.capture = undefined;
+    if (e.code !== 'Escape' && !/^(Space|Tab|Enter|Backspace)$/.test(e.code)) {
+      S.keys[i] = e.code;
+      try { localStorage.setItem('pirata-skillkeys', JSON.stringify(S.keys)); } catch (er) { /* sem armazenamento */ }
+      refreshKeys();
+    }
+    if (done) done();
+  };
+  document.addEventListener('keydown', h, true);
+}
+function refreshKeys() { if (UI) UI.b.forEach((el, i) => { const sm = el.querySelector('small'); if (sm) sm.textContent = keyLabel(S.keys[i]); }); }
+
+/** Personagem novo: a arma inicial já foi dada; personagem com classe e save antigo (Cutelo nv1, mochila vazia): recebe a da classe, uma vez */
+export function markStart() { S.mig = 1; }
+export function migrateStart() {
+  if (!S.on || S.mig) return;
+  S.mig = 1;
+  const st = START[S.k], w0 = eq.wpn;
+  if (!st || !w0 || w0.w !== 0 || w0.q !== 1 || bag.length || eq.gun || eq.off) return;
+  const mk = n => { const w = WEAPONS.findIndex(x => x.n === n); return w < 0 ? null : { ty: 'wpn', q: 1, v: WEAPONS[w].b, il: 1, w, n }; };
+  if (st.wpn) eq.wpn = mk(st.wpn);
+  if (st.gun) eq.gun = mk(st.gun);
+  if (st.off) eq.off = mk(st.off);
+  if (st.arrows) P.arrows = Math.max(P.arrows, st.arrows);
+  setWeapon(st.act || 'wpn');
+  log('Você recebeu a arma da sua classe');
+}
+
+/** Auto-combate: usa as habilidades da classe, da mais forte para a mais fraca, quando a situação pede e há mana de sobra */
+const AUTO = {   // [habilidade, distância mínima, máxima, inimigos próximos mínimos (chefe vale por 3)]
+  guerreiro: [[0, 3, 10, 1], [2, 0, 6, 3], [1, 0, 7, 2]],
+  cacador: [[2, 0, 14, 3], [0, 3, 16, 1], [1, 3, 9, 1]],
+  mago: [[2, 0, 9, 3], [1, 0, 5, 2], [0, 3, 16, 1]],
+  ladino: [[2, 0, 9, 2], [1, 3, 14, 1], [0, 2.5, 11, 1]],
+};
+export function autoSkill() {
+  if (!S.on || P.dead || S.leap || S.tp || S.dance) return;
+  const t = P.tgt;
+  if (!t || t.dead) return;
+  const d = dist(t);
+  const near = enemies.filter(e => !e.dead && !e.inv && dist(e) < 7).length + (t.t.boss ? 3 : 0);
+  for (const [i, lo, hi, n] of AUTO[S.k]) {
+    if (P.lv < SKILL_LV[i] || S.cds[i] > 0 || P.mp < costOf(i) + P.mmax * .1) continue;
+    if (d < lo || d > hi || near < n) continue;
+    if (useSkill(i)) return;
+  }
 }

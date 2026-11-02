@@ -12,10 +12,10 @@ export const CLASSES = {
 export const NEUTRA = { n: 'Pirata', fx: [0xaaddff, 0xffffff], hp: 100, mp: 60, dmg: 12, sp: 3.2, g: [15, 8, 3], melee: 1, ranged: 1, area: 1, crit: .15, dr: 0, rcd: 1, cd: 1, magic: 1 };
 /** Arma inicial de cada classe (nome em WEAPONS): corpo a corpo (wpn), longa distância (gun), flechas e qual fica na mão. Sem classe: Cutelo Pirata. */
 export const START = {
-  guerreiro: { wpn: 'Espada Longa de Ferro' },
+  guerreiro: { wpn: 'Espada Longa de Ferro', off: 'Escudo de Madeira' },
   cacador: { wpn: 'Cutelo Pirata', gun: 'Arco Curto', arrows: 30, act: 'gun' },
-  mago: { gun: 'Cajado do Aprendiz', act: 'gun' },
-  ladino: { wpn: 'Adagas Gêmeas' },
+  mago: { wpn: 'Cutelo Pirata', gun: 'Cajado do Aprendiz', act: 'gun' },
+  ladino: { wpn: 'Adaga Afiada', off: 'Adaga Afiada' },
 };
 export const CLASS_KEYS = Object.keys(CLASSES);
 export const classOf = c => (c && CLASSES[c.k]) || NEUTRA;

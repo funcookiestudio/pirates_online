@@ -61,7 +61,7 @@ import { initMobileHud } from './ui/mobilehud.js';
 import { dungeonGimmicks, dungeonStats, updateDungeon, inDungeon, leaveDungeon } from './dungeon/dungeon-scene.js';
 import { initCaves, clickCave, DUNGEONS } from './world/caves.js';
 import { updateStatusBars, updateOverlays } from './ui/hud.js';
-import { initSkills, updateSkills, SK } from './systems/skills.js';
+import { initSkills, updateSkills, SK, migrateStart, markStart } from './systems/skills.js';
 import { log } from './ui/notify.js';
 import './systems/death.js';
 import { initFullscreen, initPwa } from './ui/fullscreen.js';
@@ -157,10 +157,11 @@ initHotbarFit();
 const loaded = loadGame();
 if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets nem outros itens
   const st = START[(activeChar() || {}).k], mk = n => { const w = WEAPONS.findIndex(x => x.n === n); return { ty: 'wpn', q: 1, v: WEAPONS[w].b, il: 1, w, n }; };   // arma inicial da classe (sem classe: Cutelo)
-  eq.wpn = st ? (st.wpn ? mk(st.wpn) : null) : { ty: 'wpn', q: 1, v: WEAPONS[0].b, il: 1, w: 0, n: WEAPONS[0].n }; eq.gun = st && st.gun ? mk(st.gun) : null; eq.arm = eq.off = null; bag.length = 0;
+  eq.wpn = st ? (st.wpn ? mk(st.wpn) : null) : { ty: 'wpn', q: 1, v: WEAPONS[0].b, il: 1, w: 0, n: WEAPONS[0].n }; eq.gun = st && st.gun ? mk(st.gun) : null; eq.arm = null; eq.off = st && st.off ? mk(st.off) : null; bag.length = 0;
   P.arrows = (st && st.arrows) || 0; P.bolts = (st && st.bolts) || 0;
   P.pot = 2; P.bmb = 0; P.potR = P.bmbR = 0; P.gold = 0; setWeapon((st && st.act) || 'wpn'); unequipPet(true);
 } // antes de povoar a ilha: a vida dos inimigos depende do nível
+if (loaded) migrateStart(); else markStart();   // save antigo de personagem com classe: recebe a arma da classe uma vez
 buildOutposts();
 buildPois();
 if (!RUINS_ISLE) buildFarmSite();   // fazenda de verdade (celeiro, casa, pasto, plantação)

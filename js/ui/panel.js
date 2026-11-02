@@ -18,6 +18,8 @@ import { CFG } from '../systems/settings.js';
 import { svg } from './icons.js';
 import { clearSave } from '../systems/save.js';
 import { resetPlayer, armedButton } from '../systems/reset.js';
+import { hasSkills, classData, classKey, skillPoints, talentPoints, rankOf, talentRank, talentReq, learnSkill, learnTalent, respec, captureKey, skillKeys, keyLabel, effCost, effCd } from '../systems/skills.js';
+import { SKILL_LV, RANK, TSTAT, TALENTS } from '../data/skills.js';
 
 /** Ícone de um item: tocha, arma de fogo, espada ou armadura */
 const iconOf = it => it.ty === 'wpn' ? (WEAPONS[it.w].torch ? 'torch' : WEAPONS[it.w].gun ? 'gun' : 'sword') : 'chest';
@@ -180,26 +182,82 @@ const PASSIVES = [
   { id: 'dr', n: 'Armadura', ic: 'chest', k: '', t: 'Passiva', d: () => 'A armadura equipada reduz o dano recebido em ' + Math.round((P.dr || 0) * 100) + '%.' },
 ];
 
+const rawSvg = p => '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+const PASS_RANK = { guerreiro: '+2% de vida de escudo', cacador: '+2% de crítico à distância', mago: '+15% de regeneração de mana', ladino: '+4% de velocidade ao esquivar' };
+
+/** Habilidades da classe (js/data/skills.js): passiva + 3 ativas, com custo, recarga, nível, ranks e pontos */
+function classSkills() {
+  const D = classData(), keys = skillKeys();
+  return D.act.map((a, i) => ({ id: 'c' + i, i, a, raw: a.ic, n: a.n, k: keyLabel(keys[i]) })).concat([{ id: 'cp', i: 3, p: D.pas, raw: D.pas.ic, n: D.pas.n, k: '' }]);
+}
+
 function renderSkills() {
-  const all = SKILLS.concat(PASSIVES);
-  if (!all.some(x => x.id === selSk)) selSk = 'q';
-  const cur = all.find(x => x.id === selSk), ds = typeof cur.d === 'function' ? cur.d() : cur.d;
-  const sc = x => '<button class="sc' + (x.id === selSk ? ' sel' : '') + '" data-sk="' + x.id + '" title="' + x.n + '">' + svg(x.ic) + (x.k ? '<kbd>' + x.k + '</kbd>' : '') + '</button>';
+  const cl = hasSkills(), CS = cl ? classSkills() : [];
+  const all = CS.concat(SKILLS, PASSIVES);
+  if (!all.some(x => x.id === selSk)) selSk = cl ? 'c0' : 'q';
+  const cur = all.find(x => x.id === selSk), ds = cur.i !== undefined ? (cur.a || cur.p).d : typeof cur.d === 'function' ? cur.d() : cur.d;
+  const icon = x => x.raw ? rawSvg(x.raw) : svg(x.ic);
+  const sc = x => '<button class="sc' + (x.id === selSk ? ' sel' : '') + (x.a && P.lv < SKILL_LV[x.i] ? ' lock' : '') + '" data-sk="' + x.id + '" title="' + x.n + '"' + (cl && x.raw ? ' style="color:' + classData().css + '"' : '') + '>' + icon(x) + (x.k ? '<kbd>' + x.k + '</kbd>' : '') + '</button>';
   const lk = n => Array.from({ length: n }, () => '<div class="sc lock" title="Em breve">' + svg('lock') + '</div>').join('');
-  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2><p class="pts">Pontos de atributo e níveis de habilidade: <b>em breve</b></p>' +
-    '<div class="sgrid"><p class="sgh">Ativas</p>' + SKILLS.map(sc).join('') +
-    '<p class="sgh">Passivas</p>' + PASSIVES.map(sc).join('') + lk(2) +
-    '<p class="sgh">Bloqueadas</p>' + lk(4) + '</div>' +
-    '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc">' + svg(cur.ic) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + cur.n + '</div><div class="ty">' + (cur.k ? 'Tecla ' + (cur.k === 'ESP' ? 'Espaço' : cur.k) + ' · ' : '') + cur.t + '</div></div></div>' +
-    '<p class="ds">' + ds + '</p><button class="btn pri big" disabled>Melhorar · em breve</button></div>' +
+  let det = '', pts = '<p class="pts">Pontos de atributo e níveis de habilidade: <b>em breve</b></p>';
+  if (cl) {
+    const pt = skillPoints(), r = rankOf(cur.i === undefined ? 0 : cur.i);
+    pts = '<p class="pts">Pontos de habilidade: <b>' + pt + '</b> · 1 por nível a partir do 2</p>';
+    if (cur.i !== undefined) {
+      const lockLv = cur.a && P.lv < SKILL_LV[cur.i];
+      const info = cur.a ? 'Tecla ' + cur.k + ' · ' + effCost(cur.i) + ' de mana · recarga ' + effCd(cur.i).toFixed(1) + ' s' + (lockLv ? ' · libera no nível ' + SKILL_LV[cur.i] : '') : 'Passiva · sempre ativa';
+      const bonus = cur.a ? 'Cada rank: +' + Math.round(RANK.dmg * 100) + '% de dano, -' + Math.round(RANK.cd * 100) + '% de recarga, -' + Math.round(RANK.mp * 100) + '% de custo' : 'Cada rank: ' + PASS_RANK[classKey()];
+      det = '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc" style="color:' + classData().css + '">' + icon(cur) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + cur.n + '</div><div class="ty">' + info + '</div></div></div>' +
+        '<p class="ds">' + ds + '</p><p class="ds dim">Rank ' + r + '/' + RANK.max + ' · ' + bonus + '</p>' +
+        '<button class="btn pri big" id="skup"' + (pt > 0 && r < RANK.max && !lockLv ? '' : ' disabled') + '>' + (r >= RANK.max ? 'Rank máximo' : lockLv ? 'Bloqueada' : 'Melhorar · 1 ponto') + '</button>' +
+        (cur.a ? '<button class="btn big" id="skkey">Tecla: ' + cur.k + ' · trocar</button>' : '') +
+        '<button class="btn sm" id="skrs">Redefinir pontos (grátis)</button></div>';
+    }
+  }
+  if (!det) det = '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc">' + icon(cur) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + cur.n + '</div><div class="ty">' + (cur.k ? 'Tecla ' + (cur.k === 'ESP' ? 'Espaço' : cur.k) + ' · ' : '') + cur.t + '</div></div></div>' +
+    '<p class="ds">' + ds + '</p><button class="btn pri big" disabled>Melhorar · em breve</button></div>';
+  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2>' + pts +
+    '<div class="sgrid">' + (cl ? '<p class="sgh">Habilidades de ' + classData().pas.n.split(' ')[0] + ' · ' + { guerreiro: 'Guerreiro', cacador: 'Caçador', mago: 'Mago', ladino: 'Ladino' }[classKey()] + '</p>' + CS.map(sc).join('') : '') +
+    '<p class="sgh">Ativas</p>' + SKILLS.map(sc).join('') +
+    '<p class="sgh">Passivas</p>' + PASSIVES.map(sc).join('') + (cl ? '' : lk(2) + '<p class="sgh">Bloqueadas</p>' + lk(4)) + '</div>' + det +
     '<div class="pact rst"></div>';
   $('skp').querySelector('.rst').append(rplEl);
   $('skp').querySelectorAll('[data-sk]').forEach(b => { b.onclick = () => { selSk = b.dataset.sk; renderSkills(); }; });
+  const up = $('skup'), kb = $('skkey'), rs = $('skrs');
+  if (up) up.onclick = () => { if (learnSkill(cur.i)) renderSkills(); };
+  if (rs) rs.onclick = () => { respec(); renderSkills(); };
+  if (kb) kb.onclick = () => { kb.textContent = 'Aperte a nova tecla… (Esc cancela)'; captureKey(cur.i, () => renderSkills()); };
 }
 
-/* ---------- Talentos: três ramos de seis nós. Ainda sem regras no jogo, tudo bloqueado. ---------- */
+/* ---------- Talentos: três ramos por classe, seis nós de até 3 ranks; cada nó exige o anterior. Sem classe: ainda sem regras. ---------- */
 const BRANCH = [['Lâmina', 'sword', '#e8776b'], ['Pólvora', 'gun', '#f0b04a'], ['Mar', 'plank', '#5b9bf0']];
+const tdesc = n => { const t = TSTAT[n.k]; return '+' + (t.pct ? (t.v * 100).toFixed(t.v * 100 % 1 ? 1 : 0) + '%' : t.v) + ' ' + t.t + ' por rank'; };
+function renderTalClass() {
+  const T = TALENTS[classKey()], pt = talentPoints(), cur = selTn ? selTn.split(':').map(Number) : null;
+  let h = '<div class="tlh"><h2 class="pt">Talentos</h2><span class="pts">Pontos: <b>' + pt + '</b></span><button class="btn sm" id="tlrs">Redefinir</button></div><div class="ttree">';
+  T.forEach((br, b) => {
+    h += '<div class="tcol" style="--bc:' + br.col + '"><h3>' + br.n + '</h3>';
+    br.nodes.forEach((n, i) => {
+      const r = talentRank(b, i), ok = talentReq(b, i), st = r >= RANK.max ? ' max' : r > 0 ? ' on' : ok && pt > 0 ? ' open' : ok ? ' wait' : '';
+      h += '<button class="tn' + st + (selTn === b + ':' + i ? ' sel' : '') + '" data-tn="' + b + ':' + i + '" title="' + n.n + ' · ' + tdesc(n) + '">' + svg(ok ? br.ic : 'lock') + '<i>' + r + '/' + RANK.max + '</i></button>';
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  if (cur) {
+    const br = T[cur[0]], n = br.nodes[cur[1]], r = talentRank(cur[0], cur[1]), ok = talentReq(cur[0], cur[1]);
+    h += '<div class="sdet tdet"><div style="display:flex;gap:10px;align-items:center"><div class="tn" style="--bc:' + br.col + '">' + svg(ok ? br.ic : 'lock') + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + n.n + '</div><div class="ty">Ramo ' + br.n + ' · nó ' + (cur[1] + 1) + ' · rank ' + r + '/' + RANK.max + '</div></div></div>' +
+      '<p class="ds">' + tdesc(n) + '</p>' + (ok ? '' : '<p class="ds dim">Exige o nó anterior do ramo.</p>') +
+      '<button class="btn pri big" id="tllearn"' + (ok && pt > 0 && r < RANK.max ? '' : ' disabled') + '>' + (r >= RANK.max ? 'Rank máximo' : ok ? 'Aprender · 1 ponto' : 'Bloqueado') + '</button></div>';
+  } else h += '<div class="sdet tdet"><p class="ds dim">Toque num talento para ver o efeito. Pontos: 1 a cada 2 níveis a partir do nível 3.</p></div>';
+  $('tlp').innerHTML = h;
+  $('tlp').querySelectorAll('[data-tn]').forEach(b => { b.onclick = () => { selTn = b.dataset.tn; renderTal(); }; });
+  const lb = $('tllearn'), rs = $('tlrs');
+  if (lb) lb.onclick = () => { if (learnTalent(cur[0], cur[1])) renderTal(); };
+  if (rs) rs.onclick = () => { respec(); renderTal(); };
+}
 function renderTal() {
+  if (hasSkills()) { renderTalClass(); return; }
   const cur = selTn ? selTn.split(':') : null;
   let h = '<div class="tlh"><h2 class="pt">Talentos</h2><span class="pts">Pontos: <b>0</b></span><button class="btn sm" disabled>Redefinir</button></div><div class="ttree">';
   BRANCH.forEach(([n, ic, col], b) => {

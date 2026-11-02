@@ -55,7 +55,7 @@ scene.add(mark);
 /** Jogador recebe dano `d` vindo do ângulo `a`, com empurrão `kn` */
 export function hurtP(d, a, kn) {
   if (P.dead || P.roll > 0 || P.diveUnder) return; // invulnerável durante a rolada e debaixo d'água
-  d *= 1 - (P.dr || 0);
+  d *= (1 - (P.dr || 0)) * (1 - (P.shieldDr || 0));
   if (P.skh) { d = P.skh.hurt(d); if (d <= 0) return; }   // habilidades de classe: invulnerável, Muralha, escudo (skills.js)
   if (P.sitT) { P.sitT = 0; P.sitF = true; } // levou dano sentado: levanta às pressas
   P.hp -= d;

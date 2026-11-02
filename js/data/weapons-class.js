@@ -84,6 +84,12 @@ const rodBuilder = (len, col, flame) => () => {
   return g;
 };
 
+/** Escudo: vai na mão livre (eq.off); o braço o leva. `sdr` = redução de dano extra ao equipar */
+const shieldBuilder = (w, h, col, rim) => () => grp(
+  wb(w, h, .05, col, 0, -.12, 0), wb(w + .06, .05, .07, rim, 0, -.12 + h / 2, 0), wb(w + .06, .05, .07, rim, 0, -.12 - h / 2, 0),
+  wb(.05, h + .05, .07, rim, w / 2, -.12, 0), wb(.05, h + .05, .07, rim, -w / 2, -.12, 0), wb(.12, .12, .09, rim, 0, -.12, .03)
+);
+
 export const CLASS_WEAPONS = [
   {   // Guerreiro: espada longa, golpe de cima para baixo com empurrão
     n: 'Espada Longa de Ferro', b: 3, rng: 2.5, cd: .6, mul: 1.3, arc: 2, chop: 1, imp: .2, kb: 1.4, lv: 1, cls: 'guerreiro',
@@ -102,6 +108,11 @@ export const CLASS_WEAPONS = [
       return grp(dag(.07), dag(-.07));
     },
   },
+  {   // Ladino: adaga simples, uma na mão principal e outra na mão livre
+    n: 'Adaga Afiada', b: 2, rng: 1.8, cd: .28, mul: .65, arc: 1.2, crit: .2, bleed: .3, lv: 1, shop: 1, cls: 'ladino',
+    build: () => grp(wb(.05, .16, .05, LT, 0, -.08, 0), wb(.14, .03, .06, BR, 0, -.17, 0), wb(.035, .42, .08, ST, 0, -.4, 0), wb(.02, .4, .09, 0xf0f4f8, 0, -.4, 0)),
+  },
+  { n: 'Escudo de Madeira', b: 1, shield: 1, sdr: .08, rng: 0, cd: 1, mul: 0, arc: 0, lv: 1, shop: 1, cls: 'guerreiro', build: shieldBuilder(.46, .56, 0x7a4a26, 0xb08a30) },
   { n: 'Arco Curto', b: 3, gun: 1, bow: 1, bk: 1, rng: 14, cd: .65, mul: 1.15, sp: 40, hp: [0, .31], ml: .3, lv: 1, shop: 1, cls: 'cacador', build: bowBuilder(.55, WD, .045) },
   { n: 'Arco Longo', b: 5, gun: 1, bow: 1, bk: 1, rng: 18, cd: 1, mul: 1.7, sp: 50, hp: [0, .31], ml: .3, lv: 8, shop: 1, cls: 'cacador', build: bowBuilder(.8, 0x8a5a2a, .055) },
   { n: 'Besta Leve', b: 4, gun: 1, xbow: 1, rng: 13, cd: 1.1, mul: 1.6, sp: 48, hp: [0, .31], ml: .3, lv: 6, shop: 1, cls: 'cacador', build: xbowBuilder(.62, .46, WD, 0) },
