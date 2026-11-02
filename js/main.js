@@ -149,8 +149,8 @@ initDialog();
 initSettings(); initUpdater();
 setWeapon();
 refreshPetButton();
+initSkills();   // habilidades da classe (botões na barra, teclas 1-3); sem classe: nada. Antes do HUD móvel e do layout, que posicionam esses botões
 initMobileHud();
-initSkills();   // habilidades da classe (botões, teclas 1-3); sem classe: nada
 initHotbarFit();
 const loaded = loadGame();
 if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets nem outros itens

@@ -95,13 +95,14 @@ function lvl(lv) {
 let warnT = 0;
 const warn = t => { const n = performance.now(); if (n - warnT > 900) { warnT = n; log(t); } };
 
+export const hasSkills = () => S.on;
 export function useSkill(i) {
   if (!S.on || P.dead || P.stone > 0 || P.roll > 0 || P.swap || P.sit > 0 || P.sitT || P.swimming || MOUNT.on || VEH.on || S.leap || S.tp || S.dance) return false;
   const def = S.D.act[i];
   if (!def) return false;
   if (P.lv < SKILL_LV[i]) { warn('Habilidade bloqueada: Nv ' + SKILL_LV[i]); return false; }
   if (S.cds[i] > 0) return false;
-  if (P.mp < def.mp) { warn('Mana insuficiente'); return false; }
+  if (P.mp < def.mp) { warn('Mana insuficiente'); blinkMana(); return false; }
   if (CAST[S.k][i](def) === false) return false;
   P.mp -= def.mp;
   S.cds[i] = S.cdm[i] = def.cd;
@@ -734,25 +735,34 @@ function cancelAll() {
 
 const LOCK = '<path d="M6 11h12v9H6zM9 11V8a3 3 0 016 0v3"/>';
 let UI = null;
+const svgOf = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+/** Os três botões entram na própria barra de habilidades (#sk), ao lado do Q, com o mesmo estilo dos outros */
 function buildUI() {
-  const D = S.D, root = document.createElement('div');
-  root.id = 'skl'; root.style.setProperty('--c', D.css);
-  const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-  root.innerHTML = '<div id="skm"><i id="skmi"></i><b id="skmt"></b></div><div id="skrow"><div class="skp" title="Passiva: ' + D.pas.n + ' — ' + D.pas.d + '">' + svg(D.pas.ic) + '</div>' +
-    D.act.map((a, i) => `<div class="skb" data-i="${i}" title="${a.n} — ${a.d}">${svg(a.ic)}<span class="skc"></span><b class="skt"></b><em>${a.mp}</em><small>${i + 1}</small><u>${svg(LOCK)}<s>Nv ${SKILL_LV[i]}</s></u></div>`).join('') + '</div>';
-  document.body.append(root);
-  const ov = document.createElement('div'); ov.id = 'skov'; document.body.append(ov);
-  root.querySelectorAll('.skb').forEach(el => {
-    el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSkill(+el.dataset.i); });
+  const D = S.D, sk = $('sk');
+  document.body.classList.add('has-sk');
+  D.act.forEach((a, i) => {
+    const el = document.createElement('div');
+    el.id = 'k' + (i + 1); el.className = 'skb'; el.dataset.i = i; el.style.setProperty('--c', D.css);
+    el.title = a.n + ' — ' + a.d + ' (tecla ' + (i + 1) + ')';
+    el.innerHTML = svgOf(a.ic) + (i === 0 ? '<i class="skpas" title="Passiva: ' + D.pas.n + ' — ' + D.pas.d + '">' + svgOf(D.pas.ic) + '</i>' : '') +
+      `<span class="skc"></span><b class="skt"></b><em>${a.mp}</em><small>${i + 1}</small><u>${svgOf(LOCK)}<s>Nv ${SKILL_LV[i]}</s></u>`;
+    el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); useSkill(i); });
+    sk.append(el);
   });
-  UI = { mi: $('skmi'), mt: $('skmt'), b: [...root.querySelectorAll('.skb')], m: [], c: [], t: [], f: [] };
-  UI.b.forEach(() => { UI.m.push(''); UI.c.push(''); UI.t.push(''); UI.f.push(''); });
-  UI.mp = '';
+  const ov = document.createElement('div'); ov.id = 'skov'; document.body.append(ov);
+  const gw = $('gwr'); gw.classList.add('mana'); gw.title = 'Mana'; $('omp').title = 'Mana';
+  UI = { b: [...sk.querySelectorAll('.skb')], m: [], c: [], t: [] };
+  UI.b.forEach(() => { UI.m.push(''); UI.c.push(''); UI.t.push(''); });
+}
+let blinkT = 0;
+/** Pisca o diamante de mana (faltou mana para a habilidade) */
+function blinkMana() {
+  const g = $('gwr'); if (!g) return;
+  g.classList.remove('lowmp'); void g.offsetWidth; g.classList.add('lowmp');
+  clearTimeout(blinkT); blinkT = setTimeout(() => g.classList.remove('lowmp'), 1000);
 }
 function updateUI() {
   if (!UI) return;
-  const mp = Math.floor(P.mp) + '/' + P.mmax;
-  if (UI.mp !== mp) { UI.mp = mp; UI.mt.textContent = mp; UI.mi.style.width = Math.max(0, P.mp / P.mmax * 100) + '%'; }
   UI.b.forEach((el, i) => {
     const lk = P.lv < SKILL_LV[i], cd = S.cds[i], p = lk ? 0 : Math.round(cd / S.cdm[i] * 100);
     const cls = (lk ? 'lk' : '') + (!lk && P.mp < S.D.act[i].mp ? ' nm' : '') + (isActive(i) ? ' on' : '');

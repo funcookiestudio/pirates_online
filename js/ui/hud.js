@@ -11,6 +11,7 @@ import { ROLL_CD } from '../systems/dodge.js';
 import { HEAD, HEAD_CD, headReady } from '../systems/medusa-head.js';
 import { questHud } from '../systems/quest.js';
 import { questsHud, contractHud } from '../systems/quests.js';
+import { hasSkills } from '../systems/skills.js';
 
 /** O texto da missão fica sempre logo abaixo do minimapa e do relógio (retrato, paisagem, celular e desktop), nunca por cima */
 function placeQuest() {
@@ -41,9 +42,10 @@ import { drawDayClock } from './dayclock.js';
 export function updateStatusBars() {
   const pet = PST[state.pet.id];
   sty('hp', 'height', Math.max(0, P.hp / P.max * 100) + '%');
-  sty('mp', 'height', state.petOff ? '0%' : Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%');
+  const mana = hasSkills();   // personagem com classe: o diamante da direita é o de mana (sem classe segue mostrando a vida do companheiro)
+  sty('mp', 'height', mana ? Math.max(0, P.mp / P.mmax * 100) + '%' : state.petOff ? '0%' : Math.max(0, pet.hp / pmax(state.pet.id) * 100) + '%');
   txt('hpt', Math.ceil(P.hp) + '/' + P.max);
-  txt('mpt', state.petOff ? '—' : PDN() ? '💤' : Math.ceil(pet.hp));
+  txt('mpt', mana ? Math.floor(P.mp) : state.petOff ? '—' : PDN() ? '💤' : Math.ceil(pet.hp));
   sty('c2', 'height', (HEAD.has && HEAD.ch >= 1 ? HEAD.cd / HEAD_CD : P.cds[0] / 3) * 100 + '%');
   const hd = headReady() ? Math.floor(HEAD.ch) : 0;   // cabeça da Medusa: o botão do giro vira o olhar petrificante, com as cargas
   put('s2.head', hd, () => { $('s2').classList.toggle('head', hd > 0); $('s2').querySelector('small').textContent = hd > 0 ? 'Q ×' + hd : 'Q'; });

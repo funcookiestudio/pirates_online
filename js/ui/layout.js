@@ -14,12 +14,13 @@ const body = document.body;
 /** Botões de ação: id do botão → [elemento que recebe a posição, elemento que recebe o tamanho (ou null = variável --sz), nome] */
 const BTN = {
   sa: ['sawrap', 'sa', 'Auto combate'], sr: ['sr', null, 'Esquiva'], s2: ['s2', null, 'Giro (Q)'], s3: ['s3', null, 'Bomba (W)'],
+  k1: ['k1', null, 'Habilidade 1'], k2: ['k2', null, 'Habilidade 2'], k3: ['k3', null, 'Habilidade 3'],
   s4: ['s4', null, 'Poção (E)'], s1: ['s1', null, 'Trocar arma (X)'], s5: ['s5', null, 'Companheiro (R)'],
 };
 /** Posição padrão [x, y, tamanho] por orientação (p = retrato · l = paisagem) */
 const DEF = {
-  p: { sa: [56, 72, 80], sr: [134, 37, 44], s2: [134, 97, 44], s3: [94, 144, 44], s4: [33, 155, 44], s1: [156, 157, 42], s5: [77, 205, 46] },
-  l: { sa: [58, 66, 80], sr: [152, 66, 44], s2: [138, 116, 44], s3: [102, 149, 44], s4: [58, 160, 44], s1: [214, 129, 42], s5: [161, 198, 42] },
+  p: { sa: [56, 72, 80], sr: [134, 37, 44], s2: [134, 97, 44], s3: [94, 144, 44], s4: [33, 155, 44], s1: [156, 157, 42], s5: [77, 205, 46], k1: [28, 214, 44], k2: [28, 264, 44], k3: [28, 314, 44] },
+  l: { sa: [58, 66, 80], sr: [152, 66, 44], s2: [138, 116, 44], s3: [102, 149, 44], s4: [58, 160, 44], s1: [214, 129, 42], s5: [161, 198, 42], k1: [214, 66, 44], k2: [214, 116, 44], k3: [214, 166, 44] },
 };
 /** Itens soltos (seguem o CSS até serem editados): menu e diamantes */
 const XT = { lnch: ['lnch', 'Menu (ajustes)', false], gwl: ['gwl', 'Diamante vermelho (vida)', true], gwr: ['gwr', 'Diamante azul (companheiro)', true] };
@@ -53,6 +54,7 @@ export function applyLayout() {
   const mob = isMob(), o = ok(), R = handR(), side = R ? 'right' : 'left', other = R ? 'left' : 'right';
   Object.keys(BTN).forEach(id => {
     const [wid, inner] = BTN[id], el = $(wid), sz = inner ? $(inner) : null;
+    if (!el) return;   // botões de habilidade só existem com classe
     if (!mob) { rm(el, ['left', 'right', 'bottom', '--sz']); if (sz) rm(sz, ['width', 'height']); return; }
     const q = cur(id);
     el.style.setProperty(other, 'auto'); el.style.setProperty(side, (q.x - q.sz / 2) + 'px'); el.style.setProperty('bottom', (q.y - q.sz / 2) + 'px');
