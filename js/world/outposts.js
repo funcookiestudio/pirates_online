@@ -6,7 +6,7 @@ import { POST_DATA } from '../data/posts.js';
 import { ENEMY_KINDS, KIND } from '../data/enemies.js';
 import { spawn } from '../entities/enemies.js';
 import { SEED } from './terrain.js';
-import { tierOf, tierBonus, eliteChance, ELITE } from '../data/scaling.js';
+import { tierOf, islandBonus, eliteChance, ELITE } from '../data/scaling.js';
 import { log } from '../ui/notify.js';
 
 export const TIER = tierOf(SEED);
@@ -14,7 +14,7 @@ export const TIER = tierOf(SEED);
 export const ISLAND_LV = () => [Math.min(...POST_DATA.map(p => p.lo)), Math.max(...POST_DATA.map(p => p.hi))];
 
 export function buildOutposts() {
-  const bonus = tierBonus(TIER);
+  const bonus = islandBonus(SEED);
   POST_DATA.forEach(post => {
     const { x: cx, z: cz, crew, ring } = post;   // x,z já foram ajustados ao relevo (terrain.js)
     campfire(cx, cz);

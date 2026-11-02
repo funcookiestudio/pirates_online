@@ -21,7 +21,7 @@ const S = K.SERPENTE, SK = K.SKELETON, GW = K.GUERREIRO, GH = K.GHOST, SM = K.SO
 const MEDUSA_CAMPS = [
   ['Ninho das Serpentes',        [[S, 'p', 4], [S, 'p', 4], [SK, 'p', 4.5], [SK, 's', 2.6]], 0],
   ['Cripta Rastejante',          [[SK, 'p', 4], [SK, 'p', 4.5], [S, 'p', 4], [S, 'p', 5]], 2],
-  ['Cova dos Mortos',            [[GW, 'p', 4], [GW, 'p', 4.5], [SK, 'p', 5], [SK, 'p', 5], [K.MUMIA, 's', 2.8]], 3],
+  ['Cova dos Mortos',            [[GW, 'p', 4], [GW, 'p', 4.5], [SK, 'p', 5], [SK, 'p', 5], [GH, 's', 2.8]], 3],
   ['Bivaque dos Mortos-Vivos',   [[GH, 'p', 4.5], [GH, 'p', 4.5], [SK, 'p', 5], [GW, 's', 2.6]], 4],
   ['Poço das Víboras',           [[S, 'p', 4], [S, 'p', 4.5], [S, 'p', 5], [GH, 's', 2.8]], 5],
   ['Vigia das Sombras',          [[SM, 'p', 4.5], [SM, 'p', 5], [GH, 's', 2.8], [S, 'p', 5]], 6],

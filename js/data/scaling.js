@@ -12,6 +12,11 @@ export function tierOf(seed) {
   return h % 4;
 }
 export const tierBonus = tier => tier * ISLAND_STEP;
+/* Ilhas temáticas (todas tier 3) sobem em degraus de ISLE_EXTRA níveis, na ordem da passagem do barqueiro (Medusa → Dragões → Vampiros → Hidra → Múmia),
+   para a dificuldade crescer de uma ilha para a outra em vez de todas ficarem iguais. Ajuste os valores aqui. */
+export const ISLE_EXTRA = { dragoes: 2, vampiros: 4, hidra: 6, mumia: 8 };
+/** Bônus total de nível dos inimigos (e das dungeons) da ilha `seed` */
+export const islandBonus = seed => tierBonus(tierOf(seed)) + (ISLE_EXTRA[seed] || 0);
 
 /** Vida e dano "de referência" de um inimigo no nível L (multiplicados pelo arquétipo: hm, dm) */
 export const hpAt = L => 28 + 11 * L;
@@ -26,7 +31,7 @@ export function enemyStats(t, L, elite) {
   return {
     hp: Math.round(t.hm * hpAt(L) * (elite ? ELITE.hp : 1)),
     d: Math.round(t.dm * dmgAt(L) * (elite ? ELITE.d : 1)),
-    xp: Math.max(1, Math.round(t.xm * 9 * Math.pow(L, 1.1) * (elite ? ELITE.xp : 1))),
+    xp: Math.max(1, Math.round(t.xm * 9 * Math.pow(L, 1.2) * (elite ? ELITE.xp : 1))),
   };
 }
 

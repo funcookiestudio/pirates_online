@@ -175,7 +175,7 @@ export function enterDungeon(D, gen) {
     }
   });
   // chefe no fim do caminho (criado já, mas dorme até o jogador chegar)
-  spawn(ISLE_DUN[D.boss] ? ISLE_DUN[D.boss].boss : D.boss === 'medusa' ? KIND.MEDUSA : KIND.BOSS, ex, ez, null, { lv: D.lv + 4 });   // ruínas (ou a mais funda da ilha, se não houver ruínas): Medusa
+  spawn(ISLE_DUN[D.boss] ? ISLE_DUN[D.boss].boss : D.boss === 'medusa' ? KIND.MEDUSA : KIND.BOSS, ex, ez, null, { lv: D.lv + 2 });   // ruínas (ou a mais funda da ilha, se não houver ruínas): Medusa
   const boss = enemies[enemies.length - 1];
   addAsleep(Z, boss);
 

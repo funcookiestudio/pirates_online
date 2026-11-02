@@ -10,7 +10,7 @@ import { state } from '../core/state.js';
 import { log } from '../ui/notify.js';
 import { pois } from './pois.js';
 import { generateDungeon, THEMES, hash } from '../dungeon/dungeongen.js';
-import { tierOf, tierBonus } from '../data/scaling.js';
+import { islandBonus } from '../data/scaling.js';
 import { WEAPONS } from '../data/weapons.js';
 import { enterDungeon, rewardOf } from '../dungeon/dungeon-scene.js';
 import { VAMPIRE_ISLE, HYDRA_ISLE, MUMMY_ISLE } from '../core/isle.js';
@@ -34,7 +34,7 @@ let prompting = null, cooldown = 0;
 const bx = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); return m; };
 
 export function buildCaves() {
-  const tb = tierBonus(tierOf(SEED));
+  const tb = islandBonus(SEED);
   CAVES.forEach((c, i) => {
     const hs = hash(SEED + ':' + i), theme = THEMES[hs % 3], name = NAMES[theme][(hs >>> 3) % 4];
     const lv = tb + 3 + Math.round((c.t || 0) * 17);         // nível pela ilha (tier) e pelo custo de caminho desde a vila (3 → 20)
