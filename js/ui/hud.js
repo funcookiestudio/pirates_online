@@ -12,6 +12,7 @@ import { HEAD, HEAD_CD, headReady } from '../systems/medusa-head.js';
 import { questHud } from '../systems/quest.js';
 import { questsHud, contractHud } from '../systems/quests.js';
 import { hasSkills } from '../systems/skills.js';
+import { WEAPONS } from '../data/weapons.js';
 
 /** O texto da missão fica sempre logo abaixo do minimapa e do relógio (retrato, paisagem, celular e desktop), nunca por cima */
 function placeQuest() {
@@ -51,7 +52,7 @@ export function updateStatusBars() {
   put('s2.head', hd, () => { $('s2').classList.toggle('head', hd > 0); $('s2').querySelector('small').textContent = hd > 0 ? 'Q ×' + hd : 'Q'; });
   sty('c3', 'height', P.cds[1] / 5 * 100 + '%');
   sty('c6', 'height', P.rcd / ROLL_CD * 100 + '%');
-  txt('st', 'Nv ' + P.lv + ' · ' + P.gold + ' · ' + P.pot + ' · Dano ' + P.dmg);
+  txt('st', 'Nv ' + P.lv + ' · ' + P.gold + ' · ' + P.pot + ' · Dano ' + P.dmg + (WEAPONS[P.wid].bow ? ' · Flechas ' + P.arrows : WEAPONS[P.wid].xbow ? ' · Virotes ' + P.bolts : WEAPONS[P.wid].magic ? ' · Mana ' + Math.floor(P.mp) : ''));
   txt('lvp', 'Nv ' + P.lv);
   txt('lva', 'Nv ' + pet.lv);
   sty('xpb', 'width', P.xp / P.nxt * 100 + '%');

@@ -20,7 +20,7 @@ import { applyAdoptions } from '../pets/manager.js';
 
 import { activeChar, saveKey } from '../core/chars.js';
 const KEY = saveKey(activeChar() && activeChar().id);   // um save por personagem
-const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'peixe', 'osso', 'pot', 'bmb', 'potR', 'bmbR'];
+const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'peixe', 'osso', 'pot', 'bmb', 'potR', 'bmbR', 'arrows', 'bolts'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
 
 export { safeSpot };
@@ -29,7 +29,7 @@ let lastSafe = null;
 
 let disabled = false; // true após apagar o progresso (evita salvar de novo antes de recarregar)
 
-const validItem = it => it && ['wpn', 'arm'].includes(it.ty) && [it.q, it.v, it.w].every(Number.isFinite) && typeof it.n === 'string';
+const validItem = it => it && ['wpn', 'arm'].includes(it.ty) && [it.q, it.v, it.w].every(Number.isFinite) && typeof it.n === 'string' && (it.ty !== 'wpn' || !!WEAPONS[it.w]);   // arma com índice fora do catálogo é descartada
 
 export function saveGame() {
   if (disabled || P.dead) return;

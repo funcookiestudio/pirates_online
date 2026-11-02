@@ -4,6 +4,7 @@ import { P } from '../entities/player.js';
 import { WEAPONS } from '../data/weapons.js';
 import { kindOf, DURATION } from '../entities/holster.js';
 import { applyWeaponBonus } from './inventory.js';
+import { hasAmmo } from './combat.js';
 import { log } from '../ui/notify.js';
 
 const kindOfSlot = k => kindOf(WEAPONS[P.wids[k]]);
@@ -55,6 +56,7 @@ export function autoWeapon(dist) {
   if (P.swap || P.dead || !P.models.gun || !P.models.wpn) return;
   const now = performance.now();
   if (now - lastAuto < 2500) return;
+  if (P.act === 'gun' && !hasAmmo(WEAPONS[P.wid])) { lastAuto = now; switchWeapon(); return; }   // sem flechas/virotes: saca a arma corpo a corpo
   if (dist < 4.5 && P.act === 'gun') {
     lastAuto = now;
     switchWeapon();

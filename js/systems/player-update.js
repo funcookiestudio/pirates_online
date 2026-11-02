@@ -21,7 +21,7 @@ import { WEAPONS } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { gait, gaitSpeed, gaitReset } from '../entities/gait.js';
 import { gunPose, aimOffset, reloadWeight, BIG, TORCH_ARM } from '../entities/player-weapon.js';
-import { attack, impact } from './combat.js';
+import { attack, impact, effRng } from './combat.js';
 import { autoThink } from './auto.js';
 import { updateSit, animateSit } from './rest.js';
 import { openPetBox } from '../ui/dialog.js';
@@ -143,7 +143,7 @@ function moveAndAct(dt) {
   }
   const tx = P.tgt ? P.tgt.x : P.tx, tz = P.tgt ? P.tgt.z : P.tz;
   const dx = tx - P.x, dz = tz - P.z, d = Math.hypot(dx, dz);
-  const rng = P.tgt ? WEAPONS[P.wid].rng : .15;
+  const rng = P.tgt ? effRng() : .15;
 
   // aceleração suave em direção ao destino
   // recarregando (mosquete): fica parado até terminar, mesmo que o alvo se afaste

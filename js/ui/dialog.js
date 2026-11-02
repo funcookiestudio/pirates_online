@@ -24,7 +24,7 @@ import { applyAdoptions, setPet, petPos } from '../pets/manager.js';
 import { speak, stopSpeech, initNarrator } from '../systems/narrator.js';
 let cur = null, li = 0, tab = 'buy', stock = [];
 
-const plain = it => it.pot || it.food || it.mat || it.treat || it.ammo;
+const plain = it => it.pot || it.food || it.mat || it.treat || it.ammo || it.quiver;
 const icon = it => it.ic ? it.ic : it.bomb ? '💣' : it.pot ? '🧪' : it.ty === 'wpn' ? (WEAPONS[it.wi != null ? it.wi : it.w].gun ? '🔫' : '⚔') : '🛡';
 const val = (ty, q, wi) => Math.round((ty === 'wpn' ? WEAPONS[wi].b : 8) * q * (1 + (P.lv - 1) * .25));
 const BUY = 9, SELL = { smith: 4, tavern: 3, trader: 6 };
@@ -40,6 +40,7 @@ function makeStock(kind) {
     const s = [];
     WEAPONS.forEach((w, wi) => (!w.lv || w.shop) && !w.thrown && [1, 2].forEach(q => s.push({ ty: 'wpn', q, wi, price: val('wpn', q, wi) * BUY })));
     [1, 2, 3].forEach(q => s.push({ ty: 'arm', q, wi: 0, price: val('arm', q, 0) * BUY }));
+    s.push({ quiver: 'arrows', pack: 20, ic: '🏹', n: 'Flechas ×20', price: 30, desc: 'Munição de arco · você tem ' + P.arrows }, { quiver: 'bolts', pack: 15, ic: '🏹', n: 'Virotes ×15', price: 36, desc: 'Munição de besta · você tem ' + P.bolts });
     return s;
   }
   if (FARM_GOODS[kind]) return FARM_GOODS[kind].map(g => ({ food: g.mat || g.treat ? 0 : 1, ...g, desc: g.treat ? 'Petisco para cães e gatos (vínculo) · você tem ' + P[g.treat] : g.mat ? 'Material de artesanato · você tem ' + P[g.mat] : '+' + Math.round(g.hp * 100) + '% vida' + (g.mp ? ' · +' + Math.round(g.mp * 100) + '% mana' : '') + ' · consumo imediato' }));
@@ -105,13 +106,14 @@ function renderShop() {
       r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (plain(it) ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
       const b = document.createElement('button');
       b.textContent = '💰 ' + it.price;
-      const full = it.mat || it.treat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? beltRoom('bmb') <= 0 : it.pot ? beltRoom('pot') <= 0 : it.ammo ? (!ammoStack(it.wi) && bagFull()) : bagFull();
+      const full = it.quiver ? P[it.quiver] >= 99 : it.mat || it.treat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? beltRoom('bmb') <= 0 : it.pot ? beltRoom('pot') <= 0 : it.ammo ? (!ammoStack(it.wi) && bagFull()) : bagFull();
       b.disabled = P.gold < it.price || full;
       if (full) b.title = it.food ? 'Você já está satisfeito' : it.pot ? 'Cinto cheio: sem vagas na mochila' : 'Mochila cheia';
       b.onclick = () => {
         if (P.gold < it.price || full) return;
         P.gold -= it.price;
-        if (it.mat) { P[it.mat]++; lootText('+1 ' + it.n); }
+        if (it.quiver) { P[it.quiver] = Math.min(99, P[it.quiver] + it.pack); lootText('+ ' + it.pack + ' ' + (it.quiver === 'arrows' ? 'flechas' : 'virotes')); stock = makeStock(cur.shop); }
+        else if (it.mat) { P[it.mat]++; lootText('+1 ' + it.n); }
         else if (it.treat) { P[it.treat]++; lootText(it.ic + ' +1 ' + TREATS[it.treat].n); stock = makeStock(cur.shop); }
         else if (it.food) { P.hp = Math.min(P.max, P.hp + P.max * it.hp); if (it.mp) P.mp = Math.min(P.mmax, P.mp + P.mmax * it.mp); lootText(it.ic + ' ' + it.n); log(it.ic + ' Comeu: ' + it.n); }
         else if (it.ammo) { addItem({ ty: 'wpn', q: 1, wi: it.wi, ct: ammoInfo(it.wi).pack, il: P.lv }); }

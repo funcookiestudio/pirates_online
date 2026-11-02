@@ -17,7 +17,7 @@ const bump = (u, a, b, f = .15) => seg(u, a, a + f) * (1 - seg(u, b - f, b));
 const bez = (A, B, C, t) => new V().addScaledVector(A, (1 - t) * (1 - t)).addScaledVector(B, 2 * (1 - t) * t).addScaledVector(C, t * t);
 
 /** Onde a arma fica guardada: lâmina no cinto esquerdo, pistola no cinto direito, armas grandes nas costas */
-export const kindOf = W => W.big ? 'back' : W.gun ? 'hip' : 'blade';
+export const kindOf = W => W.big || W.bk ? 'back' : W.gun ? 'hip' : 'blade';   // bk: arco e cajado vão nas costas
 /** Duração (s) de sacar; guardar leva o mesmo tempo */
 export const DURATION = { blade: 1.5, hip: 1.2, back: 1.7 };
 

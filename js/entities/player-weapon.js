@@ -1,6 +1,7 @@
 /* Arma na mão do jogador: monta o modelo e posiciona os braços (IK) para armas de fogo. */
 import { P } from './player.js';
 import { WEAPONS } from '../data/weapons.js';
+import { bowString } from '../data/weapons-class.js';
 
 const MX = new THREE.Matrix4();
 
@@ -42,7 +43,44 @@ export function ik(arm, T, pole) {
 /** Pose das armas de fogo (chamada todo frame enquanto uma está equipada) */
 export function gunPose() {
   const W = WEAPONS[P.wid];
-  if (W.big) bigGunPose(W); else smallGunPose(W);
+  if (W.bow) bowPose(W);
+  else if (W.magic) castPose(W);
+  else if (W.big) bigGunPose(W);
+  else smallGunPose(W);
+  if (W.xbow && P.hand && P.hand.userData.bolt) P.hand.userData.bolt.forEach(b => { b.visible = P.bolts > 0; });   // besta sem virote: trilho vazio
+}
+
+/** Arco: a mão da arma segura o arco esticado à frente e a outra puxa a corda durante a recarga (P.cd); soltar = o tiro */
+function bowPose(W) {
+  const e = smooth(P.aimv), bob = Math.sin((P.br || 0) * 2.1) * .006 + Math.sin(P.ph * 2) * .012 * P.walk;
+  P.g.up.rotation.set(0, -.3 * e, 0);
+  const pull = e * ss01((P.cdMax - P.cd) / Math.max(.25, P.cdMax * .8));
+  const R = L(-.2, 1.2 + .1 * e + bob, .3 + .27 * e);
+  const dirB = new V(.05 * e, -.5 * (1 - e), 1).normalize();
+  const N = R.clone().addScaledVector(dirB, -(.1 + .36 * pull));   // ponto da corda, onde a mão de trás puxa
+  ik(P.g.arm, R, new V(-1, -.4 + .3 * e, -.15));
+  if (!(P.torchM && P.torchM.visible)) ik(P.g.armL, N, new V(1, -.6, -.15));
+  const q = P.g.arm.quaternion.clone().multiply(P.g.arm.fa.quaternion).conjugate();
+  const yL = dirB.clone().negate(), xL = new V(0, 1, 0).addScaledVector(yL, -yL.y).normalize(), zL = new V().crossVectors(xL, yL);   // braços do arco na vertical
+  [xL, yL, zL].forEach(v => v.applyQuaternion(q));
+  P.hl.q.setFromRotationMatrix(MX.makeBasis(xL, yL, zL));
+  P.hl.p.set(0, -.32, 0);
+  bowString(P.hand, pull, P.arrows > 0);
+}
+
+/** Cajado e rod: erguido na guarda; ao mirar aponta para o alvo e, no disparo (P.sw), o orbe da ponta brilha */
+function castPose(W) {
+  const e = smooth(P.aimv), c = P.sw, bob = Math.sin((P.br || 0) * 2.1) * .008;
+  P.g.up.rotation.set(0, 0, 0);
+  const R = L(-.24, .98 + .22 * e + .1 * c + bob, .3 + .15 * e + .12 * c);
+  const dirB = new V(0, 1, .12).lerp(new V(0, .4 + .35 * c, 1), Math.min(1, e + c * .5)).normalize();   // para onde aponta a ponta
+  ik(P.g.arm, R, new V(-1, -.5, -.1));
+  if (!(P.torchM && P.torchM.visible)) ik(P.g.armL, W.lh ? R.clone().addScaledVector(dirB, .38).add(new V(.02, 0, 0)) : L(.36, .95 + .1 * e, .12), new V(.6, -1, -.1));
+  const q = P.g.arm.quaternion.clone().multiply(P.g.arm.fa.quaternion).conjugate();
+  P.hl.p.set(0, -.32, 0);
+  P.hl.q.setFromUnitVectors(new V(0, -1, 0), dirB.applyQuaternion(q));
+  const u = P.hand.userData;
+  if (u.orb) { const s = 1 + c * .9 + .08 * Math.sin((P.br || 0) * 5); u.orb.scale.setScalar(s); u.halo.scale.setScalar(s * (1 + .25 * c)); }
 }
 
 /** Pistola: a arma fica à direita do corpo, as duas mãos a seguram; ao mirar (P.aimv) os braços sobem um pouco

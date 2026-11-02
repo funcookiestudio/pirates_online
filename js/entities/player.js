@@ -20,7 +20,7 @@ const CL = classOf(activeChar());   // classe do personagem ativo (bônus em cla
 export const P = {
   g: playerModel(!!(activeChar() && activeChar().f), activeChar() && activeChar().a),
   x: 0, z: 5, hp: CL.hp, max: CL.hp, mp: CL.mp, mmax: CL.mp, lv: 1, xp: 0, nxt: 60, dmg: CL.dmg, cls: CL, crit: CL.crit,
-  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: CL.sp, gold: 0, couro: 0, penas: 0, peixe: 0, osso: 0, pot: 3, bmb: 3, potR: 0, bmbR: 0, dead: false,   // potR/bmbR: reserva no cinto
+  tx: 0, tz: 5, tgt: null, cd: 0, sw: 0, sp: CL.sp, gold: 0, couro: 0, penas: 0, peixe: 0, osso: 0, pot: 3, bmb: 3, potR: 0, bmbR: 0, arrows: 0, bolts: 0, dead: false,   // potR/bmbR: reserva no cinto
   
   walk: 0, wid: 0, cds: [0, 0], vx: 0, vz: 0, ph: 0,
   // animação e combo

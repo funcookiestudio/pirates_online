@@ -26,7 +26,7 @@ import { updateLoot } from './entities/loot.js';
 import { setWeapon, equip, unequip, canEquipTo, eq, bag, chest } from './systems/inventory.js';
 import { switchWeapon } from './systems/swap.js';
 import { updatePlayer } from './systems/player-update.js';
-import { updateBombs, updateShots, hit, attack, impact } from './systems/combat.js';
+import { updateBombs, updateShots, hit, attack, impact, effRng } from './systems/combat.js';
 import { updateParticles } from './systems/effects.js';
 import { updateCamera } from './systems/camera.js';
 import { separate } from './systems/separation.js';
@@ -67,6 +67,8 @@ import './systems/death.js';
 import { initFullscreen, initPwa } from './ui/fullscreen.js';
 import { VILLAGE_SEAT, POST_DATA } from './data/posts.js';
 import { P, hurtP } from './entities/player.js';
+import { START } from './data/classes.js';
+import { activeChar } from './core/chars.js';
 import * as NAV from './world/interior-nav.js';
 import { enemies, props, loot } from './core/registry.js';
 
@@ -154,8 +156,10 @@ initMobileHud();
 initHotbarFit();
 const loaded = loadGame();
 if (!loaded) {   // personagem novo: só uma arma simples e 2 poções, sem pets nem outros itens
-  eq.wpn = { ty: 'wpn', q: 1, v: WEAPONS[0].b, il: 1, w: 0, n: WEAPONS[0].n }; eq.gun = eq.arm = eq.off = null; bag.length = 0;
-  P.pot = 2; P.bmb = 0; P.potR = P.bmbR = 0; P.gold = 0; setWeapon('wpn'); unequipPet(true);
+  const st = START[(activeChar() || {}).k], mk = n => { const w = WEAPONS.findIndex(x => x.n === n); return { ty: 'wpn', q: 1, v: WEAPONS[w].b, il: 1, w, n }; };   // arma inicial da classe (sem classe: Cutelo)
+  eq.wpn = st ? (st.wpn ? mk(st.wpn) : null) : { ty: 'wpn', q: 1, v: WEAPONS[0].b, il: 1, w: 0, n: WEAPONS[0].n }; eq.gun = st && st.gun ? mk(st.gun) : null; eq.arm = eq.off = null; bag.length = 0;
+  P.arrows = (st && st.arrows) || 0; P.bolts = (st && st.bolts) || 0;
+  P.pot = 2; P.bmb = 0; P.potR = P.bmbR = 0; P.gold = 0; setWeapon((st && st.act) || 'wpn'); unequipPet(true);
 } // antes de povoar a ilha: a vida dos inimigos depende do nível
 buildOutposts();
 buildPois();
@@ -175,5 +179,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? 'Progresso carregado' : 'Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { SK, BOND, HL, PET, petWalk, WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, VEH, giveVehicle, setUse, unequipPet, dungeonGimmicks, dungeonStats, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { SK, attack, effRng, BOND, HL, PET, petWalk, WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, VEH, giveVehicle, setUse, unequipPet, dungeonGimmicks, dungeonStats, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

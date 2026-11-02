@@ -156,9 +156,39 @@ export function updateBombs(dt) {
 
 /* ---------- Ataque básico ---------- */
 
+/* Arcos, bestas, cajados e rods (weapons-class.js). Flecha/virote e orbe são malhas leves: geometrias e materiais ficam compartilhados. */
+const BASH = { rng: 2.2, arc: 1.6, mul: .4, cd: .6, imp: .15 };   // cajado/rod sem mana: pancada fraca corpo a corpo
+const noMana = W => !!W.magic && P.mp < W.mp;
+/** A arma como está valendo agora (cajado sem mana vira uma pancada curta) */
+export const curW = () => { const W = WEAPONS[P.wid]; return noMana(W) ? { ...W, ...BASH, gun: 0, magic: 0 } : W; };
+/** Alcance de ataque agora (a pancada sem mana só alcança de perto) */
+export const effRng = () => curW().rng;
+const ammoKey = W => (W.xbow ? 'bolts' : 'arrows');
+/** A arma de longa distância tem o que gastar? (flecha/virote ou mana) */
+export const hasAmmo = W => (W.bow || W.xbow ? P[ammoKey(W)] > 0 : true);
+let ammoWarn = 0;
+function warnAmmo(W) { const n = performance.now(); if (n - ammoWarn > 2500) { ammoWarn = n; log(W.xbow ? 'Sem virotes! Compre mais no ferreiro.' : 'Sem flechas! Compre mais no ferreiro.'); } }
+const AG = { sh: new THREE.BoxGeometry(.03, .8, .03), tip: new THREE.ConeGeometry(.05, .14, 4).rotateX(Math.PI).translate(0, -.47, 0), fe: new THREE.BoxGeometry(.12, .14, .01).translate(0, .36, 0), orb: new THREE.SphereGeometry(.15, 8, 6) };
+const AM = { wood: new THREE.MeshBasicMaterial({ color: 0xcaa66a }), bolt: new THREE.MeshBasicMaterial({ color: 0x7a7a80 }), steel: new THREE.MeshBasicMaterial({ color: 0xdde3e8 }), fea: new THREE.MeshBasicMaterial({ color: 0xe8e0d0 }) };
+const OM = {};   // materiais dos orbes, um por cor
+function arrowMesh(bolt) {
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(AG.sh, bolt ? AM.bolt : AM.wood), new THREE.Mesh(AG.tip, AM.steel), new THREE.Mesh(AG.fe, AM.fea));
+  if (bolt) g.scale.setScalar(.75);
+  return g;
+}
+function orbMesh(c) {
+  const o = OM[c] || (OM[c] = { core: new THREE.MeshBasicMaterial({ color: c }), glow: new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .35, depthWrite: false }) });
+  const m = new THREE.Mesh(AG.orb, o.core), h = new THREE.Mesh(AG.orb, o.glow);
+  h.scale.setScalar(1.9); m.add(h);
+  return m;
+}
+
 /** Inicia um ataque em direção (dx,dz): corpo a corpo agenda o impacto; arma de fogo dispara a bala */
 export function attack(dx, dz) {
-  const W = WEAPONS[P.wid], t = P.tgt;
+  const W0 = WEAPONS[P.wid], t = P.tgt, qk = ammoKey(W0);
+  if ((W0.bow || W0.xbow) && !(P[qk] > 0)) { P.cd = P.cdMax = .6; warnAmmo(W0); return; }   // sem flechas/virotes: não atira
+  const W = curW();
   P.cdMax = W.reload ? W.cd / (P.rls || 1) : W.cd; // armas com recarga animada respeitam a velocidade de recarga
   P.cd = P.cdMax;
   P.sw = 1;
@@ -178,8 +208,12 @@ export function attack(dx, dz) {
   P.g.updateMatrixWorld(true);
   const mp = P.hand.localToWorld(new THREE.Vector3(0, -(W.ml || 1), 0)); // boca do cano
   const mx = mp.x, mz = mp.z, my = mp.y;
-  let m;
-  if (W.thrown) m = W.build();   // arma de arremesso: voa o próprio modelo da arma
+  let m, dmg = P.dmg * W.mul * P.cls.ranged, ex = {};
+  if (W.bow || W.xbow) { P[qk]--; m = arrowMesh(!!W.xbow); ex = { or: 1, ar: qk }; }   // flecha/virote: haste fina (geometria e materiais compartilhados)
+  else if (W.magic) {                                                                    // cajado/rod: orbe mágico, gasta mana
+    P.mp -= W.mp; m = orbMesh(W.col); dmg = P.dmg * W.mul * (P.cls.magic || 1); ex = { mg: W.col };
+    puff(mx, my, mz, W.col, 3, 6);
+  } else if (W.thrown) m = W.build();   // arma de arremesso: voa o próprio modelo da arma
   else {
     puff(mx, my, mz, 0xffd070, 4, 6);
     puff(mx, my, mz, 0x999999, 2, 4);
@@ -188,12 +222,12 @@ export function attack(dx, dz) {
   m.position.set(mx, my, mz);
   scene.add(m);
   const sp = W.thrown ? spendAmmo() : null;   // arremesso é finito: gasta 1 (pode quebrar ou cair no chão)
-  shots.push({ m, t, rec: sp && sp.keep ? sp : null, d: P.dmg * W.mul * P.cls.ranged, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0 });
+  shots.push({ m, t, rec: sp && sp.keep ? sp : null, d: dmg, sp: W.sp, sl: W.splash, fx: W.fx, th: W.thrown ? (W.tumble ? 1 : W.spin ? 2 : 3) : 0, ...ex });
 }
 
 /** Momento do golpe corpo a corpo: acerta quem está no arco à frente */
 export function impact() {
-  const W = WEAPONS[P.wid], a = P.ay, fin = P.cb === 2, arc = W.arc || 1.6, rg = W.rng + .7;
+  const W = curW(), a = P.ay, fin = P.cb === 2, arc = W.arc || 1.6, rg = W.rng + .7;
   enemies.forEach(e => {
     if (e.dead) return;
     const dx = e.x - P.x, dz = e.z - P.z;
@@ -201,7 +235,7 @@ export function impact() {
     let da = Math.atan2(dx, dz) - a;
     da = Math.abs(Math.atan2(Math.sin(da), Math.cos(da)));
     if (e !== P.tgt && da > arc / 2) return;
-    hit(e, P.dmg * W.mul * P.cls.melee * (fin ? 1.4 : 1) * (e === P.tgt ? 1 : .7), { kn: fin ? 1.6 : .8, fin, ang: a, cr: W.crit && Math.random() < .15 + W.crit ? true : undefined });
+    hit(e, P.dmg * W.mul * P.cls.melee * (fin ? 1.4 : 1) * (e === P.tgt ? 1 : .7), { kn: (fin ? 1.6 : .8) * (W.kb || 1), fin, ang: a, cr: W.crit && Math.random() < .15 + W.crit ? true : undefined });
     if (!e.dead) {   // efeitos das armas: sangramento e atordoamento
       if (W.bleed && Math.random() < W.bleed) { e.bl = 3; e.bd = Math.max(1, P.dmg * .25); e.bt = .5; }
       if (W.stun && Math.random() < W.stun) e.sn = Math.max(e.sn || 0, e.t.boss ? .35 : 1);
@@ -228,6 +262,8 @@ export function updateShots(dt) {
       const dx = s.t.x - p.x, dy = 1.3 - p.y, dz = s.t.z - p.z, d = Math.hypot(dx, dy, dz);
       if (d < .8) {
         hit(s.t, s.d, { kn: .6 });
+        if (s.ar && Math.random() < .35) P[s.ar]++;   // às vezes a flecha/virote se aproveita
+        if (s.mg) puff(s.t.x, 1.2, s.t.z, s.mg, 4, 8);
         if (s.th) emit('shot:thrown-hit');   // (missão "Mão Firme")
         if (s.th && s.fx) puff(s.t.x, 1, s.t.z, 0xa77be0, 6, 10);
         if (s.fx && s.fx.stun && !s.t.dead) s.t.sn = Math.max(s.t.sn || 0, s.t.t.boss ? .4 : s.fx.stun);
@@ -244,7 +280,7 @@ export function updateShots(dt) {
         p.z += dz * k;
         if (s.th === 1) { s.m.rotation.y = Math.atan2(dx, dz); s.m.rotation.x += 16 * dt; }          // machados: giram no ar
         else if (s.th === 2) s.m.rotation.y += 14 * dt;                                             // boleadeiras/rede/bomba: rodopiam
-        else if (s.th) s.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(dx / d, dy / d, dz / d)); // facas/lanças: ponta na direção do voo
+        else if (s.th || s.or) s.m.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), new THREE.Vector3(dx / d, dy / d, dz / d)); // facas/lanças: ponta na direção do voo
       }
     }
     if (done) {
