@@ -269,7 +269,7 @@ function buildOne(spot) {
     { const hw = toWorld(spot, f, -8, -12); spot.bed = buildAvesHouse(hw.x, hw.z, f.th, by).bed; }
     buildAvesDecor({ g, solid, M });                                                  // casa, pombal, galinheiro, lagoa, portão... (farm-aves.js)
     field(4.5, 4.5 + 6 * 1.5 - 1, -2, 9, 5, [['Milho', 1.3, .8], ['Alface', .7, 1], ['Trigo', 1.3, .65], ['Couve', .9, .9], ['Girassol', 1.3, .8]]);
-    pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster'], at: spotsIn(a, 5),
+    pens.push({ kinds: ['hen', 'hen', 'hen', 'hen', 'rooster', 'chick', 'chick', 'chick'], at: spotsIn(a, 8),
       den: (() => { const b = toWorld(spot, f, -12.95, 1.28), t = toWorld(spot, f, -12.95, -.38); return { bx: b.x, bz: b.z, tx: t.x, tz: t.z, h: .95 }; })() });   // rampa do galinheiro: as galinhas sobem, ficam e saem
     pens.push({ kinds: ['duck', 'duck', 'turkey', 'peacock'], at: spotsIn(b, 4),
       pond: (() => { const q = toWorld(spot, f, -10.2, 5.7); return { cx: q.x, cz: q.z, fx: f.fx, fz: f.fz, rx: 2.0, rz: .85 }; })(),
@@ -282,7 +282,7 @@ function buildOne(spot) {
     trough(b.x0 + 2.2, b.z1 - 1.2); bx(1.2, .6, 1, 0xd8b848, b.x1 - 1.8, .3, b.z0 + 1.2);
     field(4.5, 4.5 + 4 * 1.5 - 1, -2, 9, 4, [['Batata', 1.1, .9], ['Cenoura', .95, 1], ['Repolho', .95, 1], ['Tomate', 1.2, .85]]);
     pens.push({ kinds: ['pig', 'pig', 'pig'], at: spotsIn(a, 3) });
-    pens.push({ kinds: ['sheep', 'sheep', 'sheep', 'sheep'], at: spotsIn(b, 4) });
+    pens.push({ kinds: ['sheep', 'sheep', 'sheep', 'sheep', 'goat', 'goat'], at: spotsIn(b, 6) });
   } else {
     { const hw = toWorld(spot, f, -8, -12); spot.bed = buildAvesHouse(hw.x, hw.z, f.th, by, { lid: 2, PL: 0xd9cdb0, PL2: 0xbfb294, SH: 0x5a3a28, QUILT: 0x8a2433, QUILT2: 0xe8dcc0, roof: [0x4a4f5c, 0x40454f, 0x555a68, 0x363a46] }).bed; }
     buildGadoDecor({ g, solid, M });                                                  // estábulo grande, silos, cocheira, bebedouros (farm-gado.js)
@@ -290,7 +290,7 @@ function buildOne(spot) {
     bx(1.6, .9, 1.2, 0xd8b848, a.x1 - 1.6, .45, a.z1 - 1.2);
     field(4.5, 4.5 + 3 * 1.5 - 1, -2, 9, 3, [['Cevada', 1.3, .65], ['Aveia', 1.3, .65], ['Beterraba', 1.1, 1]]);
     pens.push({ kinds: ['cow', 'cow', 'cow', 'ox'], at: spotsIn(a, 4) });
-    pens.push({ kinds: ['horse', 'horse'], at: spotsIn(b, 2) });
+    pens.push({ kinds: ['horse', 'horse', 'goat'], at: spotsIn(b, 3) });
   }
   // ---- detalhes comuns (fora do pátio e do corredor de estrada) ----
   if (vr.id !== 'aves') {   // (o Sítio das Aves tem portão, lampiões e banco próprios em farm-aves.js)

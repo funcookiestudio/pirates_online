@@ -49,6 +49,7 @@ import { CLOCK } from './core/clock.js';
 import { dodge } from './systems/dodge.js';
 import { buildFarmSite } from './entities/farm-site.js';
 import { buildFarm, updateFarm, FARM } from './entities/farm.js';
+import { buildBugs, updateBugs } from './entities/farm-extra.js';
 import { updatePets, setPet, unequipPet } from './pets/manager.js';
 import { updateQuest, ratDbg } from './systems/quest.js';
 import { updateQuests } from './systems/quests.js';
@@ -105,6 +106,7 @@ function tick(now) {
   S('updateNpcs', () => updateNpcs(realDt, now));
   S('enemyLabels', () => updateEnemyLabels());
   S('updateFarm', () => updateFarm(realDt));
+  S('updateBugs', () => updateBugs(realDt));
   S('updateRoyals', () => updateRoyals(realDt));
   S('updateFarmFx', () => updateFarmFx(realDt));
   S('updateAlchemist', () => updateAlchemist(realDt));
@@ -169,7 +171,7 @@ if (!RUINS_ISLE) buildFarmSite();   // fazenda de verdade (celeiro, casa, pasto,
 const dyn = new Set([...npcList.map(n => n.g), ...enemies.map(e => e.g)]);
 const mr = mergeStatics(worldBefore, dyn);
 if (location.hash === '#dev') console.log('merge', mr);
-if (!RUINS_ISLE) { buildFarm(); buildWildlife(); }
+if (!RUINS_ISLE) { buildFarm(); buildWildlife(); buildBugs(); }
    // cervos, javalis e gatos (criados depois da fusão para continuarem animáveis)
 initMount(MOUNT.owned, MOUNT.coat);   // cavalo comprado espera junto ao portão leste
 initVehicles();   // carroça/carruagem compradas também   // animais de fazenda (enfeite) — criados depois da fusão para continuarem animáveis

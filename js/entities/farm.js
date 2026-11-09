@@ -1,4 +1,4 @@
-/* Animais de fazenda (ambientação): galo, galinha, pato, peru, pavão, porco, ovelha, vaca, boi e cavalo.
+/* Animais de fazenda (ambientação): galo, galinha, pato, peru, pavão, porco, ovelha, vaca, boi, cavalo, cabra e pintinho (cabra/pintinho: modelos em farm-extra.js).
    Só enfeite: não têm colisão, não são alvo e não entram em combate. Ficam em currais perto da vila e só animam quando o jogador está perto. */
 import { FARMSITE } from './farm-site.js';
 import { FEED } from './farmer.js';
@@ -7,12 +7,13 @@ import { mkHorse } from './horse.js';
 import { groundY, walkable, nearObstacle, onRoad } from '../world/terrain.js';
 import { scene } from '../core/engine.js';
 import { P } from './player.js';
+import { mkGoat, mkChick } from './farm-extra.js';
 import { VILLAGE_R } from '../core/village-const.js';
 
 /* Modelos 3D (blocos) de animais de fazenda: galo, galinha, pato, porco, boi e vaca. */
 
 /** Perna de quadrúpede com joelho. Expõe l.knee */
-function quadLeg(g, x, y, z, w, h1, h2, col, hoof) {
+export function quadLeg(g, x, y, z, w, h1, h2, col, hoof) {
   const l = new THREE.Group();
   l.position.set(x, y, z);
   const k = new THREE.Group();
@@ -25,7 +26,7 @@ function quadLeg(g, x, y, z, w, h1, h2, col, hoof) {
 }
 
 /** Perna de ave (coxa + canela + 3 dedos). Expõe l.knee */
-function birdLeg(g, x, y, z, col, th = .05, len = .2) {
+export function birdLeg(g, x, y, z, col, th = .05, len = .2) {
   const l = new THREE.Group();
   l.position.set(x, y, z);
   const k = new THREE.Group();
@@ -448,7 +449,7 @@ export function mkPeacock() {
 /* Animação dos animais de fazenda: caminhar em círculo, parar, olhar em volta, pastar/bicar, mexer orelhas/cauda e bater asas.
  * Uso:  const a = createAnimator(root, modelo, 'cow');  // root = grupo que contém o modelo, já na posição "casa"
  *       a.update(dt);                                    // a cada frame (dt em segundos)
- * Tipos: rooster, hen, duck, turkey, peacock, pig, sheep, cow, ox, horse (modelos de farm.js). */
+ * Tipos: rooster, hen, duck, turkey, peacock, pig, sheep, cow, ox, horse (modelos de farm.js), goat, chick (farm-extra.js). */
 
 const TAU = Math.PI * 2;
 const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
@@ -464,7 +465,9 @@ const CFG = {
   sheep: { amp: .5, freq: 10, v: .45, bob: .025, dipY: .4, dipZ: .12, dipR: .8, tailAxis: 'y', tailAmp: .4, tailF: 7 },
   cow: { amp: .42, freq: 7, v: .38, bob: .02, dipY: .45, dipZ: .15, dipR: .7, tailAxis: 'y', tailAmp: .35, tailF: 2.2 },
   ox: { amp: .38, freq: 6.5, v: .33, bob: .02, dipY: .5, dipZ: .15, dipR: .7, tailAxis: 'y', tailAmp: .3, tailF: 2 },
-  horse: { amp: .5, freq: 8, v: .7, bob: .03, neckDip: 1.5, tailAxis: 'y', tailAmp: .3, tailF: 2.6 }
+  horse: { amp: .5, freq: 8, v: .7, bob: .03, neckDip: 1.5, tailAxis: 'y', tailAmp: .3, tailF: 2.6 },
+  goat: { amp: .5, freq: 10, v: .5, bob: .025, dipY: .4, dipZ: .12, dipR: .8, tailAxis: 'z', tailAmp: .5, tailF: 8 },
+  chick: { bird: 1, freq: 18, amp: .9, v: .28, waddle: .12, bobZ: .012, dipY: .1, dipZ: .04, dipR: 1, tail: .2 }
 };
 
 export function createAnimator(root, g, kind) {
@@ -618,15 +621,15 @@ function openSpot(x, z, r) {
 }
 
 const HERDS = [
-  ['hen', 'hen', 'hen', 'rooster', 'duck', 'turkey'],
-  ['pig', 'pig', 'sheep', 'sheep', 'cow'],
-  ['horse', 'ox', 'cow', 'sheep', 'peacock'],
+  ['hen', 'hen', 'hen', 'rooster', 'duck', 'turkey', 'chick', 'chick'],
+  ['pig', 'pig', 'sheep', 'sheep', 'cow', 'goat'],
+  ['horse', 'ox', 'cow', 'sheep', 'peacock', 'goat'],
 ];
 
 /** Cria os currais (até um por grupo) em torno da vila, em direções diferentes */
 export function buildFarm() {
-  const MK = { rooster: mkRooster, hen: mkHen, duck: mkDuck, turkey: mkTurkey, peacock: mkPeacock, pig: mkPig, sheep: mkSheep, cow: mkCow, ox: mkOx, horse: mkHorse };
-  const SCALE = { rooster: .9, hen: .9, duck: .9, turkey: 1, peacock: 1, pig: 1, sheep: 1, cow: 1, ox: 1, horse: .8 };
+  const MK = { rooster: mkRooster, hen: mkHen, duck: mkDuck, turkey: mkTurkey, peacock: mkPeacock, pig: mkPig, sheep: mkSheep, cow: mkCow, ox: mkOx, horse: mkHorse, goat: mkGoat, chick: mkChick };
+  const SCALE = { rooster: .9, hen: .9, duck: .9, turkey: 1, peacock: 1, pig: 1, sheep: 1, cow: 1, ox: 1, horse: .8, goat: 1, chick: 1 };
   if (FARMSITE.ok) {
     FARMSITE.sites.forEach(st => st.pens.forEach(pn => pn.kinds.forEach((kind, i) => {
       const w = pn.pts[i % pn.pts.length], g = MK[kind](), root = new THREE.Group();
