@@ -9,6 +9,7 @@ import { xray } from './xray.js';
 import { POST_DATA } from '../data/posts.js';
 import { groundY, walkable, onRoad, SEA } from './terrain.js';
 import { reserved } from './reserve.js';
+import { buildDragonKits } from './kits-dragon.js';
 
 const mat = c => xray(M(c));
 const box = (g, w, h, d, c, x, y, z, ry = 0, rx = 0, rz = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; };
@@ -105,4 +106,5 @@ export function buildDragonScenery() {
     const k = (Math.random() * T.length) | 0, o = place(T[k](), x, z, rnd(0, 6.28), k === 0 ? rnd(.9, 1.5) : 1);
     if (T[k] === skull || T[k] === ribs || T[k] === obsidian || T[k] === charred) solid(o.position.x, o.position.z, T[k] === ribs ? 1.2 : .9);
   }
+  buildDragonKits();   // kits em peças (kits-dragon.js) por cima do cenário acima
 }
