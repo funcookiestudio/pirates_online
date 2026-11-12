@@ -12,7 +12,7 @@ import { makeChest, makeBoard } from '../entities/npc.js';
 import { makeNpc } from '../entities/npc.js';
 import { xray } from './xray.js';
 import { campfire } from './campfire.js';
-import { CASTLE, DISTRICT, DIST_END, districtHouses } from './reserve.js';
+import { CASTLE, DISTRICT, districtHouses, districtPath, distPoint, pathLat, PLAZA_S } from './reserve.js';
 import { doorFront } from './doors.js';
 
 /** Raio da muralha e meia-largura dos portões */
@@ -131,14 +131,13 @@ export function buildVillage() {
     }
   });
 
-  // ═════════ Bairro do Porto: rua que sai de um portão (terrain.js escolhe qual e achata o chão) com 4 casas, 2 de cada lado ═════════
+  // ═════════ Vila do Porto: caminho sinuoso fora da muralha (terrain.js escolhe o portão e achata o chão), casas com recuos e giros diferentes ═════════
   const DIST_DOORS = [];
   if (DISTRICT.ok) {
-    const DK = ['healer', 'bakery', 'fisher', 'carpenter'];   // ordem de districtHouses(): perto do portão (esq., dir.), depois no fundo (esq., dir.)
-    const DL = { bakery: [0xf0c8a0, 0xe8e0d0, 0x8a5a2a, 0x6a4a2a], healer: [0xe8bc94, 0x4a7a4a, 0x3a5a3a, 0xc8c8c0], fisher: [0xc8946a, 0x2b5a68, 0x3a3a2a, 0x6a6a6a], carpenter: [0xd0a07a, 0x8a6238, 0x4a3a2a, 0x3a2a1a] };
-    const DI = { bakery: 7, healer: 8, fisher: 9, carpenter: 10 };   // fichas em CITIZENS (npcs.js)
-    districtHouses().forEach((h, i) => {
-      const kind = DK[i], a = Math.atan2(-h.fz, -h.fx);
+    const DL = { bakery: [0xf0c8a0, 0xe8e0d0, 0x8a5a2a, 0x6a4a2a], healer: [0xe8bc94, 0x4a7a4a, 0x3a5a3a, 0xc8c8c0], fisher: [0xc8946a, 0x2b5a68, 0x3a3a2a, 0x6a6a6a], chalet: [0xd8a880, 0x6a3a2a, 0x3a4a2a, 0x2a2a22], sobrado: [0xe0b090, 0x2d5a6a, 0x5a2a3a, 0xc8c0a8], aframe: [0xe4b894, 0x4a5a8a, 0x3a3a3a, 0x6a5a4a], carpenter: [0xd0a07a, 0x8a6238, 0x4a3a2a, 0x3a2a1a] };
+    const DI = { bakery: 7, healer: 8, fisher: 9, carpenter: 10, chalet: 11, sobrado: 12, aframe: 13 };   // fichas em CITIZENS (npcs.js)
+    districtHouses().forEach(h => {
+      const kind = h.kind, a = Math.atan2(-h.fz, -h.fx);
       const [fx, fz, th, , pts] = buildHouse(kind, h.x, h.z, a);
       citizen(fx, fz, th, DL[kind], { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId, bed: pts.bed }, DI[kind]);
       const d = doorFront(kind + '-front', 1.2); if (d) DIST_DOORS.push(d);
@@ -178,12 +177,38 @@ export function buildVillage() {
     const t = disc > 0 ? -bq - Math.sqrt(disc) : Math.hypot(dx, dz) - R2;
     road(dx, dz, dx + fx * t, dz + fz * t, 2.2);
   });
-  if (DISTRICT.ok) {   // rua do bairro (continua a do portão), chão de terra batida sob as casas e caminhos porta → rua
-    const ux = Math.cos(DISTRICT.ang), uz = Math.sin(DISTRICT.ang), s0 = VILLAGE_R + 3.2, lim = DIST_END + 6;
-    const len = DIST_END + 1 - (s0 - .3), mid = s0 - .3 + len / 2;
-    box(2 * 12, .024, len, 0x9a8a62, ux * mid, .012, uz * mid).rotation.y = Math.atan2(ux, uz);
-    road(ux * s0, uz * s0, ux * DIST_END, uz * DIST_END, 3.4, true, lim);
-    DIST_DOORS.forEach(({ p: [dx, dz], f: [fx, fz] }) => { const t = Math.abs(dx * -uz + dz * ux); road(dx, dz, dx + fx * t, dz + fz * t, 2.2, true, lim); });
+  if (DISTRICT.ok) {   // caminho sinuoso, pracinha com poço, vielas até as portas e postes de luz
+    const PA = districtPath(), FAR = 400, disc = (x, z, r, c) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, .04, 14), X(c)); m.position.set(x, .035, z); scene.add(m); };
+    // chão de terra batida sob tudo (manchas redondas e irregulares, para não parecer uma faixa)
+    PA.forEach(([x, z], i) => { const j = ((i * 53) % 7 - 3) * .35; disc(x + j, z - j, 4.6 + (i % 3) * .5, 0x9a8a62); });
+    DIST_DOORS.forEach(({ p: [x, z] }) => disc(x, z, 3.4, 0x9a8a62));
+    for (let i = 0; i < PA.length - 1; i++) { road(PA[i][0], PA[i][1], PA[i + 1][0], PA[i + 1][1], 3.2, false, FAR); disc(PA[i + 1][0], PA[i + 1][1], 1.65, 0x5e5a52); }
+    // pracinha oval no meio do caminho com um poço de pedra
+    const [cx, cz] = distPoint(PLAZA_S, pathLat(PLAZA_S));
+    for (let i = 0; i < 16; i++) { const a0 = i / 16 * Math.PI * 2, a1 = (i + 1.1) / 16 * Math.PI * 2; road(cx + Math.cos(a0) * 4.4, cz + Math.sin(a0) * 4.4, cx + Math.cos(a1) * 4.4, cz + Math.sin(a1) * 4.4, 2.2, false, FAR); }
+    disc(cx, cz, 3.4, 0x8a867b);
+    const well = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.15, .9, 12), X(0x7b786f)); well.position.set(cx, .45, cz); scene.add(well);
+    const water = new THREE.Mesh(new THREE.CircleGeometry(.82, 12).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x3a8ac8 })); water.position.set(cx, .8, cz); water.userData.water = true; scene.add(water);
+    for (const sx of [-1, 1]) box(.14, 1.9, .14, 0x5a3a1a, cx + sx * 1.0, .95 + .45, cz);
+    box(.14, .14, 2.3, 0x5a3a1a, cx - .0, 2.4, cz).rotation.y = 0; box(2.6, .1, .12, 0x5a3a1a, cx, 2.4, cz);
+    const wr = box(2.6, .1, 1.5, 0x8a3a2a, cx, 2.62, cz - .45); wr.rotation.x = .45; const wr2 = box(2.6, .1, 1.5, 0x7a3024, cx, 2.62, cz + .45); wr2.rotation.x = -.45;
+    blocker(cx, cz, 1.4);
+    box(1.4, .45, .45, 0x8a6238, cx + 3.0, .25, cz + 1.2).rotation.y = .6; blocker(cx + 3.0, cz + 1.2, .8);   // bancos
+    box(1.4, .45, .45, 0x8a6238, cx - 3.0, .25, cz - 1.2).rotation.y = .6; blocker(cx - 3.0, cz - 1.2, .8);
+    // vielas curtas: da frente de cada porta até o ponto mais próximo do caminho
+    DIST_DOORS.forEach(({ p: [x, z] }) => {
+      let bx = 0, bz = 0, bd = 1e9;
+      for (let i = 0; i < PA.length - 1; i++) {
+        const [x0, z0] = PA[i], [x1, z1] = PA[i + 1], vx = x1 - x0, vz = z1 - z0, t = Math.max(0, Math.min(1, ((x - x0) * vx + (z - z0) * vz) / (vx * vx + vz * vz))), qx = x0 + vx * t, qz = z0 + vz * t, d = Math.hypot(x - qx, z - qz);
+        if (d < bd) { bd = d; bx = qx; bz = qz; }
+      }
+      const L = Math.hypot(bx - x, bz - z), k = Math.max(0, L - 1.5) / L; if (L > 1.7) road(x, z, x + (bx - x) * k, z + (bz - z) * k, 2.0, false, FAR);
+    });
+    // postes de luz de pedra e madeira, alternando os lados (de dia só enfeite)
+    for (let i = 2; i < PA.length - 2; i += 4) {
+      const [x, z] = PA[i], [x1, z1] = PA[i + 1], vx = x1 - x, vz = z1 - z, n = Math.hypot(vx, vz), sd = (i / 4 | 0) % 2 ? 1 : -1, px = x - vz / n * 2.4 * sd, pz = z + vx / n * 2.4 * sd;
+      box(.14, 2.5, .14, 0x4a3320, px, 1.25, pz); box(.34, .4, .34, 0xe8c070, px, 2.7, pz); box(.5, .1, .5, 0x2b2b30, px, 2.95, pz); blocker(px, pz, .3);
+    }
   }
 }
 

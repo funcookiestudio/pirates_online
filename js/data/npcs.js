@@ -23,6 +23,12 @@ export const CITIZENS = [
     lines: ['Hoje o mar tava manso e a rede voltou pesada. Quer ouvir a história do peixe-espada que me puxou até a barra?', 'Peixe seco dura meses e pirata esfomeado não tem frescura. Pode levar.', 'Estou consertando o barco velho. Um dia ainda zarpo até a ilha da Medusa... de longe, claro.'] },
   { name: 'Mestre Pinho', title: 'Carpinteiro', ic: '🪚', skin: ['calafate', 0],
     lines: ['Tábua boa tem cheiro de mato e é feita para durar mais que o dono. Veja aquele casco: será um veleiro daqueles!', 'Esse barulho de serra? Música para os meus ouvidos. Só não chegue perto da plaina, marujo.', 'Preciso de mais madeira, mas as árvores perto da mata são guardadas pelos mortos. Que azar.'] },
+  { name: 'Rufino Pelego', title: 'Caçador', ic: '🏹', skin: ['cavalarico', 0],
+    lines: ['Peles, chifres, um bom arco... a mata dá tudo a quem sabe esperar. Mas não vá atrás de javali sem corda e coragem.', 'Está vendo aquele couro no varal? Foi um urso. Desse tamanho! Bom, quase desse tamanho.', 'A lareira do chalé nunca apaga. Passe aqui depois da caçada e eu conto como foi a minha.'] },
+  { name: 'Dona Ruth', title: 'Dona do Sobrado', ic: '🏠', skin: ['avicultora', 1],
+    lines: ['Dois andares, sacada para o mar e nenhum inquilino que pague em dia. Piratas...', 'Meu falecido marido dizia que sobrado bom tem escada que range. O meu range para o vizinho inteiro ouvir.', 'O andar de cima? Está trancado. Tem coisa lá em cima que não é da conta de marujo.'] },
+  { name: 'Gaspar Bruma', title: 'Pintor de Marinhas', ic: '🎨', skin: ['cartografo', 0],
+    lines: ['Moro no fim da rua porque a luz do poente chega primeiro aqui. O mar nunca pinta igual duas vezes.', 'Uma casa em forma de A, claro. O telhado desce até o chão para o vento passar por cima de mim.', 'Se eu pintasse a Medusa, ninguém acreditaria. Então pinto só as ondas.'] },
 ];
 
 export const GUARD = { name: 'Guarda do Porto', title: 'Sentinela', ic: '💂', skin: ['guarda', 0],

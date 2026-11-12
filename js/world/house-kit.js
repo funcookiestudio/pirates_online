@@ -50,26 +50,42 @@ export function startHouse(x, z, th, o) {
   for (let i = 0; i < 2 * HW; i++) B(.94, .03, 2 * HD - .3, -HW + .5 + i, .115, 0, i % 2 ? 0x6b5238 : 0x7a5e40);
 
   /** parede com vãos (ops: [{c, w, y0, y1}]) em reboco, rodapé de pedra, enxaimel em X e batentes; `g` é o grupo (para ocultar em jogo) */
-  k.wall = (ax, f, a0, a1, ops, g) => {
+  k.wall = (ax, f, a0, a1, ops, g, yb = 0, hh = H) => {
     ops.sort((a, b) => a.c - b.c); let cur = a0, n = 0;
     const seg = (u0, u1, y0, y1) => {
       const l = u1 - u0, h = y1 - y0; if (l < .02 || h < .02) return;
       const u = (u0 + u1) / 2, y = (y0 + y1) / 2;
       W(ax, f, u, y, l, h, T, PL, g);
-      if (y0 < .6) { const t = Math.min(y1, .6); W(ax, f, u, (y0 + t) / 2, l, t - y0, T + .14, STONE, g); }
-      if (y0 === 0 && y1 === H && l > 1.2) {   // painel cheio: diagonal de enxaimel
-        const hh = H - .8, len = Math.hypot(l, hh), s = (n++ % 2) ? 1 : -1, m = W(ax, f, u, .7 + hh / 2, len, .12, T + .1, TM, g);
-        if (ax === 'x') m.rotation.z = s * Math.atan2(hh, l); else m.rotation.x = -s * Math.atan2(hh, l);
+      if (yb === 0 && y0 < .6) { const t = Math.min(y1, .6); W(ax, f, u, (y0 + t) / 2, l, t - y0, T + .14, STONE, g); }
+      if (y0 === yb && y1 === yb + hh && l > 1.2) {   // painel cheio: diagonal de enxaimel
+        const dh = hh - .8, len = Math.hypot(l, dh), s = (n++ % 2) ? 1 : -1, m = W(ax, f, u, yb + .7 + dh / 2, len, .12, T + .1, TM, g);
+        if (ax === 'x') m.rotation.z = s * Math.atan2(dh, l); else m.rotation.x = -s * Math.atan2(dh, l);
       }
     };
     for (const o of ops) {
       const l0 = o.c - o.w / 2, l1 = o.c + o.w / 2;
-      seg(cur, l0, 0, H); seg(l0, l1, 0, o.y0); seg(l0, l1, o.y1, H);
-      W(ax, f, l0, H / 2, .16, H, T + .1, TM, g); W(ax, f, l1, H / 2, .16, H, T + .1, TM, g); cur = l1;
+      seg(cur, l0, yb, yb + hh); seg(l0, l1, yb, o.y0); seg(l0, l1, o.y1, yb + hh);
+      W(ax, f, l0, yb + hh / 2, .16, hh, T + .1, TM, g); W(ax, f, l1, yb + hh / 2, .16, hh, T + .1, TM, g); cur = l1;
     }
-    seg(cur, a1, 0, H);
-    W(ax, f, (a0 + a1) / 2, H - .09, a1 - a0, .18, T + .12, TM, g);   // viga de respaldo
-    W(ax, f, a0, H / 2, .24, H, T + .16, TM, g); W(ax, f, a1, H / 2, .24, H, T + .16, TM, g);   // pilares dos cantos
+    seg(cur, a1, yb, yb + hh);
+    W(ax, f, (a0 + a1) / 2, yb + hh - .09, a1 - a0, .18, T + .12, TM, g);   // viga de respaldo
+    if (yb > 0) W(ax, f, (a0 + a1) / 2, yb + .09, a1 - a0, .18, T + .12, TM, g);   // andar de cima: também viga no pé
+    W(ax, f, a0, yb + hh / 2, .24, hh, T + .16, TM, g); W(ax, f, a1, yb + hh / 2, .24, hh, T + .16, TM, g);   // pilares dos cantos
+  };
+  /** parede de toras (chalé): toras horizontais empilhadas, pontas cruzadas nos cantos e vãos. ops: como em wall() */
+  k.logwall = (ax, f, a0, a1, ops, g, cols = [0x7a5230, 0x6a4626, 0x84593a, 0x70492a]) => {
+    ops.sort((a, b) => a.c - b.c); let cur = a0, n = 0;
+    const R = .17, row = (u0, u1, y) => { const l = u1 - u0; if (l < .05) return; const c = cols[(n++ * 7 + (ax === 'x' ? 1 : 3)) % cols.length], m = new THREE.Mesh(new THREE.CylinderGeometry(R, R, l, 9), mat(c)); m.castShadow = m.receiveShadow = true; if (ax === 'x') { m.rotation.z = Math.PI / 2; m.position.set((u0 + u1) / 2, y, f); } else { m.rotation.x = Math.PI / 2; m.position.set(f, y, (u0 + u1) / 2); } g.add(m); };
+    const rows = Math.round(H / (2 * R * .9)), dy = H / rows;
+    const spans = []; ops.forEach(o => spans.push([o.c - o.w / 2, o.c + o.w / 2, o.y0, o.y1]));
+    for (let i = 0; i < rows; i++) {
+      const y = dy * (i + .5); let u = a0;
+      for (const [l0, l1, y0, y1] of spans) { if (y + R > y0 && y - R < y1) { row(u, l0, y); u = l1; } }
+      row(u, a1, y);
+    }
+    // pontas das toras que passam do canto (encaixe cruzado) e batentes dos vãos
+    for (let i = 0; i < rows; i++) { const y = dy * (i + .5), e = (i % 2 ? .22 : .12); W(ax, f, a0 - e + .0, y, .34, R * 2 * .95, .36, 0x5a3a1e, g).visible = true; W(ax, f, a1 + e, y, .34, R * 2 * .95, .36, 0x5a3a1e, g); }
+    for (const [l0, l1, y0, y1] of spans) { W(ax, f, l0 - .04, (y0 + y1) / 2, .12, y1 - y0 + .1, .42, TM, g); W(ax, f, l1 + .04, (y0 + y1) / 2, .12, y1 - y0 + .1, .42, TM, g); W(ax, f, (l0 + l1) / 2, y1 + .06, l1 - l0 + .3, .14, .42, TM, g); if (y0 > .2) W(ax, f, (l0 + l1) / 2, y0 - .06, l1 - l0 + .3, .12, .46, STONE, g); }
   };
   /** janela: moldura, peitoril de pedra, vidro (cor 0xbfe0f0|id: a luz da noite), caixilho e duas venezianas */
   k.win = (ax, f, c, w, y0, y1, g, shut = true) => {
@@ -155,7 +171,7 @@ export function finishHouse(k, f) {
   let FD;
   DR.forEach(q => { const dd = addDoor(q, { x, z, th, K }); FD = dd; for (let lx = d.c - d.w / 2 + .1; lx <= d.c + d.w / 2; lx += .6) block(lx * K, (HD + .1) * K, .45, dd); });
   // mapa de retângulos do interior (jogador): paredes, vão da porta, móveis
-  registerFloors({ x, z, th, K, hx: HW + .2, hz: HD + .2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: HD }, { g: wB, nx: 0, nz: -1, D: HD }, { g: wL, nx: -1, nz: 0, D: HW }, { g: wR, nx: 1, nz: 0, D: HW }], noStair: true });
+  registerFloors({ x, z, th, K, hx: HW + .2, hz: HD + .2, roof, up: null, walls: [{ g: front, nx: 0, nz: 1, D: HD }, { g: wB, nx: 0, nz: -1, D: HD }, { g: wL, nx: -1, nz: 0, D: HW }, { g: wR, nx: 1, nz: 0, D: HW }], noStair: true, ...(f.reg || {}) });
   const h = HOUSES[HOUSES.length - 1], T = .15, g0 = d.c - d.w / 2, g1 = d.c + d.w / 2;
   addRect(h, 0, -HW - T, HD - T, g0, HD + T, undefined, true); addRect(h, 0, g1, HD - T, HW + T, HD + T, undefined, true); addRect(h, 0, g0, HD - T, g1, HD + T, FD, true);
   addRect(h, 0, -HW - T, -HD - T, HW + T, -HD + T, undefined, true); addRect(h, 0, -HW - T, -HD, -HW + T, HD, undefined, true); addRect(h, 0, HW - T, -HD, HW + T, HD, undefined, true);

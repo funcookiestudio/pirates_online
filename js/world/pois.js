@@ -14,6 +14,7 @@ import { P } from '../entities/player.js';
 import { log } from '../ui/notify.js';
 import { buildCaves, updateCaves, DUNGEONS } from './caves.js';
 import { cullTerrain } from './terrain-mesh.js';
+import { buildPortExtras } from './port-extras.js';
 
 export const pois = [];   // { n, x, z, c } em coordenadas do jogo (c = cor no minimapa)
 let arrive = false; try { arrive = localStorage.getItem('pirata-chegada') === '1'; } catch (e) { /* ok */ }
@@ -57,6 +58,7 @@ export function buildPois() {
   const fer = makeNpc('guard', port.x + pdx * 12, port.z + pdz * 12, Math.atan2(-pdx, -pdz), [0xd8a880, 0x2a5a7a, 0x2a2a30, 0xc8b070], 5, FERRYMAN);
   fer.g.position.y = deckY;
   solid(port.x + pdx * 12, port.z + pdz * 12, .55);
+  buildPortExtras(g, port, pdx, pdz, deckY, LEN);   // piers laterais, barcos, bancas de peixe, redes, lanternas
   scene.add(g);
   buildCaves();
   log('🗺 Porto, ' + DUNGEONS.length + ' dungeons marcados no minimapa');
