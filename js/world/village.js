@@ -12,7 +12,7 @@ import { makeChest, makeBoard } from '../entities/npc.js';
 import { makeNpc } from '../entities/npc.js';
 import { xray } from './xray.js';
 import { campfire } from './campfire.js';
-import { CASTLE } from './reserve.js';
+import { CASTLE, DISTRICT, DIST_END, districtHouses } from './reserve.js';
 import { doorFront } from './doors.js';
 
 /** Raio da muralha e meia-largura dos portões */
@@ -131,11 +131,25 @@ export function buildVillage() {
     }
   });
 
+  // ═════════ Bairro do Porto: rua que sai de um portão (terrain.js escolhe qual e achata o chão) com 4 casas, 2 de cada lado ═════════
+  const DIST_DOORS = [];
+  if (DISTRICT.ok) {
+    const DK = ['healer', 'bakery', 'fisher', 'carpenter'];   // ordem de districtHouses(): perto do portão (esq., dir.), depois no fundo (esq., dir.)
+    const DL = { bakery: [0xf0c8a0, 0xe8e0d0, 0x8a5a2a, 0x6a4a2a], healer: [0xe8bc94, 0x4a7a4a, 0x3a5a3a, 0xc8c8c0], fisher: [0xc8946a, 0x2b5a68, 0x3a3a2a, 0x6a6a6a], carpenter: [0xd0a07a, 0x8a6238, 0x4a3a2a, 0x3a2a1a] };
+    const DI = { bakery: 7, healer: 8, fisher: 9, carpenter: 10 };   // fichas em CITIZENS (npcs.js)
+    districtHouses().forEach((h, i) => {
+      const kind = DK[i], a = Math.atan2(-h.fz, -h.fx);
+      const [fx, fz, th, , pts] = buildHouse(kind, h.x, h.z, a);
+      citizen(fx, fz, th, DL[kind], { kind: 'keeper', talkAt: pts.talkAt, doorId: pts.doorId, bed: pts.bed }, DI[kind]);
+      const d = doorFront(kind + '-front', 1.2); if (d) DIST_DOORS.push(d);
+    });
+  }
+
   // ═════════ estradas de lajotas: leito escuro, meio-fio de pedra e lajotas retangulares em fiadas alternadas ═════════
   const tones = [0x908c82, 0x7f7b71, 0x8a867b, 0x9a968a, 0x75716a];
   let tk = 0;
   /** Trecho reto de estrada com largura w, de (x0,z0) a (x1,z1) */
-  const road = (x0, z0, x1, z1, w, curb = true) => {
+  const road = (x0, z0, x1, z1, w, curb = true, lim = VILLAGE_R + 3.6) => {
     const dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz); if (L < .3) return;
     const ang = Math.atan2(dx, dz), sx = Math.sin(ang), sz = Math.cos(ang), ax = Math.cos(ang), az = -Math.sin(ang), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     box(w + .1, .04, L + .1, 0x5e5a52, cx, .035, cz).rotation.y = ang;                                  // leito (as frestas ficam escuras)
@@ -147,7 +161,7 @@ export function buildVillage() {
         let u = (c - (n - 1) / 2) * tw - half * tw * (half && c === n ? -1 : 1) * 0 - (half ? tw / 2 : 0), ww = tw - .05;
         if (half && (c === 0 || c === n)) { ww = tw / 2 - .05; u = c === 0 ? -w / 2 + tw / 4 : w / 2 - tw / 4; }
         const px = (x0 + x1) / 2 + sx * t + ax * u, pz = (z0 + z1) / 2 + sz * t + az * u;
-        if (Math.hypot(px, pz) < 2.2 || Math.hypot(px, pz) > VILLAGE_R + 3.6) continue;
+        if (Math.hypot(px, pz) < 2.2 || Math.hypot(px, pz) > lim) continue;
         const m = box(ww, .05 + (tk % 3) * .008, L / rows - .05, tones[(tk * 7 + (tk >> 2)) % 5], px, .07, pz); m.rotation.y = ang + ((tk * 37) % 11 - 5) * .004; tk++;
       }
     }
@@ -164,6 +178,13 @@ export function buildVillage() {
     const t = disc > 0 ? -bq - Math.sqrt(disc) : Math.hypot(dx, dz) - R2;
     road(dx, dz, dx + fx * t, dz + fz * t, 2.2);
   });
+  if (DISTRICT.ok) {   // rua do bairro (continua a do portão), chão de terra batida sob as casas e caminhos porta → rua
+    const ux = Math.cos(DISTRICT.ang), uz = Math.sin(DISTRICT.ang), s0 = VILLAGE_R + 3.2, lim = DIST_END + 6;
+    const len = DIST_END + 1 - (s0 - .3), mid = s0 - .3 + len / 2;
+    box(2 * 12, .024, len, 0x9a8a62, ux * mid, .012, uz * mid).rotation.y = Math.atan2(ux, uz);
+    road(ux * s0, uz * s0, ux * DIST_END, uz * DIST_END, 3.4, true, lim);
+    DIST_DOORS.forEach(({ p: [dx, dz], f: [fx, fz] }) => { const t = Math.abs(dx * -uz + dz * ux); road(dx, dz, dx + fx * t, dz + fz * t, 2.2, true, lim); });
+  }
 }
 
 /** Mantém os inimigos fora da vila (zona segura) */

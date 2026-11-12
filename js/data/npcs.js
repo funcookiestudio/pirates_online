@@ -15,6 +15,14 @@ export const CITIZENS = [
     lines: ['Compro de tudo que brilha e vendo o que ninguém precisa — e todo mundo compra!', 'Saque de naufrágio? Pago melhor que o ferreiro, e sem perguntas.', 'Negócio é negócio, marujo. Até pirata paga o que deve.'] },
   { name: 'Zé Carrancudo', title: 'Marujo', ic: '🍻', skin: ['taberneiro', 0],
     lines: ['Hmpf. Se não vai pagar uma caneca, não atrapalhe meu descanso.', 'Esses esqueletos... já foram marujos como eu. Não tenha pena.', 'Um grogue e um sono de baixo do poço... a vida é boa.'] },
+  { name: 'Dona Broa', title: 'Padeira', ic: '🥖', skin: ['taberneiro', 1],
+    lines: ['Pão quentinho saindo do forno! Cheiro bom, né? Dizem que dá até para sentir do cais.', 'Marujo de barriga vazia não empunha espada direito. Coma um pãozinho antes de ir caçar esqueleto!', 'Acordo antes do sol para acender o forno. Quem dorme demais perde o melhor pão.'] },
+  { name: 'Irmã Camomila', title: 'Curandeira', ic: '🌿', skin: ['herbalista', 1],
+    lines: ['Machucado fundo, marujo? Chegue perto da maca. Ervas boas curam até corte de sabre enferrujado.', 'Colho as ervas na beira do mato, mas nunca vou além da muralha depois do pôr do sol.', 'Mel das minhas abelhas, camomila e um pouco de paciência: o melhor remédio que existe.'] },
+  { name: 'Tião Anzol', title: 'Pescador', ic: '🎣', skin: ['barqueiro', 0],
+    lines: ['Hoje o mar tava manso e a rede voltou pesada. Quer ouvir a história do peixe-espada que me puxou até a barra?', 'Peixe seco dura meses e pirata esfomeado não tem frescura. Pode levar.', 'Estou consertando o barco velho. Um dia ainda zarpo até a ilha da Medusa... de longe, claro.'] },
+  { name: 'Mestre Pinho', title: 'Carpinteiro', ic: '🪚', skin: ['calafate', 0],
+    lines: ['Tábua boa tem cheiro de mato e é feita para durar mais que o dono. Veja aquele casco: será um veleiro daqueles!', 'Esse barulho de serra? Música para os meus ouvidos. Só não chegue perto da plaina, marujo.', 'Preciso de mais madeira, mas as árvores perto da mata são guardadas pelos mortos. Que azar.'] },
 ];
 
 export const GUARD = { name: 'Guarda do Porto', title: 'Sentinela', ic: '💂', skin: ['guarda', 0],

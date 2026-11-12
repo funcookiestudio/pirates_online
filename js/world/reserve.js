@@ -9,3 +9,15 @@ export function reserved(x, z, m = 0) {
   }
   return false;
 }
+
+/** Bairro do Porto: rua que sai de um dos portões da muralha (o que não dá para o castelo), com 4 casas dos dois lados.
+    terrain.js escolhe o portão (ang), achata o chão e reserva a área; village.js constrói as casas (a mesma conta, sempre). */
+export const DISTRICT = { ok: false, ang: 0 };
+export const DIST_S = [37.5, 50], DIST_LAT = 9.5, DIST_END = 58;
+/** Centro e direção da frente (para a rua) de cada casa do bairro: [{ x, z, fx, fz }], na ordem curandeira, padaria (perto do portão), pescador, carpinteiro (no fundo) */
+export function districtHouses() {
+  if (!DISTRICT.ok) return [];
+  const dx = Math.cos(DISTRICT.ang), dz = Math.sin(DISTRICT.ang), tx = -dz, tz = dx, out = [];
+  for (const s of DIST_S) for (const sd of [-1, 1]) out.push({ x: dx * s + tx * sd * DIST_LAT, z: dz * s + tz * sd * DIST_LAT, fx: -tx * sd, fz: -tz * sd });
+  return out;
+}

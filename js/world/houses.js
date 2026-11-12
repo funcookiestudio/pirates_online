@@ -7,6 +7,10 @@ import { buildSmithHouse } from './smith-house.js';
 import { buildTavernHouse } from './tavern-house.js';
 import { buildCartogHouse } from './cartog-house.js';
 import { buildTraderHouse } from './trader-house.js';
+import { buildFisherHouse } from './fisher-house.js';
+import { buildBakeryHouse } from './bakery-house.js';
+import { buildHealerHouse } from './healer-house.js';
+import { buildCarpenterHouse } from './carpenter-house.js';
 
 const X = c => xray(M(c));
 
@@ -16,6 +20,9 @@ export function buildHouse(kind, x, z, a) {
   if (kind === 'trader') { const h = buildTraderHouse(x, z, a); return [h.front[0], h.front[1], h.th, h.at, h.pts]; }
   if (kind === 'cartog') { const h = buildCartogHouse(x, z, a); return [h.front[0], h.front[1], h.th, h.at, h.pts]; }
   if (kind === 'smith') { const h = buildSmithHouse(x, z, a); return [h.front[0], h.front[1], h.th, h.at, h.pts]; }
+  // Bairro do Porto (fora da muralha): pescador, padaria, curandeira e carpintaria
+  const NEW = { fisher: buildFisherHouse, bakery: buildBakeryHouse, healer: buildHealerHouse, carpenter: buildCarpenterHouse }[kind];
+  if (NEW) { const h = NEW(x, z, a); return [h.front[0], h.front[1], h.th, h.at, h.pts]; }
   const g = new THREE.Group(), th = Math.atan2(-Math.cos(a), -Math.sin(a));
   g.position.set(x, 0, z);
   g.rotation.y = th;

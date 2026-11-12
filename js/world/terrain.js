@@ -3,7 +3,7 @@
 import { dIn, dWalk } from '../dungeon/dgrid.js';
 import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
-import { CASTLE, ZONES } from './reserve.js';
+import { CASTLE, ZONES, DISTRICT, DIST_S, DIST_LAT, DIST_END, districtHouses } from './reserve.js';
 import { RUINS_ISLE } from '../core/isle.js';
 
 /** Semente da ilha: padrão 'brisa'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
@@ -71,7 +71,33 @@ export function initTerrain(posts = [], seed = SEED) {
     const x = d.x - VX, z = d.z - VZ;
     return { x, z, y: heightAt(x, z), dx: d.dx, dz: d.dz, d: Math.hypot(x, z), t: d.t };
   });
+  chooseDistrict(posts);
   return isl;
+}
+
+/** Bairro do Porto (4 casas fora da muralha, dos dois lados de uma rua que sai de um portão): escolhe o portão com o terreno mais plano e seco,
+    longe do castelo (o portão do lado dele não existe), de postos, cavernas e fazendas; depois achata o chão ali e reserva a área para a vegetação. */
+function chooseDistrict(posts) {
+  DISTRICT.ok = false;
+  const cA = CASTLE.ok ? Math.atan2(CASTLE.z, CASTLE.x) : null, far = [...posts, ...CAVES, ...((isl.layout.farms || []).map(f => ({ x: f.x - VX, z: f.z - VZ })))];
+  let best = null;
+  for (let k = 0; k < 4; k++) {
+    const g = k * Math.PI / 2, dx = Math.cos(g), dz = Math.sin(g);
+    if (cA !== null && Math.abs(Math.atan2(Math.sin(g - cA), Math.cos(g - cA))) < Math.PI / 3) continue;   // lado do castelo: sem portão
+    let sc = 0;
+    for (let s = VILLAGE_R + 4; s <= DIST_END + 2; s += 4) for (let l = -DIST_LAT - 5; l <= DIST_LAT + 5; l += 4) {
+      const px = dx * s - dz * l, pz = dz * s + dx * l, h = heightAt(px, pz);
+      sc += Math.abs(h) * 2 + (h < SEA + 1.2 ? 60 : 0) + (walkable(px, pz) ? 0 : 40);
+    }
+    for (const p of far) if (Math.hypot(p.x - dx * 44, p.z - dz * 44) < 26) sc += 500;
+    if (!best || sc < best.sc) best = { g, sc };
+  }
+  if (!best || best.sc > 700) return;   // nenhum portão serve (mar, ladeiras ou postos): sem bairro nesta ilha
+  DISTRICT.ok = true; DISTRICT.ang = best.g;
+  const dx = Math.cos(best.g), dz = Math.sin(best.g);
+  districtHouses().forEach(h => flatten(h.x, h.z, 9.5, 16, 0));   // chão de cada casa, no mesmo nível da vila
+  for (let s = VILLAGE_R + 3; s <= DIST_END + 2; s += 5) flatten(dx * s, dz * s, 5, 9, 0);   // a rua
+  ZONES.push({ x: 0, z: 0, fx: dx, fz: dz, x0: -DIST_LAT - 10, x1: DIST_LAT + 10, z0: VILLAGE_R + 2, z1: DIST_END + 3 });
 }
 
 
