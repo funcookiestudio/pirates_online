@@ -18,7 +18,12 @@ import { CFG } from '../systems/settings.js';
 import { svg } from './icons.js';
 import { clearSave } from '../systems/save.js';
 import { resetPlayer, armedButton } from '../systems/reset.js';
-import { hasSkills, classData, classKey, skillPoints, talentPoints, rankOf, talentRank, talentReq, learnSkill, learnTalent, respec, captureKey, skillKeys, keyLabel, effCost, effCd } from '../systems/skills.js';
+import { curW } from '../systems/combat.js';
+import { profState, unlockState } from '../systems/prof.js';
+import { treeList, skillLock, rodBlocked, rodPoints, rodTree } from '../systems/skills.js';
+import { ELEMENTS } from '../data/elements.js';
+import { CATS } from '../data/magic-weapons.js';
+import { hasSkills, critChance, classData, classKey, skillPoints, talentPoints, rankOf, talentRank, talentReq, learnSkill, learnTalent, respec, captureKey, skillKeys, keyLabel, effCost, effCd } from '../systems/skills.js';
 import { SKILL_LV, RANK, TSTAT, TALENTS } from '../data/skills.js';
 
 /** Ícone de um item: tocha, arma de fogo, espada ou armadura */
@@ -49,7 +54,7 @@ function consSlot(k, n, label, title) {
 }
 
 /** Aba aberta: 'char' · 'skills' · 'tal' · 'qst'; e aba da mochila: 'eq' · 'cons' · 'quest' · 'mat' */
-let tab = 'char', btab = 'eq', sel = -1, selE = '', selSk = 'q', selTn = '';   // sel = item da mochila · selE = espaço equipado selecionado
+let tab = 'char', btab = 'eq', sel = -1, selE = '', selSk = 'q', selTn = '', skTree = 'staff';   // sel = item da mochila · selE = espaço equipado selecionado
 
 const TABS = [['char', 'person', 'Personagem'], ['skills', 'burst', 'Habilidades'], ['tal', 'star', 'Talentos'], ['qst', 'scroll', 'Missões']];
 /** Espaços de equipamento: [id, rótulo, ícone]. Só os que têm item no jogo funcionam por enquanto. */
@@ -124,11 +129,12 @@ function pickE(k) { selE = selE === k ? '' : k; sel = -1; renderPanel(); fitPane
 function itemCard(it, worn) {
   const isW = it.ty === 'wpn', W = isW ? WEAPONS[it.w] : null, old = worn ? null : eq[pickSlot(it, false)];
   const diff = worn ? 0 : old ? it.v - old.v : it.v;
-  const kind = isW ? (W.torch ? 'Tocha · segunda mão' : W.gun ? 'Arma de fogo' : W.big ? 'Arma de duas mãos' : 'Arma de uma mão') : 'Armadura';
+  const kind = isW ? (W.torch ? 'Tocha · segunda mão' : W.mt ? CATS[W.mt].n + ' · ' + ELEMENTS[W.el].n : W.gun ? 'Arma de fogo' : W.big ? 'Arma de duas mãos' : 'Arma de uma mão') : 'Armadura';
   const li = [];
   if (it.il) li.push('<li>Nível do item ' + it.il + '</li>');
   if (isW) { li.push('<li>Velocidade ' + (1 / (W.cd || 1)).toFixed(1) + ' ataques/s</li>'); li.push('<li>Recarga ' + (W.cd || 1) + ' s</li>'); if (W.torch) li.push('<li>Ilumina o caminho</li>'); }
   else li.push('<li>Aumenta a vida máxima</li>');
+  if (W && W.mt) li.push('<li>Mana ' + W.mp + ' por tiro</li>', '<li>Efeito de ' + ELEMENTS[W.el].n.toLowerCase() + ': ' + Math.round(W.elc * 100) + '% por acerto</li>');
   if (it.q === 3) li.push('<li class="lg">Item lendário</li>');
   if (!worn && P.lv < itemReq(it)) li.push('<li class="bad">Exige nível ' + itemReq(it) + ' (você: ' + P.lv + ')</li>');
   return '<div class="dtl"><div class="dh"><div class="sl r' + it.q + '">' + svg(iconOf(it)) + '</div><div style="min-width:0"><div class="nm" style="color:' + RCOL[it.q] + '">' + it.n + '</div><div class="ty">' + RN[it.q] + ' · ' + kind + '</div></div></div>' +
@@ -137,8 +143,21 @@ function itemCard(it, worn) {
     '<div class="dbt">' + (worn ? '<button class="btn pri" id="ieq">Remover</button><button class="btn" id="idr">Fechar</button>' : '<button class="btn pri" id="ieq">Equipar</button><button class="btn" id="idr">Descartar</button>') + '</div>';
 }
 
+/** DPS da arma ativa: dano × mult. da arma × mult. da classe (magia/distância/corpo a corpo) ÷ recarga efetiva */
+function dpsOf() {
+  const W = curW(), m = W.magic ? (P.cls.magic || 1) : W.gun ? (P.cls.ranged || 1) : (P.cls.melee || 1);
+  return P.dmg * W.mul * m / ((W.reload ? W.cd / (P.rls || 1) : W.cd) || 1);
+}
+/** Linhas somente-leitura das proficiências (só personagem com arma mágica; interface final na Etapa 8) */
+function profRows() {
+  if (!P.prof) return '';
+  const row = (n, c) => { const s = profState(c); return '<div class="prof-i" style="grid-column:1/-1;font-size:.82em;opacity:.85">Proficiência ' + n + ': Nv ' + s.lv + ' · ' + (s.max ? 'máx.' : Math.floor(s.xp) + '/' + s.need + ' xp') + '</div>'; };
+  return row('Cajado', 'staff') + row('Rod', 'rod');
+}
+/** Crítico real mostrado (arma corpo a corpo com crítico próprio usa a regra dela) */
+function critOf() { const W = curW(); return !W.gun && W.crit ? Math.min(1, .15 + W.crit) : critChance(); }
+
 export function renderStats() {
-  const W = WEAPONS[P.wid];
   $('pcl2').textContent = 'Nv ' + P.lv;
   const em = document.querySelector('#mid .lvc em'); if (em) em.textContent = Math.floor(P.xp) + ' / ' + P.nxt + ' XP';
   $('pxp2').style.width = Math.min(100, P.xp / P.nxt * 100) + '%';
@@ -146,9 +165,9 @@ export function renderStats() {
   // só mexe no DOM quando algo mudou (renderStats roda a cada 0,4 s: recriar os botões a cada vez engolia toques e piscava)
   const put = (el, html, key = html) => { if (el._h === key) return false; el._h = key; el.innerHTML = html; return true; };
   put($('stt'),
-    tile('Ataque', P.dmg, 'DPS ' + (P.dmg * W.mul / (W.cd || 1)).toFixed(1) + ' · Crít. 15%', 'Dano, DPS, velocidade de ataque e crítico') +
+    tile('Ataque', P.dmg, 'DPS ' + dpsOf().toFixed(1) + ' · Crít. ' + Math.round(critOf() * 100) + '%', 'Dano, DPS, velocidade de ataque e crítico') +
     tile('Defesa', (eq.arm ? eq.arm.v : 0), 'Redução ' + Math.round((P.dr || 0) * 100) + '%', 'Defesa da armadura') +
-    tile('Vida', P.max, Math.ceil(P.hp) + ' atual · Mana ' + Math.floor(P.mp) + '/' + P.mmax, 'Vida máxima'));
+    tile('Vida', P.max, Math.ceil(P.hp) + ' atual · Mana ' + Math.floor(P.mp) + '/' + P.mmax, 'Vida máxima') + profRows());
   const itm = $('itm');
   if (selE && eq[selE]) {
     const h = itemCard(eq[selE], true);
@@ -178,7 +197,7 @@ const SKILLS = [
   { id: 'h', n: 'Montaria', ic: 'boots', k: 'H', t: 'Liga e desliga', d: 'Monta e desmonta. Montado você corre mais, mas não consegue rolar.' },
 ];
 const PASSIVES = [
-  { id: 'crit', n: 'Golpe crítico', ic: 'burst', k: '', t: 'Passiva', d: () => '15% de chance de acerto crítico, causando o dobro de dano.' },
+  { id: 'crit', n: 'Golpe crítico', ic: 'burst', k: '', t: 'Passiva', d: () => Math.round(critChance() * 100) + '% de chance de acerto crítico, causando o dobro de dano.' },
   { id: 'dr', n: 'Armadura', ic: 'chest', k: '', t: 'Passiva', d: () => 'A armadura equipada reduz o dano recebido em ' + Math.round((P.dr || 0) * 100) + '%.' },
 ];
 
@@ -191,41 +210,63 @@ function classSkills() {
   return D.act.map((a, i) => ({ id: 'c' + i, i, a, raw: a.ic, n: a.n, k: keyLabel(keys[i]) })).concat([{ id: 'cp', i: 3, p: D.pas, raw: D.pas.ic, n: D.pas.n, k: '' }]);
 }
 
+/** Sub-abas Cajado | Rod (só o Mago, que tem duas árvores) com a proficiência da árvore aberta */
+function treeTabs() {
+  const ps = profState(skTree), nm = skTree === 'rod' ? 'Rod' : 'Cajado';
+  return '<div class="pact" style="gap:6px;margin:0 0 4px"><button class="btn sm' + (skTree === 'staff' ? ' pri' : '') + '" data-tree="staff">Cajado</button><button class="btn sm' + (skTree === 'rod' ? ' pri' : '') + '" data-tree="rod">Rod</button></div>' +
+    (ps ? '<p class="pts">Proficiência ' + nm + ': Nv ' + ps.lv + ' · ' + (ps.max ? 'máx.' : Math.floor(ps.xp) + '/' + ps.need + ' xp') + '</p>' : '');
+}
+function bindTabs() { $('skp').querySelectorAll('[data-tree]').forEach(b => { b.onclick = () => { skTree = b.dataset.tree; renderSkills(); }; }); }
+/** Árvore do Rod: só a estrutura (Etapa 6 traz as habilidades). Nada aprendível nem usável. */
+function renderRod() {
+  const rows = rodTree().map(n => {
+    const r = unlockState(n.req, 'rod'), why = [r.lv.ok ? '' : 'Nv geral ' + r.lv.need, r.prof.ok ? '' : 'Proficiência Rod ' + r.prof.need].filter(Boolean).join(' · ');
+    return '<div class="sdet" style="opacity:.8"><div style="display:flex;gap:10px;align-items:center"><div class="sc lock" title="Em breve">' + svg('lock') + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + n.n + '</div>' +
+      '<div class="ty">Em breve · Etapa 6</div><div class="ty">Requisitos: Nv geral ' + n.req.lv + ' · Proficiência Rod ' + n.req.prof + (r.ok ? ' (cumpridos)' : ' — falta: ' + why) + '</div></div></div></div>';
+  }).join('');
+  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2>' + treeTabs() + '<p class="pts">Pontos do Rod: <b>' + rodPoints() + '</b> · 1 por nível de proficiência a partir do 2 (ainda sem habilidades para gastar)</p>' + rows +
+    '<div class="pact rst"><button class="btn sm" id="skrs">Redefinir pontos do Rod (grátis)</button></div>';
+  bindTabs();
+  const rs = $('skrs'); if (rs) rs.onclick = () => { respec('rod'); renderSkills(); };
+}
+
 function renderSkills() {
-  const cl = hasSkills(), CS = cl ? classSkills() : [];
+  const cl = hasSkills(), CS = cl ? classSkills() : [], trees = treeList();
+  if (trees && skTree === 'rod') { renderRod(); return; }
   const all = CS.concat(SKILLS, PASSIVES);
   if (!all.some(x => x.id === selSk)) selSk = cl ? 'c0' : 'q';
   const cur = all.find(x => x.id === selSk), ds = cur.i !== undefined ? (cur.a || cur.p).d : typeof cur.d === 'function' ? cur.d() : cur.d;
   const icon = x => x.raw ? rawSvg(x.raw) : svg(x.ic);
-  const sc = x => '<button class="sc' + (x.id === selSk ? ' sel' : '') + (x.a && P.lv < SKILL_LV[x.i] ? ' lock' : '') + '" data-sk="' + x.id + '" title="' + x.n + '"' + (cl && x.raw ? ' style="color:' + classData().css + '"' : '') + '>' + icon(x) + (x.k ? '<kbd>' + x.k + '</kbd>' : '') + '</button>';
+  const sc = x => '<button class="sc' + (x.id === selSk ? ' sel' : '') + (x.a && skillLock(x.i) ? ' lock' : '') + '" data-sk="' + x.id + '" title="' + x.n + '"' + (cl && x.raw ? ' style="color:' + classData().css + (x.a && rodBlocked() ? ';opacity:.45' : '') + '"' : '') + '>' + icon(x) + (x.k ? '<kbd>' + x.k + '</kbd>' : '') + '</button>';
   const lk = n => Array.from({ length: n }, () => '<div class="sc lock" title="Em breve">' + svg('lock') + '</div>').join('');
   let det = '', pts = '<p class="pts">Pontos de atributo e níveis de habilidade: <b>em breve</b></p>';
   if (cl) {
     const pt = skillPoints(), r = rankOf(cur.i === undefined ? 0 : cur.i);
-    pts = '<p class="pts">Pontos de habilidade: <b>' + pt + '</b> · 1 por nível a partir do 2</p>';
+    pts = '<p class="pts">Pontos de habilidade' + (trees ? ' do Cajado' : '') + ': <b>' + pt + '</b> · 1 por nível a partir do 2</p>';
     if (cur.i !== undefined) {
-      const lockLv = cur.a && P.lv < SKILL_LV[cur.i];
-      const info = cur.a ? 'Tecla ' + cur.k + ' · ' + effCost(cur.i) + ' de mana · recarga ' + effCd(cur.i).toFixed(1) + ' s' + (lockLv ? ' · libera no nível ' + SKILL_LV[cur.i] : '') : 'Passiva · sempre ativa';
+      const lockWhy = cur.a ? skillLock(cur.i) : null, lockLv = !!lockWhy;
+      const info = cur.a ? 'Tecla ' + cur.k + ' · ' + effCost(cur.i) + ' de mana · recarga ' + effCd(cur.i).toFixed(1) + ' s' + (lockLv ? (trees ? ' · requer ' + lockWhy : ' · libera no nível ' + SKILL_LV[cur.i]) : '') : 'Passiva · sempre ativa';
       const bonus = cur.a ? 'Cada rank: +' + Math.round(RANK.dmg * 100) + '% de dano, -' + Math.round(RANK.cd * 100) + '% de recarga, -' + Math.round(RANK.mp * 100) + '% de custo' : 'Cada rank: ' + PASS_RANK[classKey()];
       det = '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc" style="color:' + classData().css + '">' + icon(cur) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + cur.n + '</div><div class="ty">' + info + '</div></div></div>' +
-        '<p class="ds">' + ds + '</p><p class="ds dim">Rank ' + r + '/' + RANK.max + ' · ' + bonus + '</p>' +
+        '<p class="ds">' + ds + '</p>' + (cur.a && rodBlocked() ? '<p class="ds dim">Com o Rod ativo esta habilidade não pode ser usada: troque para o Cajado.</p>' : '') + (cur.p && trees ? '<p class="ds dim">Vale com qualquer arma (a mana é compartilhada).</p>' : '') + '<p class="ds dim">Rank ' + r + '/' + RANK.max + ' · ' + bonus + '</p>' +
         '<button class="btn pri big" id="skup"' + (pt > 0 && r < RANK.max && !lockLv ? '' : ' disabled') + '>' + (r >= RANK.max ? 'Rank máximo' : lockLv ? 'Bloqueada' : 'Melhorar · 1 ponto') + '</button>' +
         (cur.a ? '<button class="btn big" id="skkey">Tecla: ' + cur.k + ' · trocar</button>' : '') +
-        '<button class="btn sm" id="skrs">Redefinir pontos (grátis)</button></div>';
+        '<button class="btn sm" id="skrs">' + (trees ? 'Redefinir pontos do Cajado (grátis)' : 'Redefinir pontos (grátis)') + '</button></div>';
     }
   }
   if (!det) det = '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc">' + icon(cur) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + cur.n + '</div><div class="ty">' + (cur.k ? 'Tecla ' + (cur.k === 'ESP' ? 'Espaço' : cur.k) + ' · ' : '') + cur.t + '</div></div></div>' +
     '<p class="ds">' + ds + '</p><button class="btn pri big" disabled>Melhorar · em breve</button></div>';
-  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2>' + pts +
+  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2>' + (trees ? treeTabs() : '') + pts +
     '<div class="sgrid">' + (cl ? '<p class="sgh">Habilidades de ' + classData().pas.n.split(' ')[0] + ' · ' + { guerreiro: 'Guerreiro', cacador: 'Caçador', mago: 'Mago', ladino: 'Ladino' }[classKey()] + '</p>' + CS.map(sc).join('') : '') +
     '<p class="sgh">Ativas</p>' + SKILLS.map(sc).join('') +
     '<p class="sgh">Passivas</p>' + PASSIVES.map(sc).join('') + (cl ? '' : lk(2) + '<p class="sgh">Bloqueadas</p>' + lk(4)) + '</div>' + det +
     '<div class="pact rst"></div>';
   $('skp').querySelector('.rst').append(rplEl);
+  if (trees) bindTabs();
   $('skp').querySelectorAll('[data-sk]').forEach(b => { b.onclick = () => { selSk = b.dataset.sk; renderSkills(); }; });
   const up = $('skup'), kb = $('skkey'), rs = $('skrs');
   if (up) up.onclick = () => { if (learnSkill(cur.i)) renderSkills(); };
-  if (rs) rs.onclick = () => { respec(); renderSkills(); };
+  if (rs) rs.onclick = () => { respec(trees ? 'staff' : undefined); renderSkills(); };
   if (kb) kb.onclick = () => { kb.textContent = 'Aperte a nova tecla… (Esc cancela)'; captureKey(cur.i, () => renderSkills()); };
 }
 

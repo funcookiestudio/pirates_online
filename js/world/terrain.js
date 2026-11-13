@@ -3,7 +3,7 @@
 import { dIn, dWalk } from '../dungeon/dgrid.js';
 import { build, N, V, ss } from './islandgen.js';
 import { VILLAGE_R } from '../core/village-const.js';
-import { CASTLE, ZONES, DISTRICT, DIST_S0, DIST_S1, DIST_LAT, districtHouses, districtPath, PLAZA_S, pathLat, distPoint } from './reserve.js';
+import { CASTLE, ZONES, DISTRICT, DIST_S0, DIST_S1, DIST_LAT, districtHouses, districtPath, PLAZA_S, pathLat, distPoint, configureDistrict } from './reserve.js';
 import { RUINS_ISLE } from '../core/isle.js';
 
 /** Semente da ilha: padrão 'brisa'; abra a página com ?seed=outra para ver outra ilha (postos e vila se ajustam sozinhos) */
@@ -79,6 +79,7 @@ export function initTerrain(posts = [], seed = SEED) {
     para o pescador ficar perto do cais), longe do castelo (o portão do lado dele não existe), de postos, cavernas e fazendas; depois achata o chão e reserva a área. */
 function chooseDistrict(posts) {
   DISTRICT.ok = false; DISTRICT.port = false;
+  { const po0 = isl.pois && isl.pois[0], vi0 = isl.pois && isl.pois[1]; configureDistrict(po0 && vi0 ? Math.hypot(po0.x - vi0.x, po0.z - vi0.z) : 72); }   // comprimento do bairro = distância vila↔cais
   const cA = CASTLE.ok ? Math.atan2(CASTLE.z, CASTLE.x) : null, far = [...posts, ...CAVES, ...((isl.layout.farms || []).map(f => ({ x: f.x - VX, z: f.z - VZ })))];
   const po = isl.pois && isl.pois[0], pA = po ? Math.atan2(po.z - VZ, po.x - VX) : null;
   let best = null;
@@ -90,12 +91,12 @@ function chooseDistrict(posts) {
       const px = dx * s - dz * l, pz = dz * s + dx * l, h = heightAt(px, pz);
       sc += h * h * 2.5 + (h < SEA + 1.2 ? 60 : 0) + (walkable(px, pz) ? 0 : 40);
     }
-    for (const p of far) for (const s of [34, 52, 70]) if (Math.hypot(p.x - dx * s, p.z - dz * s) < 28) { sc += 500; break; }
+    for (const p of far) for (const s of [36, 56, 76, 96]) if (Math.hypot(p.x - dx * s, p.z - dz * s) < 28) { sc += 500; break; }
     const port = pA !== null && Math.abs(Math.atan2(Math.sin(g - pA), Math.cos(g - pA))) < .2;
-    const key = sc - (port && sc < 1300 ? 700 : 0);
+    const key = sc - (port && sc < 6000 ? 1500 : 0);
     if (!best || key < best.key) best = { g, sc, key, port };
   }
-  if (!best || best.sc > 2000) return;   // nenhum portão serve (mar, ladeiras ou postos): sem vila do porto nesta ilha
+  if (!best || best.sc > 7000) return;   // nenhum portão serve (mar, ladeiras ou postos): sem vila do porto nesta ilha
   DISTRICT.ok = true; DISTRICT.ang = best.g; DISTRICT.port = best.port;
   districtHouses().forEach(h => flatten(h.x, h.z, 8.5, 14, 0));   // chão de cada casa, no mesmo nível da vila
   districtPath().forEach(([x, z]) => flatten(x, z, 4.4, 8, 0));    // o caminho

@@ -16,6 +16,7 @@ import { puff } from './effects.js';
 import { spinFx, bombFx, bombTint, potionFx, swingColor } from './skillfx.js';
 import { log, dmgNum } from '../ui/notify.js';
 import { medusaFloor } from '../entities/medusa.js';
+import { elDamage, tryStatus } from './elements.js';
 import { HEAD, headReady, useHead, headOnKill } from './medusa-head.js';
 
 /* ---------- Dano ---------- */
@@ -24,6 +25,7 @@ import { HEAD, headReady, useHead, headOnKill } from './medusa-head.js';
  * Aplica `d` de dano ao inimigo `e`.
  * Opções: cr (crítico forçado) · kn (empurrão) · ang (direção do empurrão)
  *         fin (golpe final do combo) · pet (veio do companheiro) · dot (dano contínuo)
+ *         el (elemento: 'fire' 'ice'… ver data/elements.js; aplica a resistência e tenta o status) · elc (troca a chance padrão do status)
  */
 export function hit(e, d, o) {
   o = o || {};
@@ -35,11 +37,14 @@ export function hit(e, d, o) {
   if (o.pet && e.hp < e.max * .35) d *= 1 + PV('exec');
   d *= dealtMult(e.lv - P.lv);                      // inimigo muito acima do seu nível: seus golpes quase não fazem cócegas
   if (P.skh) d = P.skh.pre(e, d, o);                 // habilidades de classe: bônus de dano, crítico garantido (skills.js)
+  if (o.el) d = elDamage(e, d, o.el);                // elemento (opt-in): resistência elemental do alvo
 
-  const cr = o.cr !== undefined ? o.cr : Math.random() < (o.pet ? .15 : P.crit + (o.cb || 0));
+  const cr = o.dot ? false : o.cr !== undefined ? o.cr : Math.random() < (o.pet ? .15 : P.crit + (o.cb || 0));   // dano periódico (queimadura/veneno/sangramento) nunca é crítico
   d = Math.round(d * (.85 + Math.random() * .3) * (cr ? 2 : 1));
+  const hp0 = e.hp;
   e.hp -= d;
   if (P.skh) P.skh.post(e, o);
+  if (P.profh) P.profh(e, Math.min(d, Math.max(0, hp0)), o);   // proficiência de arma mágica (prof.js): dano EFETIVO, sem o excesso acima da vida restante
 
   if (!o.dot) {
     dmgNum(e, d, cr);
@@ -62,6 +67,7 @@ export function hit(e, d, o) {
     }
   }
 
+  if (o.el && !o.dot && e.hp > 0) tryStatus(e, o.el, d, o);   // elemento: tenta o status (dano periódico não reaplica)
   if (e.MD) medusaFloor(e);   // na fase humana a Medusa não morre: transforma-se aos 50%
   if (e.hp <= 0) onKill(e);
 }
@@ -211,7 +217,7 @@ export function attack(dx, dz) {
   let m, dmg = P.dmg * W.mul * P.cls.ranged, ex = {};
   if (W.bow || W.xbow) { P[qk]--; m = arrowMesh(!!W.xbow); ex = { or: 1, ar: qk }; }   // flecha/virote: haste fina (geometria e materiais compartilhados)
   else if (W.magic) {                                                                    // cajado/rod: orbe mágico, gasta mana
-    P.mp -= W.mp; m = orbMesh(W.col); dmg = P.dmg * W.mul * (P.cls.magic || 1); ex = { mg: W.col };
+    P.mp -= W.mp; m = orbMesh(W.col); dmg = P.dmg * W.mul * (P.cls.magic || 1); ex = { mg: W.col, el: W.el, elc: W.elc, elp: W.elp, eld: W.eld };   // el*: elemento da arma e config do efeito (data/magic-weapons.js)
     puff(mx, my, mz, W.col, 3, 6);
   } else if (W.thrown) m = W.build();   // arma de arremesso: voa o próprio modelo da arma
   else {
@@ -256,12 +262,14 @@ export function impact() {
 /** Voo das balas em direção ao alvo */
 export function updateShots(dt) {
   for (let i = shots.length - 1; i >= 0; i--) {
-    const s = shots[i], p = s.m.position;
+    const s = shots[i];
+    if (!s.t) { scene.remove(s.m); shots.splice(i, 1); continue; }   // sem alvo (foi limpo): descarta a bala
+    const p = s.m.position;
     let done = s.t.dead > 0;
     if (!done) {
       const dx = s.t.x - p.x, dy = 1.3 - p.y, dz = s.t.z - p.z, d = Math.hypot(dx, dy, dz);
       if (d < .8) {
-        hit(s.t, s.d, { kn: .6 });
+        hit(s.t, s.d, s.el ? { kn: .6, el: s.el, elc: s.elc, elp: s.elp, eld: s.eld } : { kn: .6 });
         if (s.ar) { s.arHit = true; if (Math.random() < .6) dropQuiver(s.t.x + (Math.random() - .5) * .8, s.t.z + (Math.random() - .5) * .8, s.ar); }   // 60% ficam no chão perto do alvo
         if (s.mg) puff(s.t.x, 1.2, s.t.z, s.mg, 4, 8);
         if (s.th) emit('shot:thrown-hit');   // (missão "Mão Firme")

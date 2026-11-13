@@ -11,7 +11,7 @@ const classes = (process.argv[3] || 'guerreiro,cacador,mago,ladino,none').split(
       const g = window.__game, P = g.P, SK = g.SK, S = SK.S, res = {};
       const wait = ms => new Promise(r => setTimeout(r, ms));
       const step = s => { for (let t = 0; t < s; t += .033) SK.update(.033); };
-      P.sit = P.sitT = 0; P.lv = 10;
+      P.sit = P.sitT = 0; P.lv = 10; if (window.__game.PROF && window.__game.PROF.devSet) window.__game.PROF.devSet('staff', 20);
       if (k === 'none') { res.settingsRow = !!document.getElementById('sk-keys'); return res; }
       const M = await import('/js/systems/skills.js'), D = await import('/js/data/skills.js');
       // tabela única: mudar TUNE muda o comportamento

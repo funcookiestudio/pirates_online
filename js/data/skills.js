@@ -3,6 +3,33 @@
    mp = custo de mana · cd = recarga (s) · lv = nível que libera · ic = traçado SVG do ícone (24×24) · css = cor do botão */
 export const SKILL_LV = [1, 6, 12];
 
+/* ===== Árvores por classe (Etapa 5) =====
+   Guerreiro/Caçador/Ladino (e sem classe) têm UMA árvore, como sempre. O Mago tem duas: 'staff' (Cajado: ofensiva) e 'rod' (suporte).
+   Staff = as 3 ativas atuais + a passiva Fluxo Arcano (SKILLS.mago, sem nenhuma mudança de números). A passiva fica na árvore do Cajado porque seus ranks
+   vivem em rk[3] (compatível com todos os saves) e o efeito (regeneração de mana e redução de recarga) vale com QUALQUER arma: a mana é compartilhada. */
+export const TREES = { mago: ['staff', 'rod'] };
+/** Requisito de cada ativa do Cajado: nível geral (SKILL_LV) E nível de proficiência de Cajado — as duas condições juntas (unlockState em systems/prof.js).
+    Estimativa (Mago novo, só inimigos do próprio nível, Cajado na mão): prof 3 por volta do nível geral 6 e prof 5 por volta do 12 (curva de data/prof.js);
+    o Mago antigo migrado tem prof = nível geral (≥ 6 e ≥ 12), então nunca perde nada. Ajuste só os números de prof aqui. */
+export const STAFF_PROF = [1, 3, 5];
+export const STAFF_REQ = SKILL_LV.map((lv, i) => ({ lv, prof: STAFF_PROF[i] }));
+/** Pool de pontos de habilidade do Rod: derivado da proficiência de Rod (1 por nível a partir do 2). O do Cajado continua PTS.skill (nível geral). */
+export const ROD_PTS = prof => Math.max(0, prof - 1);
+/** Árvore do Rod: SÓ ESTRUTURA (Etapa 6 implementa). Cada categoria tem um nó provisório, indisponível: nada aprendível, nada usável.
+    req = { lv: nível geral, prof: proficiência de Rod } (números provisórios, para o Bison ajustar). */
+export const ROD_TREE = [
+  { id: 'cura', n: 'Cura instantânea', req: { lv: 1, prof: 1 } },
+  { id: 'regen', n: 'Cura contínua', req: { lv: 4, prof: 2 } },
+  { id: 'escudo', n: 'Escudos', req: { lv: 6, prof: 3 } },
+  { id: 'protecao', n: 'Proteção', req: { lv: 8, prof: 4 } },
+  { id: 'atk', n: 'Buffs de ataque', req: { lv: 10, prof: 5 } },
+  { id: 'def', n: 'Buffs de defesa', req: { lv: 12, prof: 6 } },
+  { id: 'vel', n: 'Buffs de velocidade', req: { lv: 14, prof: 8 } },
+  { id: 'debuff', n: 'Debuffs sem dano', req: { lv: 16, prof: 10 } },
+  { id: 'purifica', n: 'Purificação', req: { lv: 18, prof: 12 } },
+  { id: 'area', n: 'Suporte em área', req: { lv: 20, prof: 14 } },
+];
+
 export const SKILLS = {
   guerreiro: {
     css: '#ff5a3a', col: [0xff4a30, 0xc8d0d8],

@@ -2,8 +2,12 @@
    Convenção do modelo: empunhadura na origem, ponta para -y. Arco: os braços ficam no eixo x, a flecha sai para -y (a pose `bowPose` cuida do resto).
    Campos novos: bow/xbow = usa flechas/virotes (P.arrows / P.bolts) · magic = projétil mágico, gasta `mp` de mana e usa P.cls.magic
    · bk = guardada nas costas · lh = a mão da frente segura a arma (cajado) · col = cor do projétil mágico · cls = classe a que o auto-loot dá preferência
+   · mt = categoria da arma mágica ('staff' | 'rod') · el = elemento (data/elements.js) · elc/elp/eld = chance, intensidade e duração do efeito elemental
+   (as armas mágicas ganham mt, el, mul, cd, mp, rng, col e elc/elp/eld de data/magic-weapons.js, onde fica o balanceamento)
    · kb = multiplicador de empurrão do golpe. Armas com `lv` caem como loot; `shop` = vendida no ferreiro. */
 import { wb, grp } from '../core/utils.js';
+import { ELEMENTS } from './elements.js';
+import { mw } from './magic-weapons.js';
 
 const ST = 0xd8dce0, BR = 0xb08a30, WD = 0x6a4020, LT = 0x3a2412, DK = 0x4a4438;
 const T = THREE;
@@ -117,8 +121,12 @@ export const CLASS_WEAPONS = [
   { n: 'Arco Longo', b: 5, gun: 1, bow: 1, bk: 1, rng: 18, cd: 1, mul: 1.7, sp: 50, hp: [0, .31], ml: .3, lv: 8, shop: 1, cls: 'cacador', build: bowBuilder(.8, 0x8a5a2a, .055) },
   { n: 'Besta Leve', b: 4, gun: 1, xbow: 1, rng: 13, cd: 1.1, mul: 1.6, sp: 48, hp: [0, .31], ml: .3, lv: 6, shop: 1, cls: 'cacador', build: xbowBuilder(.62, .46, WD, 0) },
   { n: 'Besta Pesada', b: 7, gun: 1, xbow: 1, rng: 15, cd: 1.8, mul: 2.4, sp: 56, hp: [0, .31], ml: .3, lv: 14, shop: 1, cls: 'cacador', build: xbowBuilder(.78, .64, 0x4a2c18, 0) },
-  { n: 'Cajado do Aprendiz', b: 2, gun: 1, magic: 1, mp: 4, bk: 1, lh: 1, rng: 11, cd: .8, mul: 1.1, sp: 30, col: 0x6ab8ff, hp: [0, .31], ml: 1.25, lv: 1, shop: 1, cls: 'mago', build: staffBuilder(1.5, WD, 0x6ab8ff, 0) },
-  { n: 'Cajado de Carvalho', b: 5, gun: 1, magic: 1, mp: 6, bk: 1, lh: 1, rng: 12, cd: .85, mul: 1.6, sp: 32, col: 0x9be85a, hp: [0, .31], ml: 1.35, lv: 8, shop: 1, cls: 'mago', build: staffBuilder(1.6, 0x5a3a1a, 0x9be85a, 4) },
-  { n: 'Rod de Cristal', b: 4, gun: 1, magic: 1, rod: 1, mp: 4, rng: 11, cd: .55, mul: 1.2, sp: 38, col: 0xc890ff, hp: [0, .31], ml: .6, lv: 10, shop: 1, cls: 'mago', build: rodBuilder(.7, 0xc890ff, 0) },
-  { n: 'Rod das Chamas', b: 8, gun: 1, magic: 1, rod: 1, mp: 7, rng: 11, cd: .6, mul: 1.9, sp: 34, splash: 1, col: 0xff7a20, hp: [0, .31], ml: .6, lv: 16, shop: 1, cls: 'mago', build: rodBuilder(.7, 0xff7a20, 1) },
+  { n: 'Cajado do Aprendiz', b: 2, gun: 1, magic: 1, bk: 1, lh: 1, sp: 30, hp: [0, .31], ml: 1.25, lv: 1, shop: 1, cls: 'mago', ...mw('Cajado do Aprendiz'), build: staffBuilder(1.5, WD, 0x6ab8ff, 0) },
+  { n: 'Cajado de Carvalho', b: 5, gun: 1, magic: 1, bk: 1, lh: 1, sp: 32, hp: [0, .31], ml: 1.35, lv: 8, shop: 1, cls: 'mago', ...mw('Cajado de Carvalho'), build: staffBuilder(1.6, 0x5a3a1a, 0x9be85a, 4) },
+  { n: 'Rod de Cristal', b: 4, gun: 1, magic: 1, sp: 38, hp: [0, .31], ml: .6, lv: 10, shop: 1, cls: 'mago', ...mw('Rod de Cristal'), build: rodBuilder(.7, 0xc890ff, 0) },
+  { n: 'Rod das Chamas', b: 8, gun: 1, magic: 1, sp: 34, splash: 1, hp: [0, .31], ml: .6, lv: 16, shop: 1, cls: 'mago', ...mw('Rod das Chamas'), build: rodBuilder(.7, 0xff7a20, 1) },
+  // Etapa 3 (SÓ no fim do catálogo): um Cajado de fogo, um Cajado venenoso e um Rod de gelo
+  { n: 'Cajado de Fogo', b: 6, gun: 1, magic: 1, bk: 1, lh: 1, sp: 32, hp: [0, .31], ml: 1.35, lv: 12, shop: 1, cls: 'mago', ...mw('Cajado de Fogo'), build: staffBuilder(1.6, 0x4a2418, ELEMENTS.fire.col, 4) },
+  { n: 'Cajado Venenoso', b: 7, gun: 1, magic: 1, bk: 1, lh: 1, sp: 32, hp: [0, .31], ml: 1.35, lv: 14, shop: 1, cls: 'mago', ...mw('Cajado Venenoso'), build: staffBuilder(1.6, 0x2e3a1e, ELEMENTS.poison.col, 4) },
+  { n: 'Rod de Gelo', b: 5, gun: 1, magic: 1, sp: 36, hp: [0, .31], ml: .6, lv: 12, shop: 1, cls: 'mago', ...mw('Rod de Gelo'), build: rodBuilder(.7, ELEMENTS.ice.col, 0) },
 ];

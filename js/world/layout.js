@@ -34,8 +34,9 @@ export function planCore(c) {
     const d = coastOf(k); if (d) cand.push([k, d]);
   }
   let best = null;
+  for (const DV of [108, 72]) {   // V549: a vila fica a 108 m do cais (espaço para o bairro do porto); se a ilha não tiver lugar, volta aos 72 m de antes
   for (const [k, d] of cand) {
-    const px = ix(k), pz = iz(k), DV = 72;
+    const px = ix(k), pz = iz(k);
     const vx = px - d[0] * DV, vz = pz - d[1] * DV;                       // vila: terra adentro, no eixo da doca
     const dv = dev(vx, vz, 32);
     if (dv > 1.4) continue;
@@ -59,6 +60,8 @@ export function planCore(c) {
     if (!cs) continue;
     const score = (1.4 - dv) * 3 + cs.sc * .5 + depth * .15 + hashN(k, 3);
     if (!best || score > best.score) best = { k, d, vx, vz, cs, score };
+  }
+  if (best) break;
   }
   if (!best) return null;
   const port = best.k, vil = at(best.vx, best.vz), cs = best.cs;

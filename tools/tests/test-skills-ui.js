@@ -18,7 +18,7 @@ const sizes = [[1280, 720, false], [390, 800, true], [780, 360, true]];
       const g = window.__game, P = g.P, SK = g.SK, res = {};
       const step = s => { for (let t = 0; t < s; t += .033) SK.update(.033); };
       P.sit = P.sitT = 0;
-      if (SK.on) { P.lv = 12; P.mmax = 100; P.mp = 100; }
+      if (SK.on) { P.lv = 12; P.mmax = 100; P.mp = 100; if (window.__game.PROF && window.__game.PROF.devSet) window.__game.PROF.devSet('staff', 20); }
       await new Promise(r => setTimeout(r, 600));
       const vis = e => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.display !== 'none' && cs.visibility !== 'hidden'; };
       const els = [...document.querySelectorAll('#sk > div, #lnch, #gwl, #gwr')].filter(vis);

@@ -22,6 +22,9 @@ import { initUpdater } from './ui/updater.js';
 import { buildOutposts, updateOutposts } from './world/outposts.js';
 import { buildPois, updatePois } from './world/pois.js';
 import { updateEnemies, updateRespawns } from './entities/enemies.js';
+import * as ELM from './systems/elements.js';
+import * as PROFS from './systems/prof.js';
+import { ELEMENTS, EL_IDS, MAX_FX, RES } from './data/elements.js';
 import { updateLoot } from './entities/loot.js';
 import { setWeapon, equip, unequip, canEquipTo, eq, bag, chest } from './systems/inventory.js';
 import { switchWeapon } from './systems/swap.js';
@@ -101,6 +104,7 @@ function tick(now) {
   S('updatePlayer', () => updatePlayer(dt));
   S('updateEnemies', () => updateEnemies(dt));
   S('updateSkills', () => updateSkills(realDt));
+  S('updateElements', () => ELM.updateElements(realDt));
   S('updateLod', () => updateLod(realDt));
   S('updateDayNight', () => updateDayNight(inDungeon()));
   S('updateNpcs', () => updateNpcs(realDt, now));
@@ -182,5 +186,5 @@ initSave();
 initBackground(tick);   // segundo plano: som inaudível + temporizador mantêm o jogo vivo
 log(loaded ? 'Progresso carregado' : 'Polly coleta loot e ataca · troque de companheiro no inventário (I) · R liga/desliga o ataque');
 // gancho de testes: abra a página com #dev para inspecionar o jogo pelo console (window.__game)
-if (location.hash === '#dev') window.__game = { SK, attack, effRng, BOND, HL, PET, petWalk, WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, VEH, giveVehicle, setUse, unequipPet, dungeonGimmicks, dungeonStats, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
+if (location.hash === '#dev') window.__game = { PROF: PROFS, ELM, ELEMENTS, EL_IDS, MAX_FX, RES, SK, attack, effRng, BOND, HL, PET, petWalk, WILD, ratDbg, doorDbg, talkTo, PICKDBG, canSee, VIS, DOORS, nav: NAV, props, FLOORS, posts: POST_DATA, dodge, CLOCK, MOUNT, toggleMount, giveHorse, VEH, giveVehicle, setUse, unequipPet, dungeonGimmicks, dungeonStats, FARM, setPet, DOG, WEAPONS, attack, impact, equip, unequip, canEquipTo, inDungeon, leaveDungeon, clickCave, DUNGEONS, hit, pathTo, T: terrainDbg, ren, hurtP, scene, npcList, P, state, enemies, props, eq, bag, chest, loot, setWeapon, switchWeapon, cam };
 requestAnimationFrame(frame);

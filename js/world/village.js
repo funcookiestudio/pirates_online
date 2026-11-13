@@ -115,7 +115,7 @@ export function buildVillage() {
   const DOORS_PT = [];   // ponto diante da porta de cada casa (para os caminhos de pedra)
   let kn = null;
   SLOTS.forEach(([kind, deg]) => {
-    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ tavern: 9 }[kind] || 5.9), k = IDX[kind];
+    const a = deg * Math.PI / 180, r = VILLAGE_R - ({ tavern: 9 }[kind] || 7.9), k = IDX[kind];
     const [fx, fz, th, at, pts] = buildHouse(kind, Math.cos(a) * r, Math.sin(a) * r, a);
     DOORS_PT.push(doorFront(kind + '-front', 1.2) || { p: at(0, 3.9 * 1.28), f: [-Math.cos(a), -Math.sin(a)] });
     if (kind === 'smith' || kind === 'tavern') regTrade(kind, at, th);

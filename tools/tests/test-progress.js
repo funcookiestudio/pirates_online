@@ -31,7 +31,7 @@ const sizes = (process.argv[4] ? [process.argv[4].split('x').map(Number)] : [[12
         return { panel: r, vis: pnl.style.display, outside: out.slice(0, 5), text: pg.innerText.replace(/\s+/g, ' ').slice(0, 110) };
       };
       res.on = SK.on;
-      P.lv = 10; P.sit = P.sitT = 0;
+      P.lv = 10; P.sit = P.sitT = 0; if (window.__game.PROF && window.__game.PROF.devSet) window.__game.PROF.devSet('staff', 20);
       res.skillsPanel = await panelCheck('skills');
       res.talPanel = await panelCheck('tal');
       if (!SK.on || !full) return res;

@@ -20,9 +20,33 @@ import { applyAdoptions } from '../pets/manager.js';
 
 import { activeChar, saveKey } from '../core/chars.js';
 import { skillData, loadSkillData } from './skills.js';
+import { profData, loadProf, validProf, defaultProf } from './prof.js';
+import { profClass } from '../data/prof.js';
+import { STAFF_REQ } from '../data/skills.js';
 const KEY = saveKey(activeChar() && activeChar().id);   // um save por personagem
 const PLAYER_FIELDS = ['lv', 'xp', 'nxt', 'max', 'mmax', 'dmg', 'gold', 'couro', 'penas', 'peixe', 'osso', 'pot', 'bmb', 'potR', 'bmbR', 'arrows', 'bolts'];
 const PET_FIELDS = ['lv', 'xp', 'pts', 'hp', 'dn'];
+
+/** Versão do esquema do save (campo `sv`; `v:1` continua). 2 = bloco `prof` e blocos `skills`/`prof` com `sv` próprio. Saves sem `sv` são os antigos. */
+export const SAVE_SV = 2;
+/** Migra um save lido (objeto) para o esquema atual SEM perder nada: acrescenta sv e, para classes com proficiência, um bloco prof válido
+    (derivado do nível geral se faltar ou estiver inválido). Repetível: migrateSave(migrateSave(s)) == migrateSave(s). Não altera o objeto recebido. */
+export function migrateSave(s, k) {
+  const m = { ...s };
+  if (!(m.sv >= SAVE_SV)) m.sv = SAVE_SV;
+  let raise = false;
+  if (k === 'mago' && m.skills && typeof m.skills === 'object' && !(m.skills.sv >= 2)) {   // habilidades v1 (rk = Cajado) → v2: acrescenta a árvore do Rod vazia; o resto do bloco fica igual
+    const rr = m.skills.rod && Array.isArray(m.skills.rod.rk) ? m.skills.rod.rk : [];
+    m.skills = { ...m.skills, sv: 2, rod: { rk: rr.length <= 10 && rr.every(n => Number.isInteger(n) && n >= 0 && n <= 3) ? rr.slice() : [] } };
+    raise = true;
+  }
+  if (profClass(k) && !validProf(m.prof && { staff: m.prof.staff, rod: m.prof.rod })) m.prof = { sv: 1, ...defaultProf(m.player && Number.isFinite(m.player.lv) ? m.player.lv : 1) };
+  if (raise && profClass(k) && m.prof && m.prof.staff) {   // 1ª migração das habilidades: o Mago nunca perde acesso ao que o nível dele já liberava (proficiência de Cajado no mínimo igual à exigida)
+    const lv = m.player && Number.isFinite(m.player.lv) ? m.player.lv : 1, floor = Math.max(0, ...STAFF_REQ.filter(r => r.lv <= lv).map(r => r.prof));
+    if (m.prof.staff.lv < floor) m.prof = { ...m.prof, staff: { xp: 0, lv: floor } };
+  }
+  return m;
+}
 
 export { safeSpot };
 export let savedPos = null;      // última posição segura salva (null = começa sentado na vila)
@@ -42,10 +66,11 @@ export function saveGame() {
     });
     localStorage.setItem(KEY, JSON.stringify({
       v: 1,
+      sv: SAVE_SV,
       t: Date.now(),
       seed: SEED, pos: lastSafe, rent: getRent(),
       player: Object.fromEntries(PLAYER_FIELDS.map(f => [f, P[f]])),
-      bag, chest, eq, act: P.act, pets, skills: skillData(),
+      bag, chest, eq, act: P.act, pets, skills: skillData(), prof: profData(),
       pet: state.pet.id,
       quest: state.quest, quests: state.quests, cartazes: state.cartazes, qtrack: state.qtrack, contract: state.contract, owned: state.owned,
       petOff: !!state.petOff,
@@ -63,14 +88,23 @@ export function saveGame() {
 /** Restaura o progresso salvo. Retorna true se carregou. */
 export function loadGame() {
   try {
-    const s = JSON.parse(localStorage.getItem(KEY));
+    const raw = localStorage.getItem(KEY);
+    let s = JSON.parse(raw);
     if (!s || s.v !== 1) return false;
+    if (!(s.sv >= SAVE_SV)) {   // save do esquema antigo: guarda a cópia original uma única vez (nunca sobrescreve uma cópia anterior)
+      try { const bk = KEY + ':pre-sv2'; if (localStorage.getItem(bk) === null) localStorage.setItem(bk, raw); } catch (e) { /* sem espaço: segue sem a cópia */ }
+    }
+    if (s.sv >= SAVE_SV && (activeChar() || {}).k === 'mago' && s.skills && typeof s.skills === 'object' && !(s.skills.sv >= 2)) {   // save já sv 2 mas com habilidades v1 (formato da V553): cópia própria, uma vez
+      try { const bk = KEY + ':pre-sk2'; if (localStorage.getItem(bk) === null) localStorage.setItem(bk, raw); } catch (e) { /* sem espaço */ }
+    }
+    try { s = migrateSave(s, (activeChar() || {}).k); } catch (e) { /* mantém o save como veio */ }
 
     PLAYER_FIELDS.forEach(f => { if (Number.isFinite(s.player[f])) P[f] = s.player[f]; });
     setRent(s.rent);
     loadSkillData(s.skills);   // ranks e talentos (a vida/mana máximas dos talentos já estão em max/mmax)
     P.nxt = xpToNext(P.lv);               // curva de XP nova: recalcula a partir do nível salvo
     P.xp = Math.min(P.xp, P.nxt - 1);
+    loadProf(s.prof, P.lv);   // proficiências (só classes com arma mágica); bloco inválido é reinicializado sem afetar o resto
     P.hp = P.max;
     P.mp = P.mmax;
     if (s.seed === SEED && s.pos && Number.isFinite(s.pos.x) && Number.isFinite(s.pos.z)) { savedPos = s.pos; lastSafe = s.pos; }

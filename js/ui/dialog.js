@@ -2,6 +2,7 @@
 import { $ } from '../core/utils.js';
 import { P } from '../entities/player.js';
 import { WEAPONS, RN, AN } from '../data/weapons.js';
+import { canUseItem } from '../systems/inventory.js';
 import { bag, chest, addItem, bagFull, bagUsed, beltRoom, beltAdd, BAG_MAX, CHEST_MAX, POT_MAX, BOMB_MAX, PRICE, ammoStack } from '../systems/inventory.js';
 import { ammoInfo, QUIVER, QUIVER_MAX } from '../data/ammo.js';
 import { emit } from '../core/events.js';
@@ -106,11 +107,14 @@ function renderShop() {
       r.innerHTML = '<i>' + icon(it) + '</i><span>' + itemName(it) + '<small>' + (plain(it) ? stat(it) : RN[it.q] + ' · ' + stat(it)) + '</small></span>';
       const b = document.createElement('button');
       b.textContent = '💰 ' + it.price;
+      const W = it.ty === 'wpn' && !plain(it) ? WEAPONS[it.wi] : null, lvLock = !!W && (W.lv || 0) > P.lv, clsLock = !!W && !canUseItem({ ty: 'wpn', w: it.wi });   // arma de nível acima do seu / mágica fora da sua classe: aparece, mas bloqueada
       const full = it.quiver ? P[it.quiver] >= QUIVER_MAX : it.mat || it.treat ? false : it.food ? (P.hp >= P.max && (!it.mp || P.mp >= P.mmax)) : it.bomb ? beltRoom('bmb') <= 0 : it.pot ? beltRoom('pot') <= 0 : it.ammo ? (!ammoStack(it.wi) && bagFull()) : bagFull();
-      b.disabled = P.gold < it.price || full;
+      b.disabled = P.gold < it.price || full || lvLock || clsLock;
+      if (lvLock) { b.textContent = '🔒 Exige nível ' + W.lv; b.title = 'Você precisa do nível ' + W.lv + ' para comprar ' + W.n; }
+      else if (clsLock) { b.textContent = '🔒 Só Magos'; b.title = 'Arma mágica: só Magos podem usar'; }
       if (full) b.title = it.food ? 'Você já está satisfeito' : it.pot ? 'Cinto cheio: sem vagas na mochila' : 'Mochila cheia';
       b.onclick = () => {
-        if (P.gold < it.price || full) return;
+        if (P.gold < it.price || full || lvLock || clsLock) return;
         P.gold -= it.price;
         if (it.quiver) { P[it.quiver] = Math.min(QUIVER_MAX, P[it.quiver] + it.pack); lootText('+ ' + it.pack + ' ' + (it.quiver === 'arrows' ? 'flechas' : 'virotes')); stock = makeStock(cur.shop); }
         else if (it.mat) { P[it.mat]++; lootText('+1 ' + it.n); }

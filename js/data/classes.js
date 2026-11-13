@@ -17,5 +17,11 @@ export const START = {
   mago: { wpn: 'Cutelo Pirata', gun: 'Cajado do Aprendiz', act: 'gun' },
   ladino: { wpn: 'Adaga Afiada', off: 'Adaga Afiada' },
 };
+/** Classes que podem equipar armas mágicas (cajado/rod: arma com `magic` em weapons-class.js). Para liberar outra classe, acrescente a chave aqui.
+    Personagem sem classe (antigo, "Pirata") continua livre: o jogo base não o restringe. */
+export const MAGIC_CATS = { mago: ['staff', 'rod'] };   // classe → categorias de arma mágica que ela usa (staff = cajado, rod)
+export const MAGIC_CLASSES = Object.keys(MAGIC_CATS);
+/** A classe `k` pode usar arma mágica (da categoria `mt`, se informada)? Sem classe (legado): livre. */
+export const magicOk = (k, mt) => !k || !!MAGIC_CATS[k] && (!mt || MAGIC_CATS[k].includes(mt));
 export const CLASS_KEYS = Object.keys(CLASSES);
 export const classOf = c => (c && CLASSES[c.k]) || NEUTRA;

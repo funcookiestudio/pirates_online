@@ -6,7 +6,8 @@ import { state } from '../core/state.js';
 import { enemies } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { activeChar } from '../core/chars.js';
-import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS, TUNE as U } from '../data/skills.js';
+import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS, TUNE as U, TREES, STAFF_REQ, ROD_PTS, ROD_TREE } from '../data/skills.js';
+import { unlockState, profState, activeCat } from './prof.js';
 import { START } from '../data/classes.js';
 import { WEAPONS } from '../data/weapons.js';
 import { eq, bag, setWeapon } from './inventory.js';
@@ -24,7 +25,7 @@ import * as V from './skillvfx.js';
 const { G } = V;
 const S = {
   on: false, k: null, D: null, clock: 0,
-  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], tl: {}, tb: { hp: 0, mp: 0 }, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
+  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], rod: { rk: [] }, tl: {}, tb: { hp: 0, mp: 0 }, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
   hits: 0, hitT: -9, shield: 0, shT: 0, gt: 0, mur: 0, lev: 0, pose: 0,
   leap: null, tp: null, cast: null, balls: [], traps: [], rain: null, storm: null, dance: null, daggers: [],
   bub: null, shell: null, aura: null, orbs: null, ret: null, ghosted: null, dead: false, combat: false, ct: 0, hasteT: 0, fsT: 0,
@@ -104,6 +105,20 @@ let warnT = 0;
 const warn = t => { const n = performance.now(); if (n - warnT > 900) { warnT = n; log(t); } };
 
 export const hasSkills = () => S.on;
+/** Classe com mais de uma árvore (Mago: ['staff','rod']); as demais: null (uma árvore, como sempre) */
+export const treeList = () => (S.on && TREES[S.k]) || null;
+/** Motivo legível do bloqueio da ativa i (null = liberada). Árvores múltiplas: nível geral E proficiência de Cajado (unlockState); demais classes: só o nível, como antes. */
+export function skillLock(i) {
+  if (i < 0 || i > 2) return null;
+  if (!treeList()) return P.lv < SKILL_LV[i] ? 'Nv ' + SKILL_LV[i] : null;
+  const r = unlockState(STAFF_REQ[i], 'staff');
+  return r.ok ? null : [r.lv.ok ? '' : 'Nv geral ' + r.lv.need, r.prof.ok ? '' : 'Proficiência Cajado ' + r.prof.need].filter(Boolean).join(' · ');
+}
+/** O Rod está na mão? As habilidades do Cajado não podem ser usadas com ele (o uso depende da arma ativa; nada é desaprendido) */
+export const rodBlocked = () => !!treeList() && activeCat() === 'rod';
+/** Pontos livres da árvore do Rod: derivados da proficiência de Rod (não há nó aprendível ainda: nada é gasto) */
+export const rodPoints = () => { const st = profState('rod'); return Math.max(0, ROD_PTS(st ? st.lv : 1) - sum(S.rod.rk)); };
+export const rodTree = () => ROD_TREE;
 export const classData = () => S.D;
 export const classKey = () => S.k;
 const costOf = i => Math.max(1, Math.ceil(S.D.act[i].mp * (1 - RANK.mp * S.rk[i] - S.TT.mpc)));
@@ -112,7 +127,9 @@ export function useSkill(i) {
   if (!S.on || P.dead || P.stone > 0 || P.roll > 0 || P.swap || P.sit > 0 || P.sitT || P.swimming || MOUNT.on || VEH.on || S.leap || S.tp || S.dance) return false;
   const def = S.D.act[i];
   if (!def) return false;
-  if (P.lv < SKILL_LV[i]) { warn('Habilidade bloqueada: Nv ' + SKILL_LV[i]); return false; }
+  const lock = skillLock(i);
+  if (lock) { warn('Habilidade bloqueada: ' + lock); return false; }
+  if (rodBlocked()) { warn('Troque para o Cajado'); return false; }   // com o Rod na mão: sem gastar mana nem recarga
   if (S.cds[i] > 0) return false;
   const cost = costOf(i);
   if (P.mp < cost) { warn('Mana insuficiente'); blinkMana(); return false; }
@@ -805,9 +822,13 @@ function blinkMana() {
 function updateUI() {
   if (!UI) return;
   UI.b.forEach((el, i) => {
-    const lk = P.lv < SKILL_LV[i], cd = S.cds[i], p = lk ? 0 : Math.round(cd / S.cdm[i] * 100);
-    const cls = (lk ? 'lk' : '') + (!lk && P.mp < S.D.act[i].mp ? ' nm' : '') + (isActive(i) ? ' on' : '');
-    if (UI.c[i] !== cls) { UI.c[i] = cls; el.className = 'skb ' + cls; }
+    const why = skillLock(i), lk = !!why, cd = S.cds[i], p = lk ? 0 : Math.round(cd / S.cdm[i] * 100), wo = rodBlocked();
+    const cls = (lk ? 'lk' : '') + (!lk && P.mp < S.D.act[i].mp ? ' nm' : '') + (isActive(i) ? ' on' : '') + (wo ? ' wo' : '');
+    if (UI.c[i] !== cls) {
+      UI.c[i] = cls; el.className = 'skb ' + cls;
+      el.style.opacity = wo ? '.4' : ''; el.style.filter = wo ? 'grayscale(.85)' : '';   // Rod na mão: botão esmaecido
+      const s = el.querySelector('u s'); if (s && why) s.textContent = /^Nv/.test(why) ? why.split(' · ')[0].replace('Nv geral', 'Nv') : 'Prof. ' + why.replace(/[^0-9]+/g, '');
+    }
     if (UI.m[i] !== p) { UI.m[i] = p; el.style.setProperty('--p', p + '%'); }
     const tx = !lk && cd > 0 ? (cd >= 10 ? Math.ceil(cd) : cd.toFixed(1)) : '';
     if (UI.t[i] !== tx) { UI.t[i] = tx; el.querySelector('.skt').textContent = tx; }
@@ -860,7 +881,7 @@ function recalc() {
   refreshCosts();
 }
 /** Dica completa do botão: nome, descrição, tecla, custo e recarga efetivos e rank */
-export const tipOf = i => { const a = S.D.act[i]; return a.n + ' — ' + a.d + '\nTecla ' + keyLabel(S.keys[i]) + ' · ' + costOf(i) + ' de mana · recarga ' + cdOf(i).toFixed(1) + ' s · rank ' + S.rk[i] + '/' + RANK.max + (P.lv < SKILL_LV[i] ? '\n🔒 Libera no nível ' + SKILL_LV[i] : ''); };
+export const tipOf = i => { const a = S.D.act[i]; return a.n + ' — ' + a.d + '\nTecla ' + keyLabel(S.keys[i]) + ' · ' + costOf(i) + ' de mana · recarga ' + cdOf(i).toFixed(1) + ' s · rank ' + S.rk[i] + '/' + RANK.max + (skillLock(i) ? '\n🔒 Requer: ' + skillLock(i) : '') + (rodBlocked() ? '\n⛔ Com o Rod ativo: troque para o Cajado' : ''); };
 function refreshCosts() {
   if (!UI) return;
   UI.b.forEach((el, i) => { const em = el.querySelector('em'); if (em) em.textContent = costOf(i); el.title = tipOf(i); });
@@ -869,7 +890,7 @@ function refreshCosts() {
 const flat = () => ({ hp: S.TT.hp, mp: S.TT.mp });   // total dos talentos agora; o que já entrou em max/mmax fica em S.tb (salvo à parte)
 export function learnSkill(i) {
   if (!S.on || i < 0 || i > 3) return false;
-  if (i < 3 && P.lv < SKILL_LV[i]) return false;
+  if (i < 3 && skillLock(i)) return false;
   if (S.rk[i] >= RANK.max || skillPoints() <= 0) return false;
   S.rk[i]++;
   refreshCosts();
@@ -887,8 +908,10 @@ export function learnTalent(b, i) {
   return true;
 }
 /** Redefinir: devolve todos os pontos (grátis); a vida/mana máximas dos talentos saem de volta */
-export function respec() {
+export function respec(tree) {
   if (!S.on) return;
+  if (tree === 'rod') { S.rod.rk = []; return; }   // sem nó aprendível ainda: nada gasto
+  if (tree === 'staff') { S.rk = [0, 0, 0, 0]; refreshCosts(); return; }   // só os ranks do Cajado: talentos (compartilhados), vida e mana máximas intocados
   S.rk = [0, 0, 0, 0]; S.tl = {};
   recalc();
   P.max = Math.max(1, P.max - S.tb.hp); P.mmax = Math.max(1, P.mmax - S.tb.mp);   // tira só o que os talentos puseram
@@ -896,14 +919,18 @@ export function respec() {
   P.hp = Math.min(P.hp, P.max); P.mp = Math.min(P.mp, P.mmax);
   refreshCosts();
 }
-export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.tl = {}; S.tb.hp = S.tb.mp = 0; if (S.on) { recalc(); } }
+/** Chance de crítico atual: base da classe + talentos (o mesmo que o hit() usa; habilidades pontuais como Olho de Águia não entram) */
+export const critChance = () => Math.min(1, P.crit + (S.on ? S.TT.crit : 0));
+export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.rod.rk = []; S.tl = {}; S.tb.hp = S.tb.mp = 0; if (S.on) { recalc(); } }
 /** Dados salvos (campo `skills` do save): ranks, talentos, migração feita e teclas ficam no navegador */
-export const skillData = () => (S.on ? { rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } } : null);
+/** Save: classes de uma árvore = bloco de sempre (sv 1). Mago (sv 2): `rk` = ranks do Cajado (mesmo campo do sv 1, para saves antigos), `rod.rk` = ranks do Rod (vazio por enquanto); talentos e tb iguais. */
+export const skillData = () => (S.on ? (treeList() ? { sv: 2, rk: S.rk.slice(), rod: { rk: S.rod.rk.slice() }, tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } } : { sv: 1, rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } }) : null);
 export function loadSkillData(o) {
   if (!S.on || !o) return;
   if (Array.isArray(o.rk)) S.rk = [0, 1, 2, 3].map(i => Math.max(0, Math.min(RANK.max, o.rk[i] | 0)));
   if (o.tl && typeof o.tl === 'object') { S.tl = {}; Object.keys(o.tl).forEach(k => { const n = o.tl[k] | 0; if (n > 0 && /^\d:\d$/.test(k)) S.tl[k] = Math.min(RANK.max, n); }); }
   S.mig = o.mig ? 1 : 0;
+  { const rr = o.rod && Array.isArray(o.rod.rk) ? o.rod.rk : []; S.rod.rk = rr.length <= ROD_TREE.length && rr.every(n => Number.isInteger(n) && n >= 0 && n <= RANK.max) ? rr.slice() : []; }   // Rod: bloco ausente/inválido = vazio
   S.tb = { hp: Math.max(0, +(o.tb && o.tb.hp) || 0), mp: Math.max(0, +(o.tb && o.tb.mp) || 0) };
   recalc();
   if (!o.tb) { S.tb = { hp: S.TT.hp, mp: S.TT.mp }; }   // save da versão anterior (sem tb): o bônus era o dos ranks aprendidos
@@ -968,13 +995,13 @@ const AUTO = {   // [habilidade, distância mínima, máxima, inimigos próximos
   ladino: [[2, 0, 9, 2], [1, 3, 14, 1], [0, 2.5, 11, 1]],
 };
 export function autoSkill() {
-  if (!S.on || P.dead || S.leap || S.tp || S.dance) return;
+  if (!S.on || P.dead || S.leap || S.tp || S.dance || rodBlocked()) return;   // com o Rod na mão não tenta habilidades do Cajado
   const t = P.tgt;
   if (!t || t.dead) return;
   const d = dist(t);
   const near = enemies.filter(e => !e.dead && !e.inv && dist(e) < 7).length + (t.t.boss ? 3 : 0);
   for (const [i, lo, hi, n] of AUTO[S.k]) {
-    if (P.lv < SKILL_LV[i] || S.cds[i] > 0 || P.mp < costOf(i) + P.mmax * .1) continue;
+    if (skillLock(i) || S.cds[i] > 0 || P.mp < costOf(i) + P.mmax * .1) continue;
     if (d < lo || d > hi || near < n) continue;
     if (useSkill(i)) return;
   }

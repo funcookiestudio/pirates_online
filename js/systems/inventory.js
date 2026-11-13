@@ -10,6 +10,11 @@ import { state } from '../core/state.js';
 import { log, lootText } from '../ui/notify.js';
 import { hourNow } from '../core/clock.js';
 import { isThrown, ammoInfo, ammoCt, setCt, QUIVER_MAX } from '../data/ammo.js';
+import { magicOk } from '../data/classes.js';
+import { activeChar } from '../core/chars.js';
+
+/** A classe do personagem pode usar este item? (armas mágicas: só as classes de MAGIC_CLASSES; nada é removido de quem já tem) */
+export const canUseItem = it => !it || it.ty !== 'wpn' || !WEAPONS[it.w].magic || magicOk((activeChar() || {}).k, WEAPONS[it.w].mt);
 
 /** Itens guardados na mochila */
 export const bag = [];
@@ -103,6 +108,7 @@ export function addItem(l) {
 /** Em que espaço o item entra? 'wpn' | 'gun' | 'arm' | 'off' (segunda mão). Com `better`, devolve null se não melhora nada.
     Mão 2: aceita outra arma do mesmo tipo (dois machadinhos, duas pistolas); armas grandes (mosquete) ocupam as duas mãos. */
 export function pickSlot(it, better) {
+  if (!canUseItem(it)) return null;                   // arma mágica de classe sem permissão
   if (better && P.lv < itemReq(it)) return null;      // auto-equipar só itens que o nível permite
   if (isTorch(it)) return !better && canEquipTo(it, 'off') ? 'off' : null;
   if (isShield(it)) return canEquipTo(it, 'off') && (!better || !eq.off) ? 'off' : null;   // escudo: só na mão livre (o auto só equipa se estiver vazia)   // o auto-equipar não mexe na tocha: torch-auto.js cuida dela (só no escuro)
@@ -120,6 +126,7 @@ export function pickSlot(it, better) {
 /** Equipa o item `i` da mochila; o item antigo do mesmo espaço volta para a mochila */
 /** O item `it` pode ir para o espaço `slot` (arrastar e soltar)? A mão 2 aceita o mesmo tipo da principal, exceto armas grandes. */
 export function canEquipTo(it, slot) {
+  if (!canUseItem(it)) return false;
   // tocha: só na mão 2 (com arma de 2 mãos na mão ela some até voltar a uma de 1 mão)
   if (isTorch(it)) return slot === 'off';
   if (isShield(it)) return slot === 'off' && !!eq.wpn && !WEAPONS[eq.wpn.w].big;   // escudo: precisa de arma de 1 mão na principal
@@ -132,6 +139,7 @@ export function canEquipTo(it, slot) {
 export function equip(i, forced) {
   const it = bag[i];
   if (!it) return;
+  if (!canUseItem(it)) { log('🔒 ' + it.n + ': arma mágica, só para Magos'); return; }
   if (P.lv < itemReq(it)) { log('🔒 ' + it.n + ' exige nível ' + itemReq(it)); return; }
   const slot = forced && canEquipTo(it, forced) ? forced : pickSlot(it, false), old = eq[slot];
   bag.splice(i, 1);
