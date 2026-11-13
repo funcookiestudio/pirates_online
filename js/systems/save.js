@@ -3,7 +3,7 @@
 import { xpToNext } from '../data/scaling.js';
 import { state } from '../core/state.js';
 import { P } from '../entities/player.js';
-import { bag, chest, eq, setWeapon } from './inventory.js';
+import { bag, chest, eq, setWeapon, weaponBonus, reserveClass, canUseItem, bagFull } from './inventory.js';
 import { WEAPONS } from '../data/weapons.js';
 import { PST } from '../pets/stats.js';
 import { setPet, unequipPet } from '../pets/manager.js';
@@ -117,12 +117,14 @@ export function loadGame() {
     eq.gun = validItem(s.eq && s.eq.gun) ? s.eq.gun : null;
     eq.off = validItem(s.eq && s.eq.off) && s.eq.off.w != null && !WEAPONS[s.eq.off.w].big ? s.eq.off : null;
     eq.arm = validItem(s.eq && s.eq.arm) ? s.eq.arm : null;
+    delete eq.res;   // arma mágica reserva (Etapa 7, só Mago): válida e permitida volta ao lugar; qualquer outra coisa vai para a mochila (nada é apagado)
+    { const rs = s.eq && s.eq.res; if (validItem(rs)) { if (WEAPONS[rs.w].magic && reserveClass() && canUseItem(rs)) eq.res = rs; else if (!bagFull()) bag.push(rs); } }
     // saves antigos guardavam a arma de fogo no espaço da arma corpo a corpo
     let act = s.act === 'gun' ? 'gun' : 'wpn';
     if (eq.wpn && WEAPONS[eq.wpn.w] && WEAPONS[eq.wpn.w].gun) { eq.gun = eq.gun || eq.wpn; eq.wpn = null; act = 'gun'; }
     if (!eq.gun) act = 'wpn';
-    P.wb = (eq[act] && eq[act].v) || 0; // o dano salvo já inclui o bônus da arma que estava na mão
     P.act = act;
+    P.wb = weaponBonus(); // o dano salvo já inclui TODO o bônus das armas na mão (principal, 2ª mão e tocha); antes só o da principal entrava e o resto era somado de novo a cada carregamento (Ladino: +1 por recarga)
     setWeapon(act);
 
     Object.keys(PST).forEach(id => {

@@ -14,10 +14,10 @@ export const TREES = { mago: ['staff', 'rod'] };
 export const STAFF_PROF = [1, 3, 5];
 export const STAFF_REQ = SKILL_LV.map((lv, i) => ({ lv, prof: STAFF_PROF[i] }));
 /** Pool de pontos de habilidade do Rod: derivado da proficiência de Rod (1 por nível a partir do 2). O do Cajado continua PTS.skill (nível geral). */
-export const ROD_PTS = prof => Math.max(0, prof - 1);
-/** Árvore do Rod: SÓ ESTRUTURA (Etapa 6 implementa). Cada categoria tem um nó provisório, indisponível: nada aprendível, nada usável.
-    req = { lv: nível geral, prof: proficiência de Rod } (números provisórios, para o Bison ajustar). */
-export const ROD_TREE = [
+export const ROD_PTS = prof => Math.max(0, prof);   // 1 ponto por nível de proficiência já no nível 1 (Etapa 6): sem isso o Rod nunca teria a 1ª habilidade, e o XP de Rod só vem de usar suporte
+/** Árvore do Rod (Etapa 6): cada categoria tem 0 ou 1 habilidade real (ROD_SKILLS[id]); a categoria sem habilidade fica "Em breve".
+    req = { lv: nível geral, prof: proficiência de Rod } (provisório, para o Bison ajustar). A ORDEM desta lista é o índice usado no save (rod.rk[i]): não reordenar. */
+export const ROD_TREE = [   // (cada id com habilidade tem entrada em ROD_SKILLS)
   { id: 'cura', n: 'Cura instantânea', req: { lv: 1, prof: 1 } },
   { id: 'regen', n: 'Cura contínua', req: { lv: 4, prof: 2 } },
   { id: 'escudo', n: 'Escudos', req: { lv: 6, prof: 3 } },
@@ -134,3 +134,24 @@ export const TUNE = {
     danca: { dur: 4, hits: 6, every: .62, r: 10, mult: 1.3 },                               // Dança das Lâminas
   },
 };
+/* ===== Habilidades de SUPORTE do Rod (Etapa 6): todos os números aqui =====
+   NENHUMA causa dano direto, periódico ou indireto em inimigos. Alvos: o próprio jogador e o companheiro ativo (a "área" é um raio em volta do jogador).
+   mp = custo de mana · cd = recarga (s) · dur = duração (s) · range = alcance até o companheiro · r = raio
+   pct = fração da vida máxima (cura instantânea, escudo) · pct/s na cura contínua e no Santuário · pow = intensidade (fração)
+   Poder = pct (ou pow) × P.cls.support (classes.js; Mago > 1) × (1 + RANK.dmg × rank). Recarga e custo: rank e talentos (cdr, mpc) como as outras habilidades. */
+export const ROD_SKILLS = {
+  cura: { n: 'Cura Menor', mp: 14, cd: 6, pct: .25, range: 14, d: 'Cura instantânea de 25% da vida máxima em você ou no companheiro (quem estiver com menos vida). Sem efeito com a vida cheia: não gasta mana.', ic: '<path d="M12 21s-7-4.4-7-10a4 4 0 017-2.5A4 4 0 0119 11c0 5.6-7 10-7 10z"/><path d="M12 9v6M9 12h6"/>' },
+  regen: { n: 'Prece Restauradora', mp: 18, cd: 14, pct: .06, dur: 8, range: 14, d: 'Cura contínua: 6% da vida máxima por segundo durante 8 s, em você e no companheiro próximo.', ic: '<path d="M12 4v16M6 8c2 0 4 1 6 4M18 8c-2 0-4 1-6 4M7 20h10"/>' },
+  escudo: { n: 'Barreira Arcana', mp: 22, cd: 18, pct: .25, dur: 10, range: 14, d: 'Escudo que absorve dano igual a 25% da vida máxima por 10 s, em você e no companheiro próximo. Renova o escudo se já ativo.', ic: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/>' },
+  atk: { n: 'Fúria Arcana', mp: 16, cd: 22, pow: .2, dur: 10, d: 'Por 10 s: +20% de dano em todos os seus golpes.', ic: '<path d="M13 2L5 14h6l-1 8 8-12h-6z"/>' },
+  def: { n: 'Véu Arcano', mp: 20, cd: 24, pow: .2, dur: 10, range: 14, d: 'Por 10 s: -20% de dano recebido, em você e no companheiro próximo.', ic: '<path d="M4 5h16v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10zM9 12l2 2 4-4"/>' },
+  vel: { n: 'Passo do Vento', mp: 12, cd: 20, pow: .3, dur: 8, d: 'Por 8 s: +30% de velocidade de movimento.', ic: '<path d="M3 9h11a3 3 0 10-3-3M3 15h15a3 3 0 11-3 3M3 12h7"/>' },
+  debuff: { n: 'Névoa Sombria', mp: 24, cd: 26, slow: 4, weaken: .25, wdur: 6, r: 6, d: 'Névoa em raio 6: inimigos ficam lentos por 4 s e causam 25% menos dano por 6 s. Não causa dano.', ic: '<path d="M5 15a4 4 0 014-4 5 5 0 019 1 3 3 0 01-1 6H8a3 3 0 01-3-3zM8 4l-1 2M12 3v2M16 4l1 2"/>' },
+  purifica: { n: 'Purificar', mp: 10, cd: 12, d: 'Remove de você os efeitos negativos: lentidão e petrificação. Sem efeito se não houver nenhum: não gasta mana.', ic: '<path d="M12 3c3 4 6 6 6 10a6 6 0 01-12 0c0-4 3-6 6-10zM9 14a3 3 0 003 3"/>' },
+  protecao: { n: 'Égide Arcana', mp: 18, cd: 30, dur: 8, d: 'Por 8 s: imune a lentidão e a empurrão. Não protege de dano.', ic: '<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6zM9 12h6"/>' },
+  area: { n: 'Santuário', mp: 40, cd: 40, pct: .04, pow: .15, dur: 8, r: 8, d: 'Zona de raio 8 ao seu redor: por 8 s cura 4% da vida máxima por segundo e reduz 15% do dano recebido, em você e no companheiro dentro do raio.', ic: '<circle cx="12" cy="12" r="8"/><path d="M12 6v12M6 12h12"/>' },
+};
+/** Efeitos temporizados de jogador/companheiro (systems/buffs.js): máximo de efeitos diferentes por alvo, intervalo do tick da cura contínua e tetos de intensidade */
+export const BUFF_CFG = { max: 6, tick: .5, capAtk: 1, capDr: .6, capSpd: .6 };
+/** Auto-combate com o Rod na mão (não força trocar de arma): limiares e reserva de mana para o ataque básico */
+export const AUTO_ROD = { hpBelow: .5, petBelow: .4, buffMinEnemies: 1, mpReserve: .3 };

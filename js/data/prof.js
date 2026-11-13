@@ -26,9 +26,10 @@ export const PROF = {
     win: 10, capWin: 40,   // anti-abuso: teto de XP de Rod por janela de win segundos…
     capTarget: 20,         // …e por alvo dentro da janela (curar sempre o mesmo alvo não rende sem fim)
   },
-  /* DECISÃO PENDENTE (Bison): XP de Rod pelo ATAQUE BÁSICO. 0 = desligado (padrão). Ex.: .02 = 0,02 XP de Rod por ponto de dano efetivo do tiro do Rod.
-     Sem isso o Rod só evolui quando as habilidades de suporte existirem (Etapa 6). */
-  ROD_XP_basico: 0,
+  /* XP de Rod pelo ATAQUE BÁSICO (só o tiro do próprio Rod, nunca habilidades): XP pequeno por ponto de dano EFETIVO (sem o excesso sobre a vida do alvo), com o fator de
+     nível do inimigo (xpMult) e 0 para inimigo trivial (trivialDiff do Cajado). Sem bônus de abate e sob o MESMO teto do Rod (rod.capWin por janela), para o suporte
+     continuar sendo o caminho principal. 0 desliga. (Antes da Etapa 6b era 0; o Bison deixou a escolha comigo: 0,02 = metade da taxa do Cajado por ponto, e o Rod bate mais fraco.) */
+  ROD_XP_basico: .02,
 
   /* MIGRAÇÃO de saves antigos (sem bloco prof): o Mago antigo começa com proficiência de Cajado = seu nível geral (limitado ao máximo).
      Motivo: as habilidades futuras exigirão nível geral E proficiência; assim nada que ele já usava fica bloqueado quando as árvores chegarem

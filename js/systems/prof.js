@@ -60,8 +60,10 @@ function onDamage(e, eff, o) {
     if (e.hp <= 0) xp += (C.killBase + C.killPerLv * e.lv) * f;   // abate (golpe ou dano periódico que mata)
     xp = Math.min(xp, Math.max(0, room('staff', now, C.win, C.capWin).tot));
     if (xp > 0) grant('staff', xp, now);
-  } else if (PROF.ROD_XP_basico > 0 && o.el) {   // Rod: só o tiro dele (leva o elemento), nunca habilidades
-    const C = PROF.rod, xp = Math.min(eff * PROF.ROD_XP_basico, Math.max(0, room('rod', now, C.win, C.capWin).tot));
+  } else if (PROF.ROD_XP_basico > 0 && o.el && eff > 0) {   // Rod: só o tiro dele (leva o elemento), nunca habilidades; mesmo teto do suporte
+    const df = e.lv - P.lv;
+    if (df <= PROF.staff.trivialDiff) return;
+    const C = PROF.rod, xp = Math.min(eff * PROF.ROD_XP_basico * xpMult(df), Math.max(0, room('rod', now, C.win, C.capWin).tot));
     if (xp > 0) grant('rod', xp, now);
   }
 }

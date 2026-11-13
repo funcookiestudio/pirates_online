@@ -7,7 +7,7 @@ import { WEAPONS, RN } from '../data/weapons.js';
 import { P } from '../entities/player.js';
 import { dropItem } from '../entities/loot.js';
 import { itemReq } from '../data/scaling.js';
-import { slotOf, unequip, pickSlot, canEquipTo, POT_MAX, BOMB_MAX } from '../systems/inventory.js';
+import { slotOf, unequip, pickSlot, canEquipTo, POT_MAX, BOMB_MAX, reserveClass } from '../systems/inventory.js';
 import { bag, eq, equip, BAG_MAX, bagUsed, bagFull, beltSlots, beltStacks } from '../systems/inventory.js';
 import { PST } from '../pets/stats.js';
 import { renderPets, initPetPanel } from './pet-panel.js';
@@ -20,7 +20,8 @@ import { clearSave } from '../systems/save.js';
 import { resetPlayer, armedButton } from '../systems/reset.js';
 import { curW } from '../systems/combat.js';
 import { profState, unlockState } from '../systems/prof.js';
-import { treeList, skillLock, rodBlocked, rodPoints, rodTree } from '../systems/skills.js';
+import { treeList, skillLock, rodBlocked, rodPoints, rodTree, rodHas, rodRank, rodSlots, learnRod, setRodSlot } from '../systems/skills.js';
+import { ROD_SKILLS } from '../data/skills.js';
 import { ELEMENTS } from '../data/elements.js';
 import { CATS } from '../data/magic-weapons.js';
 import { hasSkills, critChance, classData, classKey, skillPoints, talentPoints, rankOf, talentRank, talentReq, learnSkill, learnTalent, respec, captureKey, skillKeys, keyLabel, effCost, effCd } from '../systems/skills.js';
@@ -217,16 +218,27 @@ function treeTabs() {
     (ps ? '<p class="pts">Proficiência ' + nm + ': Nv ' + ps.lv + ' · ' + (ps.max ? 'máx.' : Math.floor(ps.xp) + '/' + ps.need + ' xp') + '</p>' : '');
 }
 function bindTabs() { $('skp').querySelectorAll('[data-tree]').forEach(b => { b.onclick = () => { skTree = b.dataset.tree; renderSkills(); }; }); }
-/** Árvore do Rod: só a estrutura (Etapa 6 traz as habilidades). Nada aprendível nem usável. */
+/** Árvore do Rod (Etapa 6): habilidades de suporte reais (aprender/melhorar com pontos do Rod, escolher o botão); categoria sem habilidade = "Em breve" */
 function renderRod() {
-  const rows = rodTree().map(n => {
+  const rows = rodTree().map((n, idx) => {
     const r = unlockState(n.req, 'rod'), why = [r.lv.ok ? '' : 'Nv geral ' + r.lv.need, r.prof.ok ? '' : 'Proficiência Rod ' + r.prof.need].filter(Boolean).join(' · ');
-    return '<div class="sdet" style="opacity:.8"><div style="display:flex;gap:10px;align-items:center"><div class="sc lock" title="Em breve">' + svg('lock') + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + n.n + '</div>' +
-      '<div class="ty">Em breve · Etapa 6</div><div class="ty">Requisitos: Nv geral ' + n.req.lv + ' · Proficiência Rod ' + n.req.prof + (r.ok ? ' (cumpridos)' : ' — falta: ' + why) + '</div></div></div></div>';
+    const reqTxt = 'Requisitos: Nv geral ' + n.req.lv + ' · Proficiência Rod ' + n.req.prof + (r.ok ? ' (cumpridos)' : ' — falta: ' + why);
+    if (!rodHas(idx)) {
+      return '<div class="sdet" style="opacity:.8"><div style="display:flex;gap:10px;align-items:center"><div class="sc lock" title="Em breve">' + svg('lock') + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + n.n + '</div>' +
+        '<div class="ty">Em breve · Etapa 6</div><div class="ty">' + reqTxt + '</div></div></div></div>';
+    }
+    const d = ROD_SKILLS[n.id], rk = rodRank(idx), slots = rodSlots(), can = !why && rk < RANK.max && rodPoints() > 0;
+    const sb = [0, 1, 2].map(i => '<button class="btn sm' + (slots[i] === idx ? ' pri' : '') + '" data-rs="' + i + ':' + idx + '"' + (rk > 0 ? '' : ' disabled') + '>Botão ' + (i + 1) + '</button>').join('');
+    return '<div class="sdet"><div style="display:flex;gap:10px;align-items:center"><div class="sc' + (why ? ' lock' : '') + '" style="color:#c890ff">' + rawSvg(d.ic) + '</div><div style="min-width:0"><div class="nm" style="color:var(--gold-hi)">' + d.n + ' <small style="opacity:.7">· ' + n.n + '</small></div>' +
+      '<div class="ty">' + d.mp + ' de mana · recarga ' + d.cd + ' s' + (rk > 0 ? ' · rank ' + rk + '/' + RANK.max : '') + '</div></div></div><p class="ds">' + d.d + '</p><p class="ds dim">' + reqTxt + '</p>' +
+      '<button class="btn pri big" data-rl="' + idx + '"' + (can ? '' : ' disabled') + '>' + (rk >= RANK.max ? 'Rank máximo' : why ? 'Bloqueada' : rodPoints() <= 0 ? 'Sem pontos do Rod' : (rk ? 'Melhorar' : 'Aprender') + ' · 1 ponto') + '</button>' +
+      '<div class="pact" style="gap:4px;margin-top:4px">' + sb + '</div></div>';
   }).join('');
-  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2>' + treeTabs() + '<p class="pts">Pontos do Rod: <b>' + rodPoints() + '</b> · 1 por nível de proficiência a partir do 2 (ainda sem habilidades para gastar)</p>' + rows +
+  $('skp').innerHTML = '<h2 class="pt">Habilidades</h2>' + treeTabs() + '<p class="pts">Pontos do Rod: <b>' + rodPoints() + '</b> · 1 por nível de proficiência · os botões 1/2/3 viram estas habilidades com o Rod na mão</p>' + rows +
     '<div class="pact rst"><button class="btn sm" id="skrs">Redefinir pontos do Rod (grátis)</button></div>';
   bindTabs();
+  $('skp').querySelectorAll('[data-rl]').forEach(b => { b.onclick = () => { if (learnRod(+b.dataset.rl)) renderSkills(); }; });
+  $('skp').querySelectorAll('[data-rs]').forEach(b => { b.onclick = () => { const [i, idx] = b.dataset.rs.split(':').map(Number); if (setRodSlot(i, idx)) renderSkills(); }; });
   const rs = $('skrs'); if (rs) rs.onclick = () => { respec('rod'); renderSkills(); };
 }
 
@@ -348,6 +360,16 @@ function renderPanel() {
   if (selE === 'wpn') w.classList.add('sel'); if (selE === 'off') o.classList.add('sel'); if (selE === 'gun') g.classList.add('sel');
   $('eqW').innerHTML = $('eqG').innerHTML = $('eqF').innerHTML = '';
   $('eqW').append(w); $('eqG').append(o); $('eqF').append(g);
+  // Mago: 4º espaço, a arma mágica RESERVA (Cajado ↔ Rod com a tecla X, sem custo); outras classes não o veem
+  let er = $('eqRes');
+  if (reserveClass()) {
+    if (!er) { er = document.createElement('div'); er.id = 'eqRes'; $('eqF').parentElement.append(er); }
+    er.innerHTML = '';
+    const rs = slot(eq.res || null, eq.res ? () => pickE('res') : null, 'RESERVA', 'gun');
+    mark(rs, 'res', eq.res || null); rs.title = eq.res ? 'Arma mágica reserva: tecla X alterna com a da mão' : 'Reserva: guarde aqui o outro (Cajado ou Rod); X alterna sem custo';
+    if (selE === 'res') rs.classList.add('sel');
+    er.append(rs);
+  } else if (er) er.remove();
 
   // mochila: abas Equipamento / Consumíveis / Missão / Materiais
   document.querySelectorAll('#btabs span').forEach(e => e.classList.toggle('on', e.dataset.b === btab));

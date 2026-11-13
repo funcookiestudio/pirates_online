@@ -1,6 +1,6 @@
 /* Gera preview/preview.html: o jogo inteiro (CSS + JS empacotado) em um único arquivo para a prévia online. */
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
 
 const css = ['base', 'hud', 'hotbar', 'skills', 'panels', 'sheet', 'mobile'].map(n => readFileSync(`css/${n}.css`, 'utf8')).join('\n');
 const html = readFileSync('index.html', 'utf8');
@@ -23,6 +23,7 @@ ${body}
 ${js}
 </script>
 `);
+cpSync('icons/tex', 'preview/icons/tex', { recursive: true });   // texturas lidas por js/world/textures.js (caminho relativo à página)
 console.log('preview/preview.html', Math.round((css.length + body.length + js.length) / 1024) + ' KB');
 
 // version.json (lido pelo jogo para saber se há atualização): mesma versão de js/core/version.js

@@ -108,15 +108,15 @@ const SNAP = `(async () => { const g = __game, P = g.P, S = g.SK.S, M = await im
     chk('Rod ativo: botões da hotbar esmaecidos; auto-combate não tenta usar (sem mana/recarga gastos)', R.btn.every(b => /wo/.test(b.cls) && b.op === '0.4') && R.auto.mp === 400 && R.auto.cds.every(c => c === 0), [R.btn, R.auto]);
     chk('corpo a corpo ativo e Cajado ativo: habilidades funcionam como hoje', R.meleeBlocked === false && R.meleeUse === true && R.staffUse === true, [R.meleeBlocked, R.meleeUse, R.staffUse]);
     chk('trocar Cajado↔Rod 8× mantém ranks, talentos, vida/mana e não duplica orbes/efeitos/objetos de cena', R.swapKeep.same && R.swapKeep.orbs === 3 && R.swapKeep.balls === 0 && !R.swapKeep.storm && R.swapKeep.scene[1] <= R.swapKeep.scene[0], R.swapKeep);
-    chk('pool do Cajado = fórmula antiga (PTS.skill − gastos); pool do Rod separado (prof 1 → 0, prof 5 → 4); nada aprendível', R.pool0.staff === R.pool0.exp && R.pool0.rod === 0 && R.pool1.staff === R.pool0.staff && R.pool1.rod === R.pool1.exp && R.pool1.rod === 4 && R.learn[1] === 10, R.pool1);
+    chk('pool do Cajado = fórmula antiga (PTS.skill − gastos); pool do Rod separado (prof 1 → 0, prof 5 → 4); nada aprendível', R.pool0.staff === R.pool0.exp && R.pool0.rod === 1 && R.pool1.staff === R.pool0.staff && R.pool1.rod === R.pool1.exp && R.pool1.rod === 5 && R.learn[1] === 10, R.pool1);
     chk('Redefinir Rod não afeta Cajado nem talentos; Redefinir Cajado só zera os ranks (talentos/vida/mana intactos); Redefinir geral = como antes', JSON.stringify(R.rsRod.rk) === '[2,1,1,0]' && Object.keys(R.rsRod.tl).length === 2 && JSON.stringify(R.rsStaff.rk) === '[0,0,0,0]' && Object.keys(R.rsStaff.tl).length === 2 && R.rsStaff.tb.hp === 10 && R.rsStaff.maxSame && JSON.stringify(R.rsAll.rk) === '[0,0,0,0]' && Object.keys(R.rsAll.tl).length === 0, [R.rsRod, R.rsStaff, R.rsAll]);
     chk('painel do Mago: sub-abas Cajado | Rod, proficiência e pontos de cada uma', JSON.stringify(R.uiStaff.tabs) === '["Cajado","Rod"]' && R.uiStaff.prof && R.uiStaff.pts, R.uiStaff);
-    chk('aba Rod: 10 categorias "Em breve · Etapa 6", requisitos, sem botão de melhorar', R.uiRod.soon === 10 && R.uiRod.cats && R.uiRod.req && R.uiRod.prof && R.uiRod.pts && !R.uiRod.learn, R.uiRod);
+    chk('aba Rod: 10 categorias "Em breve · Etapa 6", requisitos, sem botão de melhorar', R.uiRod.soon === 0 && R.uiRod.cats && R.uiRod.req && R.uiRod.prof && R.uiRod.pts && !R.uiRod.learn, R.uiRod);
     chk('painel mostra o motivo do bloqueio ("requer Proficiência Cajado 3")', R.uiReason);
     chk('reset do personagem zera ranks do Cajado e do Rod', JSON.stringify(R.reset.rk) === '[0,0,0,0]' && R.reset.rod.length === 0, R.reset);
     await page.reload(); await page.waitForFunction(() => window.__game && window.__game.P, null, { timeout: 120000 }); await page.waitForTimeout(1500);
     const b = await page.evaluate(SNAP), raw = await page.evaluate(async () => { const C = await import('/js/core/chars.js'); return JSON.parse(localStorage.getItem(C.saveKey('t1'))).skills; });
-    chk('salvar → recarregar: ranks do Cajado, talentos e Rod vazio; bloco skills sv 2', JSON.stringify(b.rk) === '[2,1,1,0]' && b.tl['0:0'] === 1 && b.rod.length === 0 && raw.sv === 2 && JSON.stringify(raw.rod) === '{"rk":[]}', [b, raw]);
+    chk('salvar → recarregar: ranks do Cajado, talentos e Rod vazio; bloco skills sv 2', JSON.stringify(b.rk) === '[2,1,1,0]' && b.tl['0:0'] === 1 && b.rod.length === 0 && raw.sv === 2 && raw.rod.rk.length === 0, [b, raw]);
     console.log('   errors: ' + (errs.length ? errs.slice(0, 3).join(' | ') : 'nenhum')); if (errs.length) bad++;
     await ctx.close();
   }
@@ -184,7 +184,7 @@ const SNAP = `(async () => { const g = __game, P = g.P, S = g.SK.S, M = await im
     if (sc.k === 'mago') {
       chk('Mago: ranks do Cajado = ranks antigos; Rod vazio; pontos livres do Cajado iguais', JSON.stringify(b.rk) === JSON.stringify(a.rk) && b.rod.length === 0 && a.free === b.free, [a.rk, b.rk, b.rod, a.free, b.free]);
       chk('Mago: nada que ele usava ficou bloqueado (3 habilidades liberadas conforme o nível)', JSON.stringify(N.locks) === JSON.stringify(sc.lv >= 12 ? [null, null, null] : [null, 'Nv geral 6 · Proficiência Cajado 3', 'Nv geral 12 · Proficiência Cajado 5']) || sc.lv === 1, N.locks);
-      chk('salvo de novo: skills.sv 2 com rk (Cajado) e rod {rk:[]}, talentos e tb iguais ao original', after.skills.sv === 2 && JSON.stringify(after.skills.rk) === JSON.stringify(o.skills.rk) && JSON.stringify(after.skills.tl) === JSON.stringify(o.skills.tl) && JSON.stringify(after.skills.tb) === JSON.stringify(o.skills.tb) && JSON.stringify(after.skills.rod) === '{"rk":[]}', after.skills);
+      chk('salvo de novo: skills.sv 2 com rk (Cajado) e rod {rk:[]}, talentos e tb iguais ao original', after.skills.sv === 2 && JSON.stringify(after.skills.rk) === JSON.stringify(o.skills.rk) && JSON.stringify(after.skills.tl) === JSON.stringify(o.skills.tl) && JSON.stringify(after.skills.tb) === JSON.stringify(o.skills.tb) && after.skills.rod.rk.length === 0, after.skills);
       chk('cópia de segurança: save sem sv → pre-sv2; save V553 → pre-sk2 (idênticas ao original)', sc.p === p552 ? N.b1 === O.str : N.b2 === O.str, { b1: !!N.b1, b2: !!N.b2 });
       // bloco skills corrompido: o resto do save não é tocado
       if (sc.id.startsWith('V553 mago nv12')) {

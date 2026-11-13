@@ -6,8 +6,10 @@ import { state } from '../core/state.js';
 import { enemies } from '../core/registry.js';
 import { P } from '../entities/player.js';
 import { activeChar } from '../core/chars.js';
-import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS, TUNE as U, TREES, STAFF_REQ, ROD_PTS, ROD_TREE } from '../data/skills.js';
-import { unlockState, profState, activeCat } from './prof.js';
+import { SKILLS, SKILL_LV, RANK, PTS, TSTAT, TALENTS, TUNE as U, TREES, STAFF_REQ, ROD_PTS, ROD_TREE, ROD_SKILLS, AUTO_ROD } from '../data/skills.js';
+import { unlockState, profState, activeCat, profRodSupport } from './prof.js';
+import { heal, addBuff, petAvail, hasBuff, petDist, petPosOf, hpOf, maxOf, absorbP, drMult, atkMult } from './buffs.js';
+import { applyStatus, hasStatus } from './elements.js';
 import { START } from '../data/classes.js';
 import { WEAPONS } from '../data/weapons.js';
 import { eq, bag, setWeapon } from './inventory.js';
@@ -25,7 +27,7 @@ import * as V from './skillvfx.js';
 const { G } = V;
 const S = {
   on: false, k: null, D: null, clock: 0,
-  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], rod: { rk: [] }, tl: {}, tb: { hp: 0, mp: 0 }, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
+  cds: [0, 0, 0], cdm: [1, 1, 1], rk: [0, 0, 0, 0], rod: { rk: [], slots: [-1, -1, -1] }, rcd: {}, rcdm: {}, tl: {}, tb: { hp: 0, mp: 0 }, dmx: 1, fx: [1, 1, 1], mig: 0, dun: false, keys: ['Digit1', 'Digit2', 'Digit3'], TT: { dmg: 0, crit: 0, dr: 0, hp: 0, mp: 0, spd: 0, cdr: 0, mpc: 0, mpr: 0 },
   hits: 0, hitT: -9, shield: 0, shT: 0, gt: 0, mur: 0, lev: 0, pose: 0,
   leap: null, tp: null, cast: null, balls: [], traps: [], rain: null, storm: null, dance: null, daggers: [],
   bub: null, shell: null, aura: null, orbs: null, ret: null, ghosted: null, dead: false, combat: false, ct: 0, hasteT: 0, fsT: 0,
@@ -56,6 +58,7 @@ const lerp = (a, b, u) => a + (b - a) * u;
 /** Antes do dano: devolve o dano final; pode forçar crítico (o.cr) ou somar chance (o.cb) */
 function pre(e, d, o) {
   if (o.pet || o.dot) return d;
+  d *= atkMult();                                                                     // Fúria Arcana do Rod (1 sem buff)
   if (S.gt > 0) d *= 1 + U.guerreiro.grito.dmg;                                      // Grito de Guerra
   d *= 1 + S.TT.dmg; o.cb = (o.cb || 0) + S.TT.crit;             // talentos
   if (S.k === 'cacador' && dist(e) > U.cacador.aguia.dist) o.cb += U.cacador.aguia.crit + U.cacador.aguia.rank * S.rk[3]; // Olho de Águia
@@ -81,9 +84,11 @@ function post(e, o) {
 function hurt(d) {
   if (P.inv > 0) return 0;
   d *= 1 - S.TT.dr;
+  d *= drMult('p', d);   // Véu/Santuário do Rod (buffs.js; sem efeito sem buff)
   if (S.mur > 0) d *= U.guerreiro.muralha.take;
   if (S.gt > 0) d *= 1 - U.guerreiro.grito.dr;
   if (S.shield > 0) { const a = Math.min(S.shield, d); S.shield -= a; d -= a; }
+  d = absorbP(d);   // escudo do Rod (campo próprio em buffs.js; o do Guerreiro continua em S.shield)
   return d;
 }
 function dodged() {
@@ -125,6 +130,7 @@ const costOf = i => Math.max(1, Math.ceil(S.D.act[i].mp * (1 - RANK.mp * S.rk[i]
 const cdOf = i => Math.max(.5, S.D.act[i].cd * (1 - RANK.cd * S.rk[i] - S.TT.cdr));
 export function useSkill(i) {
   if (!S.on || P.dead || P.stone > 0 || P.roll > 0 || P.swap || P.sit > 0 || P.sitT || P.swimming || MOUNT.on || VEH.on || S.leap || S.tp || S.dance) return false;
+  if (rodBlocked()) return useRod(i);   // Rod na mão: os botões 1/2/3 são as habilidades do Rod
   const def = S.D.act[i];
   if (!def) return false;
   const lock = skillLock(i);
@@ -144,6 +150,127 @@ export function useSkill(i) {
 }
 
 /* ====================================================== habilidades ====================================================== */
+
+/* ====================================================== habilidades de SUPORTE do Rod (Etapa 6) ====================================================== */
+
+/* Nenhuma causa dano em inimigos (nem hit(), nem status que causa dano): só cura, escudo, buffs, debuffs sem dano e purificação. Números em data/skills.js (ROD_SKILLS). */
+export const rodHas = idx => !!ROD_TREE[idx] && !!ROD_SKILLS[ROD_TREE[idx].id];
+export const rodRank = idx => S.rod.rk[idx] || 0;
+const rodDef = idx => ROD_SKILLS[ROD_TREE[idx].id];
+const rodPower = idx => (P.cls.support || 1) * (1 + RANK.dmg * rodRank(idx));
+export const rodCost = idx => Math.max(1, Math.ceil(rodDef(idx).mp * (1 - RANK.mp * rodRank(idx) - S.TT.mpc)));
+export const rodCd = idx => Math.max(.5, rodDef(idx).cd * (1 - RANK.cd * rodRank(idx) - S.TT.cdr));
+/** Motivo do bloqueio (nível geral E proficiência de Rod) ou null */
+export function rodLock(idx) {
+  const r = unlockState(ROD_TREE[idx].req, 'rod');
+  return r.ok ? null : [r.lv.ok ? '' : 'Nv geral ' + r.lv.need, r.prof.ok ? '' : 'Proficiência Rod ' + r.prof.need].filter(Boolean).join(' · ');
+}
+export const rodSlots = () => S.rod.slots.slice();
+const defaultSlots = rk => { const s = [-1, -1, -1]; let n = 0; rk.forEach((v, i) => { if (v > 0 && n < 3) s[n++] = i; }); return s; };
+/** Aprende / melhora (1 ponto do Rod por rank). Na 1ª vez, ocupa o 1º botão livre. */
+export function learnRod(idx) {
+  if (!treeList() || !rodHas(idx) || rodLock(idx) || rodRank(idx) >= RANK.max || rodPoints() <= 0) return false;
+  while (S.rod.rk.length <= idx) S.rod.rk.push(0);
+  S.rod.rk[idx]++;
+  if (S.rod.rk[idx] === 1) { const f = S.rod.slots.indexOf(-1); if (f >= 0) S.rod.slots[f] = idx; }
+  if (UI) UI.sig = [];
+  return true;
+}
+/** Escolhe qual habilidade aprendida ocupa o botão `slot` (0–2); idx -1 esvazia. A mesma habilidade só fica em um botão (troca de lugar). */
+export function setRodSlot(slot, idx) {
+  if (!treeList() || slot < 0 || slot > 2 || (idx >= 0 && !(rodHas(idx) && rodRank(idx) > 0))) return false;
+  if (idx >= 0) { const o = S.rod.slots.indexOf(idx); if (o >= 0) S.rod.slots[o] = S.rod.slots[slot]; }
+  S.rod.slots[slot] = idx;
+  if (UI) UI.sig = [];
+  return true;
+}
+const rodTip = (idx, i) => { const d = rodDef(idx); return d.n + ' — ' + d.d + '\nTecla ' + keyLabel(S.keys[i]) + ' · ' + rodCost(idx) + ' de mana · recarga ' + rodCd(idx).toFixed(1) + ' s · rank ' + rodRank(idx) + '/' + RANK.max + (rodLock(idx) ? '\n🔒 Requer: ' + rodLock(idx) : ''); };
+
+/** Aliados ao alcance: você e o companheiro ativo (acordado e dentro de `range`) */
+const allies = range => ['p'].concat(petAvail() && petDist() <= range ? ['pet'] : []);
+const allyPos = w => (w === 'p' ? { x: P.x, z: P.z } : petPosOf());
+function rodFx(w, color, r) { const a = allyPos(w); if (!a) return; const B = V.budget(); B.max = 12; V.ring(B, a.x, groundY(a.x, a.z) + .15, a.z, color, .4, r || 1.6, .5, .7); V.sparks(B, a.x, groundY(a.x, a.z) + 1, a.z, color, 6, 2.5, .6, .08, 2.5, 2); }
+const addTo = (ws, id, o) => ws.reduce((n, w) => n + (addBuff(w, id, o) ? 1 : 0), 0);
+
+const RODCAST = {
+  cura(d, pw) {   // cura instantânea: quem estiver com menos vida (fração)
+    const al = allies(d.range).filter(w => hpOf(w) < maxOf(w));
+    if (!al.length) { warn('Vida cheia'); return false; }
+    al.sort((a, b) => hpOf(a) / maxOf(a) - hpOf(b) / maxOf(b));
+    const w = al[0], eff = heal(w, d.pct * maxOf(w) * pw);
+    profRodSupport('heal', eff, w); rodFx(w, 0x7fff9a);
+    return true;
+  },
+  regen(d, pw) {   // cura contínua (tick em buffs.js)
+    const al = allies(d.range);
+    if (!addTo(al, 'regen', { dur: d.dur, pow: d.pct * pw })) return false;
+    al.forEach(w => rodFx(w, 0x7fff9a));
+  },
+  escudo(d, pw) {
+    const al = allies(d.range), n = al.reduce((c, w) => c + (addBuff(w, 'shield', { dur: d.dur, amt: d.pct * maxOf(w) * pw }) ? 1 : 0), 0);
+    if (!n) return false;
+    al.forEach(w => rodFx(w, 0xffe070));
+  },
+  atk(d, pw) { if (!addBuff('p', 'atk', { dur: d.dur, pow: d.pow * pw })) return false; rodFx('p', 0xff8a50); },
+  def(d, pw) { const al = allies(d.range); if (!addTo(al, 'dr', { dur: d.dur, pow: d.pow * pw })) return false; al.forEach(w => rodFx(w, 0x7fb8ff)); },
+  protecao(d) { if (!addBuff('p', 'ward', { dur: d.dur, pow: 1 })) return false; rodFx('p', 0xb8d8ff); },
+  vel(d, pw) { if (!addBuff('p', 'spd', { dur: d.dur, pow: d.pow * pw })) return false; rodFx('p', 0xc8f0e0); },
+  debuff(d, pw) {   // lentidão + enfraquecer, SEM dano (API de elements.js; nenhum hit())
+    const L = enemies.filter(e => !e.dead && !e.inv && dist(e) <= d.r);
+    if (!L.length) { warn('Sem inimigos no alcance'); return false; }
+    let n = 0;
+    for (const e of L) {
+      const had = hasStatus(e, 'slow') || hasStatus(e, 'weaken');
+      const a = applyStatus(e, { k: 'slow', dur: d.slow, stack: 'renova' }, 0, 1, {}), b = applyStatus(e, { k: 'weaken', dur: d.wdur, pow: Math.min(.9, d.weaken * pw), stack: 'renova' }, 0, 1, {});
+      if ((a || b) && !had) n++;
+    }
+    profRodSupport('support', n, 'debuff');   // só inimigos que ainda não estavam afetados
+    const B = V.budget(); B.max = 20; V.ring(B, P.x, by() + .15, P.z, 0x6a3a9a, .5, d.r, .7, .6); V.disc(B, P.x, by() + .1, P.z, 0x3a2a5a, d.r * .3, d.r, .6, .25);
+  },
+  purifica() {
+    let n = 0;
+    if (P.slow > 0) { P.slow = 0; n++; }
+    if (P.stone > 0) { P.stone = 0; n++; }   // a pedra some no próximo quadro (updateMedusaFx)
+    if (!n) { warn('Nada a purificar'); return false; }
+    profRodSupport('support', n, 'purge'); rodFx('p', 0xfff2a0);
+  },
+  area(d, pw) {
+    const al = ['p'].concat(petAvail() && petDist() <= d.r ? ['pet'] : []);
+    addTo(al, 'regen', { dur: d.dur, pow: d.pct * pw }); addTo(al, 'dr', { dur: d.dur, pow: d.pow * pw });
+    const B = V.budget(); B.max = 24; V.ring(B, P.x, by() + .15, P.z, 0xfff2a0, .5, d.r, .8, .7); V.ring(B, P.x, by() + .15, P.z, 0x7fff9a, .3, d.r * .7, .9, .5); al.forEach(w => rodFx(w, 0xfff2a0));
+  },
+};
+
+/** Botão `i` (0–2) com o Rod na mão: usa a habilidade escolhida para esse botão */
+function useRod(i) {
+  const idx = S.rod.slots[i];
+  if (idx === undefined || idx < 0 || !rodHas(idx)) { warn('Nenhuma habilidade do Rod neste botão (aprenda e escolha no painel)'); return false; }
+  const lock = rodLock(idx);
+  if (lock) { warn('Habilidade bloqueada: ' + lock); return false; }
+  if ((S.rcd[idx] || 0) > 0) return false;
+  const cost = rodCost(idx);
+  if (P.mp < cost) { warn('Mana insuficiente'); blinkMana(); return false; }
+  if (RODCAST[ROD_TREE[idx].id](rodDef(idx), rodPower(idx)) === false) return false;   // sem efeito possível: não gasta mana nem recarga
+  P.mp -= cost;
+  S.rcd[idx] = S.rcdm[idx] = rodCd(idx);
+  return true;
+}
+/** Auto-combate com o Rod na mão: cura/escudo com a vida baixa, buffs no início da luta; guarda mana para o ataque básico; não troca de arma */
+function autoRod() {
+  if (P.dead || P.stone > 0) return;
+  const resv = P.mmax * AUTO_ROD.mpReserve, near = enemies.filter(e => !e.dead && !e.inv && dist(e) < 14);
+  const go = (id, extra) => {
+    const idx = ROD_TREE.findIndex(n => n.id === id), slot = idx >= 0 ? S.rod.slots.indexOf(idx) : -1;
+    if (slot < 0 || (S.rcd[idx] || 0) > 0 || rodLock(idx) || P.mp < rodCost(idx) + resv || (extra && !extra())) return false;
+    return useRod(slot);
+  };
+  const lowP = P.hp < P.max * AUTO_ROD.hpBelow, lowPet = petAvail() && petDist() <= ROD_SKILLS.cura.range && hpOf('pet') < maxOf('pet') * AUTO_ROD.petBelow;
+  if (lowP || lowPet) { if (go('cura') || go('escudo', () => lowP) || go('regen')) return; }
+  if (near.length >= AUTO_ROD.buffMinEnemies) {
+    if (go('atk', () => !hasBuff('p', 'atk')) || go('def', () => !hasBuff('p', 'dr')) || go('vel', () => !hasBuff('p', 'spd'))) return;
+    go('debuff', () => near.some(e => dist(e) <= ROD_SKILLS.debuff.r && !hasStatus(e, 'slow')));
+  }
+}
 
 const CAST = {
   guerreiro: [
@@ -378,11 +505,12 @@ export function updateSkills(dt) {
 
   /* recargas e tempos */
   for (let i = 0; i < 3; i++) if (S.cds[i] > 0) S.cds[i] = Math.max(0, S.cds[i] - dt);
+  for (const k in S.rcd) if (S.rcd[k] > 0) S.rcd[k] = Math.max(0, S.rcd[k] - dt);   // recargas do Rod (continuam ao trocar de arma)
   if (S.shT > 0) { S.shT -= dt; if (S.shT <= 0) S.shield = 0; }
   if (P.inv > 0 && !S.dance && !S.tp) P.inv = Math.max(0, P.inv - dt);
   if (P.haste > 0) { P.haste -= dt; S.hasteT += dt; if (S.hasteT > .07) { S.hasteT = 0; hasteTrail(); } }
   if (S.pose > 0) S.pose -= dt;
-  P.noKb = S.mur > 0;
+  P.noKb = S.mur > 0 || hasBuff('p', 'ward');   // Muralha ou Égide do Rod
 
   /* regeneração de mana do Mago (Fluxo Arcano: 3%/s fora de combate, 1%/s em combate; já inclui os +3/s base) */
   if (S.k === 'mago') {
@@ -809,7 +937,8 @@ function buildUI() {
   });
   const ov = document.createElement('div'); ov.id = 'skov'; document.body.append(ov);
   const gw = $('gwr'); gw.classList.add('mana'); gw.title = 'Mana'; $('omp').title = 'Mana';
-  UI = { b: [...sk.querySelectorAll('.skb')], m: [], c: [], t: [] };
+  UI = { b: [...sk.querySelectorAll('.skb')], m: [], c: [], t: [], sig: [], mode: 'staff' };
+  UI.orig = UI.b.map(el => el.innerHTML);   // conteúdo dos botões do Cajado (restaurado ao largar o Rod)
   UI.b.forEach(() => { UI.m.push(''); UI.c.push(''); UI.t.push(''); });
 }
 let blinkT = 0;
@@ -819,8 +948,30 @@ function blinkMana() {
   g.classList.remove('lowmp'); void g.offsetWidth; g.classList.add('lowmp');
   clearTimeout(blinkT); blinkT = setTimeout(() => g.classList.remove('lowmp'), 1000);
 }
+/** Botão com o Rod na mão: ícone, custo, recarga e bloqueio da habilidade escolhida para o botão (vazio = esmaecido) */
+function updRodBtn(el, i) {
+  const idx = S.rod.slots[i], has = idx >= 0 && rodHas(idx), sig = has ? idx + ':' + rodRank(idx) + ':' + rodCost(idx) : 'x';
+  if (UI.sig[i] !== sig) {
+    UI.sig[i] = sig; UI.c[i] = ''; UI.m[i] = ''; UI.t[i] = '';
+    el.innerHTML = svgOf(has ? rodDef(idx).ic : LOCK) + '<span class="skc"></span><b class="skt"></b><em>' + (has ? rodCost(idx) : '') + '</em><small>' + (i + 1) + '</small><u>' + svgOf(LOCK) + '<s></s></u>';
+    el.title = has ? rodTip(idx, i) : 'Botão ' + (i + 1) + ' do Rod: sem habilidade (aprenda no painel Habilidades > Rod)';
+  }
+  const why = has ? rodLock(idx) : null, cd = has ? S.rcd[idx] || 0 : 0, p = !has || why ? 0 : Math.round(cd / (S.rcdm[idx] || 1) * 100);
+  const cls = (!has ? 'wo' : why ? 'lk' : '') + (has && !why && P.mp < rodCost(idx) ? ' nm' : '');
+  if (UI.c[i] !== cls) { UI.c[i] = cls; el.className = 'skb ' + cls; el.style.opacity = has ? '' : '.4'; el.style.filter = has ? '' : 'grayscale(.85)'; }
+  if (UI.m[i] !== p) { UI.m[i] = p; el.style.setProperty('--p', p + '%'); }
+  const tx = has && !why && cd > 0 ? (cd >= 10 ? Math.ceil(cd) : cd.toFixed(1)) : '';
+  if (UI.t[i] !== tx) { UI.t[i] = tx; const t = el.querySelector('.skt'); if (t) t.textContent = tx; }
+}
 function updateUI() {
   if (!UI) return;
+  const rm = rodBlocked();
+  if (rm !== (UI.mode === 'rod')) {   // trocou de árvore: os 3 botões mudam de conteúdo
+    UI.mode = rm ? 'rod' : 'staff';
+    UI.b.forEach((el, i) => { if (!rm) { el.innerHTML = UI.orig[i]; el.style.opacity = ''; el.style.filter = ''; } UI.c[i] = UI.m[i] = UI.t[i] = ''; UI.sig[i] = ''; });
+    if (!rm) refreshCosts();
+  }
+  if (rm) { UI.b.forEach((el, i) => updRodBtn(el, i)); return; }
   UI.b.forEach((el, i) => {
     const why = skillLock(i), lk = !!why, cd = S.cds[i], p = lk ? 0 : Math.round(cd / S.cdm[i] * 100), wo = rodBlocked();
     const cls = (lk ? 'lk' : '') + (!lk && P.mp < S.D.act[i].mp ? ' nm' : '') + (isActive(i) ? ' on' : '') + (wo ? ' wo' : '');
@@ -883,7 +1034,7 @@ function recalc() {
 /** Dica completa do botão: nome, descrição, tecla, custo e recarga efetivos e rank */
 export const tipOf = i => { const a = S.D.act[i]; return a.n + ' — ' + a.d + '\nTecla ' + keyLabel(S.keys[i]) + ' · ' + costOf(i) + ' de mana · recarga ' + cdOf(i).toFixed(1) + ' s · rank ' + S.rk[i] + '/' + RANK.max + (skillLock(i) ? '\n🔒 Requer: ' + skillLock(i) : '') + (rodBlocked() ? '\n⛔ Com o Rod ativo: troque para o Cajado' : ''); };
 function refreshCosts() {
-  if (!UI) return;
+  if (!UI || UI.mode === 'rod') return;
   UI.b.forEach((el, i) => { const em = el.querySelector('em'); if (em) em.textContent = costOf(i); el.title = tipOf(i); });
 }
 /** Vida e mana máximas dadas pelos talentos (fixas: entram em P.max/P.mmax ao aprender e saem ao redefinir) */
@@ -910,7 +1061,7 @@ export function learnTalent(b, i) {
 /** Redefinir: devolve todos os pontos (grátis); a vida/mana máximas dos talentos saem de volta */
 export function respec(tree) {
   if (!S.on) return;
-  if (tree === 'rod') { S.rod.rk = []; return; }   // sem nó aprendível ainda: nada gasto
+  if (tree === 'rod') { S.rod.rk = []; S.rod.slots = [-1, -1, -1]; if (UI) UI.sig = []; return; }   // sem nó aprendível ainda: nada gasto
   if (tree === 'staff') { S.rk = [0, 0, 0, 0]; refreshCosts(); return; }   // só os ranks do Cajado: talentos (compartilhados), vida e mana máximas intocados
   S.rk = [0, 0, 0, 0]; S.tl = {};
   recalc();
@@ -921,16 +1072,21 @@ export function respec(tree) {
 }
 /** Chance de crítico atual: base da classe + talentos (o mesmo que o hit() usa; habilidades pontuais como Olho de Águia não entram) */
 export const critChance = () => Math.min(1, P.crit + (S.on ? S.TT.crit : 0));
-export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.rod.rk = []; S.tl = {}; S.tb.hp = S.tb.mp = 0; if (S.on) { recalc(); } }
+export function wipeSkills() { S.rk = [0, 0, 0, 0]; S.rod.rk = []; S.rod.slots = [-1, -1, -1]; S.rcd = {}; S.rcdm = {}; S.tl = {}; S.tb.hp = S.tb.mp = 0; if (S.on) { recalc(); } }
 /** Dados salvos (campo `skills` do save): ranks, talentos, migração feita e teclas ficam no navegador */
 /** Save: classes de uma árvore = bloco de sempre (sv 1). Mago (sv 2): `rk` = ranks do Cajado (mesmo campo do sv 1, para saves antigos), `rod.rk` = ranks do Rod (vazio por enquanto); talentos e tb iguais. */
-export const skillData = () => (S.on ? (treeList() ? { sv: 2, rk: S.rk.slice(), rod: { rk: S.rod.rk.slice() }, tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } } : { sv: 1, rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } }) : null);
+export const skillData = () => (S.on ? (treeList() ? { sv: 2, rk: S.rk.slice(), rod: { rk: S.rod.rk.slice(), slots: S.rod.slots.slice() }, tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } } : { sv: 1, rk: S.rk.slice(), tl: { ...S.tl }, mig: S.mig, tb: { ...S.tb } }) : null);
 export function loadSkillData(o) {
   if (!S.on || !o) return;
   if (Array.isArray(o.rk)) S.rk = [0, 1, 2, 3].map(i => Math.max(0, Math.min(RANK.max, o.rk[i] | 0)));
   if (o.tl && typeof o.tl === 'object') { S.tl = {}; Object.keys(o.tl).forEach(k => { const n = o.tl[k] | 0; if (n > 0 && /^\d:\d$/.test(k)) S.tl[k] = Math.min(RANK.max, n); }); }
   S.mig = o.mig ? 1 : 0;
-  { const rr = o.rod && Array.isArray(o.rod.rk) ? o.rod.rk : []; S.rod.rk = rr.length <= ROD_TREE.length && rr.every(n => Number.isInteger(n) && n >= 0 && n <= RANK.max) ? rr.slice() : []; }   // Rod: bloco ausente/inválido = vazio
+  {   // Rod: ranks (só em categorias que têm habilidade) e botões; bloco ausente/inválido = vazio, sem tocar no resto
+    const rr = o.rod && Array.isArray(o.rod.rk) ? o.rod.rk : [];
+    S.rod.rk = rr.length <= ROD_TREE.length && rr.every((n, i) => Number.isInteger(n) && n >= 0 && n <= RANK.max && (n === 0 || rodHas(i))) ? rr.slice() : [];
+    const sl = o.rod && Array.isArray(o.rod.slots) ? o.rod.slots : null, used = sl ? sl.filter(v => v >= 0) : [];
+    S.rod.slots = sl && sl.length === 3 && sl.every(v => Number.isInteger(v) && v >= -1 && v < ROD_TREE.length && (v < 0 || S.rod.rk[v] > 0)) && new Set(used).size === used.length ? sl.slice() : defaultSlots(S.rod.rk);
+  }
   S.tb = { hp: Math.max(0, +(o.tb && o.tb.hp) || 0), mp: Math.max(0, +(o.tb && o.tb.mp) || 0) };
   recalc();
   if (!o.tb) { S.tb = { hp: S.TT.hp, mp: S.TT.mp }; }   // save da versão anterior (sem tb): o bônus era o dos ranks aprendidos
@@ -995,7 +1151,8 @@ const AUTO = {   // [habilidade, distância mínima, máxima, inimigos próximos
   ladino: [[2, 0, 9, 2], [1, 3, 14, 1], [0, 2.5, 11, 1]],
 };
 export function autoSkill() {
-  if (!S.on || P.dead || S.leap || S.tp || S.dance || rodBlocked()) return;   // com o Rod na mão não tenta habilidades do Cajado
+  if (!S.on || P.dead || S.leap || S.tp || S.dance) return;
+  if (rodBlocked()) { autoRod(); return; }   // com o Rod na mão: só suporte do Rod (nunca habilidades do Cajado)
   const t = P.tgt;
   if (!t || t.dead) return;
   const d = dist(t);

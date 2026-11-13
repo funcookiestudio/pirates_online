@@ -226,7 +226,7 @@ export function initInput() {
     if (e.code === 'KeyR') togglePet();
     if (e.code === 'KeyG') toggleSit();
     if (e.code === 'KeyH') { if (e.shiftKey) dismissHorse(); else toggleMount(); }
-    if (e.code === 'KeyX') switchWeapon();
+    if (e.code === 'KeyX') switchWeapon(e.shiftKey);
     if (e.code === 'KeyI' || e.code === 'KeyC') openTab('char');
     if (e.code === 'KeyP') openTab('pets');
     if (e.code === 'Escape') closePanel();
@@ -246,7 +246,7 @@ export function initInput() {
     el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); last = performance.now(); fn(); });
     el.onclick = () => { if (performance.now() - last > 700) fn(); };
   };
-  tap('s1', switchWeapon); tap('s2', spin); tap('s3', bomb); tap('s4', potion); tap('sr', dodge); tap('s5', togglePet); tap('sa', togAuto);
+  tap('s1', () => switchWeapon()); tap('s2', spin); tap('s3', bomb); tap('s4', potion); tap('sr', dodge); tap('s5', togglePet); tap('sa', togAuto);
   { /* toque curto: monta/desmonta/chama · segurar ~0,6 s: dispensa o cavalo */
     const b = $('sm'); let tm = 0, held = false, on = false;
     b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); held = false; on = true; clearTimeout(tm); tm = setTimeout(() => { held = true; dismissHorse(); }, 600); });

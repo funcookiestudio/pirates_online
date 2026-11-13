@@ -45,7 +45,7 @@ const chk = (name, ok, extra) => { if (!ok) bad++; console.log('   ' + (ok ? 'ok
       const E = await import('/js/systems/inventory.js');
       res.pick = [E.pickSlot(it, false), E.pickSlot(it, true), g.canEquipTo(it, 'gun')];
       const before = g.eq.gun && g.eq.gun.n; g.equip(0);
-      res.equipMagic = { before, after: g.eq.gun && g.eq.gun.n, off: g.eq.off && g.eq.off.n, bagLeft: g.bag.length };
+      res.equipMagic = { before, after: g.eq.gun && g.eq.gun.n, off: g.eq.off && g.eq.off.n, res: g.eq.res && g.eq.res.n, bagLeft: g.bag.length };
       // 4) dano periódico sem crítico (e golpe normal ainda crita)
       const e = g.enemies.find(x => !x.dead); P.crit = 1; S.TT.crit = 0;
       const tryHits = o => { const ds = []; for (let i = 0; i < 80; i++) { e.hp = e.max = 1e9; e.lv = P.lv; e.mk = 0; e.stone = 0; const h0 = e.hp; g.hit(e, 100, { ...o }); ds.push(h0 - e.hp); } return { min: Math.min(...ds), max: Math.max(...ds) }; };
@@ -78,7 +78,7 @@ const chk = (name, ok, extra) => { if (!ok) bad++; console.log('   ' + (ok ? 'ok
     chk('loja nv16: Arco Longo liberado', !r.shop16[0].off, r.shop16[0]);
     if (k === 'mago' || k === 'none') chk('loja nv16 mago: Rod das Chamas compra', r.boughtRod.includes('Rod das Chamas'), r.boughtRod);
     else chk('loja nv16: Rod das Chamas bloqueado para ' + k, r.shop16[1].off && !r.boughtRod.includes('Rod das Chamas'), r.shop16[1]);
-    if (k === 'mago' || k === 'none') chk('equipa Rod de Cristal', (r.equipMagic.after === 'Rod de Cristal' || r.equipMagic.off === 'Rod de Cristal') && r.equipMagic.bagLeft === 0, r);
+    if (k === 'mago' || k === 'none') chk('equipa Rod de Cristal', (r.equipMagic.after === 'Rod de Cristal' || r.equipMagic.off === 'Rod de Cristal' || r.equipMagic.res === 'Rod de Cristal') && r.equipMagic.bagLeft === 0, r);
     else chk('NÃO equipa Rod de Cristal (pickSlot/auto/canEquipTo/equip)', r.pick[0] === null && r.pick[1] === null && r.pick[2] === false && r.equipMagic.after === r.equipMagic.before && r.equipMagic.bagLeft === 1, { pick: r.pick, eq: r.equipMagic });
     chk('DoT nunca crita (≤ 115 de 100 base)', r.dot.max <= 115 && r.dot.min > 0, r.dot);
     chk('golpe normal ainda crita (P.crit = 1 → ≥ 170)', r.norm.min >= 170, r.norm);

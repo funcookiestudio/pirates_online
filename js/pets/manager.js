@@ -7,6 +7,7 @@ import { puff } from '../systems/effects.js';
 import { log } from '../ui/notify.js';
 import { refreshPetButton } from '../ui/hotbar.js';
 import { PST, PV, pmax } from './stats.js';
+import { petHurt } from '../systems/buffs.js';
 import { inCombat, petFighting, COMP } from './common.js';
 import { PAR, FLY_MODELS, flyerUpd, activateFlyer, dropCarried, hideFlyers } from './flyer.js';
 import { MON, monkeyUpd, resetMonkey, dropMonkeyCarried } from './monkey.js';
@@ -33,6 +34,8 @@ export function petPerched() {
 export function hurtPet(d) {
   const s = PST[state.pet.id];
   if (state.petOff || s.dn > 0 || P.dead) return;
+  d = petHurt(d);   // escudo e redução de dano do Rod (buffs.js); sem buff devolve o mesmo dano
+  if (d <= 0) return;
   s.hp -= d;
   const p = petPos();
   puff(p.x, 1.2, p.z, 0xc02020, 3, 3);

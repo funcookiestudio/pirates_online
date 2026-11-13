@@ -3,15 +3,31 @@
 import { P } from '../entities/player.js';
 import { WEAPONS } from '../data/weapons.js';
 import { kindOf, DURATION } from '../entities/holster.js';
-import { applyWeaponBonus } from './inventory.js';
+import { applyWeaponBonus, eq, setWeapon, reserveClass } from './inventory.js';
+import { emit } from '../core/events.js';
 import { hasAmmo } from './combat.js';
 import { log } from '../ui/notify.js';
 
 const kindOfSlot = k => kindOf(WEAPONS[P.wids[k]]);
 
 /** Inicia a troca para a outra arma equipada (se houver) */
-export function switchWeapon() {
+/** Mago: troca a arma mágica em uso pela reserva (Cajado ↔ Rod), na hora, sem custo de mana nem recarga (o Cutelo fica fora desta troca). Devolve true se trocou. */
+export function swapMagic() {
+  const a = eq.gun, b = eq.res;
+  if (!b || !reserveClass()) return false;
+  eq.gun = b;
+  if (a) eq.res = a; else delete eq.res;
+  P.swap = null;
+  setWeapon('gun');   // remonta o modelo e recalcula o bônus de ataque (applyWeaponBonus)
+  log('Arma mágica: ' + eq.gun.n);
+  emit('inventory:changed');
+  return true;
+}
+
+/** Tecla X / botão da hotbar. Mago com arma mágica reserva: alterna Cajado ↔ Rod. `melee` (Shift+X e o auto-combate) = a troca de sempre com a arma corpo a corpo. */
+export function switchWeapon(melee) {
   if (P.mounted || P.swap || P.dead || P.sit || P.sitT || P.roll > 0) return;
+  if (!melee && eq.res && reserveClass() && (P.act === 'gun' || !eq.gun)) { swapMagic(); return; }
   const to = P.act === 'wpn' ? 'gun' : 'wpn';
   if (!P.models[to]) { log(to === 'gun' ? 'Sem arma de fogo equipada' : 'Sem arma corpo a corpo equipada'); return; }
   P.swap = { to, phase: 0, t: 0, u: 1, kind: kindOfSlot(P.act), cur: null, last: performance.now() };
@@ -21,8 +37,9 @@ export function switchWeapon() {
 let icon = '';
 
 export function updateSwap(dt) {
-  const ic = P.act === 'gun' ? '🔫' : '⚔';
-  if (ic !== icon) { icon = ic; const el = document.getElementById('s1i'); if (el) el.textContent = ic; }
+  const mw = P.act === 'gun' && reserveClass() && WEAPONS[P.wid] && WEAPONS[P.wid].mt;
+  const ic = P.act === 'gun' ? (mw ? (WEAPONS[P.wid].mt === 'rod' ? '✨' : '🔮') : '🔫') : '⚔';
+  if (ic !== icon) { icon = ic; const el = document.getElementById('s1i'); if (el) el.textContent = ic; const b = document.getElementById('s1'); if (b) b.title = reserveClass() ? 'Alternar Cajado ↔ Rod (X) · Shift+X: arma corpo a corpo' : 'Trocar arma (X)'; }
   const s = P.swap;
   if (!s) return;
   s.t += dt;
@@ -57,10 +74,10 @@ export function autoWeapon(dist) {
   if (P.swap || P.dead || !P.models.gun || !P.models.wpn) return;
   const now = performance.now();
   if (now - lastAuto < 2500) return;
-  if (P.act === 'gun' && !hasAmmo(WEAPONS[P.wid])) { lastAuto = now; autoOut = true; switchWeapon(); return; }
-  if (autoOut && P.act === 'wpn' && hasAmmo(WEAPONS[P.wids.gun]) && dist >= 6) { autoOut = false; lastAuto = now; switchWeapon(); return; }   // flechas de volta: saca o arco de novo   // sem flechas/virotes: saca a arma corpo a corpo
+  if (P.act === 'gun' && !hasAmmo(WEAPONS[P.wid])) { lastAuto = now; autoOut = true; switchWeapon(true); return; }
+  if (autoOut && P.act === 'wpn' && hasAmmo(WEAPONS[P.wids.gun]) && dist >= 6) { autoOut = false; lastAuto = now; switchWeapon(true); return; }   // flechas de volta: saca o arco de novo   // sem flechas/virotes: saca a arma corpo a corpo
   if (dist < 4.5 && P.act === 'gun') {
     lastAuto = now;
-    switchWeapon();
+    switchWeapon(true);   // o auto troca de/para a arma corpo a corpo, nunca Cajado↔Rod
   }
 }

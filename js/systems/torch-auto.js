@@ -16,7 +16,7 @@ const big = it => !!it && !!WEAPONS[it.w].big;
 /** Tira a arma de 2 mãos da mão: usa a outra arma equipada se for de 1 mão; senão a melhor de 1 mão da mochila. false = não há como */
 function leaveBig(held) {
   const s = slotOf(held), other = s === 'wpn' ? 'gun' : 'wpn';
-  if (eq[other] && !big(eq[other]) && P.models[other]) { SAVED = { act: P.act }; switchWeapon(); return true; }
+  if (eq[other] && !big(eq[other]) && P.models[other]) { SAVED = { act: P.act }; switchWeapon(true); return true; }
   let bi = -1, bv = -1;
   bag.forEach((it, i) => { if (it.ty === 'wpn' && !isTorch(it) && slotOf(it) === s && !big(it) && it.v > bv && P.lv >= itemReq(it)) { bv = it.v; bi = i; } });
   if (bi < 0) return false;
@@ -28,7 +28,7 @@ function leaveBig(held) {
 /** Clareou: devolve a arma de 2 mãos que foi guardada */
 function restore() {
   const S = SAVED; SAVED = null;
-  if (S.act) { if (P.act !== S.act && P.models[S.act]) switchWeapon(); }
+  if (S.act) { if (P.act !== S.act && P.models[S.act]) switchWeapon(true); }
   else if (S.it) { const i = bag.indexOf(S.it); if (i >= 0) equip(i, slotOf(S.it)); }
 }
 

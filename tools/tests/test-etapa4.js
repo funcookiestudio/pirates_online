@@ -73,7 +73,7 @@ const SCENARIOS = [
       // tiro do Rod com o interruptor ligado/desligado (caminho real: attack + updateShots)
       gun('Rod de Gelo'); P.mp = P.mmax;
       const shootRod = () => { PR.resetProf(); place(); P.mp = P.mmax; const s0 = tot('staff'), r0 = tot('rod'); with_(.5, () => { g.attack(e.x - P.x, e.z - P.z); const s = Reg.shots[Reg.shots.length - 1]; for (let i = 0; i < 80 && Reg.shots.includes(s); i++) Cb.updateShots(.05); }); return { ds: +(tot('staff') - s0).toFixed(3), dr: +(tot('rod') - r0).toFixed(3) }; };
-      res.shotOff = shootRod(); C.ROD_XP_basico = .02; res.shotOn = shootRod(); C.ROD_XP_basico = 0;
+      C.ROD_XP_basico = 0; res.shotOff = shootRod(); C.ROD_XP_basico = .02; res.shotOn = shootRod();   // (padrão desde a Etapa 6b = .02)
       // teto anti-abuso do Cajado
       gun('Cajado do Aprendiz'); PR.resetProf(); place(); const t0 = tot('staff'); with_(.5, () => { for (let i = 0; i < 300; i++) { e.hp = 1e9; g.hit(e, 2000, {}); } }); res.capStaff = +(tot('staff') - t0).toFixed(2);
       // API do Rod

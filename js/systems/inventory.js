@@ -12,6 +12,11 @@ import { hourNow } from '../core/clock.js';
 import { isThrown, ammoInfo, ammoCt, setCt, QUIVER_MAX } from '../data/ammo.js';
 import { magicOk } from '../data/classes.js';
 import { activeChar } from '../core/chars.js';
+import { profClass } from '../data/prof.js';
+
+/** Personagem com arma mágica reserva (Etapa 7: o Mago leva uma 2ª arma mágica, Cajado ou Rod, em eq.res; X alterna sem custo). Sem classe e outras classes: não. */
+export const reserveClass = () => profClass((activeChar() || {}).k);
+const isMagicW = it => !!it && it.ty === 'wpn' && !!WEAPONS[it.w].magic;
 
 /** A classe do personagem pode usar este item? (armas mágicas: só as classes de MAGIC_CLASSES; nada é removido de quem já tem) */
 export const canUseItem = it => !it || it.ty !== 'wpn' || !WEAPONS[it.w].magic || magicOk((activeChar() || {}).k, WEAPONS[it.w].mt);
@@ -113,6 +118,11 @@ export function pickSlot(it, better) {
   if (isTorch(it)) return !better && canEquipTo(it, 'off') ? 'off' : null;
   if (isShield(it)) return canEquipTo(it, 'off') && (!better || !eq.off) ? 'off' : null;   // escudo: só na mão livre (o auto só equipa se estiver vazia)   // o auto-equipar não mexe na tocha: torch-auto.js cuida dela (só no escuro)
   if (better && it.ty === 'wpn' && WEAPONS[it.w].big && isTorch(eq.off) && (state.autoCfg.torch === 2 || (state.autoCfg.torch === 1 && isDark()))) return null;   // tocha em uso: o auto-equipar não volta à arma de 2 mãos (o torch-auto a guarda e devolve quando clarear)
+  if (isMagicW(it) && reserveClass()) {   // Mago: arma mágica nunca vai para a mão 2; a 2ª fica de reserva (eq.res)
+    if (!eq.gun) return 'gun';
+    if (better) return isMagicW(eq.gun) && it.v > eq.gun.v ? 'gun' : null;
+    return eq.res ? 'gun' : 'res';
+  }
   const s = slotOf(it);
   if (s === 'arm') return !eq.arm || !better || it.v > eq.arm.v ? 'arm' : null;
   const main = eq[s];
@@ -127,6 +137,8 @@ export function pickSlot(it, better) {
 /** O item `it` pode ir para o espaço `slot` (arrastar e soltar)? A mão 2 aceita o mesmo tipo da principal, exceto armas grandes. */
 export function canEquipTo(it, slot) {
   if (!canUseItem(it)) return false;
+  if (slot === 'res') return isMagicW(it) && reserveClass();
+  if (isMagicW(it) && reserveClass() && slot === 'off') return false;
   // tocha: só na mão 2 (com arma de 2 mãos na mão ela some até voltar a uma de 1 mão)
   if (isTorch(it)) return slot === 'off';
   if (isShield(it)) return slot === 'off' && !!eq.wpn && !WEAPONS[eq.wpn.w].big;   // escudo: precisa de arma de 1 mão na principal
@@ -149,6 +161,7 @@ export function equip(i, forced) {
   }
   eq[slot] = it;
   if (slot === 'arm') { P.max += it.v; P.hp += it.v; }
+  else if (slot === 'res') { /* só guardada: nada muda na mão nem no ataque */ }
   else if (slot === 'off') {
     // grande na mão principal ocupa as duas mãos; mão 2 e principal de tipos diferentes não se misturam
     applyWeaponBonus(); refreshTorch();
@@ -167,6 +180,7 @@ export function unequip(slot) {
   if (!it) return false;
   if (bagFull()) { log('Mochila cheia: libere espaço para desequipar ' + it.n); return false; }
   if (slot === 'arm') { P.max -= it.v; P.hp = Math.min(P.hp, P.max); eq.arm = null; }
+  else if (slot === 'res') delete eq.res;
   else {
     eq[slot] = null;
     if (slot !== 'off' && eq.off && slotOf(eq.off) === slot) { eq[slot] = eq.off; eq.off = null; }
@@ -178,9 +192,13 @@ export function unequip(slot) {
 }
 
 /** Soma ao dano o bônus da arma que está na mão (e tira o da anterior) */
+/** Bônus de ataque que as armas na mão dão agora (principal + 60% da 2ª mão do mesmo tipo + 50% da tocha). Usado também ao carregar o save (o dano salvo já inclui esse bônus). */
+export function weaponBonus() {
+  return ((eq[P.act] && eq[P.act].v) || 0) + (eq.off && slotOf(eq.off) === P.act ? Math.round(eq.off.v * .6) : 0) + (isTorch(eq.off) ? Math.round(eq.off.v * .5) : 0);
+}
 export function applyWeaponBonus() {
   // segunda mão do mesmo tipo da que está na mão soma 60% do ataque
-  const nb = ((eq[P.act] && eq[P.act].v) || 0) + (eq.off && slotOf(eq.off) === P.act ? Math.round(eq.off.v * .6) : 0) + (isTorch(eq.off) ? Math.round(eq.off.v * .5) : 0);
+  const nb = weaponBonus();
   P.dmg += nb - P.wb;
   P.wb = nb;
   P.shieldDr = isShield(eq.off) ? WEAPONS[eq.off.w].sdr || 0 : 0;   // escudo na mão livre: menos dano recebido
