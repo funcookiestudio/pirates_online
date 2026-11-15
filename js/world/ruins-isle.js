@@ -13,6 +13,8 @@ import { reserved } from './reserve.js';
 import { campfire } from './campfire.js';
 import { VAMPIRE_ISLE, HYDRA_ISLE, MUMMY_ISLE } from '../core/isle.js';
 import { buildVampireKits } from './kits-vampire.js';
+import { buildHydraKits } from './kits-hydra.js';
+import { buildMummyKits } from './kits-mummy.js';
 
 const THEME = VAMPIRE_ISLE ? 'vamp' : HYDRA_ISLE ? 'hydra' : 'mummy';
 const mat = c => xray(M(c));
@@ -216,4 +218,6 @@ export function buildRuinsScenery() {
     if (r) solid(x, z, r);
   }
   if (VAMPIRE_ISLE) buildVampireKits();   // kits em peças (kits-vampire.js) por cima do cenário acima
+  if (HYDRA_ISLE) buildHydraKits();
+  if (MUMMY_ISLE) buildMummyKits();
 }

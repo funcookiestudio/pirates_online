@@ -21,7 +21,7 @@ try {
 /* Atualização de estrutura/terreno: suba WORLDVER e, no próximo início do jogo, a ilha é gerada de novo sozinha
    (nova seed + chegada pelo porto; personagem e ajustes são mantidos), sem o jogador ir nos Ajustes > Mapa. */
 try {
-  const WORLDVER = 'W1';
+  const WORLDVER = 'W2';
   if (localStorage.getItem('pirata-worldver') !== WORLDVER) {
     if (!new URLSearchParams(location.search).get('seed')) {
       const w = ['mar', 'vento', 'ouro', 'coral', 'bruma', 'farol', 'recife', 'duna', 'lume', 'sal'];
