@@ -7,6 +7,7 @@ import { VILLAGE_R } from '../core/village-const.js';
 import { props } from '../core/registry.js';
 import { M } from '../core/utils.js';
 import { xray } from './xray.js';
+import { texMat } from './textures.js';
 import { POST_DATA } from '../data/posts.js';
 import { groundY, walkable, onRoad, SEA } from './terrain.js';
 import { reserved } from './reserve.js';
@@ -17,8 +18,11 @@ import { buildHydraKits } from './kits-hydra.js';
 import { buildMummyKits } from './kits-mummy.js';
 
 const THEME = VAMPIRE_ISLE ? 'vamp' : HYDRA_ISLE ? 'hydra' : 'mummy';
-const mat = c => xray(M(c));
-const box = (g, w, h, d, c, x, y, z, ry = 0, rx = 0, rz = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(c)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; };
+const tcache = new Map();
+/** Material com textura do Nature MegaKit; a cor tinge a textura (clareada para não escurecer demais) */
+const tm = (name, c) => { const k = name + c; if (!tcache.has(k)) tcache.set(k, xray(texMat(name, new THREE.Color(c).lerp(new THREE.Color(0xffffff), .5).getHex()))); return tcache.get(k); };
+const mat = c => typeof c === 'object' ? c : xray(M(c));
+const box = (g, w, h, d, c, x, y, z, ry = 0, rx = 0, rz = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(typeof c === 'number' ? stoneOf(c) : c)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); g.add(m); return m; };
 const glowBox = (g, w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); g.add(m); return m; };
 const solid = (x, z, r) => props.push({ position: { x, z, y: 0 }, r });
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -33,6 +37,10 @@ const PAL = {
   hydra: { stone: 0x7a8a6a, stone2: 0x5a6a4a, moss: 0x3f6a32, accent: 0x6aa83a, wood: 0x4a3a22, cloth: 0x5a6a3a, dark: 0x2a3322 },
   mummy: { stone: 0xd2b27a, stone2: 0xb89a62, moss: 0x8a7a4a, accent: 0xe0b84a, wood: 0x7a5a30, cloth: 0xb8402a, dark: 0x4a3a22 },
 }[THEME];
+
+const STONE = new Set(THEME === 'mummy' ? [] : [PAL.stone, PAL.stone2]);   // a pedra de arenito da múmia fica lisa (a textura do kit é cinza-musgo)
+const stoneOf = c => STONE.has(c) ? tm('rock', c) : c;
+const barkDead = c => tm('bark-dead', c), bark = c => tm('bark', c);
 
 /* ---------------- peças comuns ---------------- */
 function tent(c1 = PAL.cloth, c2 = PAL.wood) {
@@ -70,12 +78,13 @@ function arch(c = PAL.stone) {
 }
 function deadTree(c = PAL.dark) {
   const g = new THREE.Group(), h = rnd(3, 5.2);
+  c = barkDead(c);
   box(g, .55, h, .55, c, 0, h / 2, 0, rnd(0, 3), rnd(-.08, .08), rnd(-.08, .08));
   [-1, 1].forEach(s => { box(g, .22, rnd(1.4, 2.4), .22, c, s * .5, h * .72, 0, 0, 0, -s * rnd(.8, 1.1)); box(g, .16, rnd(.9, 1.4), .16, c, s * .9, h * .9, rnd(-.4, .4), 0, rnd(-.3, .3), -s * .5); });
   box(g, .16, rnd(1, 1.6), .16, c, 0, h + .4, 0, 0, .5, .2);
   return g;
 }
-function rock(c = PAL.stone2) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(rnd(.7, 1.4), 0), mat(c)); m.scale.y = rnd(.6, 1.2); const g = new THREE.Group(); m.position.y = .5; g.add(m); return g; }
+function rock(c = PAL.stone2) { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(rnd(.7, 1.4), 0), mat(stoneOf(c))); m.scale.y = rnd(.6, 1.2); const g = new THREE.Group(); m.position.y = .5; g.add(m); return g; }
 
 /* ---------------- vampiros ---------------- */
 function tombstone() { const g = new THREE.Group(), c = pick([0x6a6c68, 0x5a5c60, 0x7a7a78]); box(g, .9, 1.3, .22, c, 0, .65, 0, 0, 0, rnd(-.08, .08)); box(g, .9, .3, .24, c, 0, 1.4, 0); box(g, .14, .6, .06, PAL.dark, 0, 1.0, .13); box(g, .44, .12, .06, PAL.dark, 0, 1.18, .13); box(g, 1.1, .12, 1.8, PAL.moss, 0, .06, .9); return g; }
@@ -110,7 +119,7 @@ function mossColumn() { const g = column(rnd(2.6, 4), Math.random() < .6, PAL.st
 function mudMound() { const g = new THREE.Group(), m = new THREE.Mesh(new THREE.SphereGeometry(1.4, 8, 5), mat(0x4a3a22)); m.scale.set(1.4, .5, 1.2); m.position.y = .1; g.add(m); return g; }
 function spear() { const g = new THREE.Group(); box(g, .1, 2.6, .1, PAL.wood, 0, 1.3, 0, 0, 0, rnd(-.3, .3)); box(g, .22, .5, .08, 0xb8b8c0, 0, 2.7, 0); return g; }
 function swampTree() {
-  const g = new THREE.Group(), h = rnd(3, 4.4); box(g, .8, h, .8, 0x3a2e1c, 0, h / 2, 0, rnd(0, 3), rnd(-.06, .06), rnd(-.06, .06));
+  const g = new THREE.Group(), h = rnd(3, 4.4); box(g, .8, h, .8, bark(0x6a5a40), 0, h / 2, 0, rnd(0, 3), rnd(-.06, .06), rnd(-.06, .06));
   for (let i = 0; i < 4; i++) { const a = i * 1.57; box(g, 3.2, .5, 3.2, pick([0x3a5a2a, 0x2e4a24, 0x486a30]), Math.cos(a) * .6, h + .1 + i * .15, Math.sin(a) * .6, a); }
   for (let i = 0; i < 5; i++) box(g, .08, rnd(1.4, 2.4), .08, 0x5a7a3a, Math.cos(i * 1.3) * 1.6, h - .6, Math.sin(i * 1.3) * 1.6);   // cipós
   return g;
@@ -126,7 +135,7 @@ function sphinx() {
 }
 function pyramid(base = 10, steps = 7) { const g = new THREE.Group(); const sh = 1.15; for (let i = 0; i < steps; i++) { const s = base * (1 - i / steps); box(g, s, sh, s, i % 2 ? PAL.stone : PAL.stone2, 0, sh / 2 + i * sh, 0); } glowBox(g, .9, .9, .9, 0xffe070, 0, steps * sh + .45, 0); return g; }
 function sarcophagus() { const g = new THREE.Group(); box(g, 1.5, .7, 3, PAL.stone, 0, .35, 0); box(g, 1.6, .25, 3.1, PAL.accent, 0, .8, 0, 0, 0, .04); box(g, .9, .1, 1.1, 0x1d3f8a, 0, .98, -.3); box(g, .5, .14, .5, PAL.accent, 0, 1.0, .9); return g; }
-function deadPalm() { const g = new THREE.Group(), h = rnd(3.5, 5.5); box(g, .5, h, .5, 0x6a5030, 0, h / 2, 0, 0, rnd(-.12, .12), rnd(-.12, .12)); for (let i = 0; i < 6; i++) { const a = i * 1.05; box(g, 2.6, .08, .5, pick([0x6a7a38, 0x8a8a44, 0x58602e]), Math.cos(a) * 1.0, h + .1 - Math.abs(Math.sin(a * 2)) * .25, Math.sin(a) * 1.0, -a, 0, .35); } return g; }
+function deadPalm() { const g = new THREE.Group(), h = rnd(3.5, 5.5); box(g, .5, h, .5, bark(0xb08850), 0, h / 2, 0, 0, rnd(-.12, .12), rnd(-.12, .12)); for (let i = 0; i < 6; i++) { const a = i * 1.05; box(g, 2.6, .08, .5, pick([0x6a7a38, 0x8a8a44, 0x58602e]), Math.cos(a) * 1.0, h + .1 - Math.abs(Math.sin(a * 2)) * .25, Math.sin(a) * 1.0, -a, 0, .35); } return g; }
 function cactus() { const g = new THREE.Group(), h = rnd(2, 3.2); box(g, .55, h, .55, 0x4a7a3a, 0, h / 2, 0); box(g, .4, 1.2, .4, 0x4a7a3a, .65, h * .6, 0); box(g, .8, .4, .4, 0x4a7a3a, .35, h * .45, 0); return g; }
 function dune() { const g = new THREE.Group(), m = new THREE.Mesh(new THREE.SphereGeometry(4, 8, 5), mat(0xd8bc7a)); m.scale.set(1.6, .22, 1.1); m.position.y = -.1; g.add(m); return g; }
 function stall() { const g = new THREE.Group(); box(g, 3, .9, 1.4, PAL.wood, 0, .45, 0); [-1, 1].forEach(s => box(g, .12, 2.6, .12, PAL.wood, s * 1.4, 1.3, -.5)); box(g, 3.4, .1, 1.8, pick([0xb8402a, 0x2a6a8a, 0xd8b030]), 0, 2.6, -.3, 0, -.2, 0); box(g, .5, .4, .5, 0xd8a030, .5, 1.1, .1); return g; }
